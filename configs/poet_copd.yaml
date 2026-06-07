@@ -1,0 +1,79 @@
+# POET-COPD — Prevention Of Exacerbations with Tiotropium in COPD
+# Source: Vogelmeier C et al. "Tiotropium versus Salmeterol for the Prevention
+# of Exacerbations of COPD." N Engl J Med. 2011;364(12):1093-1103.
+
+trial:
+  key: poet_copd
+  name: POET-COPD
+  full_name: "Prevention Of Exacerbations with Tiotropium in COPD"
+  citation: "Vogelmeier C et al., N Engl J Med 2011;364:1093-1103"
+  published_hr: 0.83
+  published_hr_ci: [0.77, 0.90]
+  rct_duplicate_success: false
+
+design:
+  type: two_active_drug
+  index_definition: first_ever_arm_dispense
+  washout_days: 365
+
+arms:
+  - name: tiotropium
+    role: treated
+    keywords: [TIOTROPIUM, SPIRIVA, STIOLTO]
+  - name: salmeterol
+    role: control
+    keywords: [SALMETEROL, SEREVENT, ADVAIR]
+
+inclusion:
+  age_min: 18
+  required_icd:
+    - name: copd_icd_ever
+      codes: [J44]
+      lookback_days: 1825
+      char: 3
+
+exclusion:
+  icd: []
+  drug: []
+
+covariates:
+  comorbidities:
+    - copd
+    - htn
+    - dm
+    - cad_mi
+    - afib
+    - hyperlipidemia
+    - stroke
+  medications_90d:
+    - loop_diuretic
+    - acei_arb
+    - aldosterone_antag
+    - statin
+  condition_flags: []
+  extra_smd_cols: []
+
+endpoint:
+  primary:
+    name: time_to_first_copd_exacerbation
+    followup_days: 365            # 12-month primary analysis
+    censor: administrative
+    components:
+      - type: inpatient_icd       # Severe COPD exacerbation (hospitalization)
+        codes: [J44]
+        char: 3
+        visit_concept_ids: [9201, 262]
+  proxy_note: >
+    Primary endpoint: time to first COPD exacerbation (moderate or severe). Severe
+    exacerbations proxied by inpatient J44. Moderate outpatient exacerbations (OCS/
+    antibiotic prescriptions) not captured in ICD. Direct active vs active (LAMA
+    tiotropium vs LABA salmeterol) — no placebo proxy needed. Emulation=false in
+    RCT-DUPLICATE.
+
+ecg:
+  window_days: 89
+  window_mode: before
+  pool_window_days: 365
+
+feasibility:
+  min_n_per_arm: 50

@@ -1,0 +1,83 @@
+# RE-COVER II — Efficacy and Safety of Dabigatran Compared with Warfarin for
+# 6-Month Treatment of Acute Symptomatic Venous Thromboembolism (second study)
+# Source: Schulman S et al. "Dabigatran versus Warfarin in the Treatment of Acute
+# Venous Thromboembolism." N Engl J Med. 2009;361(24):2342-2352.
+# RE-COVER II: Schulman S et al. Circulation. 2014;129(7):764-772.
+
+trial:
+  key: recover_ii
+  name: RE-COVER II
+  full_name: "Efficacy and Safety of Dabigatran Compared with Warfarin for 6-Month Treatment of Acute Symptomatic Venous Thromboembolism II"
+  citation: "Schulman S et al., Circulation 2014;129:764-772"
+  published_hr: 1.08
+  published_hr_ci: [0.64, 1.80]
+  rct_duplicate_success: true
+
+design:
+  type: two_active_drug
+  index_definition: first_ever_arm_dispense
+  washout_days: 365
+
+arms:
+  - name: dabigatran
+    role: treated
+    keywords: [DABIGATRAN, PRADAXA]
+  - name: warfarin
+    role: control
+    keywords: [WARFARIN, COUMADIN, JANTOVEN]
+
+inclusion:
+  age_min: 18
+  required_icd:
+    # Acute VTE (DVT or PE)
+    - name: vte_icd_ever
+      codes: [I26, I80]
+      lookback_days: 365
+      char: 3
+
+exclusion:
+  icd: []
+  drug: []
+
+covariates:
+  comorbidities:
+    - copd
+    - htn
+    - dm
+    - cad_mi
+    - afib
+    - hyperlipidemia
+    - stroke
+  medications_90d:
+    - loop_diuretic
+    - acei_arb
+    - aldosterone_antag
+    - statin
+  condition_flags: []
+  extra_smd_cols: []
+
+endpoint:
+  primary:
+    name: recurrent_vte_vte_death
+    followup_days: 365            # 6-month treatment; extended follow-up to 12m
+    censor: administrative
+    components:
+      - type: condition_icd       # Recurrent DVT
+        codes: [I80]
+        char: 3
+      - type: condition_icd       # Recurrent PE
+        codes: [I26]
+        char: 3
+      - type: mortality           # VTE-related death (proxied by all-cause death)
+  proxy_note: >
+    VTE-related death proxied by all-cause mortality. Direct active vs active comparison
+    (dabigatran vs warfarin) — no placebo proxy needed. Non-inferiority trial; wide CI
+    reflects equivalence.
+
+ecg:
+  window_days: 89
+  window_mode: before
+  pool_window_days: 365
+
+feasibility:
+  min_n_per_arm: 50

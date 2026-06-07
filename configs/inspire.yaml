@@ -1,0 +1,82 @@
+# INSPIRE — Investigating New Standards for Prophylaxis In Reduction of Exacerbations
+# Source: Wedzicha JA et al. "Analysis of chronic obstructive pulmonary disease
+# exacerbations with the dual bronchodilator QVA149 compared with glycopyrronium
+# and tiotropium (SPARK)." [INSPIRE reference:]
+# Wedzicha JA et al. "The Prevention of Chronic Obstructive Pulmonary Disease
+# Exacerbations by Salmeterol/Fluticasone Propionate or Tiotropium Bronchodilator."
+# Am J Respir Crit Care Med. 2008;177(1):19-26.
+
+trial:
+  key: inspire
+  name: INSPIRE
+  full_name: "Investigating New Standards for Prophylaxis In Reduction of Exacerbations (Salmeterol/Fluticasone vs Tiotropium in COPD)"
+  citation: "Wedzicha JA et al., Am J Respir Crit Care Med 2008;177:19-26"
+  published_hr: 0.97
+  published_hr_ci: [0.84, 1.12]
+  rct_duplicate_success: true
+
+design:
+  type: two_active_drug
+  index_definition: first_ever_arm_dispense
+  washout_days: 365
+
+arms:
+  - name: salmeterol_fluticasone
+    role: treated
+    # ICS/LABA combination: salmeterol/fluticasone propionate (ADVAIR)
+    keywords: [SALMETEROL, FLUTICASONE, ADVAIR, AIRDUO, WIXELA]
+  - name: tiotropium
+    role: control
+    keywords: [TIOTROPIUM, SPIRIVA, STIOLTO]
+
+inclusion:
+  age_min: 18
+  required_icd:
+    - name: copd_icd_ever
+      codes: [J44]
+      lookback_days: 1825
+      char: 3
+
+exclusion:
+  icd: []
+  drug: []
+
+covariates:
+  comorbidities:
+    - copd
+    - htn
+    - dm
+    - cad_mi
+    - afib
+    - hyperlipidemia
+    - stroke
+  medications_90d:
+    - loop_diuretic
+    - acei_arb
+    - aldosterone_antag
+    - statin
+  condition_flags: []
+  extra_smd_cols: []
+
+endpoint:
+  primary:
+    name: copd_exacerbation
+    followup_days: 730            # 2-year primary analysis
+    censor: administrative
+    components:
+      - type: inpatient_icd       # Severe COPD exacerbation (hospitalization)
+        codes: [J44]
+        char: 3
+        visit_concept_ids: [9201, 262]
+  proxy_note: >
+    Primary endpoint: COPD exacerbation rate. Severe exacerbations proxied by
+    inpatient J44. Direct active vs active (ICS/LABA salmeterol/fluticasone vs
+    LAMA tiotropium) — no placebo proxy needed.
+
+ecg:
+  window_days: 89
+  window_mode: before
+  pool_window_days: 365
+
+feasibility:
+  min_n_per_arm: 50

@@ -1,0 +1,83 @@
+# D5896 — Budesonide/Formoterol vs Budesonide Alone — Serious Asthma Events Trial
+# (Study D5896C00001 / SYGMA-like component; also referenced as Symbicort SMART trial)
+# Source: Peters SP et al. "Serious asthma events with budesonide plus formoterol
+# vs. budesonide alone." N Engl J Med. 2016;375:850-860.
+
+trial:
+  key: d5896
+  name: D5896
+  full_name: "Budesonide/Formoterol vs Budesonide Alone — Serious Asthma Events (D5896)"
+  citation: "Peters SP et al., N Engl J Med 2016;375:850-860"
+  published_hr: 1.07
+  published_hr_ci: [0.70, 1.65]
+  rct_duplicate_success: true
+
+design:
+  type: two_active_drug
+  index_definition: first_ever_arm_dispense
+  washout_days: 365
+
+arms:
+  - name: budesonide_formoterol
+    role: treated
+    # ICS/LABA combination: budesonide/formoterol (SYMBICORT)
+    keywords: [BUDESONIDE, SYMBICORT]
+  - name: budesonide
+    role: control
+    # ICS alone: budesonide (PULMICORT)
+    keywords: [PULMICORT, RHINOCORT]
+
+inclusion:
+  age_min: 18
+  required_icd:
+    - name: asthma_icd_ever
+      codes: [J45]
+      lookback_days: 1825
+      char: 3
+
+exclusion:
+  icd: []
+  drug: []
+
+covariates:
+  comorbidities:
+    - copd
+    - htn
+    - dm
+    - cad_mi
+    - afib
+    - hyperlipidemia
+    - stroke
+  medications_90d:
+    - loop_diuretic
+    - acei_arb
+    - aldosterone_antag
+    - statin
+  condition_flags: []
+  extra_smd_cols: []
+
+endpoint:
+  primary:
+    name: serious_asthma_events
+    followup_days: 1095           # ~26-week to 3-year follow-up; use 3y max
+    censor: administrative
+    components:
+      - type: inpatient_icd       # Serious asthma event (intubation/ICU/death)
+        codes: [J45]
+        char: 3
+        visit_concept_ids: [9201, 262]
+      - type: mortality           # Asthma-related death (proxied by all-cause death)
+  proxy_note: >
+    Primary endpoint: time to first serious asthma event (intubation/ICU admission/
+    asthma-related death). Proxied by inpatient J45 + all-cause mortality.
+    ICS/LABA (budesonide/formoterol) vs ICS alone (budesonide). Note: SYMBICORT
+    keyword captures both budesonide+formoterol; PULMICORT/RHINOCORT = budesonide alone.
+    Formoterol keyword excluded from control to avoid contamination.
+
+ecg:
+  window_days: 89
+  window_mode: before
+  pool_window_days: 365
+
+feasibility:
+  min_n_per_arm: 50

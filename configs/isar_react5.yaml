@@ -1,0 +1,81 @@
+# ISAR-REACT 5 — Intracoronary Stenting and Antithrombotic Regimen: Rapid Early
+# Action for Coronary Treatment 5
+# Source: Schüpke S et al. "Ticagrelor or Prasugrel in Patients with Acute Coronary
+# Syndromes." N Engl J Med. 2019;381(16):1524-1534.
+
+trial:
+  key: isar_react5
+  name: ISAR-REACT 5
+  full_name: "Intracoronary Stenting and Antithrombotic Regimen: Rapid Early Action for Coronary Treatment 5"
+  citation: "Schüpke S et al., N Engl J Med 2019;381:1524-1534"
+  published_hr: 1.36
+  published_hr_ci: [1.09, 1.70]
+  rct_duplicate_success: null     # Not evaluated in RCT-DUPLICATE Wang et al. 2023
+
+design:
+  type: two_active_drug
+  index_definition: first_ever_arm_dispense
+  washout_days: 365
+
+arms:
+  - name: ticagrelor
+    role: treated
+    keywords: [TICAGRELOR, BRILINTA]
+  - name: prasugrel
+    role: control
+    keywords: [PRASUGREL, EFFIENT]
+
+inclusion:
+  age_min: 18
+  required_icd:
+    - name: acs_icd_ever
+      codes: [I21, I22, I200]
+      lookback_days: 365
+      char: 3
+
+exclusion:
+  icd: []
+  drug: []
+
+covariates:
+  comorbidities:
+    - copd
+    - htn
+    - dm
+    - cad_mi
+    - afib
+    - hyperlipidemia
+    - stroke
+  medications_90d:
+    - loop_diuretic
+    - acei_arb
+    - aldosterone_antag
+    - statin
+  condition_flags: []
+  extra_smd_cols: []
+
+endpoint:
+  primary:
+    name: death_mi_stroke_12m
+    followup_days: 365            # 12-month primary follow-up
+    censor: administrative
+    components:
+      - type: mortality           # Death (all-cause; CV death proxy)
+      - type: condition_icd       # MI
+        codes: [I21, I22]
+        char: 3
+      - type: condition_icd       # Stroke
+        codes: [I63, I64, G45]
+        char: 3
+  proxy_note: >
+    All-cause mortality used as death component proxy. Direct active vs active comparison
+    (ticagrelor vs prasugrel) — no placebo proxy needed. Note: in ISAR-REACT 5,
+    prasugrel was superior (HR 1.36 favoring prasugrel when ticagrelor is treated arm).
+
+ecg:
+  window_days: 89
+  window_mode: before
+  pool_window_days: 365
+
+feasibility:
+  min_n_per_arm: 50

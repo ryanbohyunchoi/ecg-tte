@@ -1,0 +1,91 @@
+# PARADIGM-HF — Prospective Comparison of ARNI with ACEI to Determine Impact on
+# Global Mortality and Morbidity in Heart Failure
+# Source: McMurray JJV et al. "Angiotensin-Neprilysin Inhibition versus Enalapril
+# in Heart Failure." N Engl J Med. 2014;371(11):993-1004.
+
+trial:
+  key: paradigm_hf
+  name: PARADIGM-HF
+  full_name: "Prospective Comparison of ARNI with ACEI to Determine Impact on Global Mortality and Morbidity in Heart Failure"
+  citation: "McMurray JJV et al., N Engl J Med 2014;371:993-1004"
+  published_hr: 0.80
+  published_hr_ci: [0.73, 0.87]
+  rct_duplicate_success: false
+
+design:
+  type: two_active_drug
+  index_definition: first_ever_arm_dispense
+  washout_days: 365
+
+arms:
+  - name: sacubitril_valsartan
+    role: treated
+    keywords: [SACUBITRIL, ENTRESTO]
+  - name: enalapril
+    role: control
+    keywords: [ENALAPRIL, VASOTEC, ENALAPRILAT]
+
+inclusion:
+  age_min: 18
+  ef:
+    threshold: 40.0
+    direction: "<="               # HFrEF: LVEF ≤ 40%
+    source: echo_or_icd
+    lookback_days: 1825
+  required_icd:
+    - name: hf_icd_ever
+      codes: [I50]
+      lookback_days: 1825
+      char: 3
+
+exclusion:
+  icd: []
+  drug: []
+
+covariates:
+  comorbidities:
+    - copd
+    - htn
+    - dm
+    - cad_mi
+    - afib
+    - hyperlipidemia
+    - stroke
+  medications_90d:
+    - loop_diuretic
+    - acei_arb
+    - aldosterone_antag
+    - digoxin
+    - statin
+    - nitrate
+  condition_flags:
+    - name: hfref_icd_5y
+      codes: [I50]
+      lookback_days: 1825
+      char: 3
+  extra_smd_cols: []
+
+endpoint:
+  primary:
+    name: cv_death_hf_hosp
+    followup_days: 1095           # ~27 months median follow-up; extend to 3y
+    censor: administrative
+    components:
+      - type: mortality           # CV death proxy (all-cause death)
+      - type: inpatient_icd       # HF hospitalization
+        codes: [I50]
+        char: 3
+        visit_concept_ids: [9201, 262]
+  proxy_note: >
+    CV death proxied by all-cause mortality. Direct active vs active comparison
+    (sacubitril/valsartan vs enalapril) — no placebo proxy needed. Requires
+    HFrEF (LVEF ≤40%) and NYHA class II-IV (ICD I50 proxy). Emulation=false in
+    RCT-DUPLICATE.
+
+ecg:
+  window_days: 89
+  window_mode: before
+  pool_window_days: 365
+
+feasibility:
+  min_n_per_arm: 50

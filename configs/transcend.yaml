@@ -1,0 +1,84 @@
+# TRANSCEND — Telmisartan Randomised AssessmeNt Study in ACE iNtolerant subjects
+# with cardiovascular Disease
+# Source: Yusuf S et al. "Telmisartan, ramipril, or both in patients at high risk
+# for vascular events." N Engl J Med. 2008;358(15):1547-1559.
+# (TRANSCEND = telmisartan vs placebo in ACEi-intolerant patients)
+
+trial:
+  key: transcend
+  name: TRANSCEND
+  full_name: "Telmisartan Randomised AssessmeNt Study in ACE iNtolerant subjects with cardiovascular Disease"
+  citation: "TRANSCEND Investigators, Lancet 2008;372:1174-1183"
+  published_hr: 0.92
+  published_hr_ci: [0.81, 1.05]
+  rct_duplicate_success: true
+
+design:
+  type: two_active_drug
+  index_definition: first_ever_arm_dispense
+  washout_days: 365
+
+arms:
+  - name: telmisartan
+    role: treated
+    keywords: [TELMISARTAN, MICARDIS, TWYNSTA]
+  - name: acei
+    role: control
+    # Active comparator proxy for placebo arm: ACE inhibitor class
+    # TRANSCEND enrolled ACEi-intolerant patients, but in EHR we use ARB vs ACEi
+    # as the canonical active comparator design for ARB trials
+    keywords: [LISINOPRIL, ENALAPRIL, RAMIPRIL, CAPTOPRIL, PERINDOPRIL, QUINAPRIL, FOSINOPRIL, BENAZEPRIL]
+
+inclusion:
+  age_min: 18
+
+exclusion:
+  icd: []
+  drug: []
+
+covariates:
+  comorbidities:
+    - copd
+    - htn
+    - dm
+    - cad_mi
+    - afib
+    - hyperlipidemia
+    - stroke
+  medications_90d:
+    - loop_diuretic
+    - acei_arb
+    - aldosterone_antag
+    - statin
+  condition_flags: []
+  extra_smd_cols: []
+
+endpoint:
+  primary:
+    name: mace_4p_hf
+    followup_days: 1700           # ~56 months median follow-up
+    censor: administrative
+    components:
+      - type: mortality           # CV death proxy (all-cause death)
+      - type: condition_icd       # MI
+        codes: [I21, I22]
+        char: 3
+      - type: condition_icd       # Stroke
+        codes: [I63, I64, G45]
+        char: 3
+      - type: inpatient_icd       # HF hospitalization
+        codes: [I50]
+        char: 3
+        visit_concept_ids: [9201, 262]
+  proxy_note: >
+    CV death proxied by all-cause mortality. Active comparator ACEi substituted for
+    placebo arm (TRANSCEND enrolled ACEi-intolerant patients; EHR emulation uses
+    ARB vs ACEi active comparator design). Composite: CV death/MI/stroke/HF hosp.
+
+ecg:
+  window_days: 89
+  window_mode: before
+  pool_window_days: 365
+
+feasibility:
+  min_n_per_arm: 50

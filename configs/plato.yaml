@@ -1,0 +1,81 @@
+# PLATO — Platelet Inhibition and Patient Outcomes
+# Source: Wallentin L et al. "Ticagrelor versus Clopidogrel in Patients with Acute
+# Coronary Syndromes." N Engl J Med. 2009;361(11):1045-1057.
+
+trial:
+  key: plato
+  name: PLATO
+  full_name: "Platelet Inhibition and Patient Outcomes"
+  citation: "Wallentin L et al., N Engl J Med 2009;361:1045-1057"
+  published_hr: 0.84
+  published_hr_ci: [0.77, 0.92]
+  rct_duplicate_success: true
+
+design:
+  type: two_active_drug
+  index_definition: first_ever_arm_dispense
+  washout_days: 365
+
+arms:
+  - name: ticagrelor
+    role: treated
+    keywords: [TICAGRELOR, BRILINTA]
+  - name: clopidogrel
+    role: control
+    keywords: [CLOPIDOGREL, PLAVIX]
+
+inclusion:
+  age_min: 18
+  required_icd:
+    # ACS (STEMI/NSTEMI/UA)
+    - name: acs_icd_ever
+      codes: [I21, I22, I200]
+      lookback_days: 365
+      char: 3
+
+exclusion:
+  icd: []
+  drug: []
+
+covariates:
+  comorbidities:
+    - copd
+    - htn
+    - dm
+    - cad_mi
+    - afib
+    - hyperlipidemia
+    - stroke
+  medications_90d:
+    - loop_diuretic
+    - acei_arb
+    - aldosterone_antag
+    - statin
+  condition_flags: []
+  extra_smd_cols: []
+
+endpoint:
+  primary:
+    name: mace_3p
+    followup_days: 365            # 12-month primary follow-up
+    censor: administrative
+    components:
+      - type: mortality           # CV death proxy (all-cause death)
+      - type: condition_icd       # MI
+        codes: [I21, I22]
+        char: 3
+      - type: condition_icd       # Stroke
+        codes: [I63, I64, G45]
+        char: 3
+  proxy_note: >
+    CV death proxied by all-cause mortality. Direct active vs active comparison
+    (ticagrelor vs clopidogrel) — no placebo proxy needed. Trial enrolled
+    ACS patients (STEMI, NSTEMI, UA).
+
+ecg:
+  window_days: 89
+  window_mode: before
+  pool_window_days: 365
+
+feasibility:
+  min_n_per_arm: 50

@@ -1,0 +1,85 @@
+# TECOS — Trial Evaluating Cardiovascular Outcomes with Sitagliptin
+# Source: Green JB et al. "Effect of Sitagliptin on Cardiovascular Outcomes in
+# Type 2 Diabetes." N Engl J Med. 2015;373(3):232-242.
+
+trial:
+  key: tecos
+  name: TECOS
+  full_name: "Trial Evaluating Cardiovascular Outcomes with Sitagliptin"
+  citation: "Green JB et al., N Engl J Med 2015;373:232-242"
+  published_hr: 0.98
+  published_hr_ci: [0.88, 1.09]
+  rct_duplicate_success: true
+
+design:
+  type: two_active_drug
+  index_definition: first_ever_arm_dispense
+  washout_days: 365
+
+arms:
+  - name: sitagliptin
+    role: treated
+    keywords: [SITAGLIPTIN, JANUVIA, JANUMET, STEGLUJAN]
+  - name: sulfonylurea
+    role: control
+    # Active comparator proxy for placebo arm: sulfonylurea class
+    keywords: [GLIPIZIDE, GLIMEPIRIDE, GLYBURIDE, GLIBENCLAMIDE, TOLBUTAMIDE]
+
+inclusion:
+  age_min: 18
+  required_icd:
+    - name: dm_icd_ever
+      codes: [E11]
+      lookback_days: 1825
+      char: 3
+
+exclusion:
+  icd: []
+  drug: []
+
+covariates:
+  comorbidities:
+    - copd
+    - htn
+    - dm
+    - cad_mi
+    - afib
+    - hyperlipidemia
+    - stroke
+  medications_90d:
+    - loop_diuretic
+    - acei_arb
+    - aldosterone_antag
+    - statin
+  condition_flags: []
+  extra_smd_cols: []
+
+endpoint:
+  primary:
+    name: mace_4p
+    followup_days: 1095           # ~3 years median follow-up
+    censor: administrative
+    components:
+      - type: mortality           # CV death proxy (all-cause death)
+      - type: condition_icd       # MI
+        codes: [I21, I22]
+        char: 3
+      - type: condition_icd       # Stroke
+        codes: [I63, I64, G45]
+        char: 3
+      - type: inpatient_icd       # Unstable angina hospitalization
+        codes: [I200]
+        char: 4
+        visit_concept_ids: [9201, 262]
+  proxy_note: >
+    TECOS used 4-point MACE (CV death/MI/stroke/UA hospitalization). CV death proxied
+    by all-cause mortality. Active comparator sulfonylurea substituted for placebo arm.
+    Trial enrolled T2D patients with established CVD.
+
+ecg:
+  window_days: 89
+  window_mode: before
+  pool_window_days: 365
+
+feasibility:
+  min_n_per_arm: 50

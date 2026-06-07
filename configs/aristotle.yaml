@@ -1,0 +1,80 @@
+# ARISTOTLE — Apixaban for Reduction in Stroke and Other Thromboembolic Events
+# in Atrial Fibrillation
+# Source: Granger CB et al. "Apixaban versus Warfarin in Patients with Atrial
+# Fibrillation." N Engl J Med. 2011;365(11):981-992.
+
+trial:
+  key: aristotle
+  name: ARISTOTLE
+  full_name: "Apixaban for Reduction in Stroke and Other Thromboembolic Events in Atrial Fibrillation"
+  citation: "Granger CB et al., N Engl J Med 2011;365:981-992"
+  published_hr: 0.79
+  published_hr_ci: [0.66, 0.95]
+  rct_duplicate_success: true
+
+design:
+  type: two_active_drug
+  index_definition: first_ever_arm_dispense
+  washout_days: 365
+
+arms:
+  - name: apixaban
+    role: treated
+    keywords: [APIXABAN, ELIQUIS]
+  - name: warfarin
+    role: control
+    keywords: [WARFARIN, COUMADIN, JANTOVEN]
+
+inclusion:
+  age_min: 18
+  required_icd:
+    # Non-valvular atrial fibrillation
+    - name: afib_icd_ever
+      codes: [I48]
+      lookback_days: 1825
+      char: 3
+
+exclusion:
+  icd: []
+  drug: []
+
+covariates:
+  comorbidities:
+    - copd
+    - htn
+    - dm
+    - cad_mi
+    - afib
+    - hyperlipidemia
+    - stroke
+  medications_90d:
+    - loop_diuretic
+    - acei_arb
+    - aldosterone_antag
+    - statin
+  condition_flags: []
+  extra_smd_cols: []
+
+endpoint:
+  primary:
+    name: stroke_systemic_embolism
+    followup_days: 730            # ~1.8 years median follow-up
+    censor: administrative
+    components:
+      - type: condition_icd       # Stroke (ischemic + hemorrhagic)
+        codes: [I63, I64, G45]
+        char: 3
+      - type: condition_icd       # Systemic embolism
+        codes: [I74]
+        char: 3
+  proxy_note: >
+    Direct active vs active comparison (apixaban vs warfarin) — no placebo proxy needed.
+    Trial enrolled patients with non-valvular AF and ≥1 additional risk factor.
+
+ecg:
+  window_days: 89
+  window_mode: before
+  pool_window_days: 365
+
+feasibility:
+  min_n_per_arm: 50

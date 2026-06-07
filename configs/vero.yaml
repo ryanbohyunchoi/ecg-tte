@@ -1,0 +1,73 @@
+# VERO — Vertebral fracture treatment comparisons in osteoporosis
+# Source: Kendler DL et al. "Effects of Teriparatide and Risedronate on New
+# Fractures in Post-menopausal Women with Severe Osteoporosis (VERO)."
+# Bone. 2018;112:37-44.
+
+trial:
+  key: vero
+  name: VERO
+  full_name: "Vertebral fracture treatment comparisons in osteoporosis (Teriparatide vs Risedronate)"
+  citation: "Kendler DL et al., Bone 2018;112:37-44"
+  published_hr: 0.44
+  published_hr_ci: [0.29, 0.68]
+  rct_duplicate_success: null   # Not evaluated in RCT-DUPLICATE Wang et al. 2023
+
+design:
+  type: two_active_drug
+  index_definition: first_ever_arm_dispense
+  washout_days: 365
+
+arms:
+  - name: teriparatide
+    role: treated
+    keywords: [TERIPARATIDE, FORTEO, BONSITY, TYMLOS]
+  - name: risedronate
+    role: control
+    keywords: [RISEDRONATE, ACTONEL, ATELVIA]
+
+inclusion:
+  age_min: 18
+
+exclusion:
+  icd: []
+  drug: []
+
+covariates:
+  comorbidities:
+    - copd
+    - htn
+    - dm
+    - cad_mi
+    - afib
+    - hyperlipidemia
+    - stroke
+  medications_90d:
+    - loop_diuretic
+    - acei_arb
+    - aldosterone_antag
+    - statin
+  condition_flags: []
+  extra_smd_cols: []
+
+endpoint:
+  primary:
+    name: vertebral_fracture
+    followup_days: 730            # 24-month primary analysis
+    censor: administrative
+    components:
+      - type: condition_icd       # Vertebral/spinal fracture
+        codes: [M48, S12, S22, S32]
+        char: 3
+  proxy_note: >
+    VERO primary endpoint was new radiographic vertebral fractures (morphometric).
+    ICD codes used as clinical vertebral fracture proxy (morphometric fractures
+    not captured in claims). Direct active vs active comparison (teriparatide vs
+    risedronate) — no placebo proxy needed.
+
+ecg:
+  window_days: 89
+  window_mode: before
+  pool_window_days: 365
+
+feasibility:
+  min_n_per_arm: 50

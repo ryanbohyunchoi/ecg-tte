@@ -1,0 +1,80 @@
+# LEAD-2 — Liraglutide Effect and Action in Diabetes Study 2
+# Source: Nauck M et al. "Efficacy and safety comparison of liraglutide, glimepiride,
+# and placebo, all in combination with metformin, in type 2 diabetes: the LEAD
+# (liraglutide effect and action in diabetes)-2 study." Diabetes Care. 2009;32(1):84-90.
+
+trial:
+  key: lead2
+  name: LEAD-2
+  full_name: "Liraglutide Effect and Action in Diabetes Study 2"
+  citation: "Nauck M et al., Diabetes Care 2009;32:84-90"
+  published_hr: null              # Non-CV trial; primary endpoint was HbA1c change
+  published_hr_ci: null
+  rct_duplicate_success: true
+
+design:
+  type: two_active_drug
+  index_definition: first_ever_arm_dispense
+  washout_days: 365
+
+arms:
+  - name: liraglutide_metformin
+    role: treated
+    # Liraglutide 1.8mg + metformin combination
+    keywords: [LIRAGLUTIDE, VICTOZA, XULTOPHY]
+  - name: glimepiride_metformin
+    role: control
+    # Active comparator: glimepiride (SU) + metformin
+    keywords: [GLIMEPIRIDE, AMARYL, DUETACT]
+
+inclusion:
+  age_min: 18
+  required_icd:
+    - name: dm_icd_ever
+      codes: [E11]
+      lookback_days: 1825
+      char: 3
+
+exclusion:
+  icd: []
+  drug: []
+
+covariates:
+  comorbidities:
+    - copd
+    - htn
+    - dm
+    - cad_mi
+    - afib
+    - hyperlipidemia
+    - stroke
+  medications_90d:
+    - loop_diuretic
+    - acei_arb
+    - aldosterone_antag
+    - statin
+  condition_flags: []
+  extra_smd_cols: []
+
+endpoint:
+  primary:
+    name: hba1c_proxy_all_cause_mortality
+    followup_days: 365            # 26-week (6-month) RCT; use 1-year follow-up in EHR
+    censor: administrative
+    components:
+      - type: mortality           # Mortality-only fallback (HbA1c not directly observable as event)
+  proxy_note: >
+    LEAD-2 primary endpoint was HbA1c reduction (non-CV, continuous outcome). This is
+    not directly emulable as a time-to-event endpoint in claims/EHR. Using all-cause
+    mortality as a mortality-only fallback for survival analysis. HbA1c lab values
+    could be extracted separately as a continuous secondary outcome. Active vs active
+    design (liraglutide+metformin vs glimepiride+metformin) — no placebo proxy needed.
+    Both arms require concurrent metformin (not enforced at stage1; Stage 3 flag available).
+
+ecg:
+  window_days: 89
+  window_mode: before
+  pool_window_days: 365
+
+feasibility:
+  min_n_per_arm: 50

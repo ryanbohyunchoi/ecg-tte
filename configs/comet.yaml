@@ -1,0 +1,148 @@
+# COMET — Carvedilol Or Metoprolol European Trial
+# Source: Poole-Wilson PA et al. "Comparison of carvedilol and metoprolol on clinical
+# outcomes in patients with chronic heart failure in the Carvedilol Or Metoprolol
+# European Trial (COMET): randomised controlled trial." Lancet. 2003;362(9377):7-13.
+
+trial:
+  key: comet
+  name: COMET
+  full_name: "Carvedilol Or Metoprolol European Trial"
+  citation: "Poole-Wilson PA et al., Lancet 2003;362:7-13"
+  published_hr: 0.83
+  published_hr_ci: [0.74, 0.93]
+  rct_duplicate_success: true   # successful emulation per Wang et al. JAMA 2023
+
+design:
+  type: two_active_drug
+  index_definition: first_ever_arm_dispense
+  washout_days: 365             # stored as prior_<arm>_days; Stage 3 sweeps
+
+arms:
+  - name: carvedilol
+    role: treated
+    keywords: [CARVEDILOL]
+    stage3_alias: carv          # produces first_carv_date / prior_carv_days aliases
+  - name: metoprolol
+    role: control
+    keywords: [METOPROLOL]
+    formulation_filter:
+      # COMET used metoprolol tartrate specifically (not succinate/XL)
+      # Applied as a sensitivity in Stage 3 via --meto-formulation tartrate_only
+      # At Stage 1 we include all metoprolol (maximally permissive pool)
+      require: []
+      exclude: []
+    stage3_alias: meto          # produces first_meto_date / prior_meto_days aliases
+
+inclusion:
+  age_min: 18
+  age_max: 80
+  ef:
+    threshold: 35.0
+    direction: "<="             # systolic dysfunction: LVEF ≤ 35%
+    source: echo_or_icd         # echo_or_icd | echo_only
+    lookback_days: 1825         # most recent echo within 5 years
+  required_icd:
+    # Symptomatic CHF proxy (I2): stored in pool; Stage 3 enforces via --require-hf-proxy
+    - name: prior_hf_code_1yr
+      codes: [I50]
+      lookback_days: 365
+      char: 3
+  required_drug: []             # ACEi/ARB requirement stored as acei_arb_90d flag
+                                # Stage 3 knob: --require-acei-arb (default False)
+
+exclusion:
+  icd:
+    # E1: HF due to primary valvular disease
+    - name: valvular_disease_5y
+      codes: [I05, I06, I07, I08, I09, I34, I35, I36, I37, I38, I39]
+      lookback_days: 1825
+      char: 3
+    # E2+E3: Recent MI/ACS or revascularization within 60d (trial said 2 weeks; liberalised)
+    - name: recent_mi_acs_60d
+      codes: [I21, I22, I24]
+      lookback_days: 60
+      char: 3
+    - name: recent_revasc_60d
+      codes: [Z951, Z955]
+      lookback_days: 60
+      char: 4
+    # E6: 2nd or 3rd degree AV block
+    - name: av_block_2_3_24m
+      codes: [I441, I442, I443]
+      lookback_days: 730
+      char: 4
+    # E10: Advanced CKD/ESRD
+    - name: esrd_5y
+      codes: [N185, N186]
+      lookback_days: 1825
+      char: 4
+    # E11: Severe hepatic failure
+    - name: hepatic_failure_5y
+      codes: [K72]
+      lookback_days: 1825
+      char: 3
+    # Asthma (informational; stored, not hard-excluded — see notes)
+    - name: asthma_5y
+      codes: [J45]
+      lookback_days: 1825
+      char: 3
+  drug:
+    # E7: Concurrent non-dihydropyridine CCB (verapamil/diltiazem)
+    - name: had_ccb_nondihydro_pm30d
+      keywords: [VERAPAMIL, DILTIAZEM]
+      window_days: 30
+      mode: pm
+    # E8: Concurrent other beta-blocker
+    - name: had_other_bb_pm30d
+      keyword_const: OTHER_BB
+      window_days: 30
+      mode: pm
+
+covariates:
+  comorbidities:
+    - copd
+    - htn
+    - dm
+    - cad_mi
+    - afib
+    - hyperlipidemia
+    - stroke
+  medications_90d:
+    - loop_diuretic
+    - acei_arb
+    - aldosterone_antag
+    - digoxin
+    - statin
+    - nitrate
+  condition_flags:
+    # HFrEF ICD proxy flags at multiple time horizons
+    - name: hfref_icd_5y
+      codes: [I50]
+      lookback_days: 1825
+      char: 3
+    - name: hfref_icd_24m
+      codes: [I50]
+      lookback_days: 730
+      char: 3
+    - name: hfref_icd_subcoded_i502_24m
+      codes: [I502]
+      lookback_days: 730
+      char: 4
+  extra_smd_cols: []
+
+endpoint:
+  primary:
+    name: all_cause_mortality
+    followup_days: 1825           # 5-year follow-up (COMET median 58 months)
+    censor: administrative
+    components:
+      - type: mortality           # all-cause death; date-only (no cause in death table)
+  proxy_note: null                # mortality-only endpoint; no proxy needed
+
+ecg:
+  window_days: 89               # < 90 days (user requirement); nearest ECG on/before index
+  window_mode: before
+  pool_window_days: 365         # ecg_candidates breadth; Stage 3 narrows to window_days
+
+feasibility:
+  min_n_per_arm: 200

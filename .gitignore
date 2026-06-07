@@ -1,0 +1,29 @@
+__pycache__/
+*.pyc
+*.pyo
+
+# Data / outputs (never commit patient data)
+data/
+labels/
+*.csv
+*.parquet
+*.npy
+*.npz
+
+# Experiment outputs (stay on cluster)
+pool/
+runs/
+embeddings/
+_feasibility/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Env
+.env
+*.env
+venv/
+.venv/
+
+# OS
+.DS_Store

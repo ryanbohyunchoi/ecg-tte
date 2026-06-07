@@ -1,0 +1,80 @@
+# IMPACT — Informing the Pathway of COPD Treatment
+# Source: Lipson DA et al. "Once-Daily Single-Inhaler Triple versus Dual Therapy
+# in Patients with COPD." N Engl J Med. 2018;378(18):1671-1680.
+
+trial:
+  key: impact
+  name: IMPACT
+  full_name: "Informing the Pathway of COPD Treatment (Fluticasone Furoate/Umeclidinium/Vilanterol vs Umeclidinium/Vilanterol)"
+  citation: "Lipson DA et al., N Engl J Med 2018;378:1671-1680"
+  published_hr: 0.85
+  published_hr_ci: [0.80, 0.90]
+  rct_duplicate_success: false
+
+design:
+  type: two_active_drug
+  index_definition: first_ever_arm_dispense
+  washout_days: 365
+
+arms:
+  - name: ff_umec_vil
+    role: treated
+    # Triple therapy: ICS/LAMA/LABA (TRELEGY ELLIPTA)
+    keywords: [FLUTICASONE, UMECLIDINIUM, VILANTEROL, TRELEGY]
+  - name: umec_vil
+    role: control
+    # Dual therapy: LAMA/LABA (ANORO ELLIPTA) — no ICS
+    keywords: [UMECLIDINIUM, ANORO, INCRUSE]
+
+inclusion:
+  age_min: 18
+  required_icd:
+    - name: copd_icd_ever
+      codes: [J44]
+      lookback_days: 1825
+      char: 3
+
+exclusion:
+  icd: []
+  drug: []
+
+covariates:
+  comorbidities:
+    - copd
+    - htn
+    - dm
+    - cad_mi
+    - afib
+    - hyperlipidemia
+    - stroke
+  medications_90d:
+    - loop_diuretic
+    - acei_arb
+    - aldosterone_antag
+    - statin
+  condition_flags: []
+  extra_smd_cols: []
+
+endpoint:
+  primary:
+    name: copd_exacerbation
+    followup_days: 365            # 52-week primary analysis
+    censor: administrative
+    components:
+      - type: inpatient_icd       # Moderate-severe COPD exacerbation (hospitalization)
+        codes: [J44]
+        char: 3
+        visit_concept_ids: [9201, 262]
+  proxy_note: >
+    Primary endpoint: annual rate of moderate-severe COPD exacerbations. Proxied by
+    inpatient J44. Outpatient exacerbations (antibiotic/OCS prescriptions) not
+    captured in ICD data. Triple ICS/LAMA/LABA vs dual LAMA/LABA — no placebo
+    proxy needed. Emulation=false in RCT-DUPLICATE.
+
+ecg:
+  window_days: 89
+  window_mode: before
+  pool_window_days: 365
+
+feasibility:
+  min_n_per_arm: 50

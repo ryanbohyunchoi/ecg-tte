@@ -1,0 +1,80 @@
+# HORIZON-PFT — Health Outcomes and Reduced Incidence with Zoledronic Acid Once
+# Yearly–Pivotal Fracture Trial
+# Source: Black DM et al. "Once-Yearly Zoledronic Acid for Treatment of
+# Postmenopausal Osteoporosis." N Engl J Med. 2007;356(18):1809-1822.
+
+trial:
+  key: horizon_pft
+  name: HORIZON-PFT
+  full_name: "Health Outcomes and Reduced Incidence with Zoledronic Acid Once Yearly–Pivotal Fracture Trial"
+  citation: "Black DM et al., N Engl J Med 2007;356:1809-1822"
+  published_hr: 0.59
+  published_hr_ci: [0.42, 0.83]
+  rct_duplicate_success: true
+
+design:
+  type: two_active_drug
+  index_definition: first_ever_arm_dispense
+  washout_days: 365
+
+arms:
+  - name: zoledronic_acid
+    role: treated
+    # Zoledronic acid 5mg IV yearly (RECLAST/ZOMETA for osteoporosis)
+    keywords: [ZOLEDRONIC, ZOMETA, RECLAST, ACLASTA]
+  - name: oral_bisphosphonate
+    role: control
+    # Active comparator proxy for placebo: oral bisphosphonate
+    keywords: [ALENDRONATE, FOSAMAX, RISEDRONATE, ACTONEL, IBANDRONATE, BONIVA]
+
+inclusion:
+  age_min: 18
+
+exclusion:
+  icd: []
+  drug: []
+
+covariates:
+  comorbidities:
+    - copd
+    - htn
+    - dm
+    - cad_mi
+    - afib
+    - hyperlipidemia
+    - stroke
+  medications_90d:
+    - loop_diuretic
+    - acei_arb
+    - aldosterone_antag
+    - statin
+  condition_flags: []
+  extra_smd_cols: []
+
+endpoint:
+  primary:
+    name: fracture_composite
+    followup_days: 1095           # 3-year primary analysis
+    censor: administrative
+    components:
+      - type: condition_icd       # Hip fracture
+        codes: [M16, S72]
+        char: 3
+      - type: condition_icd       # Vertebral fracture (clinical)
+        codes: [M48, S12, S22, S32]
+        char: 3
+  proxy_note: >
+    Active comparator oral bisphosphonate (alendronate/risedronate) substituted for
+    placebo. HORIZON-PFT was placebo-controlled; EHR emulation uses bisphosphonate
+    class comparison. Primary endpoint: vertebral (morphometric) + hip fracture composite.
+    ICD codes M16 (hip osteoarthritis/replacement) used as proxy for hip fracture;
+    S72 (hip fracture) preferred. Morphometric vertebral fractures not captured in
+    ICD; clinical vertebral fractures via M48/S codes used.
+
+ecg:
+  window_days: 89
+  window_mode: before
+  pool_window_days: 365
+
+feasibility:
+  min_n_per_arm: 50

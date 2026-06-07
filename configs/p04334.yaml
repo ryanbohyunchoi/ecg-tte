@@ -1,0 +1,83 @@
+# P04334 — Mometasone Furoate/Formoterol vs Formoterol Asthma Trial
+# (Study P04334, also referenced as MF/F SMART study component)
+# Source: Weinstein SF et al. "Efficacy and safety of mometasone furoate/formoterol
+# fumarate fixed-dose combination versus formoterol in subjects with moderate-to-severe
+# asthma." J Allergy Clin Immunol. 2010;125(1):72-80.
+
+trial:
+  key: p04334
+  name: P04334
+  full_name: "Mometasone Furoate/Formoterol vs Formoterol Alone — Asthma Exacerbation Trial (P04334)"
+  citation: "Weinstein SF et al., J Allergy Clin Immunol 2010;125:72-80"
+  published_hr: 0.56
+  published_hr_ci: [0.44, 0.72]
+  rct_duplicate_success: false
+
+design:
+  type: two_active_drug
+  index_definition: first_ever_arm_dispense
+  washout_days: 365
+
+arms:
+  - name: mometasone_formoterol
+    role: treated
+    # ICS/LABA combination: mometasone furoate + formoterol (DULERA)
+    keywords: [MOMETASONE, DULERA, ZENHALE]
+  - name: formoterol
+    role: control
+    # LABA alone: formoterol
+    keywords: [FORMOTEROL, FORADIL, PERFOROMIST, OXEZE]
+
+inclusion:
+  age_min: 18
+  required_icd:
+    - name: asthma_icd_ever
+      codes: [J45]
+      lookback_days: 1825
+      char: 3
+
+exclusion:
+  icd: []
+  drug: []
+
+covariates:
+  comorbidities:
+    - copd
+    - htn
+    - dm
+    - cad_mi
+    - afib
+    - hyperlipidemia
+    - stroke
+  medications_90d:
+    - loop_diuretic
+    - acei_arb
+    - aldosterone_antag
+    - statin
+  condition_flags: []
+  extra_smd_cols: []
+
+endpoint:
+  primary:
+    name: asthma_exacerbation
+    followup_days: 365            # 52-week primary analysis
+    censor: administrative
+    components:
+      - type: inpatient_icd       # Serious asthma exacerbation (hospitalization)
+        codes: [J45]
+        char: 3
+        visit_concept_ids: [9201, 262]
+  proxy_note: >
+    Primary endpoint was time to first asthma exacerbation (requiring systemic
+    corticosteroids, ED visit, or hospitalization). Proxied here by serious
+    asthma events requiring inpatient care (J45 inpatient). Outpatient
+    exacerbations not captured. ICS/LABA (mometasone/formoterol) vs LABA alone
+    (formoterol) — no placebo proxy needed. Emulation=false in RCT-DUPLICATE.
+
+ecg:
+  window_days: 89
+  window_mode: before
+  pool_window_days: 365
+
+feasibility:
+  min_n_per_arm: 50

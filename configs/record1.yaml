@@ -1,0 +1,84 @@
+# RECORD1 — Regulation of Coagulation in Major Orthopaedic Surgery Reducing the
+# Risk of DVT and PE — Study 1
+# Source: Eriksson BI et al. "Rivaroxaban versus Enoxaparin for Thromboprophylaxis
+# after Hip Arthroplasty." N Engl J Med. 2008;358(26):2765-2775.
+
+trial:
+  key: record1
+  name: RECORD1
+  full_name: "Regulation of Coagulation in Major Orthopaedic Surgery Reducing the Risk of DVT and PE — Study 1 (Total Hip Arthroplasty)"
+  citation: "Eriksson BI et al., N Engl J Med 2008;358:2765-2775"
+  published_hr: 0.25
+  published_hr_ci: [0.14, 0.47]
+  rct_duplicate_success: true
+
+design:
+  type: two_active_drug
+  index_definition: first_ever_arm_dispense
+  washout_days: 365
+
+arms:
+  - name: rivaroxaban
+    role: treated
+    keywords: [RIVAROXABAN, XARELTO]
+  - name: enoxaparin
+    role: control
+    # Enoxaparin 40mg SC once daily (post-THA prophylaxis)
+    keywords: [ENOXAPARIN, DALTEPARIN, TINZAPARIN, LOVENOX]
+
+inclusion:
+  age_min: 18
+  required_icd:
+    # Post total hip arthroplasty — use procedure proxy via ICD
+    - name: tha_procedure_ever
+      codes: [Z966]              # ICD Z96.6x = hip joint implant
+      lookback_days: 365
+      char: 4
+
+exclusion:
+  icd: []
+  drug: []
+
+covariates:
+  comorbidities:
+    - copd
+    - htn
+    - dm
+    - cad_mi
+    - afib
+    - hyperlipidemia
+    - stroke
+  medications_90d:
+    - loop_diuretic
+    - acei_arb
+    - aldosterone_antag
+    - statin
+  condition_flags: []
+  extra_smd_cols: []
+
+endpoint:
+  primary:
+    name: vte_prophylaxis_composite
+    followup_days: 35            # 35-day primary composite per trial protocol
+    censor: administrative
+    components:
+      - type: condition_icd       # Any DVT
+        codes: [I80]
+        char: 3
+      - type: condition_icd       # Non-fatal PE
+        codes: [I26]
+        char: 3
+      - type: mortality           # All-cause death (within 35 days post-THA)
+  proxy_note: >
+    Primary composite: any DVT + non-fatal PE + all-cause death within 35 days of THA.
+    All-cause mortality used as death component. Direct active vs active comparison
+    (rivaroxaban 10mg vs enoxaparin 40mg) — no placebo proxy needed. Short 35-day
+    follow-up window; EHR feasibility limited by short event window.
+
+ecg:
+  window_days: 89
+  window_mode: before
+  pool_window_days: 365
+
+feasibility:
+  min_n_per_arm: 50

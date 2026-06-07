@@ -1,0 +1,85 @@
+# DAPA-CKD — Dapagliflozin and Prevention of Adverse Outcomes in Chronic Kidney Disease
+# Source: Heerspink HJL et al. "Dapagliflozin in Patients with Chronic Kidney Disease."
+# N Engl J Med. 2020;383(15):1436-1446.
+
+trial:
+  key: dapa_ckd
+  name: DAPA-CKD
+  full_name: "Dapagliflozin and Prevention of Adverse Outcomes in Chronic Kidney Disease"
+  citation: "Heerspink HJL et al., N Engl J Med 2020;383:1436-1446"
+  published_hr: 0.61
+  published_hr_ci: [0.51, 0.72]
+  rct_duplicate_success: false
+
+design:
+  type: two_active_drug
+  index_definition: first_ever_arm_dispense
+  washout_days: 365
+
+arms:
+  - name: dapagliflozin
+    role: treated
+    keywords: [DAPAGLIFLOZIN, FARXIGA, FORXIGA]
+  - name: dpp4i
+    role: control
+    # Active comparator proxy for placebo: DPP4i class (used in CKD-compatible doses)
+    keywords: [SITAGLIPTIN, SAXAGLIPTIN, LINAGLIPTIN, ALOGLIPTIN, VILDAGLIPTIN]
+
+inclusion:
+  age_min: 18
+  required_icd:
+    # CKD (stages 2-4)
+    - name: ckd_icd_ever
+      codes: [N18]
+      lookback_days: 1825
+      char: 3
+
+exclusion:
+  icd: []
+  drug: []
+
+covariates:
+  comorbidities:
+    - copd
+    - htn
+    - dm
+    - cad_mi
+    - afib
+    - hyperlipidemia
+    - stroke
+  medications_90d:
+    - loop_diuretic
+    - acei_arb
+    - aldosterone_antag
+    - statin
+  condition_flags: []
+  extra_smd_cols: []
+
+endpoint:
+  primary:
+    name: kidney_cv_composite
+    followup_days: 730            # ~2.4 years median follow-up
+    censor: administrative
+    components:
+      - type: mortality           # CV death + kidney death (proxied by all-cause death)
+      - type: inpatient_icd       # ESKD hospitalization
+        codes: [N185, N186]
+        char: 4
+        visit_concept_ids: [9201, 262]
+      - type: condition_icd       # Sustained eGFR decline proxy (ESKD codes)
+        codes: [N185, N186, Z992]
+        char: 4
+  proxy_note: >
+    Primary composite: sustained ≥50% eGFR decline + ESKD + CV death + kidney death.
+    Sustained eGFR decline not directly observable as event; ESKD ICD codes (N18.5/N18.6)
+    and dialysis/transplant codes (Z99.2) used as proxy. CV and kidney death proxied by
+    all-cause mortality. Active comparator DPP4i substituted for placebo arm.
+    Emulation=false in RCT-DUPLICATE.
+
+ecg:
+  window_days: 89
+  window_mode: before
+  pool_window_days: 365
+
+feasibility:
+  min_n_per_arm: 50

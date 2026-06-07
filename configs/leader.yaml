@@ -1,0 +1,82 @@
+# LEADER — Liraglutide Effect and Action in Diabetes: Evaluation of Cardiovascular
+# Outcome Results
+# Source: Marso SP et al. "Liraglutide and Cardiovascular Outcomes in Type 2 Diabetes."
+# N Engl J Med. 2016;375(4):311-322.
+
+trial:
+  key: leader
+  name: LEADER
+  full_name: "Liraglutide Effect and Action in Diabetes: Evaluation of Cardiovascular Outcome Results"
+  citation: "Marso SP et al., N Engl J Med 2016;375:311-322"
+  published_hr: 0.87
+  published_hr_ci: [0.78, 0.97]
+  rct_duplicate_success: true
+
+design:
+  type: two_active_drug
+  index_definition: first_ever_arm_dispense
+  washout_days: 365
+
+arms:
+  - name: liraglutide
+    role: treated
+    keywords: [LIRAGLUTIDE, VICTOZA, SAXENDA]
+  - name: dpp4i
+    role: control
+    # Active comparator proxy for placebo arm: DPP4 inhibitor class
+    keywords: [SITAGLIPTIN, SAXAGLIPTIN, LINAGLIPTIN, ALOGLIPTIN, VILDAGLIPTIN]
+
+inclusion:
+  age_min: 18
+  required_icd:
+    # T2D proxy
+    - name: dm_icd_ever
+      codes: [E11]
+      lookback_days: 1825
+      char: 3
+
+exclusion:
+  icd: []
+  drug: []
+
+covariates:
+  comorbidities:
+    - copd
+    - htn
+    - dm
+    - cad_mi
+    - afib
+    - hyperlipidemia
+    - stroke
+  medications_90d:
+    - loop_diuretic
+    - acei_arb
+    - aldosterone_antag
+    - statin
+  condition_flags: []
+  extra_smd_cols: []
+
+endpoint:
+  primary:
+    name: mace_3p
+    followup_days: 1700           # ~56 months median follow-up
+    censor: administrative
+    components:
+      - type: mortality           # CV death proxy (all-cause death; no cause in death table)
+      - type: condition_icd       # MI
+        codes: [I21, I22]
+        char: 3
+      - type: condition_icd       # Stroke (ischemic + hemorrhagic)
+        codes: [I63, I64, G45]
+        char: 3
+  proxy_note: >
+    CV death endpoint proxied by all-cause mortality (Yale death table is date-only,
+    no cause_concept_id). Active comparator DPP4i substituted for placebo arm.
+
+ecg:
+  window_days: 89
+  window_mode: before
+  pool_window_days: 365
+
+feasibility:
+  min_n_per_arm: 50
