@@ -324,6 +324,7 @@ def run_feasibility(
         echo = load_echo_meta(echo_meta, mrns=pool_mrns)
         report["ef_coverage"] = _ef_coverage(echo, arm_df, ef_lb)
     except Exception as e:
+        print(f"  [{trial_key}] WARNING: echo meta load failed: {e}")
         report["ef_coverage"] = {"error": str(e)}
 
     # ── 6. ECG coverage (strict window) ──────────────────────────────────────
@@ -332,17 +333,21 @@ def run_feasibility(
         ecg_meta_df = load_ecg_meta(ecg_meta, mrns=pool_mrns)
         report["ecg_coverage"] = _ecg_coverage(ecg_meta_df, arm_df, window_days=ecg_win)
     except Exception as e:
+        print(f"  [{trial_key}] WARNING: ECG meta load failed: {e}")
         report["ecg_coverage"] = {"error": str(e)}
 
     # GO/NO-GO: ECG coverage
     ecg_cov = report.get("ecg_coverage", {})
-    ecg_pct = ecg_cov.get("pct", 0)
-    if ecg_pct < 5:
-        report["nogo_reasons"].append(
-            f"ecg_coverage_too_low: {ecg_pct:.1f}% within {ecg_win}d window"
-        )
+    if "error" in ecg_cov:
+        report["nogo_reasons"].append(f"ecg_load_error: {ecg_cov['error']}")
     else:
-        report["go_reasons"].append(f"ecg_coverage_ok: {ecg_pct:.1f}%")
+        ecg_pct = ecg_cov.get("pct", 0)
+        if ecg_pct < 5:
+            report["nogo_reasons"].append(
+                f"ecg_coverage_too_low: {ecg_pct:.1f}% within {ecg_win}d window"
+            )
+        else:
+            report["go_reasons"].append(f"ecg_coverage_ok: {ecg_pct:.1f}%")
 
     # ── 7. Endpoint event counts ──────────────────────────────────────────────
     print(f"  [{trial_key}] Loading death …")
@@ -507,10 +512,16 @@ def main() -> None:
             if name != "error":
                 print(f"    n_{name} = {n:,}")
         ecg = report.get("ecg_coverage", {})
-        print(f"    ECG within {ecg.get('window_days','')}d: "
-              f"{ecg.get('pct','')}% ({ecg.get('n_with_ecg_in_window','')})")
+        if "error" in ecg:
+            print(f"    ECG: ERROR — {ecg['error']}")
+        else:
+            print(f"    ECG within {ecg.get('window_days','')}d: "
+                  f"{ecg.get('pct','')}% ({ecg.get('n_with_ecg_in_window','')})")
         ef = report.get("ef_coverage", {})
-        print(f"    EF coverage: {ef.get('pct','')}% ({ef.get('n_with_ef','')})")
+        if "error" in ef:
+            print(f"    EF: ERROR — {ef['error']}")
+        else:
+            print(f"    EF coverage: {ef.get('pct','')}% ({ef.get('n_with_ef','')})")
         ev = report.get("event_counts", {})
         print(f"    Events (all-cause death): {ev.get('n_events','')} "
               f"({ev.get('crude_rate','')}%)")
