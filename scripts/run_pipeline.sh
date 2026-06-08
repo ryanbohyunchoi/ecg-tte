@@ -66,7 +66,7 @@ for cfg in "${CONFIG_FILES[@]}"; do
         verdict="GO"
     else
         echo "  [stage0] feasibility check → $log"
-        python scripts/stage0_feasibility.py \
+        python -u scripts/stage0_feasibility.py \
             --config "$cfg" \
             "${COMMON_ARGS[@]}" \
             --output-dir "$FEASIBILITY_DIR" \
@@ -84,7 +84,7 @@ for cfg in "${CONFIG_FILES[@]}"; do
     if [[ "$verdict" == "GO" ]]; then
         echo "  [stage0] GO — launching stage1"
         (( GO_COUNT++ )) || true
-        python scripts/stage1_build_pool.py \
+        python -u scripts/stage1_build_pool.py \
             --config "$cfg" \
             "${COMMON_ARGS[@]}" \
             --output-root "$OUTPUT_ROOT" \
