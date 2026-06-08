@@ -439,21 +439,54 @@ def load_procedure_occurrence(
 
 def load_drug_master(drug_master_path: str,
                      mrns: Optional[set] = None) -> pd.DataFrame:
-    dm = pd.read_parquet(drug_master_path)
-    dm["MRN"]        = dm["MRN"].astype(str).str.strip()
-    dm["drug_upper"] = dm["drug_name"].astype(str).str.upper()
-    dm["_date"]      = pd.to_datetime(
-        dm.get("order_date", dm.get("start_date", pd.NaT)), errors="coerce"
-    )
+    import pyarrow.parquet as pq
+
+    raw_schema  = pq.read_schema(drug_master_path)
+    avail       = set(raw_schema.names)
+    avail_lower = {c.lower(): c for c in avail}
+
+    REQUIRED = ["MRN", "drug_name"]
+    OPTIONAL = ["order_date", "start_date", "end_date", "discontinue_date",
+                "discontinue_reason", "order_status", "frequency", "dose", "dose_unit"]
+
+    # Case-insensitive lookup for required cols
+    cols_to_read = []
+    for c in REQUIRED:
+        match = avail_lower.get(c.lower())
+        if match:
+            cols_to_read.append(match)
+    for c in OPTIONAL:
+        match = avail_lower.get(c.lower())
+        if match:
+            cols_to_read.append(match)
+
+    dm = pd.read_parquet(drug_master_path, columns=cols_to_read)
+    dm.columns = [c.strip() for c in dm.columns]
+
+    # Normalise MRN + drug_name regardless of original case
+    mrn_col  = next((c for c in dm.columns if c.lower() == "mrn"), None)
+    drug_col = next((c for c in dm.columns if c.lower() == "drug_name"), None)
+    if mrn_col is None or drug_col is None:
+        raise ValueError(f"drug_master missing MRN or drug_name. Found: {list(dm.columns)}")
+
+    dm["MRN"]        = dm[mrn_col].astype(str).str.strip()
+    dm["drug_upper"] = dm[drug_col].astype(str).str.upper()
+
+    date_col = next((c for c in dm.columns if c.lower() == "order_date"),
+                    next((c for c in dm.columns if c.lower() == "start_date"), None))
+    dm["_date"] = pd.to_datetime(dm[date_col], errors="coerce") if date_col else pd.NaT
+
     if mrns is not None:
         dm = dm[dm["MRN"].isin(mrns)]
+
     keep = ["MRN", "drug_upper", "_date"]
     for col in ["end_date", "discontinue_date", "discontinue_reason",
                 "order_status", "frequency", "dose", "dose_unit"]:
-        if col in dm.columns:
-            keep.append(col)
+        orig = avail_lower.get(col.lower())
+        if orig and orig in dm.columns:
+            keep.append(orig)
             if "date" in col:
-                dm[col] = pd.to_datetime(dm[col], errors="coerce")
+                dm[orig] = pd.to_datetime(dm[orig], errors="coerce")
     return dm[keep].dropna(subset=["_date"])
 
 
@@ -549,8 +582,27 @@ def load_death(death_parquet: str, person_ids: Optional[set] = None) -> pd.DataF
 def parse_person_table(person_parquet: str) -> pd.DataFrame:
     """
     Load OMOP person table; extract MRN, person_id, birth_date, sex, race_black.
+    Reads only needed columns to minimise memory.
     """
-    person = pd.read_parquet(person_parquet)
+    import pyarrow.parquet as pq
+
+    raw_schema = pq.read_schema(person_parquet)
+    avail_lower = {c.lower().strip(): c for c in raw_schema.names}
+
+    WANT = [
+        "person_id",
+        "birth_datetime", "year_of_birth",
+        "gender_concept_id", "gender_source_value",
+        "race_concept_id", "race_source_value",
+    ]
+    # MRN-like columns
+    mrn_candidates = [orig for low, orig in avail_lower.items()
+                      if "mrn" in low or "source_value" in low]
+    cols_to_read = list({
+        avail_lower[c] for c in WANT if c in avail_lower
+    } | set(mrn_candidates))
+
+    person = pd.read_parquet(person_parquet, columns=cols_to_read)
     person.columns = [c.lower().strip() for c in person.columns]
     person = person.loc[:, ~person.columns.duplicated()]
 
