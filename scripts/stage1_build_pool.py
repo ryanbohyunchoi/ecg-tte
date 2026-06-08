@@ -237,12 +237,10 @@ def main() -> None:
         print(f"  [smoke test] limited to {len(person):,} persons")
     print(f"  {len(person):,} persons loaded")
 
-    # ── Drug master (full) ────────────────────────────────────────────────────
+    # ── Drug master ───────────────────────────────────────────────────────────
     print("\nLoading drug master …")
-    dm_full = load_drug_master(args.drug_master, mrns=None)
-    if args.limit_persons:
-        person_mrns = set(person["MRN"].astype(str))
-        dm_full = dm_full[dm_full["MRN"].isin(person_mrns)]
+    person_mrns = set(person["MRN"].astype(str))
+    dm_full = load_drug_master(args.drug_master, mrns=person_mrns)
     print(f"  {len(dm_full):,} drug records, {dm_full['MRN'].nunique():,} unique patients")
 
     # ── Arm identification ─────────────────────────────────────────────────────

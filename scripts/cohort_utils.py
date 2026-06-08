@@ -439,17 +439,21 @@ def load_procedure_occurrence(
 
 def load_drug_master(drug_master_path: str,
                      mrns: Optional[set] = None) -> pd.DataFrame:
+    """
+    Load drug master, filtering to mrns during load (chunked) to minimise peak RAM.
+    Reads one 500k-row batch at a time; only matching rows accumulate in memory.
+    """
     import pyarrow.parquet as pq
 
     raw_schema  = pq.read_schema(drug_master_path)
-    avail       = set(raw_schema.names)
-    avail_lower = {c.lower(): c for c in avail}
+    # Strip whitespace from schema names for consistent lookup
+    avail_lower = {c.lower().strip(): c.strip() for c in raw_schema.names}
 
     REQUIRED = ["MRN", "drug_name"]
     OPTIONAL = ["order_date", "start_date", "end_date", "discontinue_date",
                 "discontinue_reason", "order_status", "frequency", "dose", "dose_unit"]
+    OPTIONAL_DATE = {"end_date", "discontinue_date"}
 
-    # Case-insensitive lookup for required cols
     cols_to_read = []
     for c in REQUIRED:
         match = avail_lower.get(c.lower())
@@ -460,34 +464,56 @@ def load_drug_master(drug_master_path: str,
         if match:
             cols_to_read.append(match)
 
-    dm = pd.read_parquet(drug_master_path, columns=cols_to_read)
-    dm.columns = [c.strip() for c in dm.columns]
-
-    # Normalise MRN + drug_name regardless of original case
-    mrn_col  = next((c for c in dm.columns if c.lower() == "mrn"), None)
-    drug_col = next((c for c in dm.columns if c.lower() == "drug_name"), None)
+    # Detect column roles from schema — no data read yet
+    mrn_col  = avail_lower.get("mrn")
+    drug_col = avail_lower.get("drug_name")
     if mrn_col is None or drug_col is None:
-        raise ValueError(f"drug_master missing MRN or drug_name. Found: {list(dm.columns)}")
+        raise ValueError(f"drug_master missing MRN or drug_name. Found: {list(avail_lower.values())}")
 
-    dm["MRN"]        = dm[mrn_col].astype(str).str.strip()
-    dm["drug_upper"] = dm[drug_col].astype(str).str.upper()
+    date_col = avail_lower.get("order_date") or avail_lower.get("start_date")
 
-    date_col = next((c for c in dm.columns if c.lower() == "order_date"),
-                    next((c for c in dm.columns if c.lower() == "start_date"), None))
-    dm["_date"] = pd.to_datetime(dm[date_col], errors="coerce") if date_col else pd.NaT
+    optional_keep: list[str] = [
+        avail_lower[c] for c in ["end_date", "discontinue_date", "discontinue_reason",
+                                   "order_status", "frequency", "dose", "dose_unit"]
+        if c in avail_lower
+    ]
 
-    if mrns is not None:
-        dm = dm[dm["MRN"].isin(mrns)]
+    mrns_set = {str(m) for m in mrns} if mrns is not None else None
 
-    keep = ["MRN", "drug_upper", "_date"]
-    for col in ["end_date", "discontinue_date", "discontinue_reason",
-                "order_status", "frequency", "dose", "dose_unit"]:
-        orig = avail_lower.get(col.lower())
-        if orig and orig in dm.columns:
-            keep.append(orig)
-            if "date" in col:
-                dm[orig] = pd.to_datetime(dm[orig], errors="coerce")
-    return dm[keep].dropna(subset=["_date"])
+    chunks: list[pd.DataFrame] = []
+    for batch in pq.ParquetFile(drug_master_path).iter_batches(
+        batch_size=500_000, columns=cols_to_read
+    ):
+        chunk = batch.to_pandas()
+        chunk.columns = [c.strip() for c in chunk.columns]
+
+        chunk["MRN"]        = chunk[mrn_col].astype(str).str.strip()
+        chunk["drug_upper"] = chunk[drug_col].astype(str).str.upper()
+        chunk["_date"]      = (pd.to_datetime(chunk[date_col], errors="coerce")
+                               if date_col else pd.NaT)
+
+        if mrns_set is not None:
+            chunk = chunk[chunk["MRN"].isin(mrns_set)]
+
+        chunk = chunk.dropna(subset=["_date"])
+        if chunk.empty:
+            continue
+
+        keep = ["MRN", "drug_upper", "_date"]
+        for c, orig in [(c, avail_lower[c]) for c in ["end_date", "discontinue_date",
+                         "discontinue_reason", "order_status", "frequency",
+                         "dose", "dose_unit"] if c in avail_lower]:
+            if orig in chunk.columns:
+                if c in OPTIONAL_DATE:
+                    chunk[orig] = pd.to_datetime(chunk[orig], errors="coerce")
+                keep.append(orig)
+
+        chunks.append(chunk[keep])
+
+    if not chunks:
+        return pd.DataFrame(columns=["MRN", "drug_upper", "_date"] + optional_keep)
+
+    return pd.concat(chunks, ignore_index=True)
 
 
 def load_ecg_meta(ecg_meta_path: str, mrns: Optional[set] = None) -> pd.DataFrame:

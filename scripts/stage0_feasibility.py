@@ -275,9 +275,8 @@ def run_feasibility(
     report["n_persons_sampled"] = len(person)
 
     print(f"  [{trial_key}] Loading drug master …")
-    dm = load_drug_master(drug_master, mrns=None)
     person_mrns = set(person["MRN"].astype(str))
-    dm = dm[dm["MRN"].isin(person_mrns)]
+    dm = load_drug_master(drug_master, mrns=person_mrns)
 
     # ── 3. Arm identification ─────────────────────────────────────────────────
     print(f"  [{trial_key}] Identifying arm initiators …")
