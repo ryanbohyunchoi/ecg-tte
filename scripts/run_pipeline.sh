@@ -9,9 +9,9 @@ set -euo pipefail
 # ── Paths (edit these) ────────────────────────────────────────────────────────
 PERSON_PARQUET="/home/rbc58/mnt/ascvd/omop_database/person/person.parquet"
 CONDITION_DIR="/home/rbc58/mnt/ascvd/omop_database/condition_occurrence"
-DRUG_MASTER="/home/rbc58/mnt/ecg-tte/drug_master.parquet"
-ECHO_META="/home/rbc58/mnt/ecg-tte/metadata/echo_accession_number.parquet"
-ECG_META="/home/rbc58/mnt/ecg-tte/metadata/ecg_metadata.parquet"
+DRUG_MASTER="/mnt/raid0/rbc58/mm_vhd/drug/drug_master.parquet"
+ECHO_META="/mnt/raid0/rbc58/mm_vhd/metadata/echo_accession_number.parquet"
+ECG_META="/mnt/raid0/rbc58/mm_vhd/metadata/ecg_metadata.parquet"
 DEATH_PARQUET="/home/rbc58/mnt/ascvd/omop_database/death/death.parquet"
 OUTPUT_ROOT="/home/rbc58/mnt/ecg-tte"
 FEASIBILITY_DIR="/home/rbc58/mnt/ecg-tte/_feasibility"
