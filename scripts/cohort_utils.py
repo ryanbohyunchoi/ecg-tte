@@ -632,7 +632,11 @@ def parse_person_table(person_parquet: str) -> pd.DataFrame:
     person.columns = [c.lower().strip() for c in person.columns]
     person = person.loc[:, ~person.columns.duplicated()]
 
-    mrn_col = next((c for c in person.columns if "mrn" in c or "source_value" in c), None)
+    # Prefer explicit MRN columns (e.g. PAT_MRN_ID) over generic source_value columns
+    # (gender_source_value / race_source_value also match "source_value" but are not MRNs)
+    mrn_col = (next((c for c in person.columns if "mrn" in c), None)
+               or next((c for c in person.columns if c == "person_source_value"), None)
+               or next((c for c in person.columns if "source_value" in c), None))
     if mrn_col is None:
         raise ValueError(f"person table has no MRN-like column. Found: {list(person.columns)}")
     person["MRN"] = person[mrn_col].astype(str).str.strip()
