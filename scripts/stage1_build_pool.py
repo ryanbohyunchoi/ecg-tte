@@ -191,6 +191,10 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--limit-persons",        type=int, default=None,
                    help="Limit to first N persons (smoke test only)")
     p.add_argument("--seed",                 type=int, default=42)
+    p.add_argument("--wandb", action="store_true",
+                   help="Log pool build stats to Weights & Biases")
+    p.add_argument("--wandb-project", default="ecg-tte",
+                   help="W&B project name (default: ecg-tte)")
     return p.parse_args()
 
 
@@ -589,6 +593,28 @@ def main() -> None:
     print(f"  Output           : {out_dir}")
     print(f"{'='*60}")
     print("\nNext: run stage2_embed.py to embed pool ECGs, then stage3_filter.py")
+
+    if args.wandb:
+        try:
+            import wandb
+            wandb.init(
+                project=args.wandb_project,
+                name=f"stage1_{trial_key}",
+                group="stage1_build_pool",
+                config={"trial_key": trial_key, "trial_name": trial_name},
+            )
+            wandb.summary.update({
+                "pool_rows":           len(pool),
+                "ecg_candidates_rows": len(ecg_cands),
+                "n_events_death":      int(pool["event_death"].sum()),
+                "n_events_primary":    int(pool["event_primary"].sum() if "event_primary" in pool.columns else 0),
+                "n_have_ecg":          int(pool["ecg_file_id"].notna().sum()),
+                "n_have_ef":           int(pool["ef_at_index"].notna().sum()),
+                **arm_counts,
+            })
+            wandb.finish()
+        except Exception as e:
+            print(f"  [wandb] WARNING: logging failed: {e}")
 
 
 if __name__ == "__main__":

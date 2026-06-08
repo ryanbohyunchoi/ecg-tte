@@ -19,14 +19,16 @@ LOG_DIR="/home/rbc58/mnt/ecg-tte/_logs"
 
 CONFIG_DIR="configs"
 SKIP_STAGE0=0   # set to 1 to skip feasibility and run stage1 for all trials
+WANDB_FLAG=""   # set to --wandb to enable W&B logging
 
 # ── Parse args ────────────────────────────────────────────────────────────────
 TRIALS=()
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --config-dir) CONFIG_DIR="$2"; shift 2 ;;
-        --trials)     read -ra TRIALS <<< "$2"; shift 2 ;;
+        --config-dir)  CONFIG_DIR="$2"; shift 2 ;;
+        --trials)      read -ra TRIALS <<< "$2"; shift 2 ;;
         --skip-stage0) SKIP_STAGE0=1; shift ;;
+        --wandb)       WANDB_FLAG="--wandb"; shift ;;
         *) echo "Unknown arg: $1"; exit 1 ;;
     esac
 done
@@ -70,6 +72,7 @@ for cfg in "${CONFIG_FILES[@]}"; do
             --config "$cfg" \
             "${COMMON_ARGS[@]}" \
             --output-dir "$FEASIBILITY_DIR" \
+            $WANDB_FLAG \
             2>&1 | tee "$log"
 
         json="$FEASIBILITY_DIR/feasibility_${trial}.json"
@@ -88,6 +91,7 @@ for cfg in "${CONFIG_FILES[@]}"; do
             --config "$cfg" \
             "${COMMON_ARGS[@]}" \
             --output-root "$OUTPUT_ROOT" \
+            $WANDB_FLAG \
             2>&1 | tee -a "$log"
         echo "  [stage1] done → $OUTPUT_ROOT/$trial/pool/"
     else

@@ -437,6 +437,10 @@ def parse_args() -> argparse.Namespace:
                    help="Limit to first N persons (smoke test)")
     p.add_argument("--fail-on-nogo", action="store_true",
                    help="Exit non-zero if any trial is NO-GO")
+    p.add_argument("--wandb", action="store_true",
+                   help="Log feasibility results to Weights & Biases")
+    p.add_argument("--wandb-project", default="ecg-tte",
+                   help="W&B project name (default: ecg-tte)")
     return p.parse_args()
 
 
@@ -527,6 +531,23 @@ def main() -> None:
               f"({ev.get('crude_rate','')}%)")
 
         summary_rows.append(_summary_row(report))
+
+        if args.wandb:
+            try:
+                import wandb
+                run = wandb.init(
+                    project=args.wandb_project,
+                    name=f"stage0_{report['trial_key']}",
+                    group="stage0_feasibility",
+                    config={"trial_key": report["trial_key"], "trial_name": report["trial_name"]},
+                    reinit=True,
+                )
+                row = _summary_row(report)
+                wandb.summary.update({k: v for k, v in row.items() if v != ""})
+                wandb.summary["go_nogo"] = report["go_nogo"]
+                wandb.finish()
+            except Exception as e:
+                print(f"  [wandb] WARNING: logging failed: {e}")
 
     # Write/append summary CSV (aggregate-only)
     summary_path = out_dir / "feasibility_summary.csv"
