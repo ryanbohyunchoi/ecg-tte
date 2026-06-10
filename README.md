@@ -150,3 +150,16 @@ The new generic stage1 produces all columns the legacy COMET-specific stage1 pro
 - **`scripts/lint_configs.py`**: New — validates all configs/*.yaml via `validate_config()`.
 - **`configs/`**: New directory with `_schema.md`, `comet.yaml`, and 31 trial configs (all RCT-DUPLICATE trials).
 - **`scripts/stage3_filter.py`**: Added `--cohort-filename` arg (default `comet_cohort.parquet`) for multi-trial output naming.
+
+### 2026-06-10 — Stage 2 multi-GPU + Stage 3/4 generalization, full pipeline run on VERO
+- **`scripts/stage2_embed.py`**: Vendored `MLP` projector into new `scripts/clip_model.py` (fixes `ModuleNotFoundError: models.clip_model` when run from `scripts/`). Added `nn.DataParallel` for multi-GPU.
+- **`scripts/run_stage2.sh`**: New — embeds all 32 trial pools into one shared, fileID-deduped `EMBED_DIR`. Added `--gpu` flag (`CUDA_VISIBLE_DEVICES`, comma-list = DataParallel).
+- **`scripts/run_stage34.sh`**: New — loops Stage 3 (filter) → Stage 4 (comparator ladder + forest plot) over all 32 trials, reading arm names/published HR from `configs/<trial>.yaml`.
+- **`scripts/stage3_filter.py`**: Generalized COMET-only hardcoding that broke non-COMET trials:
+  - `Attrition.log()` now counts per actual `pool["arm"]` value (was hardcoded `carvedilol`/`metoprolol`).
+  - Naive new-user lookback (step 2) now generic over `pool["arm"].unique()` × `prior_<other_arm>_days` (was `prior_meto_days`/`prior_carv_days` only).
+  - New `--require-hfref` flag (default `True`, COMET unchanged) gates the HFrEF inclusion criterion (block 4); non-HF trials set `require-hfref: false`.
+  - Block 8 cardiac exclusions (CCB/other-BB/recent-MI/AV-block/ESRD/hepatic/valvular) now skip with a `NOTE` if the pool lacks the column, instead of `KeyError`.
+  - `filter_manifest.json` / final print now report per-arm counts dynamically instead of `n_carvedilol`/`n_metoprolol`.
+- **`configs/vero.yaml`**: Added `require-hfref: false` (osteoporosis trial — COMET HFrEF criterion N/A).
+- Verified: `bash scripts/run_stage34.sh --trials "vero"` runs Stage 3 + Stage 4 end-to-end on the cluster, producing `comet_cohort.parquet`, `attrition.csv`, `filter_manifest.json`, `results_summary.csv`, `forest.png`. Strict-denominator ECG cohort is small (n=71/674) since VERO is non-cardiac; PSM/ECG-NN/hybrid rungs fail to converge on this trial as expected (n_per_arm ~22-35) — not a pipeline bug.

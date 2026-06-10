@@ -13,8 +13,7 @@ import pandas as pd
 def build_masks(
     cohort: pd.DataFrame,
     emb_df: pd.DataFrame,
-    sparse_covs: list[str],
-    rich_covs: list[str],
+    psm_covs: list[str],
 ) -> dict[str, pd.Series]:
     """
     Return named boolean masks (indexed on cohort.index) for each denominator subgroup.
@@ -24,9 +23,8 @@ def build_masks(
     full                — all rows (always True)
     ecg_available       — has a valid embedding on disk (matched by person_id to emb_df)
     echo_complete       — ef_at_index is non-null
-    psm_sparse_eligible — non-null on every covariate in sparse_covs
-    psm_rich_eligible   — non-null on every covariate in rich_covs
-    intersection_strict — ecg_available & psm_rich_eligible  [headline denominator D]
+    psm_eligible        — non-null on every covariate in psm_covs
+    intersection_strict — ecg_available & psm_eligible  [headline denominator D]
     """
     idx = cohort.index
     full = pd.Series(True, index=idx)
@@ -39,24 +37,18 @@ def build_masks(
     else:
         echo_complete = pd.Series(False, index=idx)
 
-    avail_sp = [c for c in sparse_covs if c in cohort.columns]
-    psm_sparse_eligible = (
-        cohort[avail_sp].notna().all(axis=1) if avail_sp else pd.Series(False, index=idx)
+    avail = [c for c in psm_covs if c in cohort.columns]
+    psm_eligible = (
+        cohort[avail].notna().all(axis=1) if avail else pd.Series(False, index=idx)
     )
 
-    avail_ri = [c for c in rich_covs if c in cohort.columns]
-    psm_rich_eligible = (
-        cohort[avail_ri].notna().all(axis=1) if avail_ri else pd.Series(False, index=idx)
-    )
-
-    intersection_strict = ecg_available & psm_rich_eligible
+    intersection_strict = ecg_available & psm_eligible
 
     return {
         "full":                 full,
         "ecg_available":        ecg_available,
         "echo_complete":        echo_complete,
-        "psm_sparse_eligible":  psm_sparse_eligible,
-        "psm_rich_eligible":    psm_rich_eligible,
+        "psm_eligible":         psm_eligible,
         "intersection_strict":  intersection_strict,
     }
 
@@ -88,7 +80,7 @@ def audit_table(
 
 def missingness_audit(
     cohort: pd.DataFrame,
-    rich_covs: list[str],
+    covs: list[str],
     base_mask: pd.Series,
 ) -> pd.DataFrame:
     """
@@ -97,7 +89,7 @@ def missingness_audit(
     """
     sub = cohort[base_mask]
     rows = []
-    for c in rich_covs:
+    for c in covs:
         if c not in sub.columns:
             rows.append({"covariate": c, "n_present": 0,
                          "n_missing": len(sub), "pct_missing": 100.0})

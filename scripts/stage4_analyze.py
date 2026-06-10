@@ -792,8 +792,6 @@ def main() -> None:
     print(f"{'='*70}")
 
     # Covariate sets (defined early — used by denominator masks and methods)
-    SPARSE_COVS = ["age_at_index", "sex_binary", "race_black"]
-    RICH_COVS   = ["age_at_index", "sex_binary", "race_black", "htn", "dm"]
     if args.no_ef:
         print("  [--no-ef] ef_at_index not included in PSM covariate sets (already excluded)")
     ADJ_COVS = ["age_at_index", "sex_binary", "race_black"]
@@ -805,15 +803,11 @@ def main() -> None:
     SMD_COLS = list(_balance_mod.SMD_COLS)  # local copy — never filtered by _excl
     if _excl:
         print(f"  [--exclude-psm-cols] dropping from PSM/Cox covariate sets (kept in SMD): {_excl}")
-        RICH_COVS   = [c for c in RICH_COVS   if c not in _excl]
-        SPARSE_COVS = [c for c in SPARSE_COVS if c not in _excl]
 
     # --exclude-match-cols: remove from matching/adjustment but NOT from SMD display.
     _excl_match = [c.strip() for c in args.exclude_match_cols.split(",") if c.strip()]
     if _excl_match:
         print(f"  [--exclude-match-cols] dropping from matching/adjustment only (kept in SMD): {_excl_match}")
-        RICH_COVS        = [c for c in RICH_COVS        if c not in _excl_match]
-        SPARSE_COVS      = [c for c in SPARSE_COVS      if c not in _excl_match]
         ADJ_COVS         = [c for c in ADJ_COVS         if c not in _excl_match]
         MATCHED_ADJ_COLS = [c for c in MATCHED_ADJ_COLS if c not in _excl_match]
 
@@ -828,10 +822,7 @@ def main() -> None:
     _structured_base = [
         "age_at_index", "sex_binary", "race_black",
         "afib", "htn", "dm", "cad_mi", "copd", "hyperlipidemia", "stroke",
-        "prior_hf_code_1yr", "ef_at_index",
-        "loop_diuretic", "acei_arb", "aldosterone_antag", "bb_90d", "sglt2i_90d",
-        "gdmt_count", "cci_score",
-        "QRS_Duration", "PR_Interval", "hr_at_index",
+        "prior_hf_code_1yr",
     ]
     STRUCTURED_COVS = [
         c for c in _structured_base
@@ -861,13 +852,13 @@ def main() -> None:
 
     # ── Denominator audit ─────────────────────────────────────────────────────
     print(f"\nBuilding denominator masks …")
-    masks = build_masks(cohort, emb_df, SPARSE_COVS, RICH_COVS)
+    masks = build_masks(cohort, emb_df, STRUCTURED_COVS)
     audit_df = audit_table(cohort, masks, treated_arm=TREATED, control_arm=CONTROL)
     print(f"\n  Denominator audit (relative to full cohort n={len(cohort):,}):")
     print_audit(audit_df)
     audit_df.to_csv(out / "denominator_audit.csv", index=False)
 
-    miss_df = missingness_audit(cohort, RICH_COVS, masks["echo_complete"])
+    miss_df = missingness_audit(cohort, STRUCTURED_COVS, masks["echo_complete"])
     miss_df.to_csv(out / "missingness_audit.csv", index=False)
     print(f"\n  Per-covariate missingness within echo_complete (n={int(masks['echo_complete'].sum()):,}):")
     for _, r in miss_df.iterrows():

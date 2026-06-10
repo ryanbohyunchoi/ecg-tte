@@ -31,4 +31,23 @@ analysis, left as-is.
       pool lacks the COMET-specific cardiac column.
 - [x] vero.yaml: added top-level `require-hfref: false` (osteoporosis trial,
       HFrEF criterion N/A).
-- [ ] Re-run vero stage3+4 on cluster, confirm completion.
+- [x] Re-run vero stage3+4 on cluster — completed end-to-end.
+      n=674, strict D=71 (small, non-cardiac trial). PSM/ECG-NN/hybrid rungs
+      fail to converge (n_per_arm ~22-35) — expected for this trial, not a bug.
+      results_summary.csv + forest.png saved.
+
+## Next
+- [ ] Run `bash scripts/run_stage34.sh` for all 32 trials.
+
+## Round 3: collapse PSM-sparse/PSM-rich into single PSM covariate set
+- [x] stage4_analyze.py: removed SPARSE_COVS/RICH_COVS. New STRUCTURED_COVS
+      (used for Structured PSM + PS+ECG-NN PS-caliper) = 11 covs:
+      age_at_index, sex_binary, race_black, afib, htn, dm, cad_mi, copd,
+      hyperlipidemia, stroke, prior_hf_code_1yr.
+      ADJ_COVS (3, age/sex/race) unchanged — still its own "Adjusted Cox" rung.
+- [x] denominators.py: build_masks(cohort, emb_df, psm_covs) — single list,
+      psm_sparse_eligible/psm_rich_eligible -> psm_eligible;
+      intersection_strict = ecg_available & psm_eligible.
+      missingness_audit() param renamed rich_covs -> covs.
+- [ ] Re-run vero stage3+4, confirm denominator_audit.csv shows psm_eligible
+      (not psm_sparse/rich_eligible) and STRUCTURED_COVS prints as 11.
