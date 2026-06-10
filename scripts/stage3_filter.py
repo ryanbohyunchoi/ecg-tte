@@ -235,6 +235,7 @@ def _merge_yaml(args: argparse.Namespace, config_path: str) -> argparse.Namespac
         flag_str = f"--{k}"
         if flag_str not in cli_provided and key in defaults:
             setattr(args, key, v)
+    args._yaml_cfg = cfg
     return args
 
 
@@ -273,6 +274,18 @@ def main() -> None:
     if args.min_index_date:
         pool = pool[pool["index_date"] >= pd.Timestamp(args.min_index_date)]
         attrition.log(pool, f"Index date >= {args.min_index_date}")
+
+    # ── 1c. Required ICD inclusion (trial population gate, e.g. dm_icd_ever) ──
+    # Computed as columns by stage1_build_pool.py from inclusion.required_icd;
+    # ANDed here. Column-existence-guarded since not every pool has every flag.
+    required_icd = getattr(args, "_yaml_cfg", {}).get("inclusion", {}).get("required_icd", [])
+    for icd_spec in required_icd:
+        col = icd_spec["name"]
+        if col not in pool.columns:
+            print(f"  NOTE: {col} not in pool — required_icd inclusion skipped")
+            continue
+        pool = pool[pool[col] == 1]
+        attrition.log(pool, f"Required ICD: {col}")
 
     # ── 2. Naive new-user lookback ─────────────────────────────────────────────
     # For each arm: no dispense of any OTHER arm's drug in prior lookback_days.
