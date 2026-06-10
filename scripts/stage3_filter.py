@@ -139,6 +139,11 @@ def parse_args() -> argparse.Namespace:
 
     # Inclusion
     inc = p.add_argument_group("Inclusion criteria")
+    inc.add_argument("--require-hfref",  type=lambda s: s.lower() != "false",
+                     default=True,
+                     help="Require HFrEF (EF≤lvef-max OR ICD I50.2x/I50). "
+                          "COMET-specific — non-HF trials should set "
+                          "'require-hfref: false' in their YAML config.")
     inc.add_argument("--lvef-max",       type=float, default=40.0)
     inc.add_argument("--ef-source",      default="echo_or_icd",
                      choices=["echo_or_icd", "echo_only"])
@@ -310,11 +315,13 @@ def main() -> None:
         pool = pool[pool["early_adverse_disc"] == 0]
         attrition.log(pool, "Drop early adverse discontinuation")
 
-    # ── 4. HFrEF inclusion ────────────────────────────────────────────────────
+    # ── 4. HFrEF inclusion (COMET-specific; non-HF trials set require-hfref: false) ──
     # Mirrors PARADIGM: EF ≤ lvef_max OR I50.2x (systolic HF subcoded).
     # Pool has hfref_icd_subcoded_i502_24m (I50.2x, 24m) — nearest available to
     # PARADIGM's 5yr window; falls back to hfref_icd_5y (any I50) if absent.
-    if args.ef_source == "echo_only":
+    if not args.require_hfref:
+        print("  NOTE: require_hfref=False — HFrEF inclusion criterion skipped")
+    elif args.ef_source == "echo_only":
         ef_mask = pool["ef_at_index"].notna() & (pool["ef_at_index"] <= args.lvef_max)
         pool = pool[ef_mask]
         attrition.log(pool, f"HFrEF EF≤{args.lvef_max}% (echo only)")
@@ -323,11 +330,16 @@ def main() -> None:
         if "hfref_icd_subcoded_i502_24m" in pool.columns:
             icd_ok = pool["hfref_icd_subcoded_i502_24m"] == 1
             icd_label = "I50.2x 24m"
-        else:
+        elif "hfref_icd_5y" in pool.columns:
             icd_ok = pool["hfref_icd_5y"] == 1
             icd_label = "I50 5yr"
             print("  NOTE: hfref_icd_subcoded_i502_24m not in pool — "
                   "falling back to hfref_icd_5y (any I50, 5yr)")
+        else:
+            icd_ok = pd.Series(False, index=pool.index)
+            icd_label = "no ICD column"
+            print("  NOTE: no hfref_icd_* column in pool — ICD arm of "
+                  "HFrEF criterion skipped (echo only)")
         pool = pool[echo_ok | icd_ok]
         attrition.log(pool, f"HFrEF EF≤{args.lvef_max}% OR {icd_label} (echo_or_icd)")
 
@@ -389,34 +401,46 @@ def main() -> None:
             )]
             attrition.log(pool, "Metoprolol tartrate only (excl. succinate/Toprol/XL)")
 
-    # ── 8. Exclusions ─────────────────────────────────────────────────────────
-    if args.exclude_ccb:
-        pool = pool[pool["had_ccb_nondihydro_pm30d"] == 0]
-        attrition.log(pool, "Exclude CCB (verapamil/diltiazem ±30d)")
+    # ── 8. Exclusions (COMET-specific cardiac covariates; skipped with NOTE if
+    #      a trial's pool doesn't carry the column) ────────────────────────────
+    def _exclude(flag: bool, cols: list[str], mask_fn, label: str) -> None:
+        nonlocal pool
+        if not flag:
+            return
+        missing = [c for c in cols if c not in pool.columns]
+        if missing:
+            print(f"  NOTE: {', '.join(missing)} not in pool — '{label}' exclusion skipped")
+            return
+        pool = pool[mask_fn(pool)]
+        attrition.log(pool, label)
 
-    if args.exclude_other_bb:
-        pool = pool[pool["had_other_bb_pm30d"] == 0]
-        attrition.log(pool, "Exclude other β-blocker ±30d")
+    _exclude(args.exclude_ccb, ["had_ccb_nondihydro_pm30d"],
+             lambda p: p["had_ccb_nondihydro_pm30d"] == 0,
+             "Exclude CCB (verapamil/diltiazem ±30d)")
 
-    if args.exclude_recent_mi:
-        pool = pool[(pool["recent_mi_acs_60d"] == 0) & (pool["recent_revasc_60d"] == 0)]
-        attrition.log(pool, "Exclude recent MI/ACS/revasc (60d)")
+    _exclude(args.exclude_other_bb, ["had_other_bb_pm30d"],
+             lambda p: p["had_other_bb_pm30d"] == 0,
+             "Exclude other β-blocker ±30d")
 
-    if args.exclude_av_block:
-        pool = pool[pool["av_block_2_3_24m"] == 0]
-        attrition.log(pool, "Exclude 2nd/3rd-degree AV block (24m)")
+    _exclude(args.exclude_recent_mi, ["recent_mi_acs_60d", "recent_revasc_60d"],
+             lambda p: (p["recent_mi_acs_60d"] == 0) & (p["recent_revasc_60d"] == 0),
+             "Exclude recent MI/ACS/revasc (60d)")
 
-    if args.exclude_esrd:
-        pool = pool[pool["esrd_5y"] == 0]
-        attrition.log(pool, "Exclude ESRD/advanced CKD (5yr)")
+    _exclude(args.exclude_av_block, ["av_block_2_3_24m"],
+             lambda p: p["av_block_2_3_24m"] == 0,
+             "Exclude 2nd/3rd-degree AV block (24m)")
 
-    if args.exclude_hepatic_failure:
-        pool = pool[pool["hepatic_failure_5y"] == 0]
-        attrition.log(pool, "Exclude severe hepatic failure (5yr)")
+    _exclude(args.exclude_esrd, ["esrd_5y"],
+             lambda p: p["esrd_5y"] == 0,
+             "Exclude ESRD/advanced CKD (5yr)")
 
-    if args.exclude_valvular:
-        pool = pool[pool["valvular_disease_5y"] == 0]
-        attrition.log(pool, "Exclude valvular heart disease (5yr)")
+    _exclude(args.exclude_hepatic_failure, ["hepatic_failure_5y"],
+             lambda p: p["hepatic_failure_5y"] == 0,
+             "Exclude severe hepatic failure (5yr)")
+
+    _exclude(args.exclude_valvular, ["valvular_disease_5y"],
+             lambda p: p["valvular_disease_5y"] == 0,
+             "Exclude valvular heart disease (5yr)")
 
     # ── 9. ECG selection ──────────────────────────────────────────────────────
     if not ecg_cands.empty:

@@ -17,6 +17,9 @@ design:
   index_definition: first_ever_arm_dispense
   washout_days: 365
 
+# stage3_filter.py CLI overrides (flat keys, hyphenated to match --flag names)
+require-hfref: false   # VERO is osteoporosis, not HF — COMET HFrEF criterion N/A
+
 arms:
   - name: teriparatide
     role: treated

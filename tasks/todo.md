@@ -21,3 +21,14 @@ using their own arm names (e.g. prior_teriparatide_days).
 `--meto-formulation tartrate_only` path (lines ~344-384) still hardcodes
 "metoprolol"/METOPROLOL — only triggers for non-default flag, COMET-only
 analysis, left as-is.
+
+## Round 2: KeyError 'hfref_icd_5y' (vero, after lookback fix)
+- [x] New `--require-hfref` flag (default True, COMET behavior preserved).
+      Block 4 (HFrEF inclusion) skipped when False; also added 3rd fallback
+      (no hfref_icd_* column at all -> ICD arm of criterion = False, NOTE printed).
+- [x] Block 8 exclusions (CCB/other-BB/recent-MI/AV-block/ESRD/hepatic/valvular):
+      now column-existence guarded via `_exclude()` helper, NOTE+skip if
+      pool lacks the COMET-specific cardiac column.
+- [x] vero.yaml: added top-level `require-hfref: false` (osteoporosis trial,
+      HFrEF criterion N/A).
+- [ ] Re-run vero stage3+4 on cluster, confirm completion.
