@@ -20,6 +20,7 @@ LOG_DIR="$OUTPUT_ROOT/_logs"
 CONFIG_DIR="configs"
 BATCH_SIZE=256
 NUM_WORKERS=8
+GPU_ID=""   # e.g. "0" or "1" — sets CUDA_VISIBLE_DEVICES for this run
 
 # ── Parse args ────────────────────────────────────────────────────────────────
 TRIALS=()
@@ -30,9 +31,14 @@ while [[ $# -gt 0 ]]; do
         --output-dir)  EMBED_DIR="$2"; shift 2 ;;
         --ecg-dir)     ECG_DIR="$2"; shift 2 ;;
         --batch-size)  BATCH_SIZE="$2"; shift 2 ;;
+        --gpu)         GPU_ID="$2"; shift 2 ;;
         *) echo "Unknown arg: $1"; exit 1 ;;
     esac
 done
+
+if [[ -n "$GPU_ID" ]]; then
+    export CUDA_VISIBLE_DEVICES="$GPU_ID"
+fi
 
 mkdir -p "$EMBED_DIR" "$LOG_DIR"
 
