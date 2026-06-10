@@ -13,7 +13,18 @@ stage5_meta.py          → cross-trial meta-analysis vs published RCT HRs (NEW,
 ```
 
 ## Current status (2026-06-10)
-Stages 1–4 fully generalized — all 32 trials run through `bash scripts/run_stage34.sh` (loop is now resilient: per-trial failures no longer abort the batch). Latest full run: **OK=27 SKIPPED=0 FAILED=5**. `stage5_meta.py` written + smoke-tested locally, not yet run on cluster.
+Stages 1–4 fully generalized — all 32 trials run through `bash scripts/run_stage34.sh` (loop is now resilient: per-trial failures no longer abort the batch). Latest full run: **OK=27 SKIPPED=0 FAILED=5**. `stage5_meta.py` ran on cluster (25/32 trials, after fixing a matplotlib `tick_labels` boxplot kwarg incompat).
+
+### CRITICAL FIX (just pushed, NOT yet re-run on cluster)
+`inclusion.required_icd` (the disease-population gate, e.g. `dm_icd_ever`,
+`afib_icd_ever`, `ckd_icd_ever`, `prior_hf_code_1yr` for COMET) was computed
+by stage1 as a column but **never filtered** by stage3 — affects 28/32 trial
+configs. Found because dapa_ckd and declare_timi58 (same dapagliflozin-vs-DPP4i
+arm pair, different required_icd) produced bit-identical stage4 results.
+Fixed in `stage3_filter.py` (new step 1c, AND-filters all required_icd cols,
+column-existence-guarded). **Full 32-trial stage3+4 re-run required** —
+results for ~28 trials (incl. validated baseline COMET) will change.
+See `tasks/todo.md` Round 6 for details.
 
 ### Comparator ladder (5 rungs, stage4_analyze.py)
 1. Unadjusted Cox
@@ -91,12 +102,17 @@ cd /home/rbc58/github/ecg-tte
 git pull
 ```
 
-### 2. Diagnose the 4 unknown stage3/4 failures
+### 2. Re-run full 32-trial stage3+4 (required_icd fix — changes ~28 trials' results)
+```bash
+bash scripts/run_stage34.sh
+```
+
+### 3. Diagnose the 4 unknown stage3/4 failures (re-check after step 2 — may change)
 See "Pending failures" command above. Paste tracebacks back for fixes.
 
-### 3. Rebuild d5896 Stage 1 pool + rerun (after config fix, see above)
+### 4. Rebuild d5896 Stage 1 pool + rerun (after config fix, see above)
 
-### 4. Run Stage 5 meta-analysis (once results exist for ≥3 trials)
+### 5. Run Stage 5 meta-analysis (once results exist for ≥3 trials)
 ```bash
 python scripts/stage5_meta.py \
     --output-root /home/rbc58/mnt/ecg-tte \

@@ -118,5 +118,38 @@ Plots: `meta_scatter.png` (5-panel emulated vs published log-HR),
 - [x] Smoke-tested with synthetic 2-trial results_summary.csv (vero+comet):
       correctly skips d5896 (no results yet) and lead2 (published_hr null),
       produces meta_results.csv/meta_summary.csv + 3 PNGs.
-- [ ] Run on cluster once full 32-trial results exist:
-      `python scripts/stage5_meta.py --output-root /home/rbc58/mnt/ecg-tte --config-dir configs --run-name default`
+- [x] Ran on cluster (25/32 trials). Hit `boxplot tick_labels` kwarg error
+      (cluster matplotlib < 3.9) — fixed -> `labels=labels`.
+- [ ] Re-run after Round 6 fix below (results will change for ~28 trials).
+
+## Round 6: CRITICAL — inclusion.required_icd never filtered (stage3)
+Discovered via stage5_meta output: dapa_ckd and declare_timi58 (both
+dapagliflozin-vs-DPP4i arm pairs) produced BIT-IDENTICAL results across
+all 5 ladder rungs (n=234, hr=0.71904747954881... to 16 sig figs).
+
+Root cause: stage1_build_pool.py computes `inclusion.required_icd` flag
+columns (e.g. dm_icd_ever, ckd_icd_ever, afib_icd_ever — the disease
+population gate) but only as columns, never filters the pool. stage3
+never references `required_icd` either — `_merge_yaml` only applies
+flat top-level YAML keys matching argparse dests, and required_icd is
+nested under `inclusion:`. Net effect: the population gate was a no-op
+for ALL 28/32 trials that use it (everything except impact, lead2,
+ontarget, savor_timi — TBD if those use a different gate).
+
+- [x] `_merge_yaml` now stashes the raw cfg dict on `args._yaml_cfg`.
+- [x] New step 1c in stage3_filter.py: AND each
+      `inclusion.required_icd[].name` column == 1 into the filter chain,
+      column-existence-guarded (NOTE+skip if pool lacks the column).
+- [ ] Re-run `bash scripts/run_stage34.sh` for all 32 trials — cohort
+      sizes/results will change for ~28 trials (this is the FIX taking
+      effect, not a regression). COMET (validated baseline,
+      rct_duplicate_success=true) also affected — required_icd=
+      prior_hf_code_1yr (CHF dx in 1yr), previously dead, now applied.
+      Expect COMET cohort to shrink; re-validate against prior COMET
+      numbers (n was ~2418 unadjusted before this fix).
+- [ ] Re-run stage5_meta.py once all 32 done — pearson_r should improve
+      if hypothesis (ECG-NN matching helps) holds on correctly-gated
+      populations.
+- [ ] Diagnose the original 4 unknown stage3/4 failures (impact,
+      ontarget, savor_timi, transcend) — may resolve or change under
+      the new filter.
