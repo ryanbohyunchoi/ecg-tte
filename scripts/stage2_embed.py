@@ -207,6 +207,9 @@ def main() -> None:
     print(f"Device: {device}")
     print("Loading BCL biometric encoder …")
     model = load_bcl_encoder(args.checkpoint, args.ecg_repo_dir, device)
+    if torch.cuda.device_count() > 1:
+        print(f"  Using {torch.cuda.device_count()} GPUs via DataParallel")
+        model = nn.DataParallel(model)
 
     # ── Dataset / loader ──────────────────────────────────────────────────────
     ds = PoolECGDataset(candidates, args.ecg_dir, already_done)

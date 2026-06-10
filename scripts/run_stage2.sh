@@ -20,7 +20,7 @@ LOG_DIR="$OUTPUT_ROOT/_logs"
 CONFIG_DIR="configs"
 BATCH_SIZE=256
 NUM_WORKERS=8
-GPU_ID=""   # e.g. "0" or "1" — sets CUDA_VISIBLE_DEVICES for this run
+GPU_ID=""   # e.g. "0" or "0,1" — sets CUDA_VISIBLE_DEVICES (comma-list = DataParallel)
 
 # ── Parse args ────────────────────────────────────────────────────────────────
 TRIALS=()
