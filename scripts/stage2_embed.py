@@ -43,9 +43,9 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[3]))  # repo root
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # scripts/
 
-from models.clip_model import MLP  # noqa: E402
+from clip_model import MLP  # noqa: E402
 
 NET1D_CFG = dict(
     in_channels     = 12,
