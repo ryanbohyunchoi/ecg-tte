@@ -246,7 +246,7 @@ def plot_zscore(df: pd.DataFrame, path: Path) -> None:
     labels = [SHORT.get(m, m) for m in methods]
 
     fig, ax = plt.subplots(figsize=(2 + 1.3 * len(methods), 4.5))
-    ax.boxplot(data, tick_labels=labels, showmeans=True)
+    ax.boxplot(data, labels=labels, showmeans=True)
     ax.axhline(0, color="gray", ls="--", lw=1)
     ax.axhline(1.96, color="red", ls=":", lw=0.8)
     ax.axhline(-1.96, color="red", ls=":", lw=0.8)
