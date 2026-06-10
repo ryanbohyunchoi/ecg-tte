@@ -84,7 +84,39 @@ ZeroDivisionError. set -euo pipefail aborted the whole 32-trial loop here
       now reports OK/SKIPPED/FAILED.
 
 ## Next
-- [ ] Push fixes, rerun `bash scripts/run_stage34.sh` for all 32 (now
+- [x] Push fixes, rerun `bash scripts/run_stage34.sh` for all 32 (now
       resilient — will report FAILED count instead of dying).
+      Result: OK=27 SKIPPED=0 FAILED=5. 5 failures TBD (separate from d5896).
 - [ ] Separately: rebuild Stage 1 pool for d5896 (config fixed, pool stale)
       so its stage3+4 run uses the corrected arm split.
+- [ ] Investigate the other 4 stage3/4 failures (d5896 was 1 of the 5).
+
+## Round 5: stage5_meta.py — cross-trial meta-analysis
+New `scripts/stage5_meta.py`. For each trial, reads
+`runs/<run_name>/results_summary.csv` (stage4) + `published_hr`/
+`published_hr_ci` from `configs/<trial>.yaml`. All 5 ladder rungs
+(Unadjusted Cox, Adjusted Cox, Structured PSM, ECG-NN PRIMARY, PS+ECG-NN).
+
+Per-trial-per-method (`meta_results.csv`):
+- log_hr, log_published_hr, log_hr_diff, abs_log_hr_diff
+- z_pooled = log_hr_diff / sqrt(se_emulated^2 + se_published^2)
+  (standardized estimate difference vs published RCT)
+- emulated_class/published_class (benefit/harm/null from CI vs 1) + agree
+- ci_overlap
+
+Per-method aggregate (`meta_summary.csv`):
+- pearson_r (log HR emulated vs log HR published, n>=3 trials)
+- mean/var of log_hr_diff, mean abs log_hr_diff
+- mean/var of z_pooled
+- regulatory_agreement_rate, ci_overlap_rate
+
+Plots: `meta_scatter.png` (5-panel emulated vs published log-HR),
+`meta_variance.png` (var + mean|diff| bar per method),
+`meta_zscore.png` (z_pooled boxplot per method).
+
+- [x] py_compile OK.
+- [x] Smoke-tested with synthetic 2-trial results_summary.csv (vero+comet):
+      correctly skips d5896 (no results yet) and lead2 (published_hr null),
+      produces meta_results.csv/meta_summary.csv + 3 PNGs.
+- [ ] Run on cluster once full 32-trial results exist:
+      `python scripts/stage5_meta.py --output-root /home/rbc58/mnt/ecg-tte --config-dir configs --run-name default`
