@@ -49,5 +49,42 @@ analysis, left as-is.
       psm_sparse_eligible/psm_rich_eligible -> psm_eligible;
       intersection_strict = ecg_available & psm_eligible.
       missingness_audit() param renamed rich_covs -> covs.
-- [ ] Re-run vero stage3+4, confirm denominator_audit.csv shows psm_eligible
-      (not psm_sparse/rich_eligible) and STRUCTURED_COVS prints as 11.
+- [x] Re-run vero stage3+4 — confirmed. denominator_audit.csv shows
+      psm_eligible/intersection_strict. STRUCTURED_COVS=10 for vero
+      (prior_hf_code_1yr not in vero's pool — non-cardiac trial; filtered
+      out by column-existence check, working as intended). Structured PSM
+      now runs (0 rows dropped vs 49/71 before) — HR=1.00 [0.06-15.99] n=38,
+      too small to be informative but no crash/convergence error on PSM step.
+
+## Status: vero stage3+4 fully green. Ready for full 32-trial run.
+
+## Round 4: full-32 run crashed at d5896 (ZeroDivisionError, control arm n=0)
+COMET ran clean (STRUCTURED_COVS=11, full ladder incl. PSM/ECG-NN/PS+ECG-NN
+all produced results). d5896 crashed: cohort 328 budesonide_formoterol /
+1 budesonide -> strict D control arm = 0 -> cohort_1to1 empty -> lifelines
+ZeroDivisionError. set -euo pipefail aborted the whole 32-trial loop here
+(all alphabetically-later trials never ran).
+
+- [x] configs/d5896.yaml: root cause was treated arm's bare "BUDESONIDE"
+      keyword also matching budesonide-alone (Pulmicort/Rhinocort) products;
+      ties in identify_arms_generic go to the first/treated arm, so nearly
+      everyone landed in budesonide_formoterol. Added formulation_filter:
+      treated requires FORMOTEROL (combo product), control excludes
+      FORMOTEROL/SYMBICORT (monotherapy only).
+      NOTE: requires Stage 1 pool rebuild for d5896 to take effect
+      (arm assignment happens in stage1_build_pool.py).
+- [x] stage4_analyze.py: new guard — if either arm has 0 patients in the
+      active denominator (n_t==0 or n_c==0), print clear ERROR + likely
+      cause and sys.exit(1) instead of crashing deep in lifelines with
+      ZeroDivisionError. Protects ALL trials, not just d5896.
+- [x] run_stage34.sh: stage3 and stage4 calls now use
+      `set +e; ... | tee; rc=${PIPESTATUS[0]}; set -e` and
+      `continue` + FAIL_COUNT on nonzero exit, so one trial's failure
+      no longer aborts the rest of the 32-trial loop. Final summary
+      now reports OK/SKIPPED/FAILED.
+
+## Next
+- [ ] Push fixes, rerun `bash scripts/run_stage34.sh` for all 32 (now
+      resilient — will report FAILED count instead of dying).
+- [ ] Separately: rebuild Stage 1 pool for d5896 (config fixed, pool stale)
+      so its stage3+4 run uses the corrected arm split.

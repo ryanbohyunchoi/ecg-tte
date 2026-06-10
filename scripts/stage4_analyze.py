@@ -890,6 +890,14 @@ def main() -> None:
 
     n_t = (emb_d["arm"] == TREATED).sum()
     n_c = (emb_d["arm"] == CONTROL).sum()
+
+    if n_t == 0 or n_c == 0:
+        print(f"\n  ERROR: one arm is empty in {denom_label} "
+              f"({TREATED}={n_t:,}, {CONTROL}={n_c:,}) — cannot run comparator ladder.")
+        print("  Likely cause: arm misclassification in the Stage 1 pool "
+              "(check configs/<trial>.yaml arm keywords/formulation_filter).")
+        sys.exit(1)
+
     k   = _check_pool(n_t, n_c, args.match_ratio)
 
     # ── Diagnostics: arm summary + event rates + index date ──────────────────

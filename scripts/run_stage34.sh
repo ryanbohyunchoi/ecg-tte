@@ -39,6 +39,7 @@ fi
 
 OK_COUNT=0
 SKIP_COUNT=0
+FAIL_COUNT=0
 
 for trial in "${TRIALS[@]}"; do
     cfg="$CONFIG_DIR/${trial}.yaml"
@@ -57,12 +58,20 @@ for trial in "${TRIALS[@]}"; do
     fi
 
     echo "  [stage3] filtering → $run_dir"
+    set +e
     python -u scripts/stage3_filter.py \
         --config "$cfg" \
         --pool-dir "$pool_dir" \
         --output-dir "$out_dir" \
         --run-name "$RUN_NAME" \
         2>&1 | tee "$log"
+    rc=${PIPESTATUS[0]}
+    set -e
+    if [[ $rc -ne 0 ]]; then
+        echo "  [stage3] FAILED (exit $rc) — skipping trial"
+        (( FAIL_COUNT++ )) || true
+        continue
+    fi
 
     # ── Pull arm names / display name / published HR from the trial config ────
     read -r treated control name ref_hr <<< "$(python3 - "$cfg" <<'PYEOF'
@@ -92,7 +101,15 @@ PYEOF
         args+=(--reference-hr "$ref_hr")
     fi
 
+    set +e
     python -u scripts/stage4_analyze.py "${args[@]}" 2>&1 | tee -a "$log"
+    rc=${PIPESTATUS[0]}
+    set -e
+    if [[ $rc -ne 0 ]]; then
+        echo "  [stage4] FAILED (exit $rc)"
+        (( FAIL_COUNT++ )) || true
+        continue
+    fi
 
     echo "  [done] → $run_dir/results_summary.csv"
     (( OK_COUNT++ )) || true
@@ -100,5 +117,5 @@ done
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Stage3+4 complete: OK=$OK_COUNT  SKIPPED=$SKIP_COUNT"
+echo "Stage3+4 complete: OK=$OK_COUNT  SKIPPED=$SKIP_COUNT  FAILED=$FAIL_COUNT"
 echo "Logs: $LOG_DIR"

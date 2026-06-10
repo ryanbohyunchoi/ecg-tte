@@ -22,10 +22,14 @@ arms:
     role: treated
     # ICS/LABA combination: budesonide/formoterol (SYMBICORT)
     keywords: [BUDESONIDE, SYMBICORT]
+    formulation_filter:
+      require: [FORMOTEROL]
   - name: budesonide
     role: control
-    # ICS alone: budesonide (PULMICORT)
-    keywords: [PULMICORT, RHINOCORT]
+    # ICS alone: budesonide (PULMICORT/RHINOCORT)
+    keywords: [BUDESONIDE, PULMICORT, RHINOCORT]
+    formulation_filter:
+      exclude: [FORMOTEROL, SYMBICORT]
 
 inclusion:
   age_min: 18
