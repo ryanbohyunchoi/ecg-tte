@@ -48,12 +48,12 @@ class Attrition:
         self.rows: list[dict] = []
 
     def log(self, df: pd.DataFrame, step: str) -> pd.DataFrame:
-        n_carv = int((df["arm"] == "carvedilol").sum())
-        n_meto = int((df["arm"] == "metoprolol").sum())
-        self.rows.append({"step": step, "n_total": len(df),
-                          "n_carvedilol": n_carv, "n_metoprolol": n_meto})
-        print(f"  [{step:<45}] n={len(df):>7,}  "
-              f"carv={n_carv:>6,}  meto={n_meto:>6,}")
+        counts = df["arm"].value_counts().to_dict() if "arm" in df.columns else {}
+        row = {"step": step, "n_total": len(df)}
+        row.update({f"n_{arm}": int(n) for arm, n in counts.items()})
+        self.rows.append(row)
+        count_str = "  ".join(f"{arm}={n:>6,}" for arm, n in counts.items())
+        print(f"  [{step:<45}] n={len(df):>7,}  {count_str}")
         return df
 
     def to_csv(self, path: Path) -> None:
@@ -270,16 +270,22 @@ def main() -> None:
         attrition.log(pool, f"Index date >= {args.min_index_date}")
 
     # ── 2. Naive new-user lookback ─────────────────────────────────────────────
-    # Carvedilol arm: no metoprolol in prior lookback_days
-    # Metoprolol arm: no carvedilol in prior lookback_days
+    # For each arm: no dispense of any OTHER arm's drug in prior lookback_days.
+    # prior_<other_arm>_days columns are produced by identify_arms_generic (Stage 1)
+    # for every arm pair, keyed by the actual arm names from the trial config.
     lookback = args.drugclass_lookback_days
-    carv_mask = (pool["arm"] == "carvedilol") & (
-        pool["prior_meto_days"].isna() | (pool["prior_meto_days"] > lookback)
-    )
-    meto_mask = (pool["arm"] == "metoprolol") & (
-        pool["prior_carv_days"].isna() | (pool["prior_carv_days"] > lookback)
-    )
-    pool = pool[carv_mask | meto_mask]
+    arm_values = pool["arm"].dropna().unique().tolist()
+    keep = pd.Series(False, index=pool.index)
+    for arm_val in arm_values:
+        ok = pool["arm"] == arm_val
+        for other in arm_values:
+            if other == arm_val:
+                continue
+            col = f"prior_{other}_days"
+            if col in pool.columns:
+                ok = ok & (pool[col].isna() | (pool[col] > lookback))
+        keep = keep | ok
+    pool = pool[keep]
     attrition.log(pool, f"Naive new-user lookback ≤ {lookback}d")
 
     # ── 3. Drug adherence ──────────────────────────────────────────────────────
@@ -518,14 +524,14 @@ def main() -> None:
     except Exception:
         git_sha = "unknown"
 
+    arm_counts = cohort["arm"].value_counts().to_dict()
     manifest = {
         "filtered_at": datetime.now().isoformat(),
         "git_sha":     git_sha,
         "run_name":    args.run_name,
         "args":        vars(args),
         "final_n":     len(cohort),
-        "n_carvedilol": int((cohort["arm"] == "carvedilol").sum()),
-        "n_metoprolol": int((cohort["arm"] == "metoprolol").sum()),
+        "arm_counts":  {arm: int(n) for arm, n in arm_counts.items()},
         "n_events":     int(cohort["event_death"].sum()),
         "n_with_ecg":   int(cohort["selected_ecg_fileID"].notna().sum()) if "selected_ecg_fileID" in cohort.columns else 0,
     }
@@ -533,9 +539,9 @@ def main() -> None:
         json.dump(manifest, f, indent=2)
 
     print(f"\n{'='*60}")
-    print(f"  COMET filtered cohort — run: {args.run_name}")
-    print(f"  Carvedilol : {manifest['n_carvedilol']:,}")
-    print(f"  Metoprolol : {manifest['n_metoprolol']:,}")
+    print(f"  Filtered cohort — run: {args.run_name}")
+    for arm, n in arm_counts.items():
+        print(f"  {arm:<12}: {n:,}")
     print(f"  Events     : {manifest['n_events']:,}")
     print(f"  With ECG   : {manifest['n_with_ecg']:,}")
     print(f"  Saved → {run_dir}")
