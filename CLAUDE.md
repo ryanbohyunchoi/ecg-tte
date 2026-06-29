@@ -47,6 +47,37 @@ Denominator standardization: `--denominator strict` (default) runs all methods o
 - OMOP condition: `/home/rbc58/mnt/ascvd/omop_database/condition_occurrence/condition_occurrence_*.parquet`
 - Experiment outputs: `/home/rbc58/mnt/ecg-tte` or `/mnt/raid0/rbc58/` (project subdirs)
 
+### Raw EHR Medication Sources (for drug_master rebuild)
+
+Three cohort directories, each with three med file types:
+
+**ECG-ASCVD** (`$ECG_ASCVD_S3` = `/home/rbc58/mnt/ascvd`):
+- Active med list: `omop_database/` (OMOP drug_exposure shards — PREVENT ATC only, stale)
+- Source raw files: use T2DM/CMP/IMPL below as primary (ASCVD outpmeds path TBD)
+
+**T2DM** (`$T2DM_S3` = `/home/rbc58/mnt/t2dm-jdat-data`):
+- Active med list: `2380791_CarDS_Outcomes_DM2_Meds.txt`
+- Outpatient med admin: `2380791_CarDS_Outcomes_DM2_Outpatient_Enc_Med_Admin.txt`
+- Inpatient med admin: `2380791_CarDS_Outcomes_DM2_Hosp_Enc_Med_Admin_{1,2}.txt`
+
+**CMP** (`$CMP_S3` = `/home/rbc58/mnt/cmp-jdat-data`):
+- Active med list: `2356781_CarDS_Aim_1_Meds.txt`
+- Outpatient med admin: `2356781_CarDS_Aim_1_Outpatient_Enc_Med_Admin.txt`
+- Inpatient med admin: `2356781_CarDS_Aim_1_Hosp_Enc_Med_Admin_{1,2}.txt`
+
+**IMPLEMENTATION** (`$IMPLEMENTATION_S3` subdir `cardsjdat-CC1022-MEDINT/2435227-CarDS-ECG/Data-2026-04-15`):
+- Active med list: `CarDS_2435227_Meds.txt`
+- Outpatient med admin: `CarDS_2435227_Outpatient_Enc_Med_Admin.txt`
+- Inpatient med admin: `CarDS_2435227_Hosp_Enc_Med_Admin_{1,2}.txt`
+
+**Med file type semantics:**
+- `*_Meds.txt` = active medication list (home meds / outpatient prescriptions) → **primary source for TTE index events**
+- `*_Outpatient_Enc_Med_Admin.txt` = clinic-administered drugs (injections at clinic) → include, tag `setting=outpatient_admin`
+- `*_Hosp_Enc_Med_Admin_*.txt` = inpatient administration → include but tag `setting=inpatient`; **exclude from TTE index event assignment**
+
+**Rebuilt drug_master output:** `/mnt/raid0/rbc58/mm_vhd/drug/drug_master_v2.parquet`
+Schema: `MRN, drug_name, order_date, setting, cohort, [generic_name, pharm_class, route, frequency, dose, dose_unit, order_status, end_date, discontinue_date]`
+
 ## Cluster Workflow
 
 - Code written locally, pushed to GitHub, pulled and run on Yale H100 cluster.
