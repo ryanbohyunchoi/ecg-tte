@@ -202,8 +202,9 @@ def _read_med_file(
                 src = _first_match(cu, cands)
                 out[out_col] = chunk[src].values if src else pd.NA
 
-            out["setting"] = setting
-            out["cohort"]  = cohort
+            out["setting"]     = setting
+            out["cohort"]      = cohort
+            out["source_file"] = path.name
 
             # Drop blank drug names and MRNs
             mask = (
