@@ -233,10 +233,10 @@ def _read_med_file(
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        description="Build drug_master.parquet from raw EHR med txt files"
+        description="Build drug_master parquet shards from raw EHR med txt files"
     )
-    p.add_argument("--output", required=True,
-                   help="Output path for drug_master.parquet")
+    p.add_argument("--output-dir", required=True,
+                   help="Output directory. Each source file becomes one parquet shard.")
     p.add_argument("--t2dm-dir",  default=os.getenv("T2DM_S3", ""),
                    help="T2DM cohort base dir (default: $T2DM_S3)")
     p.add_argument("--cmp-dir",   default=os.getenv("CMP_S3", ""),
@@ -247,15 +247,49 @@ def parse_args() -> argparse.Namespace:
                    help="Only read *_Meds.txt files (fastest, sufficient for TTE index)")
     p.add_argument("--no-inpatient", action="store_true",
                    help="Skip *_Hosp_Enc_Med_Admin files")
+    p.add_argument("--skip-existing", action="store_true",
+                   help="Skip source files whose output shard already exists (resumable)")
     p.add_argument("--dry-run", action="store_true",
-                   help="Print file existence + sizes, do not write output")
+                   help="Print file plan, do not write output")
     return p.parse_args()
+
+
+# Output filename per (label, cohort)
+# home_meds_t2dm.parquet, inpatient_cmp_1.parquet, etc.
+_LABEL_TO_PREFIX = {
+    "meds_list":        "home_meds",
+    "outpt_med_admin":  "outpatient_admin",
+    "hosp_med_admin_1": "inpatient",
+    "hosp_med_admin_2": "inpatient",
+}
+_LABEL_TO_SUFFIX = {
+    "meds_list":        "",
+    "outpt_med_admin":  "",
+    "hosp_med_admin_1": "_1",
+    "hosp_med_admin_2": "_2",
+}
+
+
+def _shard_name(label: str, cohort: str) -> str:
+    prefix = _LABEL_TO_PREFIX.get(label, label)
+    suffix = _LABEL_TO_SUFFIX.get(label, "")
+    return f"{prefix}_{cohort}{suffix}.parquet"
+
+
+def _print_summary(dm: pd.DataFrame, shard_path: Path) -> None:
+    print(f"\n  {'─'*55}")
+    print(f"  Rows        : {len(dm):,}")
+    print(f"  Unique MRNs : {dm['MRN'].nunique():,}")
+    if dm["order_date"].notna().any():
+        print(f"  Date range  : {dm['order_date'].min().date()} -> {dm['order_date'].max().date()}")
+    print(f"  Saved       -> {shard_path.name}  ({shard_path.stat().st_size / 1e6:.0f} MB)")
 
 
 def main() -> None:
     args = parse_args()
 
-    print(f"Build drug_master -> {args.output}")
+    out_dir = Path(args.output_dir)
+    print(f"Build drug_master shards -> {out_dir}")
     print(f"Started: {datetime.now().isoformat()}")
 
     dirs = {
@@ -264,99 +298,95 @@ def main() -> None:
         "implementation": Path(args.impl_dir)  if args.impl_dir  else None,
     }
 
-    # Safety: abort if output path is inside any source directory
-    out_resolved = Path(args.output).resolve()
+    # Safety: abort if output dir is inside any source directory
+    out_resolved = out_dir.resolve()
     for cohort, base in dirs.items():
         if base is None:
             continue
         base_resolved = base.resolve()
         try:
             out_resolved.relative_to(base_resolved)
-            print(f"ERROR: --output is inside source dir {base_resolved} -- refusing to write into source data")
+            print(f"ERROR: --output-dir is inside source dir {base_resolved} -- refusing to write into source data")
             sys.exit(1)
         except ValueError:
-            pass  # not a subdirectory -- safe
+            pass
 
     if args.dry_run:
-        print("\n[DRY RUN] File inventory:")
+        print("\n[DRY RUN] Shard plan:")
+        print(f"  {'cohort':<18} {'setting':<18} {'output shard':<35} {'source size'}")
+        print(f"  {'─'*90}")
         for cohort, base in dirs.items():
             if base is None:
                 print(f"  {cohort}: no path provided")
                 continue
-            for _, fname, setting, _ in COHORT_SPECS[cohort]:
+            for label, fname, setting, _ in COHORT_SPECS[cohort]:
                 if args.home_meds_only and setting != "home_meds":
                     continue
                 if args.no_inpatient and setting == "inpatient":
                     continue
                 fp = base / fname
+                shard = _shard_name(label, cohort)
                 exists = fp.exists()
                 size = f"{fp.stat().st_size / 1e6:.0f} MB" if exists else "MISSING"
-                print(f"  {cohort:<18} {setting:<18} {fname}  [{size}]")
+                skip = " [SKIP: exists]" if args.skip_existing and (out_dir / shard).exists() else ""
+                print(f"  {cohort:<18} {setting:<18} {shard:<35} {size}{skip}")
         return
 
-    all_parts: list[pd.DataFrame] = []
+    out_dir.mkdir(parents=True, exist_ok=True)
+    written: list[str] = []
+    skipped: list[str] = []
 
     for cohort, base in dirs.items():
         if base is None:
             print(f"\n[{cohort}] skipped -- no path provided")
             continue
-        print(f"\n{'─'*60}")
+        print(f"\n{'='*60}")
         print(f"  Cohort: {cohort}  |  {base}")
-        for _, fname, setting, use_taken_time in COHORT_SPECS[cohort]:
+
+        for label, fname, setting, use_taken_time in COHORT_SPECS[cohort]:
             if args.home_meds_only and setting != "home_meds":
                 continue
             if args.no_inpatient and setting == "inpatient":
                 continue
+
+            shard_path = out_dir / _shard_name(label, cohort)
+
+            if args.skip_existing and shard_path.exists():
+                print(f"\n  SKIP (exists): {shard_path.name}")
+                skipped.append(shard_path.name)
+                continue
+
+            print(f"\n  [{label}] -> {shard_path.name}")
             fp = base / fname
-            part = _read_med_file(fp, setting, cohort, use_taken_time)
-            if part is not None:
-                all_parts.append(part)
+            dm = _read_med_file(fp, setting, cohort, use_taken_time)
+
+            if dm is None:
+                print(f"  WARNING: no data from {fname} -- shard not written")
+                continue
+
+            # Dedup within shard
+            before = len(dm)
+            dm = dm.drop_duplicates(subset=["MRN", "drug_name", "order_date"])
+            dm = dm.dropna(subset=["MRN", "order_date"])
+            print(f"  After dedup+dropna: {len(dm):,}  (removed {before - len(dm):,})")
+
+            dm.to_parquet(shard_path, index=False, compression="snappy")
+            _print_summary(dm, shard_path)
+            written.append(shard_path.name)
+            del dm
             gc.collect()
 
-    if not all_parts:
-        print("ERROR: no data loaded -- check paths")
-        return
-
-    dm = pd.concat(all_parts, ignore_index=True)
-    print(f"\nTotal rows before dedup: {len(dm):,}")
-
-    dedup_cols = ["MRN", "drug_name", "order_date", "setting"]
-    before = len(dm)
-    dm = dm.drop_duplicates(subset=dedup_cols)
-    print(f"After dedup: {len(dm):,}  (removed {before - len(dm):,})")
-
-    dm = dm.dropna(subset=["MRN", "order_date"])
-    print(f"After drop null MRN/date: {len(dm):,}")
-
-    # ── Summary ───────────────────────────────────────────────────────────────
-    print(f"\n{'='*65}")
-    print(f"  DRUG MASTER SUMMARY")
-    print(f"  Rows          : {len(dm):,}")
-    print(f"  Unique MRNs   : {dm['MRN'].nunique():,}")
-    print(f"  Unique drugs  : {dm['drug_name'].nunique():,}")
-    print(f"  Date range    : {dm['order_date'].min().date()} -> {dm['order_date'].max().date()}")
-    print(f"\n  By setting:")
-    for s, n in dm["setting"].value_counts().items():
-        pct = 100 * n / len(dm)
-        print(f"    {s:<22}  {n:>12,}  ({pct:.1f}%)")
-    print(f"\n  By cohort:")
-    for c, n in dm["cohort"].value_counts().items():
-        pct = 100 * n / len(dm)
-        print(f"    {c:<22}  {n:>12,}  ({pct:.1f}%)")
-    if "order_class" in dm.columns:
-        print(f"\n  order_class (home_meds only):")
-        sub = dm[dm["setting"] == "home_meds"]
-        for v, n in sub["order_class"].value_counts().head(8).items():
-            pct = 100 * n / len(sub)
-            print(f"    {str(v):<30}  {n:>10,}  ({pct:.1f}%)")
-    print(f"{'='*65}")
-
-    # ── Save ──────────────────────────────────────────────────────────────────
-    out = Path(args.output)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    dm.to_parquet(out, index=False, compression="snappy")
-    print(f"\nSaved -> {out}  ({out.stat().st_size / 1e6:.0f} MB)")
-    print(f"Done: {datetime.now().isoformat()}")
+    print(f"\n{'='*60}")
+    print(f"  Done: {datetime.now().isoformat()}")
+    print(f"  Written : {len(written)} shards")
+    for s in written:
+        print(f"    {s}")
+    if skipped:
+        print(f"  Skipped : {len(skipped)} (already existed)")
+    print(f"\n  Load all home_meds shards:")
+    print(f"    pd.concat([pd.read_parquet(p) for p in Path('{out_dir}').glob('home_meds_*.parquet')])")
+    print(f"  Load everything:")
+    print(f"    pd.concat([pd.read_parquet(p) for p in Path('{out_dir}').glob('*.parquet')])")
 
 
 if __name__ == "__main__":
