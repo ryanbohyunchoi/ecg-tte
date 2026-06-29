@@ -90,54 +90,86 @@ def explore_drug_master(path: str, keywords: list[str], n_sample: int) -> pd.Dat
         print(f"\n  Date col: {date_col!r}  "
               f"range {dm['_date'].min().date()} → {dm['_date'].max().date()}")
 
-    # order_status distribution
-    if "order_status" in dm.columns:
-        print(f"\n  order_status value counts (top 15):")
-        vc = dm["order_status"].value_counts().head(15)
-        for val, n in vc.items():
-            print(f"    {str(val):<35}  {n:>10,}")
-    else:
-        print("\n  NOTE: order_status column NOT present in drug_master")
+    # ── All-column value distributions (skip blanks) ──────────────────────────
+    CAT_COLS = ["order_status", "frequency", "route", "source",
+                "thera_class", "pharm_class", "simple_generic"]
+    for col in CAT_COLS:
+        if col not in dm.columns:
+            continue
+        vc = dm[col].dropna().astype(str).str.strip()
+        vc = vc[vc != ""].value_counts()
+        if vc.empty:
+            print(f"\n  {col}: ALL BLANK / NULL")
+        else:
+            print(f"\n  {col} value counts (top 20, {vc.sum():,} non-blank):")
+            for val, n in vc.head(20).items():
+                print(f"    {str(val):<45}  {n:>10,}")
 
-    # frequency distribution (inpatient orders often say "ONCE", "Q4H", etc.)
-    if "frequency" in dm.columns:
-        print(f"\n  frequency value counts (top 20):")
-        vc = dm["frequency"].value_counts().head(20)
-        for val, n in vc.items():
-            print(f"    {str(val):<35}  {n:>10,}")
-
-    # Keyword-matched records
+    # ── Full-file scan for keyword matches ────────────────────────────────────
+    # 500k sample likely too small for rare drugs; scan entire file streaming.
+    print(f"\n  Full-file keyword scan (streaming all batches) …")
     pattern = "|".join(keywords)
-    mask = dm["drug_upper"].str.contains(pattern, regex=True, na=False)
-    matched = dm[mask].copy()
-    print(f"\n  Records matching {keywords}: {len(matched):,} / {len(dm):,} "
-          f"({100*len(matched)/len(dm):.2f}%)")
+    match_chunks = []
+    total_rows = 0
+    for batch in pq.ParquetFile(path).iter_batches(batch_size=500_000):
+        chunk = batch.to_pandas()
+        chunk.columns = [c.strip() for c in chunk.columns]
+        total_rows += len(chunk)
+        drug_col_c = next((c for c in chunk.columns if c.lower() == "drug_name"), None)
+        if not drug_col_c:
+            continue
+        chunk["drug_upper"] = chunk[drug_col_c].astype(str).str.upper()
+        hit = chunk[chunk["drug_upper"].str.contains(pattern, regex=True, na=False)]
+        if not hit.empty:
+            match_chunks.append(hit)
+    matched = pd.concat(match_chunks, ignore_index=True) if match_chunks else pd.DataFrame()
+    print(f"  Total rows scanned: {total_rows:,}")
+    print(f"  Matched rows: {len(matched):,}  ({100*len(matched)/max(total_rows,1):.4f}%)")
 
-    if not matched.empty:
-        print(f"\n  Matched drug_name values (top 30):")
-        for val, n in matched[drug_col].value_counts().head(30).items():
-            print(f"    {str(val):<55}  {n:>8,}")
+    if matched.empty:
+        print("  WARNING: zero matches across entire drug_master — check keywords")
+        return matched
 
-        if "order_status" in matched.columns:
-            print(f"\n  Matched → order_status (top 10):")
-            for val, n in matched["order_status"].value_counts().head(10).items():
-                print(f"    {str(val):<35}  {n:>8,}")
+    print(f"\n  Matched drug_name values (top 40):")
+    for val, n in matched[drug_col].value_counts().head(40).items():
+        print(f"    {str(val):<60}  {n:>8,}")
 
-        if "frequency" in matched.columns:
-            print(f"\n  Matched → frequency (top 15):")
-            for val, n in matched["frequency"].value_counts().head(15).items():
-                print(f"    {str(val):<35}  {n:>8,}")
+    # ── Matched → key categorical columns ─────────────────────────────────────
+    for col in CAT_COLS:
+        if col not in matched.columns:
+            continue
+        vc = matched[col].dropna().astype(str).str.strip()
+        vc = vc[vc != ""].value_counts()
+        if vc.empty:
+            print(f"\n  Matched → {col}: ALL BLANK")
+        else:
+            print(f"\n  Matched → {col} (top 20):")
+            for val, n in vc.head(20).items():
+                pct = 100 * n / len(matched)
+                inp_flag = ""
+                if col == "route":
+                    v = str(val).upper()
+                    if any(x in v for x in ("IV", "INTRAVENOUS", "INFUSION", "INJECT")):
+                        inp_flag = " ← likely INPATIENT"
+                    elif any(x in v for x in ("ORAL", "PO", "TABLET", "CAPSULE")):
+                        inp_flag = " ← OUTPATIENT"
+                if col == "source":
+                    v = str(val).upper()
+                    if any(x in v for x in ("INPAT", "HOSP", "ADM", "FLOOR", "ICU")):
+                        inp_flag = " ← likely INPATIENT"
+                    elif any(x in v for x in ("OUTPAT", "AMBUL", "CLINIC", "PHARMACY", "PHARM")):
+                        inp_flag = " ← OUTPATIENT"
+                print(f"    {str(val):<45}  {n:>8,}  ({pct:.1f}%){inp_flag}")
 
-        if date_col:
-            print(f"\n  Matched → date range: "
-                  f"{matched['_date'].min().date()} → {matched['_date'].max().date()}")
-            # Year distribution
-            if "_date" in matched.columns:
-                yr = matched["_date"].dt.year.value_counts().sort_index()
-                print(f"\n  Matched → records per year:")
-                for year, n in yr.items():
-                    bar = "█" * min(40, int(40 * n / yr.max()))
-                    print(f"    {year}  {n:>7,}  {bar}")
+    if date_col and "_date" in matched.columns:
+        matched["_date"] = pd.to_datetime(matched[date_col], errors="coerce")
+        print(f"\n  Matched → date range: "
+              f"{matched['_date'].min().date()} → {matched['_date'].max().date()}")
+        yr = matched["_date"].dt.year.value_counts().sort_index()
+        print(f"\n  Matched → records per year:")
+        for year, n in yr.items():
+            bar = "█" * min(40, int(40 * n / yr.max()))
+            print(f"    {year}  {n:>7,}  {bar}")
 
     return matched
 
