@@ -57,6 +57,7 @@ from __future__ import annotations
 import argparse
 import gc
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -261,6 +262,19 @@ def main() -> None:
         "cmp":            Path(args.cmp_dir)   if args.cmp_dir   else None,
         "implementation": Path(args.impl_dir)  if args.impl_dir  else None,
     }
+
+    # Safety: abort if output path is inside any source directory
+    out_resolved = Path(args.output).resolve()
+    for cohort, base in dirs.items():
+        if base is None:
+            continue
+        base_resolved = base.resolve()
+        try:
+            out_resolved.relative_to(base_resolved)
+            print(f"ERROR: --output is inside source dir {base_resolved} -- refusing to write into source data")
+            sys.exit(1)
+        except ValueError:
+            pass  # not a subdirectory -- safe
 
     if args.dry_run:
         print("\n[DRY RUN] File inventory:")
