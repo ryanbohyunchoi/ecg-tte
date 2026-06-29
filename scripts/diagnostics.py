@@ -105,16 +105,18 @@ def event_rate_by_arm(
     cohort: pd.DataFrame,
     treated_arm: str = "carvedilol",
     control_arm: str = "metoprolol",
+    event_col: str = "event_death",
+    duration_col: str = "time_to_death",
 ) -> pd.DataFrame:
     """
     Events per 1000 person-years per arm.
-    Requires columns: arm, event_death, time_to_death (days).
+    Requires columns: arm, {event_col}, {duration_col} (days).
     """
     rows = []
     for arm in [treated_arm, control_arm]:
         sub = cohort[cohort["arm"] == arm]
-        n_events = int(sub["event_death"].sum())
-        py = sub["time_to_death"].sum() / 365.25 / 1000.0  # in kPY
+        n_events = int(sub[event_col].sum()) if event_col in sub.columns else 0
+        py = sub[duration_col].sum() / 365.25 / 1000.0 if duration_col in sub.columns else 0.0
         rate = n_events / py if py > 0 else float("nan")
         event_pct = 100 * n_events / len(sub) if len(sub) > 0 else float("nan")
         rows.append({
@@ -141,10 +143,12 @@ def plot_km(
     treated_arm: str = "carvedilol",
     control_arm: str = "metoprolol",
     title: str = "",
+    event_col: str = "event_death",
+    duration_col: str = "time_to_death",
 ) -> None:
     """
     Kaplan-Meier survival curves with 95% CI and log-rank p-value.
-    Requires time_to_death and event_death columns.
+    Requires {duration_col} and {event_col} columns.
     """
     try:
         from lifelines import KaplanMeierFitter
@@ -153,10 +157,10 @@ def plot_km(
         print("  [KM] lifelines not available — skipping")
         return
 
-    T_t = matched.loc[matched["arm"] == treated_arm, "time_to_death"]
-    E_t = matched.loc[matched["arm"] == treated_arm, "event_death"]
-    T_c = matched.loc[matched["arm"] == control_arm, "time_to_death"]
-    E_c = matched.loc[matched["arm"] == control_arm, "event_death"]
+    T_t = matched.loc[matched["arm"] == treated_arm, duration_col]
+    E_t = matched.loc[matched["arm"] == treated_arm, event_col]
+    T_c = matched.loc[matched["arm"] == control_arm, duration_col]
+    E_c = matched.loc[matched["arm"] == control_arm, event_col]
 
     if len(T_t) < 10 or len(T_c) < 10:
         return

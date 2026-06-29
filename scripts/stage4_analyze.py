@@ -73,6 +73,12 @@ from diagnostics import (
 
 COMET_HR = 0.83
 
+# Outcome column names — set by main() via auto-detection or --event-col/--time-col.
+# Module-level so cox_hr/ipw_hr pick them up without thread-safety concerns
+# (single-process single-trial runs only).
+_EVENT_COL: str = "event_death"
+_TIME_COL:  str = "time_to_death"
+
 
 # ── I/O ───────────────────────────────────────────────────────────────────────
 
@@ -117,9 +123,11 @@ def cox_hr(
     except ImportError:
         raise ImportError("pip install lifelines")
 
+    ec = _EVENT_COL
+    tc = _TIME_COL
     d = df.copy()
     d["arm_binary"] = (d["arm"] == treated_arm).astype(int)
-    cols = ["time_to_death", "event_death", "arm_binary"]
+    cols = [tc, ec, "arm_binary"]
     cov_cols = [c for c in (covariates or []) if c in d.columns]
     cols += cov_cols
     strata_cols = [c for c in (strata or []) if c in d.columns]
@@ -141,7 +149,7 @@ def cox_hr(
     if degenerate:
         d = d.drop(columns=degenerate)
     cph = CoxPHFitter()
-    cph.fit(d, duration_col="time_to_death", event_col="event_death",
+    cph.fit(d, duration_col=tc, event_col=ec,
             strata=strata_cols if strata_cols else None,
             weights_col=weights_col if weights_col and weights_col in d.columns else None,
             robust=robust)
@@ -163,9 +171,11 @@ def ipw_hr(
     seed: int = 42,
 ) -> dict:
     """Stabilized IPW Cox — propensity fit on covariates, trimmed [1%, 99%]."""
+    ec = _EVENT_COL
+    tc = _TIME_COL
     d = df.copy()
     cov_cols = [c for c in covariates if c in d.columns]
-    keep_cols = ["time_to_death", "event_death", "arm"] + cov_cols
+    keep_cols = [tc, ec, "arm"] + cov_cols
     d = d[keep_cols].dropna()
     d["arm_binary"] = (d["arm"] == treated_arm).astype(int)
     # Drop covariates constant overall or within either arm
@@ -701,6 +711,11 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--control-arm",      default="metoprolol")
     p.add_argument("--trial-name",       default="COMET")
     p.add_argument("--reference-hr",     type=float, default=COMET_HR)
+    p.add_argument("--event-col",        default="",
+                   help="Event indicator column (default: auto-detect — uses event_primary "
+                        "if present in cohort and has events, else event_death).")
+    p.add_argument("--time-col",         default="",
+                   help="Time-to-event column (default: auto-detect — pairs with --event-col).")
     p.add_argument("--forest-xlim",      default="0.3,1.6",
                    help="Forest plot x-axis limits as 'lo,hi' (default: 0.3,1.6)")
     p.add_argument("--seed",             type=int,   default=42)
@@ -785,9 +800,24 @@ def main() -> None:
         cohort = cohort[cohort["afib"] == 1].reset_index(drop=True)
         print(f"  [--afib-only] Restricted to afib=1: {n_before:,} → {len(cohort):,} patients")
 
+    # ── Outcome column selection ──────────────────────────────────────────────
+    # Explicit CLI override > auto-detect from cohort.
+    global _EVENT_COL, _TIME_COL
+    if args.event_col and args.time_col:
+        _EVENT_COL, _TIME_COL = args.event_col, args.time_col
+    elif (
+        "event_primary" in cohort.columns
+        and "time_to_primary" in cohort.columns
+        and cohort["event_primary"].sum() > 0
+    ):
+        _EVENT_COL, _TIME_COL = "event_primary", "time_to_primary"
+    else:
+        _EVENT_COL, _TIME_COL = "event_death", "time_to_death"
+    print(f"  [outcome] {_EVENT_COL} / {_TIME_COL}")
+
     print(f"Cohort: {len(cohort):,}  "
           + "  ".join(f"{k}={v:,}" for k, v in sorted(cohort["arm"].value_counts().to_dict().items())))
-    print(f"Events: {cohort['event_death'].sum():,} deaths")
+    print(f"Events: {cohort[_EVENT_COL].sum():,}  ({_EVENT_COL})")
     print(f"\nReference HR ({TRIAL} published): {REF_HR}")
     print(f"{'='*70}")
 
@@ -909,7 +939,8 @@ def main() -> None:
         print_arm_summary(arm_df, label=denom_label)
         arm_df.to_csv(out / "arm_summary_D.csv", index=False)
 
-        er_df = event_rate_by_arm(cohort_d, treated_arm=TREATED, control_arm=CONTROL)
+        er_df = event_rate_by_arm(cohort_d, treated_arm=TREATED, control_arm=CONTROL,
+                                   event_col=_EVENT_COL, duration_col=_TIME_COL)
         print_event_rates(er_df)
 
         check_immortal_time(cohort_d, treated_arm=TREATED, control_arm=CONTROL)\
@@ -1043,7 +1074,8 @@ def main() -> None:
             try:
                 plot_km(mdf, out / f"km_{label.replace(' ', '_')}.png",
                         treated_arm=TREATED, control_arm=CONTROL,
-                        title=f"KM — {label} ({denom_label})")
+                        title=f"KM — {label} ({denom_label})",
+                        event_col=_EVENT_COL, duration_col=_TIME_COL)
             except Exception as e:
                 print(f"  KM {label} failed: {e}")
             if label in ("ECG-NN-PRIMARY", "PS+ECG-NN"):

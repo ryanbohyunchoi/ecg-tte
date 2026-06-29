@@ -289,19 +289,31 @@ def main() -> None:
 
     # ── 2. Naive new-user lookback ─────────────────────────────────────────────
     # For each arm: no dispense of any OTHER arm's drug in prior lookback_days.
-    # prior_<other_arm>_days columns are produced by identify_arms_generic (Stage 1)
-    # for every arm pair, keyed by the actual arm names from the trial config.
+    # prior_<other_arm>_days columns are produced by identify_arms_generic (Stage 1).
+    #
+    # Per-arm skip_washout: if an arm has skip_washout: true in the YAML config,
+    # cross-arm washout is skipped for that arm. Use this for switching trials
+    # (e.g. PARADIGM-HF sacubitril arm: prior enalapril is expected, not contamination).
+    skip_washout_arms: set[str] = set()
+    for arm_spec in getattr(args, "_yaml_cfg", {}).get("arms", []):
+        if arm_spec.get("skip_washout"):
+            skip_washout_arms.add(arm_spec["name"])
+    if skip_washout_arms:
+        print(f"  NOTE: skip_washout arms (no cross-arm prior-use check): "
+              f"{sorted(skip_washout_arms)}")
+
     lookback = args.drugclass_lookback_days
     arm_values = pool["arm"].dropna().unique().tolist()
     keep = pd.Series(False, index=pool.index)
     for arm_val in arm_values:
         ok = pool["arm"] == arm_val
-        for other in arm_values:
-            if other == arm_val:
-                continue
-            col = f"prior_{other}_days"
-            if col in pool.columns:
-                ok = ok & (pool[col].isna() | (pool[col] > lookback))
+        if arm_val not in skip_washout_arms:
+            for other in arm_values:
+                if other == arm_val:
+                    continue
+                col = f"prior_{other}_days"
+                if col in pool.columns:
+                    ok = ok & (pool[col].isna() | (pool[col] > lookback))
         keep = keep | ok
     pool = pool[keep]
     attrition.log(pool, f"Naive new-user lookback ≤ {lookback}d")
@@ -537,8 +549,10 @@ def main() -> None:
         "days_on_therapy",
         # ECG selection
         "selected_ecg_fileID", "selected_ecg_days_from_index",
-        # Outcomes
+        # Outcomes (all-cause mortality — always present)
         "event_death", "time_to_death", "death_date",
+        # Primary endpoint (composite, from stage1 build_composite_endpoint)
+        "event_primary", "time_to_primary", "primary_event_date",
     ]
     out_cols = [c for c in OUTPUT_COLS if c in pool.columns]
     cohort = pool[out_cols].drop_duplicates("person_id").reset_index(drop=True)
