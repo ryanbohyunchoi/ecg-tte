@@ -109,7 +109,7 @@ def explore_file(path: Path, label: str, setting: str, n_rows: int) -> dict:
 
     try:
         df = pd.read_csv(path, sep=sep, nrows=n_rows, low_memory=False,
-                         encoding="utf-8", errors="replace")
+                         encoding="latin-1")
     except Exception as e:
         print(f"  ERROR reading: {e}")
         return {"path": str(path), "exists": True, "error": str(e)}

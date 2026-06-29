@@ -124,7 +124,7 @@ def _read_med_file(
     try:
         reader = pd.read_csv(
             path, sep=sep, chunksize=chunksize,
-            low_memory=False, encoding="utf-8", errors="replace",
+            low_memory=False, encoding="latin-1",
         )
         for chunk in reader:
             total_in += len(chunk)
