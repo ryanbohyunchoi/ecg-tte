@@ -9,121 +9,155 @@ stage1_build_pool.py   → {trial}/pool/ecg_candidates.parquet (config-driven, a
 stage2_embed.py        → embeddings/{fileID}.npy + embedding_manifest.json (shared across trials)
 stage3_filter.py       → runs/{run}/comet_cohort.parquet + attrition.csv (generic, all 32 trials)
 stage4_analyze.py      → results_summary.csv + forest.png + balance tables (generic, all 32 trials)
-stage5_meta.py          → cross-trial meta-analysis vs published RCT HRs (NEW, not yet run)
+stage5_meta.py          → cross-trial meta-analysis vs published RCT HRs
 ```
 
-## Current status (2026-06-10)
-Stages 1–4 fully generalized — all 32 trials run through `bash scripts/run_stage34.sh` (loop is now resilient: per-trial failures no longer abort the batch). Latest full run: **OK=27 SKIPPED=0 FAILED=5**. `stage5_meta.py` ran on cluster (25/32 trials, after fixing a matplotlib `tick_labels` boxplot kwarg incompat).
+## Current status (2026-06-29)
 
-### CRITICAL FIX (just pushed, NOT yet re-run on cluster)
-`inclusion.required_icd` (the disease-population gate, e.g. `dm_icd_ever`,
-`afib_icd_ever`, `ckd_icd_ever`, `prior_hf_code_1yr` for COMET) was computed
-by stage1 as a column but **never filtered** by stage3 — affects 28/32 trial
-configs. Found because dapa_ckd and declare_timi58 (same dapagliflozin-vs-DPP4i
-arm pair, different required_icd) produced bit-identical stage4 results.
-Fixed in `stage3_filter.py` (new step 1c, AND-filters all required_icd cols,
-column-existence-guarded). **Full 32-trial stage3+4 re-run required** —
-results for ~28 trials (incl. validated baseline COMET) will change.
-See `tasks/todo.md` Round 6 for details.
+### Drug master rebuild (IN PROGRESS on cluster right now)
+The existing `drug_master.parquet` at `/home/rbc58/mnt/ecg-tte/drug_master.parquet` was built
+from `CarDS_ECG` source — inpatient/ECG-adjacent drugs, NOT a reliable outpatient Rx file.
 
-### Comparator ladder (5 rungs, stage4_analyze.py)
-1. Unadjusted Cox
-2. Adjusted Cox (age, sex, race) — `ADJ_COVS`
-3. Structured PSM — `STRUCTURED_COVS` (11 covs: age_at_index, sex_binary, race_black, afib, htn, dm, cad_mi, copd, hyperlipidemia, stroke, prior_hf_code_1yr; column-existence filtered per trial)
-4. ECG-NN PRIMARY — cosine ≤ `--abs-threshold` (default 0.30)
-5. PS+ECG-NN — PS-caliper on `STRUCTURED_COVS` + cosine NN (the "hybrid")
-
-Note: there is NO separate sparse/rich PSM split anymore — collapsed to single `STRUCTURED_COVS`. CLAUDE.md's description of the ladder (6 rungs incl. PSM-sparse/PSM-rich/embedding-PSM) is now stale relative to the code — not yet reconciled.
-
-`--denominator strict` (default): D = ecg_available ∩ psm_eligible (`denominators.py build_masks`).
-
-### Pending failures (not yet diagnosed)
-5 of 32 trials FAILED in the latest `run_stage34.sh` run. One is **d5896** (known cause, see below). The other 4 are unidentified — need:
+**New build running now (PID 562590):**
 ```bash
-cd /home/rbc58/mnt/ecg-tte/_logs
-for f in *_stage34.log; do
-  if grep -qE "FAILED \(exit|ERROR" "$f"; then
-    echo "=== $f ==="
-    grep -E "FAILED \(exit|ERROR|Error|Traceback" "$f" | tail -5
-  fi
-done
+# Check progress:
+tail -20 /home/rbc58/mnt/ecg-tte/drugs/build_log.txt
+# Check what's written:
+ls -lh /home/rbc58/mnt/ecg-tte/drugs/
 ```
 
-### d5896 — known issue, fix written but needs Stage 1 rebuild
-Root cause: treated arm's bare `BUDESONIDE` keyword also matched budesonide-alone (Pulmicort/Rhinocort) → 328:1 arm split → empty control arm in strict D → would crash with `ZeroDivisionError` in lifelines (now caught gracefully via empty-arm guard in stage4, exits 1 with diagnostic instead of crashing the whole batch).
-`configs/d5896.yaml` arm `formulation_filter` already fixed (treated requires FORMOTEROL, control excludes FORMOTEROL/SYMBICORT) — **but arm assignment happens in stage1**, so this requires a Stage 1 pool rebuild for d5896:
+Output: `/home/rbc58/mnt/ecg-tte/drugs/` — one parquet per source file:
+```
+home_meds_t2dm.parquet              ← outpatient prescriptions, T2DM cohort
+home_meds_cmp.parquet               ← outpatient prescriptions, CMP cohort
+home_meds_implementation.parquet    ← outpatient prescriptions, IMPLEMENTATION cohort
+outpatient_admin_*.parquet          ← clinic-admin drugs (contrast, antiemetics — NOT Rx)
+inpatient_*_{1,2}.parquet           ← hospital meds (covariates only, NOT TTE index)
+```
+
+**Schema:** `MRN, drug_name, order_date, generic_name, pharm_class, route, frequency,
+dose, dose_unit, order_status, order_class, end_date, discontinue_date,
+discontinue_reason, setting, cohort, source_file`
+
+**`setting` column semantics:**
+- `home_meds` → real outpatient prescriptions → USE for TTE index event identification
+- `outpatient_admin` → procedure drugs (contrast, antiemetics) → covariates only
+- `inpatient` → hospital meds → covariates only, NEVER TTE index
+
+**Load for TTE (home meds only):**
+```python
+import pandas as pd
+from pathlib import Path
+dm = pd.concat([pd.read_parquet(p) for p in Path('/home/rbc58/mnt/ecg-tte/drugs').glob('home_meds_*.parquet')])
+```
+
+**Source raw files confirmed (explored 2026-06-29):**
+- T2DM: `/home/rbc58/mnt/t2dm-jdat-data/2380791_CarDS_Outcomes_DM2_Meds.txt` etc.
+- CMP: `/home/rbc58/mnt/cmp-jdat-data/2356781_CarDS_Aim_1_Meds.txt` etc.
+- IMPL: `/home/rbc58/mnt/implementation/cardsjdat-CC1022-MEDINT/2435227-CarDS-ECG/Data-2026-04-15/CarDS_2435227_Meds.txt` etc.
+
+**If job dies mid-run:** re-run same command with `--skip-existing` — it resumes:
 ```bash
-python -u scripts/stage1_build_pool.py --config configs/d5896.yaml --output-root /home/rbc58/mnt/ecg-tte
-bash scripts/run_stage34.sh --trials "d5896"
+cd /home/rbc58/github/ecg-tte && git pull
+nohup python scripts/build_drug_master.py \
+    --t2dm-dir   /home/rbc58/mnt/t2dm-jdat-data \
+    --cmp-dir    /home/rbc58/mnt/cmp-jdat-data \
+    --impl-dir   /home/rbc58/mnt/implementation/cardsjdat-CC1022-MEDINT/2435227-CarDS-ECG/Data-2026-04-15 \
+    --output-dir /home/rbc58/mnt/ecg-tte/drugs \
+    --skip-existing \
+    > /home/rbc58/mnt/ecg-tte/drugs/build_log.txt 2>&1 &
 ```
 
-## Architecture
+### PARADIGM-HF — next trial after drug master is ready
+SACUBITRIL/VALSARTAN vs ENALAPRIL in HFrEF (LVEF ≤ 40%). Config: `configs/paradigm_hf.yaml`.
 
-### Config-driven design
-Each trial = one YAML in `configs/`. All clinical logic (arms, I/E criteria, endpoints, ECG window, published HR) in YAML; all data paths on CLI. `arms:` entries support `formulation_filter: {require: [...], exclude: [...]}` ANDed onto the keyword-OR mask.
+Key design decisions already implemented:
+- `skip_washout: true` on sacubitril arm — PARADIGM-HF is a SWITCHING trial
+  (ARNI starters come FROM prior ACEi); naive cross-arm washout would gut the treated arm
+- `min-index-date: "2015-07-07"` (Entresto FDA approval date)
+- Composite endpoint: CV death + HF hospitalization (`event_primary`/`time_to_primary`)
+- Stage 3 + Stage 4 already handle composite endpoints via auto-detection
 
-### `cohort_utils.py::identify_arms_generic()`
-Arm assignment via earliest first-dispense date per arm. **Ties go to the first arm in `arms_spec` (= treated arm) wins.** Produces `prior_<arm_name>_days` for every arm pair, plus `stage3_alias` columns for COMET backward-compat.
-
-### `stage3_filter.py`
-Generic across trials: dynamic per-arm attrition counts, generic new-user lookback (`prior_<other_arm>_days`), `--require-hfref` flag (default True, set `false` for non-HF trials), column-existence-guarded exclusion blocks (NOTE+skip if pool lacks a COMET-specific covariate).
-
-### `run_stage34.sh`
-Loops Stage 3 → Stage 4 over all configs. Each stage's exit code captured via `${PIPESTATUS[0]}`; nonzero → `FAIL_COUNT++`, `continue` to next trial (does NOT abort the batch). Final line: `Stage3+4 complete: OK=.. SKIPPED=.. FAILED=..`.
-
-### `stage5_meta.py` (new)
-Reads each trial's `runs/<run_name>/results_summary.csv` + `published_hr`/`published_hr_ci` from `configs/<trial>.yaml`. For all 5 ladder rungs, computes per-trial log-HR diff vs published, standardized estimate difference (`z_pooled`), regulatory agreement (benefit/harm/null vs 1), CI overlap. Aggregates per method: Pearson r (log HR emulated vs published), mean/var of log-HR diff, mean/var of `z_pooled`, agreement rates. Outputs `meta_results.csv`, `meta_summary.csv`, `meta_scatter.png`, `meta_variance.png`, `meta_zscore.png`. Trials with `published_hr: null` (lead2) or missing `results_summary.csv` (failed trials) are skipped with a NOTE.
-
-### Key constraints (do not change without checking)
-- `balance.py` `SMD_COLS` frozen at 37 — used for balance tables/love plots regardless of `STRUCTURED_COVS`.
-- `ecg.window_days` always < 90 (enforced by `validate_config()`).
-- Death table is date-only — all-cause mortality proxies CV death everywhere.
-- `--meto-formulation tartrate_only` path in stage3_filter.py is intentionally COMET-only (non-default flag).
-
-## Cluster paths
-```
-ECG signals:    /mnt/raid0/bb2238/signals/preprocessed/all_ecgs/{fileID}.npy
-ECG metadata:   /home/rbc58/mnt/ecg-tte/ecg_metadata.parquet
-Echo metadata:  /home/rbc58/mnt/ecg-tte/echo_accession_number.parquet
-Drug master:    /home/rbc58/mnt/ecg-tte/drug_master.parquet
-OMOP person:    /home/rbc58/mnt/ascvd/omop_database/person/person.parquet
-OMOP condition: /home/rbc58/mnt/ascvd/omop_database/condition_occurrence/
-OMOP death:     /home/rbc58/mnt/ascvd/omop_database/death/death.parquet
-OMOP visit:     /home/rbc58/mnt/ascvd/omop_database/visit_occurrence/
-Output root:    /home/rbc58/mnt/ecg-tte/
-Embed dir:      /mnt/raid0/rbc58/ecg-tte/embeddings
-```
-
-## Commands to run next
-
-### 1. Pull latest
+**Once drug_master is ready, run Stage 1:**
 ```bash
-cd /home/rbc58/github/ecg-tte
-git pull
+python scripts/stage1_build_pool.py \
+    --config configs/paradigm_hf.yaml \
+    --drug-master /home/rbc58/mnt/ecg-tte/drugs/home_meds_*.parquet \
+    --output-root /home/rbc58/mnt/ecg-tte \
+    --visit-dir /home/rbc58/mnt/ascvd/omop_database/visit_occurrence
 ```
+Note: `--visit-dir` required for HF hospitalization endpoint.
 
-### 2. Re-run full 32-trial stage3+4 (required_icd fix — changes ~28 trials' results)
+### 32-trial pipeline status (as of 2026-06-10, pre-drug-master work)
+Latest full run: **OK=27 SKIPPED=0 FAILED=5**
+
+#### CRITICAL FIX (pushed, NOT yet re-run on cluster)
+`inclusion.required_icd` (disease-population gate) was computed by stage1 but **never
+filtered** by stage3. Affects 28/32 trials. Fixed in stage3 (step 1c). Full re-run required:
 ```bash
 bash scripts/run_stage34.sh
 ```
 
-### 3. Diagnose the 4 unknown stage3/4 failures (re-check after step 2 — may change)
-See "Pending failures" command above. Paste tracebacks back for fixes.
+#### Known failures
+- **d5896**: config fixed (formulation_filter added), pool stale → needs Stage 1 rebuild
+  ```bash
+  python -u scripts/stage1_build_pool.py --config configs/d5896.yaml --output-root /home/rbc58/mnt/ecg-tte
+  bash scripts/run_stage34.sh --trials "d5896"
+  ```
+- **4 others (impact, ontarget, savor_timi, transcend — TBD)**: undiagnosed, may resolve after required_icd fix
 
-### 4. Rebuild d5896 Stage 1 pool + rerun (after config fix, see above)
+## Architecture
 
-### 5. Run Stage 5 meta-analysis (once results exist for ≥3 trials)
+### Config-driven design
+Each trial = one YAML in `configs/`. All clinical logic (arms, I/E criteria, endpoints, ECG window,
+published HR) in YAML; all data paths on CLI. `arms:` entries support `formulation_filter: {require: [...],
+exclude: [...]}` ANDed onto the keyword-OR mask. `skip_washout: true` per arm disables cross-arm
+prior-use check (needed for switching trials like PARADIGM-HF).
+
+### `cohort_utils.py::identify_arms_generic()`
+Arm assignment via earliest first-dispense date per arm. Ties go to first arm in `arms_spec`.
+Produces `prior_<arm_name>_days` for every arm pair.
+
+### `stage3_filter.py`
+Generic across trials. Handles composite endpoints (`event_primary`/`time_to_primary`).
+Per-arm `skip_washout` logic reads from `args._yaml_cfg`.
+
+### `stage4_analyze.py`
+5-rung comparator ladder. Auto-detects `event_primary`/`time_to_primary` if present.
+`--event-col` / `--time-col` CLI override also available.
+
+### `stage5_meta.py`
+Cross-trial meta-analysis. Reads `results_summary.csv` + `published_hr` from configs.
+Run after full 32-trial stage3+4 completes.
+
+### Streamlit drug explorer (new)
 ```bash
-python scripts/stage5_meta.py \
-    --output-root /home/rbc58/mnt/ecg-tte \
-    --config-dir configs \
-    --run-name default
+streamlit run scripts/drug_explorer_app.py -- \
+    --drug-master /home/rbc58/mnt/ecg-tte/drugs/home_meds_cmp.parquet
+# Local: ssh -L 8501:localhost:8501 <cluster>, open http://localhost:8501
 ```
-Outputs → `/home/rbc58/mnt/ecg-tte/_meta/default/`
 
-## What's NOT done yet (future sessions)
-- Diagnose + fix the 4 non-d5896 stage3/4 failures.
-- Rebuild d5896 Stage 1 pool with corrected arm config, rerun stage3+4.
-- Run stage5_meta.py on full cluster results once all/most trials green.
-- Reconcile CLAUDE.md's 6-rung ladder description with actual 5-rung `STRUCTURED_COVS`-based ladder.
-- PARADIGM-HF `ef.threshold: 40.0` not yet read generically by stage3.
+## Cluster paths
+```
+ECG signals:     /mnt/raid0/bb2238/signals/preprocessed/all_ecgs/{fileID}.npy
+ECG metadata:    /home/rbc58/mnt/ecg-tte/ecg_metadata.parquet
+Echo metadata:   /home/rbc58/mnt/ecg-tte/echo_accession_number.parquet
+Drug master OLD: /home/rbc58/mnt/ecg-tte/drug_master.parquet  ← CarDS_ECG source, DO NOT USE
+Drug master NEW: /home/rbc58/mnt/ecg-tte/drugs/*.parquet      ← building now
+OMOP person:     /home/rbc58/mnt/ascvd/omop_database/person/person.parquet
+OMOP condition:  /home/rbc58/mnt/ascvd/omop_database/condition_occurrence/
+OMOP death:      /home/rbc58/mnt/ascvd/omop_database/death/death.parquet
+OMOP visit:      /home/rbc58/mnt/ascvd/omop_database/visit_occurrence/
+Output root:     /home/rbc58/mnt/ecg-tte/
+Embed dir:       /mnt/raid0/rbc58/ecg-tte/embeddings
+Raw EHR meds:    see CLAUDE.md "Raw EHR Medication Sources" section
+```
+
+## Priority order for next session
+1. Verify drug_master build completed — check `ls -lh /home/rbc58/mnt/ecg-tte/drugs/`
+2. Spot-check: sacubitril/enalapril present in home_meds shards (use drug_explorer_app.py)
+3. Run PARADIGM-HF Stage 1 with new drug_master
+4. Re-run full 32-trial stage3+4 (`bash scripts/run_stage34.sh`) — required_icd fix
+5. Rebuild d5896 Stage 1 pool
+6. Diagnose 4 unknown failures (may resolve after step 4)
+7. Re-run stage5_meta.py
