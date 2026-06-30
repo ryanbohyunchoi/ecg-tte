@@ -876,7 +876,8 @@ def parse_person_table(person_parquet: str) -> pd.DataFrame:
                or next((c for c in person.columns if "source_value" in c), None))
     if mrn_col is None:
         raise ValueError(f"person table has no MRN-like column. Found: {list(person.columns)}")
-    person["MRN"] = person[mrn_col].astype(str).str.strip()
+    person["MRN"] = (person[mrn_col].astype(str).str.strip()
+                     .str.replace(r"^[A-Za-z]+", "", regex=True))
 
     if "birth_datetime" in person.columns:
         person["birth_date"] = pd.to_datetime(person["birth_datetime"], errors="coerce")
