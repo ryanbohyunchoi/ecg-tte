@@ -43,6 +43,7 @@ Denominator standardization: `--denominator strict` (default) runs all methods o
 
 - ECG signals: `/mnt/raid0/bb2238/signals/preprocessed/all_ecgs/{fileID}.npy`
 - ECG metadata: `/mnt/raid0/rbc58/mm_vhd/metadata/ecg_metadata.parquet`
+- Echo metadata: `/mnt/raid0/rbc58/mm_vhd/metadata/echo.parquet`
 - OMOP person: `/home/rbc58/mnt/ascvd/omop_database/person/person.parquet`
 - OMOP condition: `/home/rbc58/mnt/ascvd/omop_database/condition_occurrence/condition_occurrence_*.parquet`
 - Experiment outputs: `/home/rbc58/mnt/ecg-tte` or `/mnt/raid0/rbc58/` (project subdirs)
