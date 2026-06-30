@@ -50,7 +50,7 @@ python scripts/stage1_build_pool.py \
     --condition-dir  "${OMOP}/condition_occurrence" \
     --death-parquet  "${OMOP}/death/death.parquet" \
     --drug-master    "${MERGED_DM}" \
-    --echo-meta      "${META}/echo.parquet" \
+    --echo-meta      "${META}/echo_accession_number.parquet" \
     --ecg-meta       "${META}/ecg_metadata.parquet" \
     --output-root    "${OUT_ROOT}" \
     2>&1 | tee "${OUT_ROOT}/paradigm_hf_stage1.log"
