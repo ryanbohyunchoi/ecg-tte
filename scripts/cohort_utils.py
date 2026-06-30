@@ -773,7 +773,7 @@ def load_ecg_meta(ecg_meta_path: str, mrns: Optional[set] = None) -> pd.DataFram
     if not all([mrn_col, date_col]):
         raise ValueError(f"ECG meta missing required cols. Found: {orig_cols}")
 
-    meta["MRN"]     = meta[mrn_col].astype(str).str.strip()
+    meta["MRN"]     = meta[mrn_col].astype(str).str.strip().str.replace(r"^[A-Za-z]+", "", regex=True)
     meta["ECGDate"] = pd.to_datetime(meta[date_col], errors="coerce")
 
     for col in ["RR_Interval", "PR_Interval", "QRS_Duration"]:
@@ -815,7 +815,7 @@ def load_echo_meta(echo_meta_path: str, mrns: Optional[set] = None) -> pd.DataFr
     if not all([mrn_col, date_col, ef_col]):
         raise ValueError(f"Echo meta missing required cols. Found: {list(echo.columns)}")
 
-    echo["MRN"]      = echo[mrn_col].astype(str).str.strip()
+    echo["MRN"]      = echo[mrn_col].astype(str).str.strip().str.replace(r"^[A-Za-z]+", "", regex=True)
     echo["EchoDate"] = pd.to_datetime(echo[date_col], errors="coerce")
     echo["EF"]       = pd.to_numeric(echo[ef_col], errors="coerce")
     echo = echo[(echo["EF"] >= EF_MIN) & (echo["EF"] <= EF_MAX)].dropna(
