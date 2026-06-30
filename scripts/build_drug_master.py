@@ -63,6 +63,14 @@ from pathlib import Path
 
 import pandas as pd
 
+# Some rows in Meds.txt / Hosp_Med_Admin files have embedded tabs in free-text
+# fields (SIG, ALL_ORDER_DX, COMMENTS). Skip those malformed rows.
+_PD_VERSION = tuple(int(x) for x in pd.__version__.split(".")[:2])
+_BAD_LINES_KWARG: dict = (
+    {"on_bad_lines": "skip"} if _PD_VERSION >= (1, 3)
+    else {"error_bad_lines": False, "warn_bad_lines": False}
+)
+
 
 # ── File specs per cohort ─────────────────────────────────────────────────────
 # (label, filename, setting, use_taken_time)
@@ -153,6 +161,7 @@ def _read_med_file(
         reader = pd.read_csv(
             path, sep=sep, chunksize=chunksize,
             low_memory=False, encoding="latin-1",
+            **_BAD_LINES_KWARG,
         )
         for chunk in reader:
             total_in += len(chunk)
