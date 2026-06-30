@@ -104,7 +104,12 @@ covariates:
     - statin
     - nitrate
     - beta_blocker      # PARADIGM-HF required stable BB therapy at baseline
+    - warfarin          # OAC: vitamin K antagonist
+    - doac              # OAC: direct oral anticoagulants (apixaban, rivaroxaban, dabigatran)
+    - antiplatelet      # aspirin + P2Y12 (clopidogrel, ticagrelor, prasugrel)
+    - amiodarone        # antiarrhythmic
   condition_flags:
+    # HF severity / history
     - name: hfref_icd_5y
       codes: [I50]
       lookback_days: 1825
@@ -117,6 +122,100 @@ covariates:
       codes: [I502]
       lookback_days: 730
       char: 4
+    - name: hf_icd_1y
+      codes: [I50]
+      lookback_days: 365
+      char: 3
+    - name: hf_icd_2y
+      codes: [I50]
+      lookback_days: 730
+      char: 3
+    # Multi-window comorbidity lookbacks
+    - name: afib_1y
+      codes: [I48]
+      lookback_days: 365
+      char: 3
+    - name: afib_5y
+      codes: [I48]
+      lookback_days: 1825
+      char: 3
+    - name: dm_1y
+      codes: [E11, E13]
+      lookback_days: 365
+      char: 3
+    - name: cad_1y
+      codes: [I21, I22, I25]
+      lookback_days: 365
+      char: 3
+    - name: cad_5y
+      codes: [I21, I22, I25]
+      lookback_days: 1825
+      char: 3
+    - name: stroke_1y
+      codes: [I63, I64]
+      lookback_days: 365
+      char: 3
+    # Additional comorbidities
+    - name: ckd_3
+      codes: [N183]
+      lookback_days: 1825
+      char: 4
+    - name: anemia_2y
+      codes: [D50, D51, D52, D53, D57, D58, D59, D62, D63, D64]
+      lookback_days: 730
+      char: 3
+    - name: pvd_5y
+      codes: [I70, I73]
+      lookback_days: 1825
+      char: 3
+    - name: osa_5y
+      codes: [G473]
+      lookback_days: 1825
+      char: 4
+    - name: hypothyroid_5y
+      codes: [E03]
+      lookback_days: 1825
+      char: 3
+    - name: depression_2y
+      codes: [F32, F33]
+      lookback_days: 730
+      char: 3
+    - name: ventricular_arrh_2y
+      codes: [I472, I490]
+      lookback_days: 730
+      char: 4
+    - name: cardiac_device_5y
+      codes: [Z95]
+      lookback_days: 1825
+      char: 3
+    - name: aki_1y
+      codes: [N17]
+      lookback_days: 365
+      char: 3
+    - name: atrial_flutter_2y
+      codes: [I481]
+      lookback_days: 730
+      char: 4
+    - name: hyponatremia_1y
+      codes: [E871]
+      lookback_days: 365
+      char: 4
+    - name: hyperkalemia_1y
+      codes: [E875]
+      lookback_days: 365
+      char: 4
+    - name: valvular_2y
+      codes: [I34, I35, I36, I37, I38]
+      lookback_days: 730
+      char: 3
+    - name: obesity_5y
+      codes: [E66]
+      lookback_days: 1825
+      char: 3
+    - name: iron_deficiency_2y
+      codes: [D50]
+      lookback_days: 730
+      char: 3
   extra_smd_cols: []
 
 endpoint:

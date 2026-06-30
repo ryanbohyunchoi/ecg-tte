@@ -517,6 +517,14 @@ def main() -> None:
         "loop_diuretic_90d":     "loop_diuretic",
         "acei_arb_90d":          "acei_arb",
         "aldosterone_antag_90d": "aldosterone_antag",
+        "digoxin_90d":           "digoxin",
+        "statin_90d":            "statin",
+        "nitrate_90d":           "nitrate",
+        "beta_blocker_90d":      "beta_blocker",
+        "warfarin_90d":          "warfarin",
+        "doac_90d":              "doac",
+        "antiplatelet_90d":      "antiplatelet",
+        "amiodarone_90d":        "amiodarone",
     }
     for old, new in rename_map.items():
         if old in pool.columns and new not in pool.columns:
@@ -541,12 +549,16 @@ def main() -> None:
         "RR_Interval", "PR_Interval", "QRS_Duration", "hr_at_index",
         # Comorbidities
         "afib", "htn", "dm", "cad_mi", "copd", "hyperlipidemia", "stroke",
-        # Medications
+        # Medications (post-rename: _90d suffix stripped)
         "loop_diuretic", "acei_arb", "aldosterone_antag",
+        "digoxin", "statin", "nitrate", "beta_blocker",
+        "warfarin", "doac", "antiplatelet", "amiodarone",
         # HF severity
         "prior_hf_code_1yr",
         # Therapy
         "days_on_therapy",
+        # Adherence
+        "n_refills_assigned_90d", "n_refills_assigned_180d", "n_refills_assigned_365d",
         # ECG selection
         "selected_ecg_fileID", "selected_ecg_days_from_index",
         # Outcomes (all-cause mortality — always present)
@@ -554,6 +566,14 @@ def main() -> None:
         # Primary endpoint (composite, from stage1 build_composite_endpoint)
         "event_primary", "time_to_primary", "primary_event_date",
     ]
+    # Dynamically include condition_flags and required_icd flags from YAML config
+    _yaml_cfg = getattr(args, "_yaml_cfg", {})
+    _cfg_flag_names = (
+        [s["name"] for s in _yaml_cfg.get("covariates", {}).get("condition_flags", [])] +
+        [s["name"] for s in _yaml_cfg.get("inclusion", {}).get("required_icd", [])]
+    )
+    OUTPUT_COLS = list(dict.fromkeys(OUTPUT_COLS + _cfg_flag_names))
+
     out_cols = [c for c in OUTPUT_COLS if c in pool.columns]
     cohort = pool[out_cols].drop_duplicates("person_id").reset_index(drop=True)
 

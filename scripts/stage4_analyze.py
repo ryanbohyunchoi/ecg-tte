@@ -249,7 +249,14 @@ def structured_psm(
     treated_arm: str = "carvedilol",
     control_arm: str = "metoprolol",
     seed: int = 42,
+    use_lasso: bool = True,
 ) -> pd.DataFrame:
+    """
+    Propensity score matching with optional LASSO feature selection (LEGEND-T2D style).
+    When use_lasso=True: L1-penalized logistic regression with 5-fold CV selects
+    non-zero-coefficient features; ordinary LR is then refit on selected features.
+    """
+    from sklearn.linear_model import LogisticRegressionCV
     avail = [c for c in covariates if c in df.columns]
     if not avail:
         return pd.DataFrame()
@@ -264,10 +271,35 @@ def structured_psm(
         print(f"  PSM complete-case: 0 rows dropped ({complete.sum():,} rows complete) ✓")
     df   = df[complete].reset_index(drop=True)
     feat = feat[complete].reset_index(drop=True)
-    sc  = StandardScaler()
-    clf = LogisticRegression(max_iter=2000, C=1.0, solver="saga", random_state=seed)
-    X   = sc.fit_transform(feat.values)
-    clf.fit(X, (df["arm"] == treated_arm).astype(int).values)
+    sc   = StandardScaler()
+    X    = sc.fit_transform(feat.values)
+    y    = (df["arm"] == treated_arm).astype(int).values
+
+    if use_lasso and len(avail) > 1:
+        import numpy as _np
+        lasso_clf = LogisticRegressionCV(
+            Cs=_np.logspace(-3, 1, 20),
+            cv=5,
+            penalty="l1",
+            solver="saga",
+            max_iter=2000,
+            random_state=seed,
+            scoring="roc_auc",
+        )
+        lasso_clf.fit(X, y)
+        coef = lasso_clf.coef_[0]
+        sel_mask = coef != 0
+        sel_feats = [f for f, s in zip(avail, sel_mask) if s]
+        print(f"  LASSO selected {sel_mask.sum()}/{len(avail)} features  "
+              f"(best C={lasso_clf.C_[0]:.4f})")
+        print(f"  Selected covariates: {sel_feats}")
+        if sel_mask.sum() == 0:
+            print("  WARNING: LASSO removed all features — falling back to all candidates")
+            sel_mask = _np.ones(len(avail), dtype=bool)
+        X = X[:, sel_mask]
+
+    clf = LogisticRegression(max_iter=2000, C=1.0, solver="lbfgs", random_state=seed)
+    clf.fit(X, y)
     ps  = clf.predict_proba(X)[:, 1]
     return _greedy_match(df, ps, k, caliper, treated_arm, control_arm)
 
@@ -689,25 +721,45 @@ def sample_1to1(
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
-# Rich PSM candidate covariate list — filtered to columns present in cohort at runtime.
+# Rich PSM candidate pool — LASSO selects the non-zero-coefficient subset at runtime.
+# Column names reflect stage3 rename_map: medication flags have no _90d suffix.
+# Requires stage1 rerun whenever new condition_flags are added to the YAML config.
 _RICH_PSM_CANDIDATES: list[str] = [
+    # Demographics
     "age_at_index", "sex_binary", "race_black",
+    # Echo
     "ef_at_index",
+    # HF severity / coding history
     "hfref_icd_5y", "hfref_icd_24m", "hfref_icd_subcoded_i502_24m",
-    "hf_icd_ever",
+    "hf_icd_1y", "hf_icd_2y",
+    # Comorbidities (ever / long-term)
     "afib", "htn", "dm", "cad_mi", "copd", "hyperlipidemia", "stroke",
-    "loop_diuretic_90d", "aldosterone_antag_90d", "digoxin_90d",
-    "statin_90d", "nitrate_90d", "beta_blocker_90d",
+    # Comorbidities — recent / multi-window
+    "afib_1y", "afib_5y", "dm_1y", "cad_1y", "cad_5y", "stroke_1y",
+    "ckd_3", "anemia_2y", "pvd_5y", "osa_5y", "hypothyroid_5y",
+    "depression_2y", "ventricular_arrh_2y", "cardiac_device_5y",
+    "aki_1y", "atrial_flutter_2y",
+    "hyponatremia_1y", "hyperkalemia_1y",
+    "valvular_2y", "obesity_5y", "iron_deficiency_2y",
+    # Medications 90d pre-index (stage3 renames _90d → no suffix)
+    "loop_diuretic", "aldosterone_antag", "digoxin",
+    "statin", "nitrate", "beta_blocker",
+    "warfarin", "doac", "antiplatelet", "amiodarone",
+    # ECG intervals
     "hr_at_index", "QRS_Duration", "PR_Interval",
+    # GDMT polypharmacy (stage4-computed from drug_master_pool)
     "bb_90d", "sglt2i_90d",
-    "n_refills_assigned_90d",
+    # Adherence
+    "n_refills_assigned_90d", "n_refills_assigned_180d",
+    # Calendar time (index year — controls for secular trends in prescribing)
+    "index_year",
 ]
 
 _ADJ_COX_CANDIDATES: list[str] = [
     "age_at_index", "sex_binary", "race_black",
     "ef_at_index",
     "afib", "htn", "dm", "cad_mi", "copd", "hyperlipidemia", "stroke",
-    "loop_diuretic_90d", "beta_blocker_90d",
+    "loop_diuretic", "beta_blocker",
 ]
 
 
@@ -778,6 +830,10 @@ def main() -> None:
     if n_treated == 0 or n_control == 0:
         print(f"ERROR: empty arm — cannot run. Check arm keywords in config.")
         sys.exit(1)
+
+    # ── Derived columns ───────────────────────────────────────────────────────
+    if "index_date" in cohort.columns:
+        cohort["index_year"] = pd.to_datetime(cohort["index_date"]).dt.year
 
     # ── GDMT flags ────────────────────────────────────────────────────────────
     drug_pool_path = args.drug_pool or str(Path(args.cohort).parent.parent / "drug_master_pool.parquet")

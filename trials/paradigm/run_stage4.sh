@@ -36,12 +36,12 @@ python -u scripts/stage4_analyze.py \
     --trial-name       PARADIGM-HF \
     --reference-hr     0.80 \
     --drug-pool        "${OUT_ROOT}/paradigm_hf/pool/drug_master_pool.parquet" \
-    --exclude-psm-cols acei_arb_90d \
+    --exclude-psm-cols acei_arb \
     --event-col        event_death \
     --time-col         time_to_death \
     2>&1 | tee "$LOG"
 
-# acei_arb_90d excluded from PSM: sacubitril/valsartan contains valsartan (ARB),
+# acei_arb excluded from PSM: sacubitril/valsartan contains valsartan (ARB),
 # so this covariate is structurally confounded with treatment assignment.
 
 echo "[stage4] Done."
