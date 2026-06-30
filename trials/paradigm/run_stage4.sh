@@ -29,18 +29,16 @@ fi
 
 echo "[stage4] Analyzing PARADIGM-HF → run: $RUN_NAME  denominator: $DENOMINATOR"
 python -u scripts/stage4_analyze.py \
-    --cohort       "$COHORT" \
-    --embed-dir    "$EMBED_DIR" \
-    --output-dir   "$RUN_DIR" \
-    --treated-arm  sacubitril_valsartan \
-    --control-arm  acei \
-    --trial-name   PARADIGM-HF \
-    --reference-hr 0.80 \
-    --denominator  "$DENOMINATOR" \
-    --drug-pool    "${OUT_ROOT}/paradigm_hf/pool/drug_master_pool.parquet" \
+    --cohort           "$COHORT" \
+    --output-dir       "$RUN_DIR" \
+    --treated-arm      sacubitril_valsartan \
+    --control-arm      acei \
+    --trial-name       PARADIGM-HF \
+    --reference-hr     0.80 \
+    --drug-pool        "${OUT_ROOT}/paradigm_hf/pool/drug_master_pool.parquet" \
     --exclude-psm-cols acei_arb_90d \
-    --event-col    event_death \
-    --time-col     time_to_death \
+    --event-col        event_death \
+    --time-col         time_to_death \
     2>&1 | tee "$LOG"
 
 # acei_arb_90d excluded from PSM: sacubitril/valsartan contains valsartan (ARB),

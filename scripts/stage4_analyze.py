@@ -689,79 +689,51 @@ def sample_1to1(
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
+# Rich PSM candidate covariate list — filtered to columns present in cohort at runtime.
+_RICH_PSM_CANDIDATES: list[str] = [
+    "age_at_index", "sex_binary", "race_black",
+    "ef_at_index",
+    "hfref_icd_5y", "hfref_icd_24m", "hfref_icd_subcoded_i502_24m",
+    "hf_icd_ever",
+    "afib", "htn", "dm", "cad_mi", "copd", "hyperlipidemia", "stroke",
+    "loop_diuretic_90d", "aldosterone_antag_90d", "digoxin_90d",
+    "statin_90d", "nitrate_90d", "beta_blocker_90d",
+    "hr_at_index", "QRS_Duration", "PR_Interval",
+    "bb_90d", "sglt2i_90d",
+    "n_refills_assigned_90d",
+]
+
+_ADJ_COX_CANDIDATES: list[str] = [
+    "age_at_index", "sex_binary", "race_black",
+    "ef_at_index",
+    "afib", "htn", "dm", "cad_mi", "copd", "hyperlipidemia", "stroke",
+    "loop_diuretic_90d", "beta_blocker_90d",
+]
+
+
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        description="COMET Stage 4: comparator ladder + balance + forest plot"
+        description="Stage 4: unadjusted Cox / adjusted Cox / rich PSM"
     )
-    p.add_argument("--cohort",           required=True)
-    p.add_argument("--embed-dir",        required=True)
-    p.add_argument("--output-dir",       required=True)
-    p.add_argument("--match-ratio",      type=int,   default=1)
-    p.add_argument("--abs-threshold",    type=float, default=0.30,
-                   help="Primary cosine distance threshold (default 0.30 ≈ similarity ≥ 0.70)")
-    p.add_argument("--caliper",          type=float, default=0.05,
-                   help="ECG embedding PSM caliper")
+    p.add_argument("--cohort",             required=True)
+    p.add_argument("--embed-dir",          default="",
+                   help="Embedding directory (optional — reserved for future ECG methods)")
+    p.add_argument("--output-dir",         required=True)
+    p.add_argument("--treated-arm",        default="carvedilol")
+    p.add_argument("--control-arm",        default="metoprolol")
+    p.add_argument("--trial-name",         default="COMET")
+    p.add_argument("--reference-hr",       type=float, default=COMET_HR)
+    p.add_argument("--event-col",          default="")
+    p.add_argument("--time-col",           default="")
     p.add_argument("--structured-caliper", type=float, default=0.25)
-    p.add_argument("--ps-caliper-sd", type=float, default=0.20,
-                   help="PS-caliper width as fraction of PS SD for PS+ECG-NN method (default 0.20)")
-    p.add_argument("--drug-pool", default="",
-                   help="Path to drug_master_pool.parquet for GDMT polypharmacy computation "
-                        "(bb_90d, sglt2i_90d, gdmt_count). Default: auto-detect as sibling of cohort.")
-    p.add_argument("--treated-arm",      default="carvedilol")
-    p.add_argument("--control-arm",      default="metoprolol")
-    p.add_argument("--trial-name",       default="COMET")
-    p.add_argument("--reference-hr",     type=float, default=COMET_HR)
-    p.add_argument("--event-col",        default="",
-                   help="Event indicator column (default: auto-detect — uses event_primary "
-                        "if present in cohort and has events, else event_death).")
-    p.add_argument("--time-col",         default="",
-                   help="Time-to-event column (default: auto-detect — pairs with --event-col).")
-    p.add_argument("--forest-xlim",      default="0.3,1.6",
-                   help="Forest plot x-axis limits as 'lo,hi' (default: 0.3,1.6)")
-    p.add_argument("--seed",             type=int,   default=42)
-    p.add_argument(
-        "--denominator",
-        choices=["strict", "natural", "both"],
-        default="strict",
-        help=(
-            "strict  — all methods on D = (ECG-available) ∩ (rich-covariates complete); "
-            "natural — each method on its natural subset (legacy); "
-            "both    — strict primary ladder + ECG-NN sensitivity on ecg_available"
-        ),
-    )
-    p.add_argument("--no-diagnostics", action="store_true",
-                   help="Skip diagnostic outputs (KM, arm summary, immortal-time check)")
-    p.add_argument("--no-ef", action="store_true",
-                   help="Remove ef_at_index from PSM covariate sets; allows patients without echo into D")
-    afib_grp = p.add_mutually_exclusive_group()
-    afib_grp.add_argument("--exclude-afib", action="store_true",
-                          help="Restrict analysis to afib=0 patients (non-afib stratum)")
-    afib_grp.add_argument("--afib-only", action="store_true",
-                          help="Restrict analysis to afib=1 patients (afib stratum)")
-    p.add_argument("--exact-match-cols", type=str, default="",
-                   help="Comma-separated cohort columns for exact matching inside ECG-NN "
-                        "(e.g. 'afib'). Does not affect PSM or Cox methods.")
-    p.add_argument("--exclude-psm-cols", type=str, default="",
-                   help="Comma-separated covariate columns to drop from PSM, Cox, and balance "
-                        "tables (e.g. 'acei_arb' for PARADIGM where it is structural).")
-    p.add_argument("--exclude-match-cols", type=str, default="",
-                   help="Comma-separated columns to drop from PSM covariates, ECG-NN+Comorbidity "
-                        "tabular cols, and doubly-robust adjustment — but KEEP in SMD balance table. "
-                        "Use for variables like race_black that should be reported but not used "
-                        "for matching (e.g. '--exclude-match-cols race_black').")
-    p.add_argument("--multimodal-comorbidity-cols", type=str,
-                   default="",
-                   help="Comma-separated columns for the ECG+comorbidity matcher. "
-                        "Default '' = use STRUCTURED_COVS (same as Structured PSM). "
-                        "Pass an explicit list to override.")
-    p.add_argument("--calendar-match", action="store_true",
-                   help="Exact-match ECG-NN within index_year (calendar-time stratum).")
-    p.add_argument("--multimodal-comorbidity-weight", type=float, default=1.0,
-                   help="Weight on comorbidity distance relative to cosine distance (default 1.0).")
-    p.add_argument("--adjust-matched-cols", default="ef_at_index,race_black",
-                   help="Comma-separated covariates for doubly-robust within-pair Cox on ECG-NN "
-                        "matched sets. Removes residual confounding the encoder can't see. "
-                        "Default 'ef_at_index,race_black'. Pass '' to disable.")
+    p.add_argument("--match-ratio",        type=int,   default=1)
+    p.add_argument("--forest-xlim",        default="0.3,1.6")
+    p.add_argument("--seed",               type=int,   default=42)
+    p.add_argument("--drug-pool",          default="",
+                   help="Path to drug_master_pool.parquet for GDMT flags (bb_90d, sglt2i_90d).")
+    p.add_argument("--exclude-psm-cols",   type=str,   default="",
+                   help="Comma-separated columns to drop from PSM and adjusted Cox "
+                        "(e.g. 'acei_arb_90d' when structurally confounded with treatment).")
     return p.parse_args()
 
 
@@ -771,477 +743,167 @@ def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
     TREATED, CONTROL = args.treated_arm, args.control_arm
     TRIAL,   REF_HR  = args.trial_name,  args.reference_hr
-    run_diag = not args.no_diagnostics
-    exact_match_cols = [c.strip() for c in args.exact_match_cols.split(",") if c.strip()] or []
-    if args.calendar_match:
-        exact_match_cols = list(dict.fromkeys(exact_match_cols + ["index_year"]))
-        print(f"  [--calendar-match] ECG-NN will exact-match within index_year")
-    exact_match_cols = exact_match_cols or None
-    if exact_match_cols:
-        print(f"  [--exact-match-cols] ECG-NN exact-match cols: {exact_match_cols}")
-    MATCHED_ADJ_COLS = [c.strip() for c in args.adjust_matched_cols.split(",") if c.strip()]
-    if MATCHED_ADJ_COLS:
-        print(f"  [--adjust-matched-cols] doubly-robust Cox will adjust for: {MATCHED_ADJ_COLS}")
 
     # ── Load cohort ───────────────────────────────────────────────────────────
     cohort = pd.read_parquet(args.cohort)
     cohort["person_id"] = cohort["person_id"].astype(str)
     if "sex_binary" not in cohort.columns:
         cohort["sex_binary"] = (cohort["sex"] == "F").astype(float)
-    if "index_date" in cohort.columns:
-        cohort["index_year"] = pd.to_datetime(cohort["index_date"]).dt.year
 
-    if args.exclude_afib:
-        n_before = len(cohort)
-        cohort = cohort[cohort["afib"] == 0].reset_index(drop=True)
-        print(f"  [--exclude-afib] Restricted to afib=0: {n_before:,} → {len(cohort):,} patients")
-    elif args.afib_only:
-        n_before = len(cohort)
-        cohort = cohort[cohort["afib"] == 1].reset_index(drop=True)
-        print(f"  [--afib-only] Restricted to afib=1: {n_before:,} → {len(cohort):,} patients")
+    TREATED, CONTROL = args.treated_arm, args.control_arm
+    TRIAL,   REF_HR  = args.trial_name,  args.reference_hr
 
-    # ── Outcome column selection ──────────────────────────────────────────────
-    # Explicit CLI override > auto-detect from cohort.
+    # ── Load cohort ───────────────────────────────────────────────────────────
+    cohort = pd.read_parquet(args.cohort)
+    cohort["person_id"] = cohort["person_id"].astype(str)
+    if "sex_binary" not in cohort.columns:
+        cohort["sex_binary"] = (cohort["sex"] == "F").astype(float)
+
+    # ── Outcome ───────────────────────────────────────────────────────────────
     global _EVENT_COL, _TIME_COL
     if args.event_col and args.time_col:
         _EVENT_COL, _TIME_COL = args.event_col, args.time_col
-    elif (
-        "event_primary" in cohort.columns
-        and "time_to_primary" in cohort.columns
-        and cohort["event_primary"].sum() > 0
-    ):
+    elif "event_primary" in cohort.columns and cohort["event_primary"].sum() > 0:
         _EVENT_COL, _TIME_COL = "event_primary", "time_to_primary"
     else:
         _EVENT_COL, _TIME_COL = "event_death", "time_to_death"
-    print(f"  [outcome] {_EVENT_COL} / {_TIME_COL}")
 
-    print(f"Cohort: {len(cohort):,}  "
-          + "  ".join(f"{k}={v:,}" for k, v in sorted(cohort["arm"].value_counts().to_dict().items())))
-    print(f"Events: {cohort[_EVENT_COL].sum():,}  ({_EVENT_COL})")
-    print(f"\nReference HR ({TRIAL} published): {REF_HR}")
-    print(f"{'='*70}")
+    n_treated = (cohort["arm"] == TREATED).sum()
+    n_control = (cohort["arm"] == CONTROL).sum()
+    print(f"Cohort: {len(cohort):,}  {TREATED}={n_treated:,}  {CONTROL}={n_control:,}")
+    print(f"Outcome: {_EVENT_COL}  events={cohort[_EVENT_COL].sum():,}")
+    print(f"Reference HR ({TRIAL}): {REF_HR}")
+    print(f"{'='*60}")
 
-    # Covariate sets (defined early — used by denominator masks and methods)
-    if args.no_ef:
-        print("  [--no-ef] ef_at_index not included in PSM covariate sets (already excluded)")
-    ADJ_COVS = ["age_at_index", "sex_binary", "race_black"]
+    if n_treated == 0 or n_control == 0:
+        print(f"ERROR: empty arm — cannot run. Check arm keywords in config.")
+        sys.exit(1)
 
-    # Drop excluded columns from PSM/Cox covariate sets ONLY — NOT from SMD display.
-    # Kept in SMD_COLS so the balance table shows held-out balance for all features,
-    # including ECG intervals and medications that PSM/PS+ECG-NN don't match on.
-    _excl = [c.strip() for c in args.exclude_psm_cols.split(",") if c.strip()]
-    SMD_COLS = list(_balance_mod.SMD_COLS)  # local copy — never filtered by _excl
-    if _excl:
-        print(f"  [--exclude-psm-cols] dropping from PSM/Cox covariate sets (kept in SMD): {_excl}")
-
-    # --exclude-match-cols: remove from matching/adjustment but NOT from SMD display.
-    _excl_match = [c.strip() for c in args.exclude_match_cols.split(",") if c.strip()]
-    if _excl_match:
-        print(f"  [--exclude-match-cols] dropping from matching/adjustment only (kept in SMD): {_excl_match}")
-        ADJ_COVS         = [c for c in ADJ_COVS         if c not in _excl_match]
-        MATCHED_ADJ_COLS = [c for c in MATCHED_ADJ_COLS if c not in _excl_match]
-
-    # GDMT polypharmacy: compute bb_90d, sglt2i_90d, gdmt_count from drug_master_pool.
+    # ── GDMT flags ────────────────────────────────────────────────────────────
     drug_pool_path = args.drug_pool or str(Path(args.cohort).parent.parent / "drug_master_pool.parquet")
     cohort = _add_gdmt_flags(cohort, drug_pool_path)
 
-    # CCI scalar (partial Charlson from existing comorbidity flags).
-    cohort["cci_score"] = compute_cci(cohort)
+    # ── Covariate sets ────────────────────────────────────────────────────────
+    _excl = {c.strip() for c in args.exclude_psm_cols.split(",") if c.strip()}
+    if _excl:
+        print(f"Excluded from PSM/Cox: {sorted(_excl)}")
 
-    # STRUCTURED_COVS: covariate set for Structured PSM and PS-caliper in PS+ECG-NN.
-    _structured_base = [
-        "age_at_index", "sex_binary", "race_black",
-        "afib", "htn", "dm", "cad_mi", "copd", "hyperlipidemia", "stroke",
-        "prior_hf_code_1yr",
+    RICH_PSM_COVS = [
+        c for c in _RICH_PSM_CANDIDATES
+        if c in cohort.columns and c not in _excl
     ]
-    STRUCTURED_COVS = [
-        c for c in _structured_base
-        if c in cohort.columns and c not in _excl and c not in _excl_match
+    ADJ_COVS = [
+        c for c in _ADJ_COX_CANDIDATES
+        if c in cohort.columns and c not in _excl
     ]
-    print(f"  STRUCTURED_COVS ({len(STRUCTURED_COVS)}): {STRUCTURED_COVS}")
+    SMD_COLS = list(_balance_mod.SMD_COLS)
 
-    # Which covariates each method had direct access to during matching.
-    # PS+ECG-NN uses STRUCTURED_COVS for the PS model (caliper), so those
-    # are "in-model" — held-out balance shows only ECG-derived features.
-    IN_MODEL_COVS = {
-        "PSM":            STRUCTURED_COVS,
-        "ECG-NN-PRIMARY": [],
-        "PS+ECG-NN":      STRUCTURED_COVS,
-    }
+    print(f"Rich PSM covariates ({len(RICH_PSM_COVS)}): {RICH_PSM_COVS}")
+    print(f"Adjusted Cox covariates ({len(ADJ_COVS)}): {ADJ_COVS}")
 
-    # ── Load embeddings ───────────────────────────────────────────────────────
-    print(f"\nLoading BCL embeddings from {args.embed_dir} …")
-    emb_df, X_raw = load_embeddings(args.embed_dir, cohort)
-    if len(emb_df) == 0:
-        raise RuntimeError("No embeddings found — run embed_comet.py first.")
-    print(f"Embeddings: {len(emb_df):,} / {len(cohort):,}  "
-          + "  ".join(f"{k}={v:,}" for k, v in sorted(emb_df["arm"].value_counts().to_dict().items())))
+    # ── Arm summary ───────────────────────────────────────────────────────────
+    arm_df = arm_summary(cohort, treated_arm=TREATED, control_arm=CONTROL)
+    print_arm_summary(arm_df, label="full cohort")
+    arm_df.to_csv(out / "arm_summary.csv", index=False)
 
-    norms = np.linalg.norm(X_raw, axis=1)
-    print(f"  Embedding norms: mean={norms.mean():.4f} std={norms.std():.4f}")
+    er_df = event_rate_by_arm(cohort, treated_arm=TREATED, control_arm=CONTROL,
+                               event_col=_EVENT_COL, duration_col=_TIME_COL)
+    print_event_rates(er_df)
+    plot_index_date_distribution(cohort, out / "index_date_dist.png",
+                                 treated_arm=TREATED, control_arm=CONTROL)
 
-    # ── Denominator audit ─────────────────────────────────────────────────────
-    print(f"\nBuilding denominator masks …")
-    masks = build_masks(cohort, emb_df, STRUCTURED_COVS)
-    audit_df = audit_table(cohort, masks, treated_arm=TREATED, control_arm=CONTROL)
-    print(f"\n  Denominator audit (relative to full cohort n={len(cohort):,}):")
-    print_audit(audit_df)
-    audit_df.to_csv(out / "denominator_audit.csv", index=False)
-
-    miss_df = missingness_audit(cohort, STRUCTURED_COVS, masks["echo_complete"])
-    miss_df.to_csv(out / "missingness_audit.csv", index=False)
-    print(f"\n  Per-covariate missingness within echo_complete (n={int(masks['echo_complete'].sum()):,}):")
-    for _, r in miss_df.iterrows():
-        print(f"    {r['covariate']:<22}  missing={int(r['n_missing']):>5}  ({r['pct_missing']:.1f}%)")
-
-    # ── Active analysis population ────────────────────────────────────────────
-    use_strict = args.denominator in ("strict", "both")
-
-    if use_strict:
-        strict_mask = masks["intersection_strict"]
-        cohort_d = cohort[strict_mask].reset_index(drop=True)
-        strict_pids = set(cohort_d["person_id"].astype(str))
-        strict_emb_mask = emb_df["person_id"].astype(str).isin(strict_pids)
-        emb_d = emb_df[strict_emb_mask].reset_index(drop=True)
-        X_d   = X_raw[strict_emb_mask.values]
-        n_d   = len(cohort_d)
-        denom_label = f"strict D (n={n_d:,})"
-        print(f"\n  Strict intersection D: {n_d:,} patients  "
-              f"({TREATED}={(cohort_d['arm'] == TREATED).sum():,}  "
-              f"{CONTROL}={(cohort_d['arm'] == CONTROL).sum():,})")
-        print(f"  Embeddings in D: {len(emb_d):,}/{n_d:,}")
-        if len(emb_d) != n_d:
-            print(f"  WARNING: {n_d - len(emb_d):,} patients in D are missing .npy files")
-    else:
-        cohort_d    = cohort
-        emb_d       = emb_df
-        X_d         = X_raw
-        denom_label = f"ecg_available (n={len(emb_df):,})"
-
-    n_t = (emb_d["arm"] == TREATED).sum()
-    n_c = (emb_d["arm"] == CONTROL).sum()
-
-    if n_t == 0 or n_c == 0:
-        print(f"\n  ERROR: one arm is empty in {denom_label} "
-              f"({TREATED}={n_t:,}, {CONTROL}={n_c:,}) — cannot run comparator ladder.")
-        print("  Likely cause: arm misclassification in the Stage 1 pool "
-              "(check configs/<trial>.yaml arm keywords/formulation_filter).")
-        sys.exit(1)
-
-    k   = _check_pool(n_t, n_c, args.match_ratio)
-
-    # ── Diagnostics: arm summary + event rates + index date ──────────────────
-    if run_diag:
-        print(f"\n{'='*60}")
-        print(f"  Cohort diagnostics — {denom_label}")
-        print(f"{'='*60}")
-        arm_df = arm_summary(cohort_d, treated_arm=TREATED, control_arm=CONTROL)
-        print_arm_summary(arm_df, label=denom_label)
-        arm_df.to_csv(out / "arm_summary_D.csv", index=False)
-
-        er_df = event_rate_by_arm(cohort_d, treated_arm=TREATED, control_arm=CONTROL,
-                                   event_col=_EVENT_COL, duration_col=_TIME_COL)
-        print_event_rates(er_df)
-
-        check_immortal_time(cohort_d, treated_arm=TREATED, control_arm=CONTROL)\
-            .to_csv(out / "immortal_time_check.csv", index=False)
-
-        plot_index_date_distribution(cohort_d, out / "index_date_dist.png",
-                                     treated_arm=TREATED, control_arm=CONTROL)
-
-    results_summary: list[dict] = []   # 5 core methods → primary forest plot
-    supplemental_rows: list[dict] = []  # all other methods → CSV only
-    post_matched: dict[str, pd.DataFrame] = {}
-
-    # ── 1:1 balanced cohort for Cox/IPW methods ───────────────────────────────
-    cohort_1to1 = sample_1to1(cohort_d, TREATED, CONTROL, args.seed)
-    n1_t = (cohort_1to1["arm"] == TREATED).sum()
-    n1_c = (cohort_1to1["arm"] == CONTROL).sum()
-    print(f"\n  1:1 balanced cohort for Cox/IPW: {len(cohort_1to1):,} "
-          f"({TREATED}={n1_t:,}  {CONTROL}={n1_c:,})")
-    denom_label_1to1 = f"1:1 sampled (n={len(cohort_1to1):,})"
-
-    # ── 1. Unadjusted Cox ─────────────────────────────────────────────────────
-    print(f"\n1. Unadjusted Cox ({denom_label_1to1})")
-    r1 = cox_hr(cohort_1to1, treated_arm=TREATED)
-    print_res(f"Unadjusted ({denom_label_1to1})", r1)
-    results_summary.append({"label": "Unadjusted Cox", "denominator": denom_label_1to1, **r1})
-
-    # ── 2. Adjusted Cox ───────────────────────────────────────────────────────
-    print(f"\n2. Adjusted Cox (age, sex, race) — {denom_label_1to1}")
-    r2 = cox_hr(cohort_1to1, covariates=ADJ_COVS, treated_arm=TREATED)
-    if r2["n"] < len(cohort_1to1):
-        print(f"  (complete case: {r2['n']:,}/{len(cohort_1to1):,} rows used)")
-    print_res(f"Adjusted Cox n={r2['n']:,}", r2)
-    results_summary.append({"label": "Adjusted Cox (age,sex,race)", "denominator": denom_label_1to1, **r2})
-
-
-    # ── Pre-match balance (analysis population) ───────────────────────────────
-    bal_pre = build_balance_table(emb_d, None, cols=SMD_COLS,
+    # ── Pre-match balance ─────────────────────────────────────────────────────
+    bal_pre = build_balance_table(cohort, None, cols=SMD_COLS,
                                   treated_arm=TREATED, control_arm=CONTROL,
                                   label="pre_match")
+    print("\nPre-match balance:")
+    print_balance_table(bal_pre)
 
-    # ── 3. Structured PSM ────────────────────────────────────────────────────
-    k_spsm = _check_pool((cohort_d["arm"] == TREATED).sum(),
-                         (cohort_d["arm"] == CONTROL).sum(), args.match_ratio)
-    print(f"\n3. Structured PSM — {len(STRUCTURED_COVS)} covariates (1:{k_spsm}) — {denom_label}")
+    results_summary: list[dict] = []
+    post_matched: dict[str, pd.DataFrame] = {}
+    k = _check_pool(n_treated, n_control, args.match_ratio)
+
+    # ── 1:1 downsample for unmatched Cox ─────────────────────────────────────
+    cohort_1to1 = sample_1to1(cohort, TREATED, CONTROL, args.seed)
+
+    # ── 1. Unadjusted Cox ────────────────────────────────────────────────────
+    print(f"\n1. Unadjusted Cox  (1:1 n={len(cohort_1to1):,})")
+    r1 = cox_hr(cohort_1to1, treated_arm=TREATED)
+    print_res("Unadjusted", r1)
+    results_summary.append({"label": "Unadjusted Cox", **r1})
+
+    # ── 2. Adjusted Cox ───────────────────────────────────────────────────────
+    print(f"\n2. Adjusted Cox  ({len(ADJ_COVS)} covariates, 1:1 n={len(cohort_1to1):,})")
+    r2 = cox_hr(cohort_1to1, covariates=ADJ_COVS, treated_arm=TREATED)
+    print_res("Adjusted Cox", r2)
+    results_summary.append({"label": "Adjusted Cox", **r2})
+
+    # ── 3. Rich PSM ──────────────────────────────────────────────────────────
+    print(f"\n3. Rich PSM  ({len(RICH_PSM_COVS)} covariates, caliper={args.structured_caliper})")
     try:
-        spsm = structured_psm(cohort_d, STRUCTURED_COVS, k=k_spsm,
-                              caliper=args.structured_caliper,
-                              treated_arm=TREATED, control_arm=CONTROL,
-                              seed=args.seed)
-        if not spsm.empty:
-            r3 = cox_hr(spsm, treated_arm=TREATED, strata=["match_id"])
-            print_res(f"Structured PSM 1:{k_spsm} n={len(spsm):,}", r3)
-            results_summary.append({"label": "Structured PSM", "denominator": denom_label, **r3})
-            post_matched["PSM"] = spsm
+        psm_matched = structured_psm(cohort, RICH_PSM_COVS, k=k,
+                                     caliper=args.structured_caliper,
+                                     treated_arm=TREATED, control_arm=CONTROL,
+                                     seed=args.seed)
+        if not psm_matched.empty:
+            r3 = cox_hr(psm_matched, treated_arm=TREATED, strata=["match_id"])
+            print_res(f"Rich PSM 1:{k}  n={len(psm_matched):,}", r3)
+            results_summary.append({"label": "Rich PSM", **r3})
+            post_matched["PSM"] = psm_matched
+
+            # KM plot
+            try:
+                plot_km(psm_matched, out / "km_PSM.png",
+                        treated_arm=TREATED, control_arm=CONTROL,
+                        title=f"KM — Rich PSM ({TRIAL})",
+                        event_col=_EVENT_COL, duration_col=_TIME_COL)
+                print("  KM → km_PSM.png")
+            except Exception as e:
+                print(f"  KM failed: {e}")
         else:
             print("  No matches — try --structured-caliper 0.5")
     except Exception as e:
-        print(f"  Structured PSM failed: {e}")
+        print(f"  Rich PSM failed: {e}")
 
-    # ── 3b. PSM + ECG-PC Cox ─────────────────────────────────────────────────
-    # Same PSM-matched pairs; ECG embedding PCs added as continuous covariates
-    # in the Cox outcome model. Isolates marginal ECG contribution over PSM alone
-    # without additional sample loss from ECG caliper.
-    if "PSM" in post_matched and len(emb_d) > 0:
-        print(f"\n3b. PSM + ECG-PC Cox (PC1-10 adjustment on PSM pairs) — {denom_label}")
-        try:
-            from sklearn.decomposition import PCA
-            N_PC = 10
-            pca = PCA(n_components=N_PC, random_state=args.seed)
-            pca.fit(X_d)
-            var_exp = pca.explained_variance_ratio_.cumsum()[N_PC - 1]
-            print(f"  PCA fit on D (n={len(X_d):,}, {X_d.shape[1]}d): PC1-{N_PC} explain {var_exp:.1%} variance")
-            spsm_emb, X_spsm = load_embeddings(args.embed_dir, post_matched["PSM"])
-            if len(spsm_emb) >= 20:
-                X_pc = pca.transform(X_spsm)
-                pc_cols = [f"ecg_pc{i+1}" for i in range(N_PC)]
-                for i, col in enumerate(pc_cols):
-                    spsm_emb = spsm_emb.copy()
-                    spsm_emb[col] = X_pc[:, i]
-                r3b = cox_hr(spsm_emb, covariates=pc_cols,
-                             treated_arm=TREATED, strata=["match_id"])
-                print_res(f"PSM+ECG-PC Cox n={len(spsm_emb):,} ({len(spsm_emb)//2} pairs)", r3b)
-                results_summary.append({"label": "PSM+ECG-PC", "denominator": denom_label, **r3b})
-                post_matched["PSM+ECG-PC"] = spsm_emb
-            else:
-                print(f"  Too few PSM patients with embeddings ({len(spsm_emb):,}) — skipping")
-        except Exception as e:
-            print(f"  PSM+ECG-PC Cox failed: {e}")
-
-    # ── 5. ECG NN PRIMARY ────────────────────────────────────────────────────
-    print(f"\n5. ECG NN PRIMARY — cosine d≤{args.abs_threshold}, 1:{k} — {denom_label}")
-    try:
-        nn_primary, summ_primary = nn_match(emb_d, X_d, k=k, metric="cosine",
-                                             threshold=args.abs_threshold,
-                                             treated_arm=TREATED, control_arm=CONTROL,
-                                             exact_cols=exact_match_cols)
-        if not nn_primary.empty and len(nn_primary) >= 10:
-            print(f"  Attrition: {summ_primary['n_treated_matched']:,}/{summ_primary['n_treated_attempted']:,} treated matched")
-            r6 = cox_hr(nn_primary, treated_arm=TREATED, strata=["match_id"])
-            print_res(f"ECG NN d≤{args.abs_threshold} PRIMARY n={len(nn_primary):,}", r6)
-            results_summary.append({
-                "label": f"ECG-NN (cosine ≤{args.abs_threshold})",
-                "denominator": denom_label, **r6
-            })
-            if MATCHED_ADJ_COLS:
-                try:
-                    r6_adj = cox_hr(nn_primary, covariates=MATCHED_ADJ_COLS,
-                                    treated_arm=TREATED, strata=["match_id"])
-                    adj_label = f"ECG-NN PRIMARY (adj {','.join(MATCHED_ADJ_COLS)})"
-                    print_res(adj_label, r6_adj)
-                    # Print only; does NOT replace primary ECG-NN entry in results_summary
-                except Exception as e:
-                    print(f"  Adjusted matched Cox (PRIMARY) failed: {e}")
-            post_matched["ECG-NN-PRIMARY"] = nn_primary
-            nn_primary.to_parquet(out / "primary_match.parquet", index=False)
-            print(f"  primary_match.parquet saved")
-        else:
-            print(f"  Too few matches at d≤{args.abs_threshold}")
-    except Exception as e:
-        print(f"  ECG NN PRIMARY failed: {e}")
-
-    # ── 5. PS-caliper + ECG-NN ──────────────────────────────────────────────
-    # Hard PS caliper on STRUCTURED_COVS → guarantees comorbidity balance.
-    # Within caliper, nearest-neighbour by cosine → optimises ECG balance.
-    print(f"\n5. PS-caliper + ECG-NN ({args.ps_caliper_sd} SD caliper, {len(STRUCTURED_COVS)} PS covs) — {denom_label}")
-    print(f"  PS covariates: {STRUCTURED_COVS}")
-    try:
-        nn_mm, summ_mm = ps_ecg_match(
-            emb_d, X_d,
-            structured_cols=STRUCTURED_COVS,
-            caliper_sd=args.ps_caliper_sd,
-            treated_arm=TREATED, control_arm=CONTROL,
-            seed=args.seed,
+    # ── Balance table pre vs post PSM ─────────────────────────────────────────
+    if "PSM" in post_matched:
+        bal_tables = write_balance_tables(
+            cohort, post_matched, output_dir=out,
+            cols=SMD_COLS, treated_arm=TREATED, control_arm=CONTROL,
         )
-        if not nn_mm.empty and len(nn_mm) >= 10:
-            print(f"  Attrition: {summ_mm['n_treated_matched']:,}/{summ_mm['n_treated_attempted']:,} treated matched")
-            r5b = cox_hr(nn_mm, treated_arm=TREATED, strata=["match_id"])
-            print_res(f"PS+ECG-NN n={len(nn_mm):,}", r5b)
-            results_summary.append({"label": "PS+ECG-NN", "denominator": denom_label, **r5b})
-            if MATCHED_ADJ_COLS:
-                try:
-                    r5b_adj = cox_hr(nn_mm, covariates=MATCHED_ADJ_COLS,
-                                     treated_arm=TREATED, strata=["match_id"])
-                    print_res(f"PS+ECG-NN (adj {','.join(MATCHED_ADJ_COLS)})", r5b_adj)
-                except Exception as e:
-                    print(f"  Adjusted matched Cox (PS+ECG-NN) failed: {e}")
-            post_matched["PS+ECG-NN"] = nn_mm
-        else:
-            print(f"  Too few matches — try --ps-caliper-sd 0.30")
-    except Exception as e:
-        print(f"  PS+ECG-NN failed: {e}")
+        if "PSM" in bal_tables:
+            tbl = bal_tables["PSM"]
+            if "smd_pre" in tbl.columns and "smd_post" in tbl.columns:
+                print(f"\nRich PSM pre vs post-match SMD:")
+                print(f"  {'Covariate':<28}  {'pre':>6}  {'post':>6}  {'delta':>7}")
+                print(f"  {'-'*28}  {'-'*6}  {'-'*6}  {'-'*7}")
+                t = tbl.set_index("covariate")
+                for cov in SMD_COLS:
+                    if cov not in t.index:
+                        continue
+                    pre = t.loc[cov, "smd_pre"]
+                    post = t.loc[cov, "smd_post"]
+                    if pd.isna(pre):
+                        continue
+                    flag = " !" if (not pd.isna(post) and post > 0.1) else ""
+                    pre_s  = f"{pre:.3f}"  if not pd.isna(pre)  else "   —"
+                    post_s = f"{post:.3f}" if not pd.isna(post) else "   —"
+                    delta_s = f"{post-pre:+.3f}" if not pd.isna(post) else "     —"
+                    print(f"  {cov:<28}  {pre_s:>6}  {post_s:>6}  {delta_s:>7}{flag}")
 
-    # ── KM plots + match-distance (per matched method) ────────────────────────
-    if run_diag:
-        print(f"\n{'='*60}")
-        print(f"  Per-match diagnostics")
-        print(f"{'='*60}")
-        for label, mdf in post_matched.items():
-            if mdf.empty or len(mdf) < 20:
-                continue
+            smd_pre_s = bal_pre.set_index("covariate")["smd_pre"]
+            smd_post_s = tbl.set_index("covariate")["smd_post"]
             try:
-                plot_km(mdf, out / f"km_{label.replace(' ', '_')}.png",
-                        treated_arm=TREATED, control_arm=CONTROL,
-                        title=f"KM — {label} ({denom_label})",
-                        event_col=_EVENT_COL, duration_col=_TIME_COL)
+                plot_love(smd_pre_s, smd_post_s, out / "love_plot_PSM.png",
+                          title=f"{TRIAL} — Rich PSM Balance",
+                          post_label="Rich PSM")
+                print("\n  Love plot → love_plot_PSM.png")
             except Exception as e:
-                print(f"  KM {label} failed: {e}")
-            if label in ("ECG-NN-PRIMARY", "PS+ECG-NN"):
-                try:
-                    match_distance_summary(
-                        mdf, out / f"match_distance_{label.replace(' ', '_').replace('+', 'plus')}.png",
-                        title=f"Match distance — {label}",
-                    )
-                except Exception as e:
-                    print(f"  Match distance {label} failed: {e}")
+                print(f"  Love plot failed: {e}")
 
-    # ── Balance tables ────────────────────────────────────────────────────────
-    print(f"\n{'='*60}")
-    print("  Covariate Balance Summary")
-    print(f"{'='*60}")
-    balance_tables = write_balance_tables(
-        emb_d, post_matched, output_dir=out,
-        cols=SMD_COLS, treated_arm=TREATED, control_arm=CONTROL,
-    )
+    # ── Results CSV + forest plot ─────────────────────────────────────────────
+    pd.DataFrame(results_summary).to_csv(out / "results_summary.csv", index=False)
 
-    print("\n  Pre-match balance:")
-    print_balance_table(bal_pre)
-
-    # Full SMD_COLS balance + held-out split
-    held_out_tables: dict[str, pd.DataFrame] = {}
-    print(f"\n  Balance split (in-model vs held-out, threshold SMD<{0.10}):")
-    print(f"  {'Method':<22} {'in-model':>14}  {'held-out':>14}")
-    print(f"  {'-'*22}  {'-'*14}  {'-'*14}")
-    for label, tbl in balance_tables.items():
-        if "smd_post" not in tbl.columns:
-            continue
-        in_model = IN_MODEL_COVS.get(label, [])
-        sp = summarize_split(tbl, in_model)
-        in_s  = (f"{sp['n_in_model_balanced']}/{sp['n_in_model_total']}"
-                 if sp['n_in_model_total'] > 0 else "(none)")
-        ho_s  = f"{sp['n_held_out_balanced']}/{sp['n_held_out_total']}"
-        print(f"  {label:<22}  {in_s:>14}  {ho_s:>14}  ← headline")
-
-        # Build held-out-only table for output
-        held_out_covs = [c for c in SMD_COLS if c not in in_model]
-        if held_out_covs:
-            ho_tbl = build_balance_table(
-                emb_d, post_matched[label], cols=held_out_covs,
-                treated_arm=TREATED, control_arm=CONTROL, label=label
-            )
-            held_out_tables[label] = ho_tbl
-
-    # Write held-out CSVs
-    if held_out_tables:
-        from balance import build_balance_summary
-        ho_summary = build_balance_summary(held_out_tables)
-        ho_summary.to_csv(out / "balance_summary_held_out.csv", index=False)
-
-    # Pre vs post SMD — comparison: PSM, ECG-NN-PRIMARY, PS+ECG-NN
-    _bal_labels = [l for l in ["PSM", "ECG-NN-PRIMARY", "PS+ECG-NN"]
-                   if l in balance_tables]
-    for _bal_label in _bal_labels:
-        tbl = balance_tables[_bal_label]
-        if "smd_pre" in tbl.columns and "smd_post" in tbl.columns:
-            print(f"\n  {_bal_label} pre vs post-match SMD (all covariates):")
-            print(f"  {'Covariate':<24} {'SMD_pre':>8}  {'SMD_post':>8}  {'Delta':>8}")
-            print(f"  {'-'*24}  {'-'*8}  {'-'*8}  {'-'*8}")
-            t = tbl.set_index("covariate")
-            _fmt = lambda v: f"{v:>8.3f}" if not pd.isna(v) else "       —"
-            for cov in SMD_COLS:
-                if cov not in t.index:
-                    continue
-                pre  = t.loc[cov, "smd_pre"]
-                post = t.loc[cov, "smd_post"] if "smd_post" in t.columns else float("nan")
-                if pd.isna(pre):
-                    continue
-                flag  = " !" if (not pd.isna(post) and post > 0.1) else ""
-                delta = f"{post-pre:>+8.3f}" if not pd.isna(post) else "       —"
-                print(f"  {cov:<24}  {_fmt(pre)}  {_fmt(post)}  {delta}{flag}")
-
-    # ── Charlson CCI (partial) pre/post matching ─────────────────────────────
-    print(f"\n  Charlson CCI (partial, max=5 — MI, HF, stroke, COPD, DM):")
-    print(f"  {'Method':<26}  {'treated':>8}  {'control':>8}  {'SMD':>8}")
-    print(f"  {'-'*26}  {'-'*8}  {'-'*8}  {'-'*8}")
-    cci_pre_smd_val = cci_smd(emb_d, TREATED, CONTROL)
-    t_cci_pre = compute_cci(emb_d[emb_d["arm"] == TREATED])
-    c_cci_pre = compute_cci(emb_d[emb_d["arm"] == CONTROL])
-    print(f"  {'Pre-match':<26}  {t_cci_pre.mean():>8.2f}  {c_cci_pre.mean():>8.2f}  {cci_pre_smd_val:>8.3f}")
-    cci_post_smds: dict[str, float] = {}
-    for _cci_lbl, _cci_key in [("PSM", "PSM"), ("PSM+ECG-PC", "PSM+ECG-PC"), ("ECG-NN", "ECG-NN-PRIMARY"), ("PS+ECG-NN", "PS+ECG-NN")]:
-        pm_df = post_matched.get(_cci_key)
-        if pm_df is None or pm_df.empty:
-            cci_post_smds[_cci_lbl] = float("nan")
-            continue
-        s = cci_smd(pm_df, TREATED, CONTROL)
-        cci_post_smds[_cci_lbl] = s
-        t_c = compute_cci(pm_df[pm_df["arm"] == TREATED])
-        c_c = compute_cci(pm_df[pm_df["arm"] == CONTROL])
-        print(f"  {_cci_lbl:<26}  {t_c.mean():>8.2f}  {c_c.mean():>8.2f}  {s:>8.3f}")
-
-    # ── Multi-method love plot (pre-match / PSM / NN / NN+Tabular) ───────────
-    # Use pre-match SMD from bal_pre; post SMD from balance_tables per method.
-    smd_pre_series = bal_pre.set_index("covariate")["smd_pre"].copy()
-
-    method_smds_love: dict[str, pd.Series] = {}
-    for _lv_lbl, _lv_key in [("PSM", "PSM"), ("PSM+ECG-PC", "PSM"), ("ECG-NN", "ECG-NN-PRIMARY"), ("PS+ECG-NN", "PS+ECG-NN")]:
-        if _lv_key in balance_tables and "smd_post" in balance_tables[_lv_key].columns:
-            s = balance_tables[_lv_key].set_index("covariate")["smd_post"].copy()
-            method_smds_love[_lv_lbl] = s
-
-    if method_smds_love:
-        plot_love_multimethod(
-            smd_pre_series, method_smds_love,
-            out / "love_plot_multimethod.png",
-            title=f"{TRIAL} — Covariate Balance by Method",
-        )
-        print(f"\n  Multi-method love plot → love_plot_multimethod.png")
-
-    # ── Single-method love plot (ECG-NN-PRIMARY held-out) ────────────────────
-    best_label = "ECG-NN-PRIMARY" if "ECG-NN-PRIMARY" in held_out_tables else None
-    if best_label and best_label in held_out_tables:
-        ho_tbl = held_out_tables[best_label]
-        if "smd_pre" in ho_tbl.columns and "smd_post" in ho_tbl.columns:
-            pre_s  = ho_tbl.set_index("covariate")["smd_pre"]
-            post_s = ho_tbl.set_index("covariate")["smd_post"]
-            plot_love(pre_s, post_s, out / "love_plot_held_out.png",
-                      title=f"Held-out Balance — {best_label}",
-                      post_label=best_label)
-    if best_label and best_label in balance_tables:
-        tbl = balance_tables[best_label]
-        if "smd_pre" in tbl.columns and "smd_post" in tbl.columns:
-            plot_love(tbl.set_index("covariate")["smd_pre"],
-                      tbl.set_index("covariate")["smd_post"],
-                      out / "love_plot.png", post_label=best_label)
-
-    # ── Results summary CSV ───────────────────────────────────────────────────
-    all_results = results_summary + supplemental_rows
-    pd.DataFrame(all_results).to_csv(out / "results_summary.csv", index=False)
-    print(f"\n  results_summary.csv saved → {out}")
-
-    # ── Primary forest plot ───────────────────────────────────────────────────
     primary_rows = [r for r in results_summary if not np.isnan(r.get("hr", float("nan")))]
     if primary_rows:
         _xlim = tuple(float(v) for v in args.forest_xlim.split(","))
@@ -1249,10 +911,11 @@ def main() -> None:
                     match_ratio=k, trial_name=TRIAL, reference_hr=REF_HR,
                     treated_label=TREATED, control_label=CONTROL,
                     xlim=_xlim)
+        print("  Forest plot → forest.png")
 
-    print(f"\n{'='*70}")
+    print(f"\n{'='*60}")
     print(f"  Results → {out}")
-    print(f"{'='*70}")
+    print(f"{'='*60}")
 
 
 if __name__ == "__main__":
