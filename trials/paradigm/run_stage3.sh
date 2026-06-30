@@ -19,10 +19,12 @@ LOG="${LOG_DIR}/paradigm_hf_stage3.log"
 
 echo "[stage3] Filtering PARADIGM-HF cohort → run: $RUN_NAME"
 python -u scripts/stage3_filter.py \
-    --config     configs/paradigm_hf.yaml \
-    --pool-dir   "${OUT_ROOT}/paradigm_hf/pool" \
-    --output-dir "${OUT_ROOT}/paradigm_hf" \
-    --run-name   "$RUN_NAME" \
+    --config              configs/paradigm_hf.yaml \
+    --pool-dir            "${OUT_ROOT}/paradigm_hf/pool" \
+    --output-dir          "${OUT_ROOT}/paradigm_hf" \
+    --run-name            "$RUN_NAME" \
+    --min-fills           2 \
+    --persistence-days    180 \
     2>&1 | tee "$LOG"
 
 echo "[stage3] Done."
