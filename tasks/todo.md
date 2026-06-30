@@ -153,3 +153,26 @@ ontarget, savor_timi — TBD if those use a different gate).
 - [ ] Diagnose the original 4 unknown stage3/4 failures (impact,
       ontarget, savor_timi, transcend) — may resolve or change under
       the new filter.
+
+## Round 7: PARADIGM-HF + Rich-Covariate Upgrade
+
+Goal: PARADIGM-HF TTE on new drug_master with 50–100 covariate PSM/IPTW.
+See `trials/paradigm/PLAN.md` for full design spec.
+
+Pipeline shape:
+  stage1 → stage2 → stage3 → stage3.5_enrich (NEW) → stage4 (model only)
+
+- [ ] Step 0: run `explore_omop_sources.py` on cluster; inspect concept freq
+      CSVs; pick LAB_CONCEPTS + VITAL_CONCEPTS concept_id maps.
+- [ ] Step 1a: expand COMORBIDITY_ICD 7→~35 Elixhauser in cohort_utils.py;
+      add LAB_CONCEPTS / VITAL_CONCEPTS dicts from Step 0.
+- [ ] Step 1b: add load_measurement() + load_observation_icd10() to cohort_utils.py.
+- [ ] Step 2: write scripts/stage3_5_enrich.py (cohort-restricted enrichment
+      + smd_baseline.csv).
+- [ ] Step 3: modify stage4_analyze.py: RICH_COVS, wire ipw_hr, drop pre-SMD.
+- [ ] Step 4: expand configs/paradigm_hf.yaml covariates block.
+- [ ] Run stage1 for PARADIGM-HF (confirm required_icd fix active first).
+- [ ] Run stage2 (embed pool ECGs).
+- [ ] Run stage3 filter.
+- [ ] Run stage3.5 enrich; verify smd_baseline.csv looks sane.
+- [ ] Run stage4; compare HR vs published 0.80 [0.73–0.87].
