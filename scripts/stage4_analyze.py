@@ -1000,6 +1000,36 @@ def main() -> None:
     except Exception as e:
         print(f"  Structured PSM failed: {e}")
 
+    # ── 3b. PSM + ECG-PC Cox ─────────────────────────────────────────────────
+    # Same PSM-matched pairs; ECG embedding PCs added as continuous covariates
+    # in the Cox outcome model. Isolates marginal ECG contribution over PSM alone
+    # without additional sample loss from ECG caliper.
+    if "PSM" in post_matched and len(emb_d) > 0:
+        print(f"\n3b. PSM + ECG-PC Cox (PC1-10 adjustment on PSM pairs) — {denom_label}")
+        try:
+            from sklearn.decomposition import PCA
+            N_PC = 10
+            pca = PCA(n_components=N_PC, random_state=args.seed)
+            pca.fit(X_d)
+            var_exp = pca.explained_variance_ratio_.cumsum()[N_PC - 1]
+            print(f"  PCA fit on D (n={len(X_d):,}, {X_d.shape[1]}d): PC1-{N_PC} explain {var_exp:.1%} variance")
+            spsm_emb, X_spsm = load_embeddings(args.embed_dir, post_matched["PSM"])
+            if len(spsm_emb) >= 20:
+                X_pc = pca.transform(X_spsm)
+                pc_cols = [f"ecg_pc{i+1}" for i in range(N_PC)]
+                for i, col in enumerate(pc_cols):
+                    spsm_emb = spsm_emb.copy()
+                    spsm_emb[col] = X_pc[:, i]
+                r3b = cox_hr(spsm_emb, covariates=pc_cols,
+                             treated_arm=TREATED, strata=["match_id"])
+                print_res(f"PSM+ECG-PC Cox n={len(spsm_emb):,} ({len(spsm_emb)//2} pairs)", r3b)
+                results_summary.append({"label": "PSM+ECG-PC", "denominator": denom_label, **r3b})
+                post_matched["PSM+ECG-PC"] = spsm_emb
+            else:
+                print(f"  Too few PSM patients with embeddings ({len(spsm_emb):,}) — skipping")
+        except Exception as e:
+            print(f"  PSM+ECG-PC Cox failed: {e}")
+
     # ── 5. ECG NN PRIMARY ────────────────────────────────────────────────────
     print(f"\n5. ECG NN PRIMARY — cosine d≤{args.abs_threshold}, 1:{k} — {denom_label}")
     try:
@@ -1160,7 +1190,7 @@ def main() -> None:
     c_cci_pre = compute_cci(emb_d[emb_d["arm"] == CONTROL])
     print(f"  {'Pre-match':<26}  {t_cci_pre.mean():>8.2f}  {c_cci_pre.mean():>8.2f}  {cci_pre_smd_val:>8.3f}")
     cci_post_smds: dict[str, float] = {}
-    for _cci_lbl, _cci_key in [("PSM", "PSM"), ("ECG-NN", "ECG-NN-PRIMARY"), ("PS+ECG-NN", "PS+ECG-NN")]:
+    for _cci_lbl, _cci_key in [("PSM", "PSM"), ("PSM+ECG-PC", "PSM+ECG-PC"), ("ECG-NN", "ECG-NN-PRIMARY"), ("PS+ECG-NN", "PS+ECG-NN")]:
         pm_df = post_matched.get(_cci_key)
         if pm_df is None or pm_df.empty:
             cci_post_smds[_cci_lbl] = float("nan")
@@ -1176,7 +1206,7 @@ def main() -> None:
     smd_pre_series = bal_pre.set_index("covariate")["smd_pre"].copy()
 
     method_smds_love: dict[str, pd.Series] = {}
-    for _lv_lbl, _lv_key in [("PSM", "PSM"), ("ECG-NN", "ECG-NN-PRIMARY"), ("PS+ECG-NN", "PS+ECG-NN")]:
+    for _lv_lbl, _lv_key in [("PSM", "PSM"), ("PSM+ECG-PC", "PSM"), ("ECG-NN", "ECG-NN-PRIMARY"), ("PS+ECG-NN", "PS+ECG-NN")]:
         if _lv_key in balance_tables and "smd_post" in balance_tables[_lv_key].columns:
             s = balance_tables[_lv_key].set_index("covariate")["smd_post"].copy()
             method_smds_love[_lv_lbl] = s
