@@ -39,6 +39,8 @@ python -u scripts/stage4_analyze.py \
     --denominator  "$DENOMINATOR" \
     --drug-pool    "${OUT_ROOT}/paradigm_hf/pool/drug_master_pool.parquet" \
     --exclude-psm-cols acei_arb_90d \
+    --event-col    event_death \
+    --time-col     time_to_death \
     2>&1 | tee "$LOG"
 
 # acei_arb_90d excluded from PSM: sacubitril/valsartan contains valsartan (ARB),
