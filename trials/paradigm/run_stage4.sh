@@ -33,7 +33,7 @@ python -u scripts/stage4_analyze.py \
     --embed-dir    "$EMBED_DIR" \
     --output-dir   "$RUN_DIR" \
     --treated-arm  sacubitril_valsartan \
-    --control-arm  enalapril \
+    --control-arm  acei \
     --trial-name   PARADIGM-HF \
     --reference-hr 0.80 \
     --denominator  "$DENOMINATOR" \

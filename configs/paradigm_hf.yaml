@@ -45,10 +45,14 @@ arms:
     # Cross-arm prior-use exclusion would eliminate nearly the entire sacubitril arm.
     # "New to ARNI" is guaranteed by first_ever_arm_dispense; prior ACEi is expected.
     skip_washout: true
-  - name: enalapril
+  - name: acei
     role: control
-    keywords: [ENALAPRIL, VASOTEC, ENALAPRILAT]
-    # washout applies: exclude enalapril starters who previously used ARNI (reverters)
+    keywords: [ENALAPRIL, VASOTEC, ENALAPRILAT, LISINOPRIL, ZESTRIL, PRINIVIL]
+    # Expanded to any ACEi (enalapril + lisinopril) for EHR feasibility.
+    # PARADIGM-HF used enalapril specifically; enalapril-only post-2015 new-starters
+    # with HF are too rare (~27 after I/E) because sacubitril became standard of care.
+    # LISINOPRIL keyword also matches LISINOPRIL-HCTZ (combination); acceptable.
+    # washout applies: exclude ACEi starters who previously used ARNI (reverters)
 
 inclusion:
   age_min: 18
