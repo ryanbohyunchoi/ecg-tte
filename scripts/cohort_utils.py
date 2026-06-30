@@ -55,6 +55,35 @@ ICD_ANGIOEDEMA      = ["T783", "T886"]        # 4-char (T78.3, T88.6)
 ICD_CKD_STAGE4_PLUS = ["N184", "N185", "N186"]  # 4-char; CKD stage 4+ (eGFR<30)
 ICD_LVH             = ["I517", "I513", "I515"]  # cardiomegaly/structural proxy
 
+# ── Elixhauser/Charlson expansion constants ────────────────────────────────────
+ICD_VALVULAR_DZ  = ["I05", "I06", "I07", "I08", "I09",
+                     "I34", "I35", "I36", "I37", "I38", "I39"]
+ICD_PVD          = ["I70", "I71", "I73", "I74", "I77"]
+ICD_HTN_COMPL    = ["I11", "I12", "I13"]
+ICD_PULM_CIRC    = ["I26", "I27"]
+ICD_CARDIOMYOP   = ["I42", "I43"]
+ICD_RENAL_FAIL   = ["N17", "N18", "N19"]
+ICD_LIVER_DZ     = ["K70", "K71", "K72", "K73", "K74", "B18"]
+ICD_PEPTIC_ULCER = ["K25", "K26", "K27", "K28"]
+ICD_HYPOTHYROID  = ["E00", "E01", "E02", "E03"]
+ICD_OBESITY      = ["E66"]
+ICD_ELECTROLYTE  = ["E86", "E87"]
+ICD_ANEMIA       = ["D50", "D51", "D52", "D53"]
+ICD_COAGULOPATHY = ["D65", "D66", "D67", "D68", "D69"]
+ICD_CANCER_SOLID = ["C18", "C19", "C20", "C21", "C25", "C33", "C34",
+                     "C43", "C50", "C53", "C54", "C55", "C56",
+                     "C61", "C64", "C65", "C66", "C67"]
+ICD_CANCER_METS  = ["C77", "C78", "C79", "C80"]
+ICD_LYMPHOMA     = ["C81", "C82", "C83", "C84", "C85", "C88", "C96"]
+ICD_DEPRESSION   = ["F32", "F33"]
+ICD_DEMENTIA     = ["F01", "F02", "F03", "G30", "G31"]
+ICD_NEUROLOGICAL = ["G20", "G35", "G40", "G41"]
+ICD_PARALYSIS    = ["G81", "G82", "G83"]
+ICD_RHEUM        = ["M05", "M06", "M32", "M34", "M35"]
+ICD_TOBACCO      = ["F17"]
+ICD_ALCOHOL      = ["F10"]
+ICD_PULM_OTHER   = ["J40", "J41", "J42", "J43", "J45", "J47"]
+
 # ── Drug keyword constants ─────────────────────────────────────────────────────
 CARVEDILOL   = ["CARVEDILOL"]
 METOPROLOL   = ["METOPROLOL"]
@@ -114,13 +143,48 @@ DAPAGLIFLOZIN       = ["DAPAGLIFLOZIN"]
 CANAGLIFLOZIN       = ["CANAGLIFLOZIN"]
 
 COMORBIDITY_ICD = {
-    "copd":           ["J44"],
-    "htn":            ["I10"],
-    "dm":             ["E10", "E11"],
-    "cad_mi":         ["I21", "I22", "I25"],
-    "afib":           ["I48"],
-    "hyperlipidemia": ["E78"],
-    "stroke":         ["I63", "G45"],
+    # ── Original 7 (backward-compatible) ──────────────────────────────────────
+    "copd":              ["J44"],
+    "htn":               ["I10"],
+    "dm":                ["E10", "E11"],
+    "cad_mi":            ["I21", "I22", "I25"],
+    "afib":              ["I48"],
+    "hyperlipidemia":    ["E78"],
+    "stroke":            ["I63", "G45"],
+    # ── Elixhauser/Charlson expansion ─────────────────────────────────────────
+    # Cardiovascular
+    "hf":                ["I50"],
+    "valvular":          ICD_VALVULAR_DZ,
+    "pvd":               ICD_PVD,
+    "htn_complicated":   ICD_HTN_COMPL,
+    "pulm_circ":         ICD_PULM_CIRC,
+    "cardiomyopathy":    ICD_CARDIOMYOP,
+    # Renal / liver / GI
+    "renal_failure":     ICD_RENAL_FAIL,
+    "liver_disease":     ICD_LIVER_DZ,
+    "peptic_ulcer":      ICD_PEPTIC_ULCER,
+    # Metabolic / endocrine
+    "hypothyroid":       ICD_HYPOTHYROID,
+    "obesity":           ICD_OBESITY,
+    "electrolyte_disor": ICD_ELECTROLYTE,
+    # Hematologic
+    "anemia":            ICD_ANEMIA,
+    "coagulopathy":      ICD_COAGULOPATHY,
+    # Cancer
+    "cancer_solid":      ICD_CANCER_SOLID,
+    "cancer_mets":       ICD_CANCER_METS,
+    "lymphoma":          ICD_LYMPHOMA,
+    # Neuropsychiatric
+    "depression":        ICD_DEPRESSION,
+    "dementia":          ICD_DEMENTIA,
+    "neurological":      ICD_NEUROLOGICAL,
+    "paralysis":         ICD_PARALYSIS,
+    # Pulmonary (broader)
+    "pulm_other":        ICD_PULM_OTHER,
+    # Other
+    "rheum":             ICD_RHEUM,
+    "tobacco":           ICD_TOBACCO,
+    "alcohol":           ICD_ALCOHOL,
 }
 
 EF_MIN, EF_MAX = 10.0, 80.0
@@ -197,6 +261,35 @@ MEDICATION_KEYWORDS: dict[str, list[str]] = {
     "amiodarone":        AMIODARONE,
     "dronedarone":       DRONEDARONE,
     "dofetilide":        DOFETILIDE,
+}
+
+# ── OMOP measurement concept_id maps (populated from explore_omop_sources.py) ─
+# concept_id (int) → covariate base name.  load_measurement produces {name} +
+# {name}_measured columns for each entry.
+LAB_CONCEPTS: dict[int, str] = {
+    40764999: "lab_egfr",       # GFR/1.73 m² (CKD-EPI)
+    3016723:  "lab_creatinine", # Creatinine serum/plasma
+    3027114:  "lab_chol_total", # Total cholesterol
+    3007070:  "lab_hdl",        # HDL cholesterol
+    3004410:  "lab_hba1c",      # HbA1c %
+}
+
+VITAL_CONCEPTS: dict[int, str] = {
+    4152194: "vital_sbp",  # Systolic blood pressure
+    4245997: "vital_bmi",  # Body mass index
+}
+
+# ── Observation Z-code flags (from observation_occurrence table) ───────────────
+# Values are prefixes that match observation_source_value (ICD-10 with dots).
+OBSERVATION_ZCODES: dict[str, list[str]] = {
+    "z_kidney_transplant":  ["Z94.0"],
+    "z_cabg":               ["Z95.1"],
+    "z_prosthetic_valve":   ["Z95.2"],
+    "z_pacemaker":          ["Z95.0"],
+    "z_dialysis":           ["Z99.2"],
+    "z_long_term_insulin":  ["Z79.4"],
+    "z_long_term_anticoag": ["Z79.01"],
+    "z_long_term_aspirin":  ["Z79.82"],
 }
 
 # COMET arm spec (used by backward-compat wrappers)
@@ -435,6 +528,150 @@ def load_procedure_occurrence(
                      "procedure_source_value", "procedure_date"],
         )
     return pd.concat(frames, ignore_index=True)
+
+
+def load_observation_icd10(
+    observation_dir: str,
+    person_ids: set,
+) -> pd.DataFrame:
+    """
+    Load observation_icd10 shards as supplementary ICD source.
+    Returns same schema as load_conditions_with_dates so the two frames can be
+    concatenated before comorbidity flagging:
+        person_id, condition_source_value, _pfx, _pfx4, cond_date
+    observation_source_value contains ICD-10 codes (with dots, e.g. "I50.9").
+    """
+    person_ids_str = {str(p) for p in person_ids}
+    frames = []
+    for shard in tqdm(sorted(Path(observation_dir).glob("observation_icd10_*.parquet")),
+                      desc="Observation ICD10 shards"):
+        try:
+            df = pd.read_parquet(
+                shard,
+                columns=["person_id", "observation_source_value",
+                         "observation_start_date"],
+            )
+        except Exception:
+            continue
+        df["person_id"] = df["person_id"].astype(str)
+        df = df[df["person_id"].isin(person_ids_str)]
+        if df.empty:
+            continue
+        df = df.rename(columns={"observation_source_value": "condition_source_value",
+                                 "observation_start_date":    "cond_date"})
+        df["cond_date"] = pd.to_datetime(df["cond_date"], errors="coerce")
+        df["_pfx"]  = df["condition_source_value"].apply(
+            lambda v: icd_prefix(str(v), 3))
+        df["_pfx4"] = df["condition_source_value"].apply(
+            lambda v: icd_prefix(str(v), 4))
+        frames.append(
+            df[["person_id", "condition_source_value", "_pfx", "_pfx4", "cond_date"]]
+            .dropna(subset=["cond_date"])
+        )
+    if not frames:
+        return pd.DataFrame(
+            columns=["person_id", "condition_source_value", "_pfx", "_pfx4", "cond_date"]
+        )
+    return pd.concat(frames, ignore_index=True)
+
+
+def load_measurement(
+    measurement_dir: str,
+    person_ids: set,
+    concept_map: dict,
+    index_dates: pd.DataFrame,
+    lookback_days: int = 365,
+    glob_pattern: str = "measurement_*.parquet",
+) -> pd.DataFrame:
+    """
+    Load measurement shards (labs or vitals), filtered to cohort patients pre-index.
+
+    Args:
+        measurement_dir : directory containing measurement_labs_*.parquet etc.
+        person_ids      : cohort person_ids to restrict load.
+        concept_map     : dict[int, str] mapping measurement_concept_id → covariate name.
+                          Use LAB_CONCEPTS or VITAL_CONCEPTS.
+        index_dates     : DataFrame with columns [person_id, index_date].
+        lookback_days   : how far before index_date to look (default 365).
+        glob_pattern    : shard filename pattern (default loads all measurement_*.parquet).
+
+    Returns:
+        Wide DataFrame with one row per person_id.
+        For each name in concept_map.values():
+            {name}          — most-recent pre-index value (NaN if missing)
+            {name}_measured — 1 if at least one pre-index measurement exists, else 0
+    """
+    person_ids_str = {str(p) for p in person_ids}
+    concept_ids    = set(concept_map.keys())
+
+    # Build index_date lookup: person_id (str) → index_date
+    idx = index_dates[["person_id", "index_date"]].copy()
+    idx["person_id"] = idx["person_id"].astype(str)
+    idx = idx.drop_duplicates("person_id").set_index("person_id")["index_date"]
+
+    frames = []
+    for shard in tqdm(sorted(Path(measurement_dir).glob(glob_pattern)),
+                      desc="Measurement shards"):
+        try:
+            df = pd.read_parquet(
+                shard,
+                columns=["person_id", "measurement_concept_id",
+                         "measurement_datetime", "value_as_number"],
+            )
+        except Exception:
+            continue
+        df["person_id"] = df["person_id"].astype(str)
+        df = df[df["person_id"].isin(person_ids_str)]
+        if df.empty:
+            continue
+        df = df[df["measurement_concept_id"].isin(concept_ids)]
+        if df.empty:
+            continue
+        df["meas_date"] = pd.to_datetime(df["measurement_datetime"], errors="coerce")
+        df = df.dropna(subset=["meas_date"])
+        # Attach index_date and apply pre-index lookback filter
+        df["index_date"] = df["person_id"].map(idx)
+        df = df.dropna(subset=["index_date"])
+        df["index_date"] = pd.to_datetime(df["index_date"])
+        lo = df["index_date"] - pd.Timedelta(days=lookback_days)
+        df = df[(df["meas_date"] >= lo) & (df["meas_date"] < df["index_date"])]
+        if df.empty:
+            continue
+        frames.append(df[["person_id", "measurement_concept_id",
+                           "meas_date", "value_as_number"]])
+
+    if not frames:
+        # Return empty wide frame with all expected columns
+        empty_cols = ["person_id"]
+        for name in concept_map.values():
+            empty_cols += [name, f"{name}_measured"]
+        return pd.DataFrame(columns=empty_cols)
+
+    long = pd.concat(frames, ignore_index=True)
+
+    # Most-recent value per (person, concept)
+    long = long.sort_values("meas_date")
+    latest = (long
+              .groupby(["person_id", "measurement_concept_id"])["value_as_number"]
+              .last()
+              .reset_index())
+
+    # Pivot wide
+    wide = latest.pivot(index="person_id",
+                        columns="measurement_concept_id",
+                        values="value_as_number")
+    wide.columns = [concept_map.get(c, str(c)) for c in wide.columns]
+    wide = wide.reset_index()
+
+    # Add _measured flags (1 if value is non-null)
+    for name in concept_map.values():
+        if name in wide.columns:
+            wide[f"{name}_measured"] = wide[name].notna().astype(int)
+        else:
+            wide[name]               = float("nan")
+            wide[f"{name}_measured"] = 0
+
+    return wide
 
 
 def load_drug_master(drug_master_path: str,
@@ -1055,8 +1292,69 @@ def add_comorbidities(
         if col not in COMORBIDITY_ICD:
             continue
         prefixes = COMORBIDITY_ICD[col]
-        pids = set(conds_before[conds_before["_pfx"].isin(prefixes)]["person_id"].unique())
+        p3 = [p for p in prefixes if len(p) <= 3]
+        p4 = [p for p in prefixes if len(p) == 4]
+        mask = pd.Series(False, index=conds_before.index)
+        if p3:
+            mask |= conds_before["_pfx"].isin(p3)
+        if p4 and "_pfx4" in conds_before.columns:
+            mask |= conds_before["_pfx4"].isin(p4)
+        pids = set(conds_before[mask]["person_id"].unique())
         cohort[col] = cohort["person_id"].astype(str).isin(pids).astype(int)
+    return cohort
+
+
+def add_zcode_flags(
+    cohort: pd.DataFrame,
+    observations: pd.DataFrame,
+    keys: Optional[list[str]] = None,
+) -> pd.DataFrame:
+    """
+    Add binary Z-code flags from observation_occurrence (any time before index).
+    observations must have: person_id, condition_source_value, cond_date
+    (i.e. output of load_observation_icd10).
+    keys: subset of OBSERVATION_ZCODES keys. Default = all.
+    """
+    if keys is None:
+        keys = list(OBSERVATION_ZCODES.keys())
+    idx = cohort[["person_id", "index_date"]].copy()
+    idx["person_id"] = idx["person_id"].astype(str)
+    obs = observations.copy()
+    obs["person_id"] = obs["person_id"].astype(str)
+    obs_before = obs.merge(idx, on="person_id")
+    obs_before  = obs_before[obs_before["cond_date"] < obs_before["index_date"]]
+    src = obs_before["condition_source_value"].astype(str)
+
+    for col in keys:
+        if col not in OBSERVATION_ZCODES:
+            continue
+        prefixes = OBSERVATION_ZCODES[col]
+        # Match on raw dotted source value (e.g. "Z94.0", "Z79.01")
+        mask = src.apply(lambda v: any(v.startswith(p) for p in prefixes))
+        pids = set(obs_before[mask]["person_id"].unique())
+        cohort[col] = cohort["person_id"].astype(str).isin(pids).astype(int)
+    return cohort
+
+
+def add_measurement_covariates(
+    cohort: pd.DataFrame,
+    measurement_wide: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    Merge pre-built measurement wide table (output of load_measurement) into cohort.
+    Adds {name} and {name}_measured columns; patients without measurements get
+    NaN for value and 0 for _measured flag.
+    """
+    if measurement_wide.empty or "person_id" not in measurement_wide.columns:
+        return cohort
+    mw = measurement_wide.copy()
+    mw["person_id"] = mw["person_id"].astype(str)
+    cohort["person_id"] = cohort["person_id"].astype(str)
+    value_cols   = [c for c in mw.columns if c != "person_id" and not c.endswith("_measured")]
+    measured_cols = [c for c in mw.columns if c.endswith("_measured")]
+    cohort = cohort.merge(mw, on="person_id", how="left")
+    for c in measured_cols:
+        cohort[c] = cohort[c].fillna(0).astype(int)
     return cohort
 
 
