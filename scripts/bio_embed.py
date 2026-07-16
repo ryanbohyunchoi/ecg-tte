@@ -210,16 +210,16 @@ def main() -> None:
         ECGDataset(cohort), batch_size=args.batch_size, shuffle=False,
         num_workers=args.num_workers, pin_memory=torch.cuda.is_available(),
     )
-    embeddings = np.zeros((n, 512), dtype=np.float32)
+    embeddings: np.ndarray | None = None   # allocated on first batch (dim inferred)
     with torch.no_grad():
         for sigs, idxs in tqdm(loader, desc="Embedding"):
             sigs = sigs.to(device)
             out  = model(sigs)
             feat = (out[1] if isinstance(out, (tuple, list)) else out).cpu().numpy()
+            if embeddings is None:
+                embeddings = np.zeros((n, feat.shape[1]), dtype=np.float32)
             embeddings[idxs.numpy()] = feat.astype(np.float32)
-
-    if embeddings.shape[1] != 512:
-        print(f"  NOTE: embed_dim = {embeddings.shape[1]} (not 512)")
+    print(f"  embed_dim = {embeddings.shape[1]}")
 
     # ── Save ──────────────────────────────────────────────────────────────────
     emb_path = out_dir / "embeddings.npy"
