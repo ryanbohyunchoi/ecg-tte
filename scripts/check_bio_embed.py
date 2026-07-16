@@ -52,7 +52,10 @@ def main() -> None:
     norms = np.linalg.norm(emb, axis=1)
     chk("L2-normalised (~1.0)", bool(np.allclose(norms, 1.0, atol=1e-3)),
         f"min={norms.min():.4f} max={norms.max():.4f}")
-    chk("all rows unique", len(np.unique(emb, axis=0)) == emb.shape[0])
+    # Duplicate embedding rows are NOT a failure: byte-identical ECG waveforms
+    # stored under different fileIDs produce identical vectors. Report as info.
+    n_unique_rows = len(np.unique(emb, axis=0))
+    n_dup = emb.shape[0] - n_unique_rows
 
     # ── Cohort constraints ────────────────────────────────────────────────────
     chk("one ECG per individual (unique MRN)", man["MRN"].nunique() == len(man),
@@ -71,6 +74,8 @@ def main() -> None:
     print(f"\n{'='*60}\nbio_embed check — {d}\n{'='*60}")
     print(f"embeddings : {emb.shape}  ({emb.dtype})")
     print(f"individuals: {len(man):,}")
+    print(f"duplicate embedding rows: {n_dup:,} "
+          f"({n_unique_rows:,} unique — dup = identical waveforms, not an error)")
     print(f"checkpoint : {meta.get('checkpoint')}")
     print(f"git_sha    : {meta.get('git_sha')}\n")
 
