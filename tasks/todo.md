@@ -176,3 +176,17 @@ Pipeline shape:
 - [ ] Run stage3 filter.
 - [ ] Run stage3.5 enrich; verify smd_baseline.csv looks sane.
 - [ ] Run stage4; compare HR vs published 0.80 [0.73–0.87].
+
+## Round 8: BCL embeddings for LVSD (EF<40) subphenotyping
+Goal: embed ECGs (≤30d from a qualifying echo) for up to 50K individuals with
+EF<40, using existing BCL biometric encoder. Emit embeddings for unsupervised
+clustering / LVSD subphenotype discovery. Output → /mnt/raid0/rbc58/bio/v1.
+
+- [x] New `scripts/bio_embed.py` (reuses load_bcl_encoder + load_ecg_meta/load_echo_meta):
+      - filter echo EF < 40 (configurable)
+      - match ECG within ±30d of a qualifying echo; nearest ECG per individual
+      - cap to 50K individuals (seeded sample)
+      - verify signal exists + shape (5000,12); embed 512D L2-norm
+      - save embeddings.npy (N,512) + manifest.parquet (row→MRN,fileID,EF,dates,gap)
+- [x] `scripts/run_bio_embed.sh` wrapper
+- [ ] Run on cluster (H100) — user runs
