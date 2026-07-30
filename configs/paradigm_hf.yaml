@@ -216,6 +216,25 @@ covariates:
       codes: [D50]
       lookback_days: 730
       char: 3
+  # Labs / vitals — attached only when stage1 is run with --measurement-dir.
+  # Names must match LAB_CONCEPTS / VITAL_CONCEPTS in cohort_utils.py.
+  # Each yields {name} (value, NaN if unmeasured) + {name}_measured (0/1). MICE-imputed in stage4.
+  labs:
+    - lab_egfr
+    - lab_creatinine
+    - lab_chol_total
+    - lab_hdl
+    - lab_hba1c
+  vitals:
+    - vital_sbp
+    - vital_bmi
+  # ICD-10 Z-code flags — attached only when stage1 run with --observation-dir.
+  # Keys must match OBSERVATION_ZCODES in cohort_utils.py.
+  zcodes:
+    - z_pacemaker
+    - z_prosthetic_valve
+    - z_dialysis
+    - z_long_term_anticoag
   extra_smd_cols: []
 
 endpoint:

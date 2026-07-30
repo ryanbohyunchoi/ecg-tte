@@ -151,9 +151,28 @@ covariates:
       codes: [I50]
       lookback_days: 1825
       char: 3
-  extra_smd_cols: []                # covariates beyond the frozen SMD_COLS 37
+  labs:                             # only attached when stage1 run with --measurement-dir
+    - lab_egfr                      # names must match LAB_CONCEPTS in cohort_utils.py
+    - lab_creatinine                # each adds {name} (value, NaN if unmeasured)
+    - lab_chol_total                #   + {name}_measured (0/1 indicator)
+    - lab_hdl                       # continuous → MICE-imputed in stage4
+    - lab_hba1c
+  vitals:                           # only attached when stage1 run with --measurement-dir
+    - vital_sbp                     # names must match VITAL_CONCEPTS in cohort_utils.py
+    - vital_bmi
+  zcodes:                           # only attached when stage1 run with --observation-dir
+    - z_pacemaker                   # keys must match OBSERVATION_ZCODES; binary 0/1 flags
+    - z_prosthetic_valve
+    - z_dialysis
+  extra_smd_cols: []                # covariates beyond the frozen SMD_COLS 77
                                     # (land in pool but NOT auto-balanced until Stage 3/4 refactor)
 ```
+
+**Labs / vitals** flow only when Stage 1 is invoked with `--measurement-dir` (labs+vitals)
+and/or `--observation-dir` (Z-codes). They pass through Stage 3's `OUTPUT_COLS` gate via
+these config keys, are added to the rich-PSM candidate pool and `SMD_COLS` (77), and — being
+continuous with real missingness — are imputed by MICE (`scripts/imputation.py`) when
+`stage4 --n-imputations >= 2`.
 
 **Medication group names** recognized by `MEDICATION_KEYWORDS`:
 `loop_diuretic`, `acei_arb`, `acei`, `arb`, `aldosterone_antag`, `digoxin`, `statin`,

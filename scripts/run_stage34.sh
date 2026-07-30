@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # run_stage34.sh
-# Usage: bash scripts/run_stage34.sh [--trials "plato poet_copd"] [--denominator strict|natural|both] [--run-name default]
+# Usage: bash scripts/run_stage34.sh [--trials "plato poet_copd"] [--denominator strict|both] [--run-name default]
 #
 # For each trial: stage3_filter.py (cohort + attrition) then stage4_analyze.py
 # (comparator ladder: unadjusted/adjusted Cox, PSM-sparse/rich, ECG-NN, hybrid).

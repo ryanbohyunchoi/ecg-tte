@@ -568,10 +568,15 @@ def main() -> None:
     ]
     # Dynamically include condition_flags and required_icd flags from YAML config
     _yaml_cfg = getattr(args, "_yaml_cfg", {})
+    _cov_cfg = _yaml_cfg.get("covariates", {})
     _cfg_flag_names = (
-        [s["name"] for s in _yaml_cfg.get("covariates", {}).get("condition_flags", [])] +
+        [s["name"] for s in _cov_cfg.get("condition_flags", [])] +
         [s["name"] for s in _yaml_cfg.get("inclusion", {}).get("required_icd", [])]
     )
+    # Labs / vitals values + their {name}_measured indicators, and Z-code flags.
+    _lab_vital_names = list(_cov_cfg.get("labs", [])) + list(_cov_cfg.get("vitals", []))
+    _cfg_flag_names += _lab_vital_names + [f"{n}_measured" for n in _lab_vital_names]
+    _cfg_flag_names += list(_cov_cfg.get("zcodes", []))
     OUTPUT_COLS = list(dict.fromkeys(OUTPUT_COLS + _cfg_flag_names))
 
     out_cols = [c for c in OUTPUT_COLS if c in pool.columns]

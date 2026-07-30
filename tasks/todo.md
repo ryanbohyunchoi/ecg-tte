@@ -190,3 +190,30 @@ clustering / LVSD subphenotype discovery. Output → /mnt/raid0/rbc58/bio/v1.
       - save embeddings.npy (N,512) + manifest.parquet (row→MRN,fileID,EF,dates,gap)
 - [x] `scripts/run_bio_embed.sh` wrapper
 - [ ] Run on cluster (H100) — user runs
+
+## Round 9: MICE imputation + PSM/balance upgrade (2026-07-28)
+Goal: replace complete-case with multiple imputation (MICE + Rubin) so PSM/balance
+run on the full cohort instead of dropping rows with missing EF/ECG/labs. Follows
+RCT-DUPLICATE / Leyrat "within" approach. See tasks/lessons.md.
+
+- [x] `scripts/imputation.py` (new): split binaries vs continuous; IterativeImputer
+      MICE; EF missing-indicator; Nelson-Aalen outcome in predictor matrix.
+- [x] stage4 Rubin pooling: `pool_rubin`, `_pool_over_imputations`, `structured_psm_pooled`;
+      `--n-imputations` (default 1 = legacy). cox_hr exposes log_hr/se_log_hr.
+- [x] Caliper fix: match on logit(PS) at `--caliper-sd × SD` (Austin 0.2);
+      `--structured-caliper` deprecated alias. ps_ecg_match made consistent.
+- [x] `balance.pooled_balance_table` (avg SMD over m + complete-case sensitivity cols);
+      SMD_COLS 37→44.
+- [x] Wire `--denominator {strict,both}` audit (fixes run_stage34.sh argparse crash);
+      generalize denominators.audit_table event col.
+- [x] Wire labs/vitals/Z-codes: stage1 `--measurement-dir`/`--observation-dir`,
+      stage3 OUTPUT_COLS passthrough, stage4 candidates + SMD_COLS, configs.
+- [x] Cleanup: dup cohort-load, stale docstrings, delete __pycache__, tasks/lessons.md.
+- [x] Verify locally: m=1 == legacy (Unadjusted 0.931 / Adjusted 0.885 exact);
+      pool_rubin se=√T; labs/vitals through MICE+balance end-to-end.
+
+Cluster TODO (needs OMOP measurement/observation shards):
+- [ ] Locate measurement_*.parquet + observation_icd10_*.parquet dirs on cluster.
+- [ ] Re-run stage1 for PARADIGM-HF/COMET with --measurement-dir/--observation-dir.
+- [ ] Re-run stage3 → stage4 with --n-imputations 5; compare HR vs complete-case.
+- [ ] Confirm FMI per estimate is sane (<0.5 ideally); inspect missingness_audit.csv.

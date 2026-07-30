@@ -23,27 +23,51 @@ import numpy as np
 import pandas as pd
 from scipy.stats import ks_2samp
 
-# ── Frozen covariate list ─────────────────────────────────────────────────────
+# ── Balance covariate list ────────────────────────────────────────────────────
+# Superset of everything the rich PSM matches on (so the balance table / Love plot
+# report every matched covariate) PLUS a few reported-but-not-matched extras
+# (extended ECG axes; trial-specific exclusion-proxy flags). Column names use the
+# post-stage3 convention (medication _90d suffix STRIPPED — matches the cohort).
+# Kept in sync with stage4_analyze._RICH_PSM_CANDIDATES; build_balance_table emits
+# a NaN row for any covariate absent from a given trial's cohort, so trial-specific
+# entries are harmless when unused.
 SMD_COLS: list[str] = [
     # Demographics (3)
     "age_at_index", "sex_binary", "race_black",
-    # HF severity (5): prior HF code + EF + 3 ICD-based HFrEF flags
-    "prior_hf_code_1yr", "ef_at_index",
+    # Echo (1)
+    "ef_at_index",
+    # HF severity (6): 3 HFrEF ICD proxies + 2 HF-ICD windows + prior HF code
     "hfref_icd_5y", "hfref_icd_24m", "hfref_icd_subcoded_i502_24m",
-    # Comorbidities (8: 7 standard + LVH ICD flag)
-    "afib", "htn", "dm", "cad_mi", "copd", "hyperlipidemia", "stroke", "lvh_5y",
-    # Additional cardiac / other conditions (7)
-    "valvular_disease_5y", "recent_mi_acs_60d", "recent_revasc_60d",
+    "hf_icd_1y", "hf_icd_2y", "prior_hf_code_1yr",
+    # Comorbidities — core (7)
+    "afib", "htn", "dm", "cad_mi", "copd", "hyperlipidemia", "stroke",
+    # Comorbidities — multi-window / additional (21)
+    "afib_1y", "afib_5y", "dm_1y", "cad_1y", "cad_5y", "stroke_1y",
+    "ckd_3", "anemia_2y", "pvd_5y", "osa_5y", "hypothyroid_5y",
+    "depression_2y", "ventricular_arrh_2y", "cardiac_device_5y",
+    "aki_1y", "atrial_flutter_2y", "hyponatremia_1y", "hyperkalemia_1y",
+    "valvular_2y", "obesity_5y", "iron_deficiency_2y",
+    # Comorbidities — trial-specific exclusion proxies (reported, not matched) (8)
+    "lvh_5y", "valvular_disease_5y", "recent_mi_acs_60d", "recent_revasc_60d",
     "av_block_2_3_24m", "esrd_5y", "hepatic_failure_5y", "asthma_5y",
-    # Baseline medications — 90-day lookback (6)
-    "loop_diuretic_90d", "acei_arb_90d", "aldosterone_antag_90d",
-    "digoxin_90d", "statin_90d", "nitrate_90d",
+    # Baseline medications — 90d lookback, stage3-stripped names (11)
+    "loop_diuretic", "acei_arb", "aldosterone_antag", "digoxin", "statin",
+    "nitrate", "beta_blocker", "warfarin", "doac", "antiplatelet", "amiodarone",
+    # GDMT polypharmacy (stage4-computed) (2)
+    "bb_90d", "sglt2i_90d",
     # ECG — core intervals (3)
     "hr_at_index", "QRS_Duration", "PR_Interval",
-    # ECG — extended (5; present when ecg_metadata has these columns)
+    # ECG — extended axes (5; present when ecg_metadata has these columns)
     "QTc", "QT_Interval", "QRS_Axis", "P_Axis", "T_Axis",
+    # Labs & vitals (7; present when stage1 run with --measurement-dir)
+    "lab_egfr", "lab_creatinine", "lab_chol_total", "lab_hdl", "lab_hba1c",
+    "vital_sbp", "vital_bmi",
+    # Adherence (2) + calendar (1)
+    "n_refills_assigned_90d", "n_refills_assigned_180d", "index_year",
 ]
-assert len(SMD_COLS) == 37, f"SMD_COLS length changed: {len(SMD_COLS)}"
+assert len(SMD_COLS) == len(set(SMD_COLS)), \
+    f"SMD_COLS has duplicates: {[c for c in SMD_COLS if SMD_COLS.count(c) > 1]}"
+assert len(SMD_COLS) == 77, f"SMD_COLS length changed: {len(SMD_COLS)}"
 
 BALANCE_TARGET_SMD = 0.10
 BALANCE_WARN_SMD   = 0.20
@@ -179,6 +203,63 @@ def build_balance_table(
     if label:
         tbl.insert(0, "comparator", label)
     return tbl
+
+
+def pooled_balance_table(
+    pre_frames: list[pd.DataFrame],
+    post_frames: Optional[list[pd.DataFrame]],
+    cc_pre: pd.DataFrame,
+    cc_post: Optional[pd.DataFrame] = None,
+    cols: list[str] = SMD_COLS,
+    treated_arm: str = "carvedilol",
+    control_arm: str = "metoprolol",
+    label: str = "",
+) -> pd.DataFrame:
+    """
+    Balance table averaged across m imputed datasets (MI-pooled SMD diagnostics).
+
+    Builds build_balance_table() per imputation, then averages the numeric
+    metrics (smd_pre/smd_post/vr/ks/pct_bias_reduction) over the m tables. In an
+    imputed frame there is no NaN, so each per-imputation SMD is the full-data
+    SMD; the mean over m is the standard MI balance diagnostic.
+
+    Complete-case SMDs (cc_pre / cc_post) are merged as smd_pre_cc / smd_post_cc
+    sensitivity columns. With a single imputation this collapses to the ordinary
+    build_balance_table output plus the _cc columns.
+    """
+    if len(pre_frames) == 1 and (post_frames is None or len(post_frames) == 1):
+        base = build_balance_table(
+            pre_frames[0],
+            post_frames[0] if post_frames else None,
+            cols=cols, treated_arm=treated_arm, control_arm=control_arm, label=label,
+        )
+    else:
+        per_imp = []
+        for i, pre in enumerate(pre_frames):
+            post = post_frames[i] if post_frames and i < len(post_frames) else None
+            per_imp.append(build_balance_table(
+                pre, post, cols=cols,
+                treated_arm=treated_arm, control_arm=control_arm,
+            ))
+        stacked = pd.concat(per_imp, ignore_index=True)
+        num_cols = stacked.select_dtypes(include=[np.number]).columns.tolist()
+        base = (stacked.groupby("covariate", sort=False)[num_cols]
+                .mean().reset_index())
+        # Preserve covariate order from cols.
+        base["covariate"] = pd.Categorical(base["covariate"], categories=cols, ordered=True)
+        base = base.sort_values("covariate").reset_index(drop=True)
+        base["covariate"] = base["covariate"].astype(str)
+        if label:
+            base.insert(0, "comparator", label)
+
+    # Merge complete-case SMD sensitivity columns.
+    cc = build_balance_table(cc_pre, cc_post, cols=cols,
+                             treated_arm=treated_arm, control_arm=control_arm)
+    cc = cc.set_index("covariate")
+    base["smd_pre_cc"] = base["covariate"].map(cc["smd_pre"]) if "smd_pre" in cc else float("nan")
+    if "smd_post" in cc.columns:
+        base["smd_post_cc"] = base["covariate"].map(cc["smd_post"])
+    return base
 
 
 def build_balance_summary(comparator_tables: dict[str, pd.DataFrame]) -> pd.DataFrame:

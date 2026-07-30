@@ -40,7 +40,7 @@ configs/
 | `scripts/stage4_analyze.py` | Cox regression + PSM + ECG-NN analyses |
 | `scripts/cohort_utils.py` | Shared helpers (arm identification, endpoints, loaders) |
 | `scripts/lint_configs.py` | Validate all configs/*.yaml |
-| `scripts/balance.py` | SMD computation (frozen 37-covariate set) |
+| `scripts/balance.py` | SMD computation (77-covariate set = full RICH-PSM coverage) |
 
 ## Running Stage 0 (Feasibility)
 
@@ -115,10 +115,10 @@ Yale's death table is date-only (no `cause_concept_id`). All-cause mortality is 
 ### COMET backward compatibility
 The new generic stage1 produces all columns the legacy COMET-specific stage1 produced:
 - `stage3_alias` in `comet.yaml` → `first_carv_date`, `prior_meto_days`, etc.
-- Medication flags: `loop_diuretic_90d`, `acei_arb_90d`, etc. (same as `balance.py` SMD_COLS)
+- Medication flags: stage1 builds `loop_diuretic_90d`, `acei_arb_90d`, etc.; stage3 **strips** the `_90d` suffix (`loop_diuretic`, ...), which is what `balance.py` SMD_COLS and the rich PSM reference.
 
-### balance.py frozen
-`SMD_COLS` is frozen at 37 covariates. Trial-specific extra covariates land in the pool but are not auto-balanced (deferred to future Stage 3/4 refactor).
+### balance.py SMD_COLS
+`SMD_COLS` is a 77-covariate superset covering everything the rich PSM matches on (so the balance table / Love plot report every matched covariate), plus reported-but-not-matched extras (extended ECG axes, trial-specific exclusion proxies). Names use the post-stage3 convention (medication `_90d` stripped). `build_balance_table` emits a NaN row for any covariate absent from a trial's cohort.
 
 ## Trials
 
@@ -142,6 +142,15 @@ The new generic stage1 produces all columns the legacy COMET-specific stage1 pro
 ---
 
 ## Change Log
+
+### 2026-07-28 — MICE imputation + PSM/balance upgrade (`psm-mice-imputation`)
+- **`scripts/imputation.py`** (new): MICE (sklearn `IterativeImputer`) for missing **continuous** covariates (echo EF, ECG intervals, labs, vitals). Structurally 0-encoded binaries are never imputed (`split_covariates`); adds a missing-indicator for informative-missingness covariates (`ef_at_index`); imputation model includes treatment + Nelson-Aalen cumulative hazard (White & Royston); outcome never imputed.
+- **`scripts/stage4_analyze.py`**: `--n-imputations` (default 1 = legacy complete-case, byte-identical; ≥2 = MICE). Per-imputation PS→match→Cox pooled with **Rubin's rules** (`pool_rubin`, `_pool_over_imputations`, `structured_psm_pooled`), FMI reported. **Caliper fix**: matching now on `logit(PS)` at `--caliper-sd × SD` (Austin 0.2 default) instead of raw-PS 0.25 — `--structured-caliper` kept as deprecated alias. Wired the previously-dead `--denominator {strict,both}` audit (fixes a `run_stage34.sh` argparse crash). Fixed duplicate cohort-load; refreshed stale docstrings.
+- **`scripts/balance.py`**: `pooled_balance_table` averages SMD across imputations with complete-case sensitivity columns (`smd_pre_cc`/`smd_post_cc`). `SMD_COLS` expanded 37→77 (full RICH-PSM coverage; fixed medication _90d naming drift; +labs/vitals).
+- **`scripts/stage1_build_pool.py` / `stage3_filter.py`**: wired labs/vitals/Z-codes into the pool via `--measurement-dir` / `--observation-dir` (config keys `covariates.labs/vitals/zcodes`); columns pass Stage 3's `OUTPUT_COLS` gate. Requires a Stage-1 re-run to populate.
+- **`configs/`**: `paradigm_hf.yaml`, `comet.yaml`, `_schema.md` document the new `labs`/`vitals`/`zcodes` covariate keys.
+- **`tasks/lessons.md`** (new): correction log (do-not-impute-binaries, logit caliper, match-within-pool-effects).
+- Verified: m=1 reproduces legacy Unadjusted/Adjusted HRs exactly; `pool_rubin` `se=√T`; labs/vitals flow through MICE + balance end-to-end.
 
 ### 2026-06-07 — Multi-trial foundation (Stage 0 + Stage 1)
 - **`scripts/cohort_utils.py`**: Complete generalization — KEYWORD_REGISTRY, MEDICATION_KEYWORDS, `identify_arms_generic`, `compute_adherence_metrics_generic`, `build_composite_endpoint`, `load_visit_occurrence`, `load_procedure_occurrence`, `conds_within` (public), `validate_config`, `load_trial_config`, `resolve_keywords`. COMET backward-compat via thin wrappers.

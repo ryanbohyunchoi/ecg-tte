@@ -58,11 +58,16 @@ def audit_table(
     masks: dict[str, pd.Series],
     treated_arm: str = "carvedilol",
     control_arm: str = "metoprolol",
+    event_col: str = "event_death",
 ) -> pd.DataFrame:
     """
     One row per named subset.
     Columns: name, n_total, n_treated, n_control, n_events, share_of_full
+
+    event_col is the analysis event indicator (event_primary for composite
+    trials, event_death otherwise); falls back to event_death if absent.
     """
+    ec = event_col if event_col in cohort.columns else "event_death"
     n_full = int(masks["full"].sum())
     rows = []
     for name, mask in masks.items():
@@ -72,7 +77,7 @@ def audit_table(
             "n_total":       len(sub),
             "n_treated":     int((sub["arm"] == treated_arm).sum()),
             "n_control":     int((sub["arm"] == control_arm).sum()),
-            "n_events":      int(sub["event_death"].sum()) if "event_death" in sub.columns else None,
+            "n_events":      int(sub[ec].sum()) if ec in sub.columns else None,
             "share_of_full": round(len(sub) / n_full, 4) if n_full > 0 else None,
         })
     return pd.DataFrame(rows)
@@ -87,6 +92,8 @@ def missingness_audit(
     Per-covariate missingness within the echo_complete subset.
     Returns columns: covariate, n_present, n_missing, pct_missing (sorted descending).
     """
+    if base_mask is None:
+        base_mask = pd.Series(True, index=cohort.index)
     sub = cohort[base_mask]
     rows = []
     for c in covs:

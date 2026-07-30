@@ -66,13 +66,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from cohort_utils import (
     COMORBIDITY_ICD, MEDICATION_KEYWORDS,
+    LAB_CONCEPTS, VITAL_CONCEPTS, OBSERVATION_ZCODES,
     add_comorbidities, add_medication_flags, add_medication_flags_generic,
+    add_measurement_covariates, add_zcode_flags,
     build_composite_endpoint, conds_within,
     compute_adherence_metrics_generic,
     drug_mask,
     identify_arms_generic,
     load_conditions_with_dates, load_death, load_drug_master,
-    load_echo_meta, load_ecg_meta,
+    load_echo_meta, load_ecg_meta, load_measurement, load_observation_icd10,
     load_trial_config, load_visit_occurrence, load_procedure_occurrence,
     on_drug_at_index, parse_person_table, resolve_keywords, safe_hr_from_rr,
 )
@@ -178,6 +180,14 @@ def parse_args() -> argparse.Namespace:
                    help="OMOP visit_occurrence shard dir (required for inpatient_icd endpoints)")
     p.add_argument("--procedure-dir",    default=None,
                    help="OMOP procedure_occurrence shard dir (required for procedure endpoints)")
+    p.add_argument("--measurement-dir",  default=None,
+                   help="OMOP measurement shard dir (labs + vitals). When set, "
+                        "lab_*/vital_* covariates + {name}_measured indicators are attached.")
+    p.add_argument("--observation-dir",  default=None,
+                   help="OMOP observation shard dir (ICD-10 Z-codes). When set, "
+                        "OBSERVATION_ZCODES binary flags are attached.")
+    p.add_argument("--measurement-lookback-days", type=int, default=365,
+                   help="Pre-index lookback for labs/vitals (default 365d).")
 
     # Tuning
     p.add_argument("--ecg-window-pool-days", type=int, default=365,
@@ -383,6 +393,39 @@ def main() -> None:
         col = med if med.endswith("_90d") else f"{med}_90d"
         if col in pool.columns:
             print(f"  {col}: {pool[col].sum():,}")
+
+    # ── Labs & vitals (measurement) ────────────────────────────────────────────
+    if args.measurement_dir:
+        _cov_cfg = cfg.get("covariates", {})
+        want_labs   = _cov_cfg.get("labs",   list(LAB_CONCEPTS.values()))
+        want_vitals = _cov_cfg.get("vitals", list(VITAL_CONCEPTS.values()))
+        want_names  = set(want_labs) | set(want_vitals)
+        concept_map = {cid: name for cid, name in {**LAB_CONCEPTS, **VITAL_CONCEPTS}.items()
+                       if name in want_names}
+        if concept_map:
+            print(f"\nLoading labs/vitals (±{args.measurement_lookback_days}d): "
+                  f"{sorted(concept_map.values())}")
+            meas_wide = load_measurement(
+                args.measurement_dir, pool_pids, concept_map,
+                index_dates=pool[["person_id", "index_date"]],
+                lookback_days=args.measurement_lookback_days,
+            )
+            pool = add_measurement_covariates(pool, meas_wide)
+            for name in sorted(concept_map.values()):
+                if name in pool.columns:
+                    print(f"  {name}: {pool[name].notna().sum():,}/{len(pool):,} measured")
+
+    # ── Observation Z-codes ─────────────────────────────────────────────────────
+    if args.observation_dir:
+        want_z = cfg.get("covariates", {}).get("zcodes", list(OBSERVATION_ZCODES.keys()))
+        want_z = [z for z in want_z if z in OBSERVATION_ZCODES]
+        if want_z:
+            print(f"\nLoading observation Z-codes: {want_z}")
+            obs = load_observation_icd10(args.observation_dir, pool_pids)
+            pool = add_zcode_flags(pool, obs, keys=want_z)
+            for z in want_z:
+                if z in pool.columns:
+                    print(f"  {z}: {int(pool[z].sum()):,}")
 
     # ── ECG candidates ────────────────────────────────────────────────────────
     pool_ecg_days = cfg["ecg"].get("pool_window_days", args.ecg_window_pool_days)
