@@ -183,6 +183,22 @@ def make_imputations(
     matrix = pd.concat([base, aux], axis=1)
     impute_idx = [matrix.columns.get_loc(c) for c in to_impute]
 
+    # Per-column bounds so posterior draws stay in the observed support.
+    # sample_posterior=True (proper MI) can otherwise draw physiologically
+    # impossible values (e.g. EF>100), which inflates variance, deflates SMD,
+    # and feeds noise to matching. Bound each imputed column to its observed
+    # [min, max]; leave complete predictor columns unbounded (never imputed).
+    n_feat = matrix.shape[1]
+    min_vals = np.full(n_feat, -np.inf)
+    max_vals = np.full(n_feat, np.inf)
+    bounds: dict[str, tuple[float, float]] = {}
+    for col, j in zip(to_impute, impute_idx):
+        obs = pd.to_numeric(df[col], errors="coerce")
+        lo, hi = float(obs.min()), float(obs.max())
+        if np.isfinite(lo) and np.isfinite(hi) and hi > lo:
+            min_vals[j], max_vals[j] = lo, hi
+            bounds[col] = (lo, hi)
+
     m = max(n_imputations, 1)
     frames: list[pd.DataFrame] = []
     for i in range(m):
@@ -190,10 +206,15 @@ def make_imputations(
             max_iter=max_iter,
             sample_posterior=(m >= 2),
             random_state=seed + i,
+            min_value=min_vals,
+            max_value=max_vals,
         )
         filled = imp.fit_transform(matrix.values)
         out = df.copy()
         for col, j in zip(to_impute, impute_idx):
-            out[col] = filled[:, j]
+            vals = filled[:, j]
+            if col in bounds:  # belt-and-suspenders post-clip
+                vals = np.clip(vals, bounds[col][0], bounds[col][1])
+            out[col] = vals
         frames.append(out)
     return frames, added_ind
