@@ -968,6 +968,9 @@ def parse_args() -> argparse.Namespace:
                    help="MICE imputations for missing continuous covariates. "
                         "1 = complete-case (legacy behavior, reproduces prior numbers); "
                         "5 recommended for reporting.")
+    p.add_argument("--max-missing-frac",   type=float, default=0.5,
+                   help="Drop covariates more than this fraction missing from the PS "
+                        "model (still reported in the balance table). 1.0 = keep all.")
     p.add_argument("--denominator",        choices=["strict", "both"], default="strict",
                    help="strict = ladder on ECG-available ∩ rich-covariates-complete "
                         "(a complete-case sensitivity rung under imputation). "
@@ -1043,6 +1046,19 @@ def main() -> None:
         if c in cohort.columns and c not in _excl
     ]
     SMD_COLS = list(_balance_mod.SMD_COLS)
+
+    # Drop covariates that are more than --max-missing-frac missing from the PS
+    # model: matching on a majority-imputed covariate adds noise for (usually)
+    # weak confounders and inflates FMI. They stay in SMD_COLS, so balance is
+    # still reported (reported-only, like structurally-excluded covariates).
+    if args.max_missing_frac < 1.0:
+        _miss = {c: float(cohort[c].isna().mean()) for c in RICH_PSM_COVS if c in cohort.columns}
+        _too_sparse = sorted(c for c, f in _miss.items() if f > args.max_missing_frac)
+        if _too_sparse:
+            print(f"Dropping {len(_too_sparse)} covariate(s) >{args.max_missing_frac:.0%} "
+                  f"missing from PSM (kept in balance): "
+                  f"{[(c, f'{_miss[c]:.0%}') for c in _too_sparse]}")
+            RICH_PSM_COVS = [c for c in RICH_PSM_COVS if c not in _too_sparse]
 
     print(f"Rich PSM covariates ({len(RICH_PSM_COVS)}): {RICH_PSM_COVS}")
     print(f"Adjusted Cox covariates ({len(ADJ_COVS)}): {ADJ_COVS}")
