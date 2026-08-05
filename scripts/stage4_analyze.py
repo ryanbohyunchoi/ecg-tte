@@ -203,6 +203,35 @@ def ipw_hr(
     return cox_hr(d, treated_arm=treated_arm, weights_col="ipw_weight", robust=True)
 
 
+def ps_covariate_hr(
+    df: pd.DataFrame,
+    covariates: list[str],
+    treated_arm: str = "carvedilol",
+    control_arm: str = "metoprolol",
+    seed: int = 42,
+) -> dict:
+    """
+    Covariate adjustment by the propensity score (the 4th canonical PS method).
+    Fit the PS on `covariates`, then a Cox model of arm + PS — both arms retained,
+    HR is the arm coefficient adjusting for the single PS. Uses all covariates (no
+    LASSO), so the PS model is identical across MICE imputations. Complete-case on
+    the covariate set (a no-op under imputation).
+    """
+    avail = [c for c in covariates if c in df.columns]
+    if not avail:
+        return cox_hr(df, treated_arm=treated_arm)
+    feat = df[avail].copy().astype(float).replace([np.inf, -np.inf], np.nan)
+    complete = feat.notna().all(axis=1)
+    d = df[complete].reset_index(drop=True)
+    X = StandardScaler().fit_transform(feat[complete].reset_index(drop=True).values)
+    y = (d["arm"] == treated_arm).astype(int).values
+    clf = LogisticRegression(max_iter=2000, C=1.0, solver="lbfgs", random_state=seed)
+    clf.fit(X, y)
+    d = d.copy()
+    d["ps"] = clf.predict_proba(X)[:, 1]
+    return cox_hr(d, covariates=["ps"], treated_arm=treated_arm)
+
+
 def print_res(label: str, res: dict) -> None:
     line = (f"  {label:<50} HR={res['hr']:.3f} "
             f"[{res['ci_low']:.3f}–{res['ci_high']:.3f}]  p={res['p']:.4f}  n={res['n']}")
@@ -1144,6 +1173,24 @@ def main() -> None:
     r2 = _pool_over_imputations(_adj, imputations)
     print_res("Adjusted Cox", r2)
     results_summary.append({"label": "Adjusted Cox", "denominator": _denom_label, **r2})
+
+    # ── 2b. PS-covariate-adjusted Cox (full cohort, arm + PS) ─────────────────
+    print(f"\n2b. PS-covariate Cox  ({len(RICH_PSM_COVS)} covariates → 1 PS)")
+    def _pscov(d):
+        return ps_covariate_hr(d, RICH_PSM_COVS, treated_arm=TREATED,
+                               control_arm=CONTROL, seed=args.seed)
+    r2b = _pool_over_imputations(_pscov, imputations)
+    print_res("PS-covariate Cox", r2b)
+    results_summary.append({"label": "PS-covariate Cox", "denominator": _denom_label, **r2b})
+
+    # ── 2c. IPTW (stabilized inverse-probability weighting) ───────────────────
+    print(f"\n2c. IPTW  ({len(RICH_PSM_COVS)} covariates)")
+    def _iptw(d):
+        return ipw_hr(d, treated_arm=TREATED, control_arm=CONTROL,
+                      covariates=RICH_PSM_COVS, seed=args.seed)
+    r2c = _pool_over_imputations(_iptw, imputations)
+    print_res("IPTW", r2c)
+    results_summary.append({"label": "IPTW", "denominator": _denom_label, **r2c})
 
     # ── 3. Rich PSM ──────────────────────────────────────────────────────────
     print(f"\n3. Rich PSM  ({len(RICH_PSM_COVS)} covariates, caliper-sd={args.caliper_sd})")
