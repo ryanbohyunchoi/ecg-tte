@@ -34,6 +34,31 @@ Format per entry: **Symptom → Root cause → Fix → Guardrail.**
   identical across draws. Include treatment + Nelson-Aalen cumulative hazard + event
   indicator in the imputation predictor matrix (White & Royston); never impute the outcome.
 
+## A new pool covariate must clear TWO output whitelists, not one
+
+- **Symptom:** labs/vitals loaded in stage1 (print confirmed counts) but were
+  absent from the stage3 cohort and the balance table.
+- **Root cause:** two independent column whitelists gate the flow —
+  `POOL_COLS` in `stage1_build_pool.py` (before `pool.parquet` write) AND
+  `OUTPUT_COLS` in `stage3_filter.py` (before the cohort write). A covariate
+  dropped by either never reaches stage4. Only the stage3 gate was updated first.
+- **Fix:** add new config-driven covariates (labs/vitals `+ _measured`, zcodes)
+  to `config_flag_cols` in stage1 **and** `_cfg_flag_names` in stage3.
+- **Guardrail:** after wiring a new covariate, run `feature_inventory.py --cohort`
+  on the rebuilt cohort — "ABSENT" there means a whitelist dropped it.
+
+## Bound MICE draws; sparse covariates need a missingness cap
+
+- `IterativeImputer(sample_posterior=True)` draws outside physiologic range
+  (EF>100) → variance inflates ~10×, deflating SMD and faking good balance.
+  Fix: per-column `min_value`/`max_value` = observed [min,max] + post-clip.
+- Matching on a >50%-missing (majority-imputed) covariate inflates FMI for a
+  usually-weak confounder. `--max-missing-frac` (default 0.5) drops it from the
+  PS model but keeps it in the balance table. On PARADIGM this cut FMI 0.46→0.15.
+- Complete-case can flip the effect direction vs MICE when missingness is
+  differential by arm (PARADIGM EF: 17% treated vs 36% control) — CC HR 1.14
+  ("harm") vs MICE 0.91 ("benefit"). Prefer MICE; report CC as sensitivity only.
+
 ## `--n-imputations 1` is a backward-compat contract
 
 - `1` must reproduce the legacy complete-case numbers byte-for-byte. Imputation +
