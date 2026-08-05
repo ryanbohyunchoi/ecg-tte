@@ -18,6 +18,19 @@ set -uo pipefail
 REPO="$HOME/github/ecg-tte"
 cd "$REPO" || { echo "no repo at $REPO"; exit 1; }
 
+# Ensure the analysis conda env (lifelines, sklearn, pyarrow) is active even
+# when launched from base / a bare non-interactive shell.
+ENV_NAME="${ENV_NAME:-cardiomap}"
+if command -v conda >/dev/null 2>&1; then
+  _CB="$(conda info --base 2>/dev/null)"
+  if [ -n "$_CB" ] && [ -f "$_CB/etc/profile.d/conda.sh" ]; then
+    source "$_CB/etc/profile.d/conda.sh"
+    conda activate "$ENV_NAME" 2>/dev/null && echo "conda env: $ENV_NAME"
+  fi
+fi
+python -c "import lifelines, sklearn, pandas, pyarrow" 2>/dev/null \
+  || { echo "FATAL: missing deps (lifelines/sklearn/pandas/pyarrow) — activate $ENV_NAME"; exit 1; }
+
 OUT_ROOT="/home/rbc58/mnt/ecg-tte/runs"
 OMOP="/mnt/raid0/bb2238/ecg_ascvd/omop_database"
 META="/mnt/raid0/rbc58/mm_vhd/metadata"
