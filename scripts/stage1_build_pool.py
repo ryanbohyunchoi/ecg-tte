@@ -541,14 +541,20 @@ def main() -> None:
     )
 
     # Config-named flag columns (exclusion + inclusion + covariates)
+    _cov = cfg.get("covariates", {})
+    _labs_vitals = list(_cov.get("labs", [])) + list(_cov.get("vitals", []))
     config_flag_cols = (
         [s["name"] for s in cfg.get("exclusion",  {}).get("drug", [])] +
         [s["name"] for s in cfg.get("exclusion",  {}).get("icd",  [])] +
         [s["name"] for s in cfg.get("inclusion",  {}).get("required_icd", [])] +
         [s["name"] for s in cfg.get("inclusion",  {}).get("required_drug", [])] +
-        [s["name"] for s in cfg.get("covariates", {}).get("condition_flags", [])] +
+        [s["name"] for s in _cov.get("condition_flags", [])] +
         list(COMORBIDITY_ICD.keys()) +
-        [f"{m}_90d" for m in cfg.get("covariates", {}).get("medications_90d", [])]
+        [f"{m}_90d" for m in _cov.get("medications_90d", [])] +
+        # Labs / vitals values + {name}_measured indicators (--measurement-dir)
+        _labs_vitals + [f"{n}_measured" for n in _labs_vitals] +
+        # Z-code flags (--observation-dir)
+        list(_cov.get("zcodes", []))
     )
 
     POOL_COLS = list(dict.fromkeys(POOL_COLS_FIXED + config_flag_cols))  # dedup order
