@@ -1,0 +1,528 @@
+{
+  "archive_version": 1,
+  "archived_on": "2026-09-09",
+  "source_commit": "dd723066e3c6c2e3be9ce61c7503a95dc82e5f5b",
+  "source_worktree_clean": true,
+  "purpose": "Reference-only legacy snapshot; not part of the new pipeline.",
+  "scope": "All previously tracked files. .gitignore copied and retained at root; code and project documentation moved. Git history and local .claude settings remain in place. Ignored caches moved with their parent directories but are not part of this manifest.",
+  "files": [
+    {
+      "original_path": ".gitignore",
+      "archive_path": ".gitignore",
+      "sha256": "113dfa33d03b598f2163b51973a5f97c4ad9637bb106128ddb06d99c7173f583",
+      "bytes": 269,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "CLAUDE.md",
+      "archive_path": "CLAUDE.md",
+      "sha256": "f77c9f3ecf74fdaebdaf9b7851889e9fc215a95d7e449f23de3984ecb1ad07fb",
+      "bytes": 6311,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "README.md",
+      "archive_path": "README.md",
+      "sha256": "15b11c2d80554750fa28bede77e446b5909d38348f1ac8b1479f4155e27b9167",
+      "bytes": 13775,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/_schema.md",
+      "archive_path": "configs/_schema.md",
+      "sha256": "82233f559e41df3f71e3d38f8277d27163f22ba46dac1b7dc18ab424be746013",
+      "bytes": 10657,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/amplify.yaml",
+      "archive_path": "configs/amplify.yaml",
+      "sha256": "86172188ec995308e14e9b93f478322db611d8ca7d35a6f2f48a3bb582088940",
+      "bytes": 2085,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/aristotle.yaml",
+      "archive_path": "configs/aristotle.yaml",
+      "sha256": "39f8ca9a553738427e7bf6c1f71d664b30ca96deb91deaa13df5a90513443f34",
+      "bytes": 1900,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/canvas.yaml",
+      "archive_path": "configs/canvas.yaml",
+      "sha256": "2a1f71c649afc9730d2811fcfc6153bccfaa8f0d7da4c4030c5947d390af1b02",
+      "bytes": 1939,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/carmelina.yaml",
+      "archive_path": "configs/carmelina.yaml",
+      "sha256": "8d620d529b18e3ab5d29b3560bda6b2fb1ad786c151b549d7bdaf4f92b3c5069",
+      "bytes": 2129,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/carolina.yaml",
+      "archive_path": "configs/carolina.yaml",
+      "sha256": "e7c01c8873fd8e04730185bc3b0c08f4abebd42bdaf73a5fb972e916c9501210",
+      "bytes": 2060,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/comet.yaml",
+      "archive_path": "configs/comet.yaml",
+      "sha256": "f069e90e49241cccae728e009e7178640db110f089d1de53a84b86c999228dd5",
+      "bytes": 5075,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/d5896.yaml",
+      "archive_path": "configs/d5896.yaml",
+      "sha256": "37d4031c49d9691e2797dfec75ebd008d769983a3313a8fc8afa914188d66fa7",
+      "bytes": 2437,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/dapa_ckd.yaml",
+      "archive_path": "configs/dapa_ckd.yaml",
+      "sha256": "a41b2143ab9e8c3f43b0dd14c29a8cf42879447b008e49bca31a539491f65977",
+      "bytes": 2346,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/declare_timi58.yaml",
+      "archive_path": "configs/declare_timi58.yaml",
+      "sha256": "4150e5b6102e676210dc8d15d7b42face052603539616bb680e054f852eabfc6",
+      "bytes": 2207,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/einstein_dvt.yaml",
+      "archive_path": "configs/einstein_dvt.yaml",
+      "sha256": "d8557c5d7f09c42b89a2b8f2e1d3638be1779294a7d4d53d63a6457592a21776",
+      "bytes": 2130,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/einstein_pe.yaml",
+      "archive_path": "configs/einstein_pe.yaml",
+      "sha256": "04911d9f57a62413a42c7445a1e4b782b4df061bf8c085284dfb42cd986c0d37",
+      "bytes": 2124,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/empa_reg.yaml",
+      "archive_path": "configs/empa_reg.yaml",
+      "sha256": "7a8057b084c9509c666cd9c09daa14dabb77ac62244cc684f405d4c9440e1626",
+      "bytes": 1982,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/horizon_pft.yaml",
+      "archive_path": "configs/horizon_pft.yaml",
+      "sha256": "047ea1fcb7bf8b7108ab258b6db019e24aba1effaaa444889e99a4485145b1b8",
+      "bytes": 2302,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/impact.yaml",
+      "archive_path": "configs/impact.yaml",
+      "sha256": "f7c57b26d0ce0ebfb25505707dd1f6e96dc728d9c8e4b1e065fa348cf1c0ba61",
+      "bytes": 2056,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/inspire.yaml",
+      "archive_path": "configs/inspire.yaml",
+      "sha256": "0434984f11ee954af5fa1b4acc51e6ed215d0191772f1ff0f0f21be268246fe7",
+      "bytes": 2261,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/isar_react5.yaml",
+      "archive_path": "configs/isar_react5.yaml",
+      "sha256": "6e133fe93efeeceeeb8c62316b53a8bb23cdb5cb8061645d5c86fec3d3f484da",
+      "bytes": 2066,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/lead2.yaml",
+      "archive_path": "configs/lead2.yaml",
+      "sha256": "0571148a6f74731e2f6f1f8494b1c87221062fc5cce75f83c086a7b2172b3908",
+      "bytes": 2359,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/leader.yaml",
+      "archive_path": "configs/leader.yaml",
+      "sha256": "968a6560e71a08e037af509df99ed9e9ea1297652a0e700b9fb5e13d70c15ab7",
+      "bytes": 2031,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/ontarget.yaml",
+      "archive_path": "configs/ontarget.yaml",
+      "sha256": "a7e6714a602b99e576c0f733a4c980b1c177ce79a5dcb31ac9d7937cea4f0f9c",
+      "bytes": 2023,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/p04334.yaml",
+      "archive_path": "configs/p04334.yaml",
+      "sha256": "ef6af93d511cfd5e1fa4e2f8d99e8120b5fca51f2a0e5fdb9df84ef4f2430807",
+      "bytes": 2282,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/paradigm_hf.yaml",
+      "archive_path": "configs/paradigm_hf.yaml",
+      "sha256": "6ff93a42b2807c972d2f0b3463d7ee74c82ed56183df764ee9412259bddb829d",
+      "bytes": 8296,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/plato.yaml",
+      "archive_path": "configs/plato.yaml",
+      "sha256": "839320e42ee9351ad11de39f80eb467bf5f55187110769065e90635fbc6bd0c2",
+      "bytes": 1842,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/poet_copd.yaml",
+      "archive_path": "configs/poet_copd.yaml",
+      "sha256": "5c00512f540efae9839a4c36b7d4982e516e8706287fb58d6fae07095ae153c1",
+      "bytes": 1953,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/record1.yaml",
+      "archive_path": "configs/record1.yaml",
+      "sha256": "26a456f945d12b80f3e5a269f94a4b980a389c0a0428c85786092bafac170ebf",
+      "bytes": 2327,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/recover_ii.yaml",
+      "archive_path": "configs/recover_ii.yaml",
+      "sha256": "f1a3f4418bc0e355fea0f5668ae9af876fa1ecd148d68309f280f1d6ea5298f7",
+      "bytes": 2168,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/rely.yaml",
+      "archive_path": "configs/rely.yaml",
+      "sha256": "e863c9682379cb9b8ef6777b92404c036590e75d20d674057ef43af7859794e4",
+      "bytes": 1956,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/rocket_af.yaml",
+      "archive_path": "configs/rocket_af.yaml",
+      "sha256": "4d574918a61bbde13de97e60615d55287301133e43f1852dadc180f8159aae0d",
+      "bytes": 2022,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/savor_timi.yaml",
+      "archive_path": "configs/savor_timi.yaml",
+      "sha256": "7c23f4b9a6c20b95df333e922253a7d2bee5f1a1f0622b2237c020b1e41da4bb",
+      "bytes": 2205,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/tecos.yaml",
+      "archive_path": "configs/tecos.yaml",
+      "sha256": "3644b63eec1766124670e58f24fce9d05057bb2815b6fec49ed79c2b94608181",
+      "bytes": 2130,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/transcend.yaml",
+      "archive_path": "configs/transcend.yaml",
+      "sha256": "ba7fe95be6be73cd85d579eca8b4159e6ff5ccc73ef22675730afa364fa38a61",
+      "bytes": 2366,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/triton_timi38.yaml",
+      "archive_path": "configs/triton_timi38.yaml",
+      "sha256": "8dc3e32f149d38c085c9188d48a6c53401cd658ad3f69f47a787ac72f9c07428",
+      "bytes": 2079,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "configs/vero.yaml",
+      "archive_path": "configs/vero.yaml",
+      "sha256": "7e72a04ab1cc51b49a3012ce94ae0d7e9d652d315db30bb759b481d69d146b9e",
+      "bytes": 2002,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "handoff.md",
+      "archive_path": "handoff.md",
+      "sha256": "808fd5d488269d95ea24609f67900f2309f8bf0ddd796906caa3fe9483c880c0",
+      "bytes": 6686,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/balance.py",
+      "archive_path": "scripts/balance.py",
+      "sha256": "30cf91968d02cf5a6f36cf7dd19388f69e20f9223e40897b022538913c6c1a56",
+      "bytes": 20598,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/bio_embed.py",
+      "archive_path": "scripts/bio_embed.py",
+      "sha256": "4728349ad3ebf63f5f213ebb62862ce039a9cfd334d722c3a88696201952c581",
+      "bytes": 11577,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/build_drug_master.py",
+      "archive_path": "scripts/build_drug_master.py",
+      "sha256": "76367e7ce61a5272cb5f28304dc450b910706c8da1eaa41d7a4c559ea360e416",
+      "bytes": 16888,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/check_bio_embed.py",
+      "archive_path": "scripts/check_bio_embed.py",
+      "sha256": "8fe7825814880733912c997c18d951dedfaf959a1747be216ff0b72427d2358e",
+      "bytes": 4477,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/check_drug_master.py",
+      "archive_path": "scripts/check_drug_master.py",
+      "sha256": "e790cef03c42458e041e8d0f32870134101d0e820e0b4b4df78ad2734170c664",
+      "bytes": 6608,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/clip_model.py",
+      "archive_path": "scripts/clip_model.py",
+      "sha256": "e798d2cab9417514146e5317ebc7e5f64cc406ab6fb6c9df43007c572a932d1f",
+      "bytes": 700,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/cohort_utils.py",
+      "archive_path": "scripts/cohort_utils.py",
+      "sha256": "a336580cb121ed19cedea5deb1af94813de36f46564041bd46581112e7a936cc",
+      "bytes": 68908,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/denominators.py",
+      "archive_path": "scripts/denominators.py",
+      "sha256": "1879b0eb9eed63dc2c177c93814b099103530052f28e3cd96120ff922565cf94",
+      "bytes": 4404,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/diagnostics.py",
+      "archive_path": "scripts/diagnostics.py",
+      "sha256": "2447c7d042dc86ea109cd8822359c0239b0efde953b15da32901fabc634fc7a9",
+      "bytes": 11859,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/drug_explorer_app.py",
+      "archive_path": "scripts/drug_explorer_app.py",
+      "sha256": "a5caec74bcdb6ff8dc96db80b5269c8ed1ac976f8de94395457883f8f310be12",
+      "bytes": 10190,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/embed_cohort.py",
+      "archive_path": "scripts/embed_cohort.py",
+      "sha256": "0ace94b8c9703788cc9dc670480deab4fecc430cb59c15a161933ae43a5dfa5d",
+      "bytes": 12704,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/explore_drug_data.py",
+      "archive_path": "scripts/explore_drug_data.py",
+      "sha256": "cbc370fac1f080fd7e838dac5ae4b37ab3ca7ef10343ea2b4b65f51d1b363e2a",
+      "bytes": 13908,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/explore_med_sources.py",
+      "archive_path": "scripts/explore_med_sources.py",
+      "sha256": "08897be188867680253d9573329acb93ce5a7d0b12855aca0cdbfa87090b8c19",
+      "bytes": 11210,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/explore_omop_sources.py",
+      "archive_path": "scripts/explore_omop_sources.py",
+      "sha256": "7c10f4eaa5d32ec3dc1e6f9518e1e3c5776bccf1b0066de146d577ff2379d40c",
+      "bytes": 16420,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/feature_inventory.py",
+      "archive_path": "scripts/feature_inventory.py",
+      "sha256": "1c81b5cf3f14a7e94e1173dd9e1df07e7e79c11c30eb3724dc42dcbfac8a0614",
+      "bytes": 8422,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/imputation.py",
+      "archive_path": "scripts/imputation.py",
+      "sha256": "3f86122b1b742f83f1c7b8f1b8d2f81b46e175d48e6929f3ba1ae931c5743719",
+      "bytes": 9501,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/lint_configs.py",
+      "archive_path": "scripts/lint_configs.py",
+      "sha256": "4e42e6a6f125cc2a560dca8002e80cc90d1bbea2b4ecffcf4f9bfe11c00abb79",
+      "bytes": 1870,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/make_baseline_table.py",
+      "archive_path": "scripts/make_baseline_table.py",
+      "sha256": "b78d76c1833ce2309e43536aadc62eeefb3f727503ddfaa2b09e0406362ce441",
+      "bytes": 14237,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/make_consort_diagrams.py",
+      "archive_path": "scripts/make_consort_diagrams.py",
+      "sha256": "5f8d6ad6102d07ccf206d10c5dbf0e31bbc2d85c5e0caabce0949fbe5a842545",
+      "bytes": 15508,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/run_bio_embed.sh",
+      "archive_path": "scripts/run_bio_embed.sh",
+      "sha256": "4f696047c3239ce897d8a3577e75d88414abcfee4cd10cc3577660c71fedf90a",
+      "bytes": 1854,
+      "mode": "0o755"
+    },
+    {
+      "original_path": "scripts/run_pipeline.sh",
+      "archive_path": "scripts/run_pipeline.sh",
+      "sha256": "dc5abe9cb516a8b3091bec9dd7619f7ffe98c5c3035fc0355138120f33a1596e",
+      "bytes": 4010,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/run_stage2.sh",
+      "archive_path": "scripts/run_stage2.sh",
+      "sha256": "af35e7ccfc210a50e95b6f4679f9d228fbd2b9022a234407e7ac0c68da6dd802",
+      "bytes": 3129,
+      "mode": "0o755"
+    },
+    {
+      "original_path": "scripts/run_stage34.sh",
+      "archive_path": "scripts/run_stage34.sh",
+      "sha256": "5fa8f567a4b702348aebb45412c3b68abd2b4465041c5919d4969eb21c65ca89",
+      "bytes": 4250,
+      "mode": "0o755"
+    },
+    {
+      "original_path": "scripts/stage0_feasibility.py",
+      "archive_path": "scripts/stage0_feasibility.py",
+      "sha256": "eeee3ca1ec05ac07c7cf997731940b03cec296c11b92617b0fabb2461c221411",
+      "bytes": 23300,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/stage1_build_pool.py",
+      "archive_path": "scripts/stage1_build_pool.py",
+      "sha256": "b065553dbf58d51303e6030c56ea62fb84e738da993e7514c10f81002221c241",
+      "bytes": 33994,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/stage2_embed.py",
+      "archive_path": "scripts/stage2_embed.py",
+      "sha256": "cf40b9f476cfe267cb498b84fff6711cfec5ea3efa607fbed8b91ca23040705f",
+      "bytes": 10910,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/stage3_filter.py",
+      "archive_path": "scripts/stage3_filter.py",
+      "sha256": "50b18dcf2b908dfbaaabde5628a2673881fb875445428ca9db0b750f2d5fb90a",
+      "bytes": 31352,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/stage4_analyze.py",
+      "archive_path": "scripts/stage4_analyze.py",
+      "sha256": "bf806872ae20fc4704636d13852e7e3b81f96b900dd1426e58a82c29e9adc506",
+      "bytes": 57112,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "scripts/stage5_meta.py",
+      "archive_path": "scripts/stage5_meta.py",
+      "sha256": "56440bd3ecdd080154363f6b7eabf00ac21f782183c82a963ca04309af59c25c",
+      "bytes": 11496,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "tasks/lessons.md",
+      "archive_path": "tasks/lessons.md",
+      "sha256": "c561b59a8a7dcc44078f8a34eb2a0d74e383563a7b2e2f1a3faf6a2a0cad2540",
+      "bytes": 3835,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "tasks/todo.md",
+      "archive_path": "tasks/todo.md",
+      "sha256": "fb59fdeaff8c4d2336540b8490ed111c4d923c017d8ebeaca9f951d56182bf6e",
+      "bytes": 12298,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "trials/paradigm/PLAN.md",
+      "archive_path": "trials/paradigm/PLAN.md",
+      "sha256": "64effd6f03984bba8f1a7ecc829384acce894445a226f35cb0f6b5fbb534d1ab",
+      "bytes": 5389,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "trials/paradigm/run_paradigm_full.sh",
+      "archive_path": "trials/paradigm/run_paradigm_full.sh",
+      "sha256": "b61b87afc7eb5d7a57e8c5a729b7e62f0fa4faa27f2f1e281aa8b1eaf238f6c6",
+      "bytes": 8781,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "trials/paradigm/run_stage1.sh",
+      "archive_path": "trials/paradigm/run_stage1.sh",
+      "sha256": "e32aec2d7dd8e49e2c801f88596ca791b7d206d835749dfb1875e8f620d95088",
+      "bytes": 2608,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "trials/paradigm/run_stage2.sh",
+      "archive_path": "trials/paradigm/run_stage2.sh",
+      "sha256": "a29435a3348c12788ba8d8e0f6029e03cd43da48e10eb61f4d7a8a88544933e3",
+      "bytes": 937,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "trials/paradigm/run_stage3.sh",
+      "archive_path": "trials/paradigm/run_stage3.sh",
+      "sha256": "2fd4edc8fb4fe5b766e587c5a304f6f4a709c466fe002eefcf3bf565724eaeab",
+      "bytes": 1075,
+      "mode": "0o644"
+    },
+    {
+      "original_path": "trials/paradigm/run_stage4.sh",
+      "archive_path": "trials/paradigm/run_stage4.sh",
+      "sha256": "6cc0ff4caf66010387a123e1568e336de96eaadeb1264764d7b6ad58411142f2",
+      "bytes": 1640,
+      "mode": "0o644"
+    }
+  ]
+}

@@ -27,16 +27,3 @@ venv/
 
 # OS
 .DS_Store
-
-# Restart: all real-data products and model assets stay outside tracked source
-artifacts/
-outputs/
-profiles/
-checkpoints/
-configs/local/
-*.pt
-*.pth
-*.ckpt
-*.safetensors
-.pytest_cache/
-.ruff_cache/
