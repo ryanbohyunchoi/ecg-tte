@@ -15,6 +15,9 @@ Status as of 2026-09-09. Checked means completed with evidence, not merely plann
 
 - [x] Build and synthetically verify a metadata-only JDAT file inventory for Ryan to run (7 tests passed; `docs/RUN_JDAT_INVENTORY.md`).
 - [ ] Ryan runs the inventory on the H100 and returns reviewed non-identifying filenames.
+- [x] Record Ryan's first T2DM summary and filename excerpt; identify version/partial-file issues and category-label errors (`docs/JDAT_SOURCE_FINDINGS.md`).
+- [x] Build bounded header-only inspection for 38 explicit T2DM candidates; 8 new tests pass (15 total).
+- [ ] Ryan runs header inspection and returns reviewed table/column names (`docs/RUN_JDAT_HEADERS.md`).
 - [x] Resolve execution boundary: no assistant SSH; Ryan pulls and runs code on the H100 (see `master.md`).
 - [ ] Confirm raw source roots, extract versions, and output destination through user-run discovery.
 - [ ] Establish what notes, ECGs, echo images/videos, and checkpoints are available.

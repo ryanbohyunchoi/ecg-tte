@@ -68,3 +68,20 @@ contents, retains unclassified files, records traversal errors, skips descendant
 symlinks, and creates a new restricted report directory. Seven synthetic tests
 passed. Ryan must execute it on the H100; all source locations remain unverified.
 This completes file-inventory tooling only, not schema profiling or source validation.
+
+## Evidence update — first H100 inventory excerpt, 2026-09-09
+
+Ryan provided a completed T2DM-root summary (4,309 files, approximately 1.07 TB)
+and selected non-identifying filenames. Raw medication, lab, vital, encounter,
+patient, and history tables are candidates; clinical semantics remain unverified.
+Multiple versions, nested deliveries, and `.partial` artifacts require provenance
+review before ingestion. Filename category counts contain known heuristic errors.
+See `JDAT_SOURCE_FINDINGS.md`; this is not completion of all-root discovery.
+
+## Evidence update — header inspection tooling, 2026-09-09
+
+Added `scripts/inspect_jdat_headers.py` with an explicit 38-file preset from Ryan's
+excerpt. It reads only a bounded first physical line, rejects unrecognized header
+candidates without echoing raw values, and records per-file progress/status.
+Copy/date variants are inspected separately; no authoritative version is selected.
+All 15 synthetic tests pass. Actual headers and clinical semantics remain unverified.

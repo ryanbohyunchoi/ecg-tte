@@ -12,6 +12,9 @@ and no new treatment effects have been estimated during this restart.
 The first tool is ready: [run the JDAT file inventory on the H100](docs/RUN_JDAT_INVENTORY.md).
 It lists filenames and sizes only. Ryan runs it and reviews the report before sharing.
 
+Next: [inspect selected JDAT column headers](docs/RUN_JDAT_HEADERS.md), using the
+T2DM filenames Ryan supplied. This reads only a bounded first line per candidate.
+
 ## Start here
 
 - [Detailed restart plan](docs/RESTART_PLAN.md): questions, experimental design,
@@ -55,6 +58,9 @@ contains code, protocols, synthetic test fixtures, and reviewed aggregate report
 
 ## Change log
 
+- **2026-09-09:** Added explicit T2DM header inspection, per-file progress, conservative
+  header validation, and H100 commands. All 15 synthetic tests pass; no real headers
+  have been inspected by the assistant. Recorded the user-provided inventory findings.
 - **2026-09-09:** Added a standalone metadata-only inventory and H100 run instructions;
   seven synthetic tests passed. Cluster execution and source verification are pending.
 - **2026-09-09:** Archived legacy v1 without changing its tracked file contents;
