@@ -132,6 +132,49 @@ class EvidenceCountsTests(unittest.TestCase):
                     C.CountError('SECRET_TEXT'), C.AuditError('SECRET_TEXT')):
             self.assertNotIn('SECRET', C.failure_reason(exc))
 
+    def literal(self, **kwargs):
+        schema = C.inspect(self.root, 'meds.txt')['schema_sha256']
+        return self.run_audit(max_rows=None, record_format='literal-tabs',
+                              expected_schema_sha256=schema, **kwargs)
+
+    def test_literal_quotes_are_preserved_without_merging_lines(self):
+        self.put('PAT_MRN_ID\tREFILLS\tSIG\nA\t3\t"text"suffix\nA\t2\tplain\nB\t1\t\n')
+        r = self.literal()
+        self.assertEqual(r['status'], 'complete_file')
+        self.assertEqual(r['rows_read'], 3)
+        self.assertEqual(r['distinct_nonempty_patient_keys'], 2)
+        self.assertIsNone(r['verified_outpatient_fill_patients'])
+        self.assertEqual(r['parser']['format_semantics'], 'provisional_literal_tab_hypothesis')
+
+    def test_literal_requires_matching_schema_and_tab_delimiter(self):
+        self.put('PAT_MRN_ID\tREFILLS\nA\t2\n')
+        with self.assertRaises(ValueError):
+            self.run_audit(record_format='literal-tabs')
+        r = self.run_audit(record_format='literal-tabs', expected_schema_sha256='wrong')
+        self.assertEqual(r['reason'], 'schema_hash_mismatch')
+        self.put('PAT_MRN_ID,REFILLS\nA,2\n')
+        schema = C.inspect(self.root, 'meds.txt')['schema_sha256']
+        r = C.run(self.root, 'meds.txt', self.base / 'report2', record_format='literal-tabs',
+                  expected_schema_sha256=schema)
+        self.assertEqual(r['reason'], 'literal_tabs_requires_tab_header')
+
+    def test_literal_multiline_and_extra_tabs_still_fail(self):
+        self.put('PAT_MRN_ID\tSIG\nA\t"line1\nline2"\n')
+        r = self.literal()
+        self.assertEqual(r['reason'], 'row_width_mismatch')
+        self.assertNotIn('distinct_nonempty_patient_keys', r)
+
+    def test_literal_field_limit_and_quoted_keys(self):
+        self.put('PAT_MRN_ID\tSIG\n"A"\ttext\nA\ttext\n')
+        r = self.literal()
+        self.assertEqual(r['distinct_nonempty_patient_keys'], 2)
+        self.assertEqual(r['rows_with_quotes_in_patient_key'], 1)
+        self.put('PAT_MRN_ID\tSIG\nA\t' + 'x' * 200 + '\n')
+        schema = C.inspect(self.root, 'meds.txt')['schema_sha256']
+        r = C.run(self.root, 'meds.txt', self.base / 'report2', record_format='literal-tabs',
+                  expected_schema_sha256=schema, max_field_chars=128)
+        self.assertEqual(r['reason'], 'literal_field_exceeds_character_limit')
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -26,7 +26,8 @@ class CountError(Exception):
 
 def failure_reason(exc):
     if isinstance(exc, CountError) and str(exc) in {
-        'invalid_header_or_source', 'patient_key_absent', 'row_width_mismatch', 'source_changed'
+        'invalid_header_or_source', 'patient_key_absent', 'row_width_mismatch', 'source_changed',
+        'schema_hash_mismatch', 'literal_tabs_requires_tab_header', 'literal_field_exceeds_character_limit'
     }:
         return str(exc)
     if isinstance(exc, AuditError) and str(exc) in {
@@ -58,7 +59,7 @@ def save(path, value):
 
 def run(root, relative, output, patient_column='PAT_MRN_ID', max_rows=100000,
         encoding='utf-8-sig', category_limit=1000, max_record_bytes=1048576,
-        max_field_chars=1048576):
+        max_field_chars=1048576, record_format='strict-csv', expected_schema_sha256=None):
     """max_rows=None explicitly requests EOF; counts are per source, never pooled."""
     root, output = Path(root), Path(output)
     if not root.is_absolute() or not output.is_absolute():
@@ -72,9 +73,13 @@ def run(root, relative, output, patient_column='PAT_MRN_ID', max_rows=100000,
         raise ValueError('invalid_parser_limits')
     if patient_column not in {'PAT_MRN_ID', 'MRN', 'PERSON_ID'}:
         raise ValueError('unsupported_patient_key')
+    if record_format not in {'strict-csv', 'literal-tabs'}:
+        raise ValueError('unknown_record_format')
+    if record_format == 'literal-tabs' and not expected_schema_sha256:
+        raise ValueError('literal_tabs_requires_expected_schema')
     os.umask(0o077)
     output.mkdir(parents=True, mode=0o700, exist_ok=False)
-    report = {'version': 2, 'status': 'running', 'restricted_until_reviewed': True,
+    report = {'version': 3, 'status': 'running', 'restricted_until_reviewed': True,
               'source': str(root / relative), 'max_rows': max_rows,
               'selection': 'full_file_requested' if max_rows is None else 'first_records_not_random',
               'patient_key': patient_column,
@@ -86,7 +91,10 @@ def run(root, relative, output, patient_column='PAT_MRN_ID', max_rows=100000,
               'eligibility_status': 'not_assessed_no_trial_contract',
               'parser': {'max_record_bytes': max_record_bytes,
                          'max_field_chars': max_field_chars,
-                         'quoting': 'csv_default_strict_no_skipping'}}
+                         'record_format': record_format,
+                         'expected_schema_sha256': expected_schema_sha256,
+                         'format_semantics': 'provisional_literal_tab_hypothesis' if record_format == 'literal-tabs' else 'strict_csv',
+                         'quoting': 'literal_quotes_no_skipping' if record_format == 'literal-tabs' else 'csv_default_strict_no_skipping'}}
     save(output / 'summary.json', report)
     initial_report = dict(report)
     connection = None
@@ -98,6 +106,10 @@ def run(root, relative, output, patient_column='PAT_MRN_ID', max_rows=100000,
         header = inspect(root, relative, encoding=encoding)
         if header.get('status') != 'header_candidate':
             raise CountError('invalid_header_or_source')
+        if expected_schema_sha256 and header['schema_sha256'] != expected_schema_sha256:
+            raise CountError('schema_hash_mismatch')
+        if record_format == 'literal-tabs' and header['delimiter'] != 'tab':
+            raise CountError('literal_tabs_requires_tab_header')
         names = [name.upper() for name in header['columns']]
         if patient_column not in names:
             raise CountError('patient_key_absent')
@@ -106,7 +118,7 @@ def run(root, relative, output, patient_column='PAT_MRN_ID', max_rows=100000,
         categories = [name for name in CATEGORY if name in index]
         fields = {name: Counter() for name in selected}
         groups, group_counts = {}, Counter()
-        rows = missing_id = omitted = 0
+        rows = missing_id = omitted = quoted_patient_keys = 0
         eof = False
         source = root / relative
         before = source.stat()
@@ -124,7 +136,17 @@ def run(root, relative, output, patient_column='PAT_MRN_ID', max_rows=100000,
                     lines.used = 0
                     stage = 'record_parse'
                     try:
-                        row = next(reader)
+                        if record_format == 'literal-tabs':
+                            line = next(lines)
+                            if line.endswith('\n'):
+                                line = line[:-1]
+                                if line.endswith('\r'):
+                                    line = line[:-1]
+                            row = line.split('\t')
+                            if any(len(cell) > max_field_chars for cell in row):
+                                raise CountError('literal_field_exceeds_character_limit')
+                        else:
+                            row = next(reader)
                     except StopIteration:
                         eof = True
                         break
@@ -133,6 +155,7 @@ def run(root, relative, output, patient_column='PAT_MRN_ID', max_rows=100000,
                     stage = 'record_count'
                     rows += 1
                     patient = row[index[patient_column]].strip()
+                    quoted_patient_keys += '"' in patient
                     missing_id += not bool(patient)
                     present = set()
                     for name in selected:
@@ -171,6 +194,7 @@ def run(root, relative, output, patient_column='PAT_MRN_ID', max_rows=100000,
         stage = 'report_write'
         report.update(status='complete_file' if eof else 'bounded_prefix',
                       reached_eof=eof, rows_read=rows, rows_missing_patient_key=missing_id,
+                      rows_with_quotes_in_patient_key=quoted_patient_keys,
                       distinct_nonempty_patient_keys=counts.get(-1, 0),
                       fields_present=selected, fields_absent=sorted((FILL | SUPPLY | OTHER) - index.keys()),
                       field_presence={name: {'nonempty': fields[name]['nonempty'], 'empty': fields[name]['empty']} for name in selected},
@@ -209,6 +233,8 @@ def main():
     parser.add_argument('--encoding', default='utf-8-sig', choices=['utf-8-sig', 'latin-1'])
     parser.add_argument('--max-record-bytes', type=int, default=1048576)
     parser.add_argument('--max-field-chars', type=int, default=1048576)
+    parser.add_argument('--record-format', choices=['strict-csv', 'literal-tabs'], default='strict-csv')
+    parser.add_argument('--expected-schema-sha256')
     scope = parser.add_mutually_exclusive_group()
     scope.add_argument('--max-rows', type=int, default=100000)
     scope.add_argument('--full-scan', action='store_true')
@@ -216,7 +242,8 @@ def main():
     try:
         report = run(args.root, args.file, args.output_dir, args.patient_column,
                      None if args.full_scan else args.max_rows, args.encoding,
-                     max_record_bytes=args.max_record_bytes, max_field_chars=args.max_field_chars)
+                     max_record_bytes=args.max_record_bytes, max_field_chars=args.max_field_chars,
+                     record_format=args.record_format, expected_schema_sha256=args.expected_schema_sha256)
     except Exception as exc:
         print('Could not start: ' + type(exc).__name__, flush=True)
         return 1

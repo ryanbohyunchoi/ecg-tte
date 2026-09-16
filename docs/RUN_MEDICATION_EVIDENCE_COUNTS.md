@@ -127,6 +127,46 @@ a replacement denominator by this diagnostic.
 
 ### Trial-specific denominator sequence
 
+### Reviewed quote conflict and provisional literal-tab scan
+
+The subsequent diagnostic reproduced an unexpected character after closing quote
+at 413,839 parsed records (413,840 physical lines consumed). All 500,000 inspected
+physical lines had the expected 42 columns; 2,337 contained quotes, only one had
+a quote at field start, and no source change was detected. This supports testing
+literal quotes in a tab-separated extract; it does not prove full-file validity
+or the source's documented quoting convention.
+
+Version 3 supports an explicit `literal-tabs` reconnaissance mode, pinned to the
+reviewed header schema. It treats each physical line as one record, splits tabs,
+preserves quotes and empty trailing fields, and invalidates all counts at any width
+mismatch. Strict CSV remains the default. No rows are skipped or combined, and
+clinical exposure definitions are unchanged. Results remain provisional raw-key
+counts pending extract-format and identity review. Quoted patient keys are counted
+separately as a warning metric; quotes are never silently stripped to merge keys.
+
+Run this in a fresh directory to assess full-file structure and preliminary N:
+
+```bash
+cd "$HOME/github/ecg-tte"
+git pull --ff-only origin psm-mice-imputation
+MED_COUNT_OUT=$(mktemp -d "$HOME/medication-literal-counts-XXXXXXXX")
+python scripts/count_medication_evidence.py \
+  --root /home/rbc58/mnt/implementation/cardsjdat-CC1022-MEDINT/2435227-CarDS-ECG/Data-2026-04-15 \
+  --file CarDS_2435227_Meds.txt \
+  --output-dir "$MED_COUNT_OUT/report" \
+  --record-format literal-tabs \
+  --expected-schema-sha256 61f9556c4f054c3346d46f78e63d65a467e022f800fb0b388e5dbcf622903da8 \
+  --full-scan
+cat "$MED_COUNT_OUT/report/summary.json"
+```
+
+Even successful structural checks do not certify that every tab/newline is a true
+delimiter or that patient keys require no normalization. Confirm the extraction
+specification before freezing an ingestion contract. Verified-fill N remains not
+assessable until dispensing semantics are validated.
+
+### Trial-specific denominator sequence (after source validation)
+
 For each prespecified treatment/comparator arm, report sequentially:
 
 1. Patients with candidate medication evidence and classifiable care setting.
