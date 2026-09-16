@@ -38,6 +38,8 @@ def failure_reason(exc):
             return 'csv_field_exceeds_character_limit'
         if str(exc) == 'unexpected end of data':
             return 'csv_unterminated_quoted_record'
+        if str(exc).endswith(" expected after '\"'"):
+            return 'csv_unexpected_character_after_closing_quote'
         return 'csv_parse_error'
     if isinstance(exc, UnicodeError):
         return 'text_decode_error'

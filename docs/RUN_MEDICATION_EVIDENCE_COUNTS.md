@@ -96,6 +96,37 @@ but only retains the specified fields; free text and record examples are not emi
 
 ## Next N after source validation
 
+### If strict parsing fails
+
+The version 2 H100 run stopped with `csv_parse_error` after 413,839 records;
+the field-size hypothesis was not confirmed. No valid N resulted. Run the structural
+diagnostic below instead of repeating the full count or changing quote handling.
+It performs two bounded passes (at most 500,000 logical records for strict parsing,
+and 500,000 physical lines for literal-delimiter width checks). No database of
+patient keys is built, and no source values or exception messages are exported.
+
+```bash
+cd "$HOME/github/ecg-tte"
+git pull --ff-only origin psm-mice-imputation
+MED_FORMAT_OUT=$(mktemp -d "$HOME/medication-format-XXXXXXXX")
+python scripts/diagnose_medication_format.py \
+  --root /home/rbc58/mnt/implementation/cardsjdat-CC1022-MEDINT/2435227-CarDS-ECG/Data-2026-04-15 \
+  --file CarDS_2435227_Meds.txt \
+  --output-dir "$MED_FORMAT_OUT/report" \
+  --max-records 500000
+cat "$MED_FORMAT_OUT/report/summary.json"
+```
+
+`diagnostic_complete` means the format check finished, not that parsing succeeded
+or a parser is approved. Review both pass statuses, limits and reasons. Stable
+physical-line widths may support a literal-quote hypothesis but cannot prove source
+semantics or validate the entire file. Legitimate quoted multiline fields or tabs
+inside fields can also produce width differences. Resolve the extraction format
+before changing the counting parser. No rows are skipped, repaired or used to build
+a replacement denominator by this diagnostic.
+
+### Trial-specific denominator sequence
+
 For each prespecified treatment/comparator arm, report sequentially:
 
 1. Patients with candidate medication evidence and classifiable care setting.
