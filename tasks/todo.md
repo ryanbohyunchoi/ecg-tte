@@ -36,10 +36,14 @@ Status as of 2026-09-16. Checked means completed with evidence, not merely plann
 
 ## ACC baseline priority — 2026-09-16
 
+- [x] Build bounded read-only RBC output discovery from local path references; three new tests pass (36 total).
+- [ ] Locate actual RBC remapping via user-run report and compare schemas/lineage with bb2238; do not alter either dataset.
+
 - [x] Pull latest cards-misc main and trace source patterns, retained fields and feature-branch differences.
 - [x] Document 24 candidate ETL inputs within the latest 64-file source audit and PSM limitations.
 - [x] Build read-only existing-OMOP manifest/schema inspector; four synthetic tests pass (33 total).
-- [ ] Ryan returns reviewed existing-bb2238 manifest/schema evidence; establish producing run/version and mapping resolution without changing the dataset.
+- [x] Review existing-bb2238 metadata: latest recorded full run June 22, 23 staged inputs, narrow gold schema; exact producing commit remains unverified.
+- [ ] Audit chosen treatment/comparator coverage, missingness, prior history and endpoints using read-only aggregates; bb2238 remains unchanged.
 - [ ] Define one feasible treatment/comparator protocol and required baseline covariates.
 - [ ] Validate exposure/index and observation history; add required raw fields before fitting PSM.
 - [ ] Establish clinical and expanded structured PSM baselines before clustering/cosine comparisons.

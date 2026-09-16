@@ -133,3 +133,24 @@ inputs and mapping resolution, with no changes to that dataset. Do not run ETL o
 remap/overwrite it. Added `audit_existing_omop.py` to read existing manifests and
 parquet footer schemas on the H100, writing reports only to a fresh directory in
 Ryan's home. Four synthetic tests pass (33 total). Actual report remains pending.
+
+## Existing bb2238 evidence received — 2026-09-16
+
+Read-only report identifies seven manifests; latest recorded full run is June 22,
+029e6e60, 23 staged inputs, six steps and no recorded step errors. Current metadata
+is consistent with the narrow pipeline: no visit/procedure parquet found, sampled
+drugs have no standard drug_concept_id. Recorded silver-to-gold retention is 4.48%
+for labs, 68.35% for medications, 26.04% for vitals; do not interpret these as patient
+coverage or mapping correctness. Exact code revision/current partition lineage
+remain unproven. Next evaluate trial-specific exposure/covariate/outcome feasibility
+read-only; do not modify bb2238. Detailed input list and counts recorded in
+CARDS_MISC_OMOP_PSM_AUDIT.md.
+
+## RBC comparison requested — 2026-09-16
+
+Ryan wants to locate the existing RBC remapping, possibly in mosaic or target-trial
+outputs, and compare it with bb2238. Added bounded read-only directory/schema
+inspection for documented candidate roots and Ryan's RAID directory. No historical
+mapper is executed and no source is changed. Three new synthetic tests pass (36
+total). Actual RBC location, schema and mapping coverage remain unverified until
+Ryan returns the reviewed report. See RUN_RBC_OMOP_DISCOVERY.md.

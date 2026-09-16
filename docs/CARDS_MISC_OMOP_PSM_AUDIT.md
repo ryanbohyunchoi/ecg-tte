@@ -3,7 +3,105 @@
 Reviewed 2026-09-16. This is a code and committed aggregate-metadata audit, not a
 validation of the H100 gold tables. No cluster connection or patient-row inspection.
 
-## Conclusion
+## Existing bb2238 report received — 2026-09-16
+
+The user-run inspector found seven manifests and selected all seven. The newest
+recorded full ETL is June 22, 2026, run
+`029e6e60-35ce-4a77-b491-0dfc3b1df071`, stage all/local true, steps 1–6, no recorded
+step errors. This is newer-run evidence within the supplied manifest history,
+not proof that no unrecorded later writes occurred. No Git revision is supplied.
+
+Current metadata: person has one file with 879,547 rows; no regular parquet files
+were found for visit_occurrence or procedure_occurrence. All three sampled drug
+schemas lack drug_concept_id, dose, route, administration action and encounter ID.
+Sampled measurement schemas omit units and availability times. The measurement
+samples are early vital partitions only; they do not enumerate the lab concepts.
+Together with the manifests, this is consistent with the narrow mapping, not the
+expanded feature branch; it does not identify an exact producing commit.
+
+Latest full-run counts (historical manifest, not recomputed current table totals):
+
+| Domain | Recorded gold output | Relevant losses |
+|---|---:|---|
+| Person | 879,547 | 49 source rows rejected as invalid_sex |
+| Death | 103,111 | Completeness and temporal plausibility remain unvalidated |
+| Condition | 132,775,140 | 15,187,034 unmapped_snomed rejects in diagnosis processing |
+| Observation | 34,538,453 | Derived diagnosis domain; not evidence of mapped history/visit tables |
+| Labs | 15,519,308 | 330,969,813 unmatched_lab, 226,993 range, 63,103 numeric rejects |
+| Drugs | 85,767,598 | 39,720,674 unmapped_atc rejects |
+| Vitals | 19,349,129 | 54,952,951 unmatched_vital rejects |
+
+Using cleaned silver rows as denominators: lab retention 4.48% of 346,779,217;
+drug retention 68.35% of 125,488,272; vital retention 26.04% of 74,302,080.
+These are row retention rates, NOT mapping accuracy, patient coverage or causal
+adequacy. Most lab/vital loss reflects the explicitly restricted feature definitions.
+Diagnosis mapping explodes lists and can produce multiple target concepts, so no
+simple output/input mapping percentage is asserted for that domain.
+
+Observation_period was inferred; 35,915 people (4.08%) lacked an inferred end date.
+The reviewed code falls back to birth in this situation and uses birth as the start
+for all people. This cannot establish valid baseline/washout or follow-up coverage.
+Early death partition labels also warrant aggregate temporal-plausibility review,
+without inferring patient-specific dates or the cause from metadata alone.
+
+The full run records **23 staged input files**, not the 24 candidates in today's
+raw inventory: 1 person + 4 diagnoses + 10 labs + 5 medications + 3 vitals.
+`Data-2026-04-15/CarDS_2435227_Hosp_Enc_Labs_4` is absent from that run's source list.
+Its later inventory presence does not prove it existed at run time or should be
+concatenated without delivery review. Person/death still originate from the 2025
+patient extract, while the event inputs span 2025 and 2026 deliveries. Mortality
+refresh and event-to-person linkage need verification.
+
+Verdict: usable foundation for trial-specific baseline feasibility; insufficient
+evidence to declare a robust target-trial PSM baseline ready. First assess one
+chosen treatment/comparator's exposure ascertainment, covariate availability,
+prior-history and endpoint requirements using read-only aggregates. No remapping
+or modifications of bb2238 are authorized or performed.
+
+### Input paths recorded in the latest full-run manifest
+
+Paths below are relative to the common study segment within staging; these are
+parquet inputs actually recorded by the run, not raw files read directly in that run.
+
+**Step 1: 1 files**
+
+- `Data-2025-04-03/CarDS_2435227_Patients.parquet`
+
+**Step 2: 4 files**
+
+- `Data-2025-04-03/CarDS_2435227_Hosp_Enc_DX.parquet`
+- `Data-2025-04-03/CarDS_2435227_Outpatient_Enc_DX.parquet`
+- `Data-2026-04-15/CarDS_2435227_Hosp_Enc_DX.parquet`
+- `Data-2026-04-15/CarDS_2435227_Outpatient_Enc_DX.parquet`
+
+**Step 3: 10 files**
+
+- `Data-2025-04-03/CarDS_2435227_Hosp_Enc_Labs_1.parquet`
+- `Data-2025-04-03/CarDS_2435227_Hosp_Enc_Labs_2.parquet`
+- `Data-2025-04-03/CarDS_2435227_Hosp_Enc_Labs_3.parquet`
+- `Data-2025-04-03/CarDS_2435227_Outpatient_Enc_Labs.parquet`
+- `Data-2026-04-15/CarDS_2435227_Hosp_Enc_Labs_1.parquet`
+- `Data-2026-04-15/CarDS_2435227_Hosp_Enc_Labs_2.parquet`
+- `Data-2026-04-15/CarDS_2435227_Hosp_Enc_Labs_3.parquet`
+- `Data-2026-04-15/CarDS_2435227_Outpatient_Enc_Labs_1.parquet`
+- `Data-2026-04-15/CarDS_2435227_Outpatient_Enc_Labs_2.parquet`
+- `Data-2026-04-15/CarDS_2435227_Outpatient_Enc_Labs_3.parquet`
+
+**Step 4: 5 files**
+
+- `Data-2025-04-03/CarDS_2435227_Outpatient_Enc_Med_Admin.parquet`
+- `Data-2026-04-15/CarDS_2435227_Hosp_Enc_Med_Admin_1.parquet`
+- `Data-2026-04-15/CarDS_2435227_Hosp_Enc_Med_Admin_2.parquet`
+- `Data-2026-04-15/CarDS_2435227_Meds.parquet`
+- `Data-2026-04-15/CarDS_2435227_Outpatient_Enc_Med_Admin.parquet`
+
+**Step 5: 3 files**
+
+- `Data-2025-04-03/CarDS_2435227_Outpatient_Enc_Flo_Vitals.parquet`
+- `Data-2026-04-15/CarDS_2435227_Hosp_Enc_Flo_Vitals.parquet`
+- `Data-2026-04-15/CarDS_2435227_Outpatient_Enc_Flo_Vitals.parquet`
+
+## Original code-level assessment (before output report)
 
 The documented raw source families are promising for a strong propensity-score
 baseline. The current `main` gold transforms are too limited to assume they support
