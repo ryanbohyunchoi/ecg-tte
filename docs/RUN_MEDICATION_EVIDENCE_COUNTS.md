@@ -80,6 +80,14 @@ restricted scratch files: keep them on the cluster and remove them there when no
 process is using them. A remaining `running` report is not a completed audit.
 
 Malformed records stop the run and invalidate counts rather than skipping rows.
+Version 2 sets an explicit 1 MiB character limit per CSV field and a separate
+1 MiB byte limit per logical record, avoiding Python's smaller implicit field limit.
+Strict quote parsing is unchanged. Reports include parser settings and safe failure
+codes, the failing processing stage, and diagnostic records processed; progress is
+not a usable cohort count. No exception message or source text is exported.
+Do not change quoting or skip malformed rows to force completion. Optional
+`--max-field-chars` and `--max-record-bytes` are bounded at 16 MiB, with field limit
+no greater than record limit; change only after reviewing the reported reason.
 Source-change detection checks size/mtime before and after the record scan. A prefix
 that exactly reaches its cap is conservatively labeled bounded, even if EOF might
 immediately follow. Category catalog limits disclose omitted records; overall

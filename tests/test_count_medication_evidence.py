@@ -1,4 +1,5 @@
 import contextlib
+import csv
 import io
 import json
 from pathlib import Path
@@ -90,6 +91,46 @@ class EvidenceCountsTests(unittest.TestCase):
         link.symlink_to(self.source)
         r = C.run(self.root, 'link.txt', self.base / 'report2')
         self.assertEqual(r['status'], 'failed_counts_invalid')
+
+    def test_long_unused_field_passes_without_changing_global_csv_limit(self):
+        previous = csv.field_size_limit(131072)
+        self.addCleanup(csv.field_size_limit, previous)
+        self.put('PAT_MRN_ID\tREFILLS\tSIG\nSECRET_A\t3\t' + 'x' * 200000 + '\n')
+        r = self.run_audit(max_rows=None)
+        self.assertEqual(r['status'], 'complete_file')
+        self.assertEqual(r['distinct_nonempty_patient_keys'], 1)
+        self.assertEqual(csv.field_size_limit(), 131072)
+        self.assertNotIn('SECRET', json.dumps(r))
+
+    def test_explicit_field_limit_reports_safe_reason(self):
+        self.put('PAT_MRN_ID\tSIG\nSECRET_A\t' + 'x' * 200 + '\n')
+        r = self.run_audit(max_rows=None, max_field_chars=128)
+        self.assertEqual(r['reason'], 'csv_field_exceeds_character_limit')
+        self.assertEqual(r['failure_stage'], 'record_parse')
+        self.assertFalse(r['counts_valid'])
+        self.assertNotIn('distinct_nonempty_patient_keys', r)
+
+    def test_unterminated_quote_is_not_skipped_or_reinterpreted(self):
+        self.put('PAT_MRN_ID\tSIG\nA\tok\nSECRET_B\t"SECRET_TEXT\n')
+        r = self.run_audit(max_rows=None)
+        self.assertEqual(r['reason'], 'csv_unterminated_quoted_record')
+        self.assertEqual(r['diagnostic_records_processed'], 1)
+        self.assertNotIn('SECRET', json.dumps(r))
+        self.assertNotIn('distinct_nonempty_patient_keys', r)
+
+    def test_multiline_record_and_record_byte_limit(self):
+        self.put('PAT_MRN_ID\tSIG\nA\t"line one\nline two"\n')
+        r = self.run_audit(max_rows=None)
+        self.assertEqual(r['rows_read'], 1)
+        self.put('PAT_MRN_ID\tSIG\nA\t' + 'x' * 256 + '\n')
+        r = C.run(self.root, 'meds.txt', self.base / 'report2', max_rows=None,
+                  max_record_bytes=128, max_field_chars=128)
+        self.assertEqual(r['reason'], 'record_exceeds_byte_limit')
+
+    def test_arbitrary_exception_messages_are_never_returned(self):
+        for exc in (csv.Error('SECRET_TEXT'), ValueError('SECRET_TEXT'),
+                    C.CountError('SECRET_TEXT'), C.AuditError('SECRET_TEXT')):
+            self.assertNotIn('SECRET', C.failure_reason(exc))
 
 
 if __name__ == '__main__':
