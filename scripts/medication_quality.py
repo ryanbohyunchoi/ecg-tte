@@ -13,7 +13,7 @@ DETAIL_CATEGORIES = ('ORDERING_MODE', 'ORDER_MODE', 'ORDER_SOURCE',
                      'ORDER_CLASS', 'ORDER_STATUS', 'DISPENSED_UNIT',
                      'REORDERED_YN', 'MODIFIED_YN')
 MARKERS = {'NULL', 'NONE', 'N/A', 'NA', 'NAN', 'NAT', 'UNKNOWN', '\\N'}
-ISO = re.compile(r'^\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})?)?$')
+ISO = re.compile(r'^\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,6})?)?(?:Z|[+-]\d{2}:\d{2})?)?$')
 MDY = re.compile(r'^\d{1,2}/\d{1,2}/\d{4}(?: \d{1,2}:\d{2}:\d{2}(?: [AP]M)?)?$')
 NUMBER = re.compile(r'^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d{1,3})?$')
 

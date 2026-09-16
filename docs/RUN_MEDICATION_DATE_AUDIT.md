@@ -1,5 +1,17 @@
 # Check order timestamp format against medication start date
 
+Reviewed first 500,000-record result: ORDER_INST has 495,563 minute-precision ISO
+timestamps and 4,437 literal NULLs; START_DATE has 223,476 ISO dates and 276,524
+NULLs. All non-null values parsed. Among 219,039 comparable records, 153,688 are
+same-day (70.16%), 63,328 start before order, and 2,023 start after order.
+These prefix proportions are not population estimates. The old order-date parsing
+failure was a missing minute-precision format in the audit, not evidence of invalid
+source dates. The general quality parser now recognizes this format too.
+
+Next run this date audit with `--full-scan` in a fresh directory and review the
+restricted mode/class groups. This checks full-source date differences; it does
+not establish which date represents new prescribing versus historical information.
+
 Ryan runs on H100. This is read-only, aggregate reconnaissance, not an index rule.
 Uses the reviewed literal-tab schema. No patient/date values or record examples
 are emitted. No SQLite patient counts are built. No additional dependencies.

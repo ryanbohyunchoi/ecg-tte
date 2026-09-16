@@ -38,6 +38,8 @@ class QualityTests(unittest.TestCase):
     def test_calendar_formats_and_candidate_markers(self):
         self.assertEqual(date_kind(' NULL '), 'candidate_marker_NULL')
         self.assertEqual(date_kind('2024-02-29 12:00:00'), 'parseable_iso')
+        self.assertEqual(date_kind('2024-02-29 12:00'), 'parseable_iso')
+        self.assertEqual(date_kind('2024-02-29 25:00'), 'invalid_calendar_or_clock')
         self.assertEqual(date_kind('2023-02-29'), 'invalid_calendar_or_clock')
         self.assertEqual(date_kind('02/29/2024 1:30:00 PM'), 'parseable_month_first_hypothesis')
         self.assertEqual(date_kind('31/12/2024'), 'invalid_calendar_or_clock')
