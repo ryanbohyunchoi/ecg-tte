@@ -11,6 +11,7 @@ import tempfile
 
 from inspect_jdat_headers import inspect, DELIMITERS
 from profile_jdat_mapping import BoundedLines, AuditError
+from medication_quality import QualityAudit, DETAIL_CATEGORIES
 
 FILL = {'FILL_DATE', 'DISPENSE_DATE', 'DISPENSING_DATE', 'DISPENSED_DATE'}
 SUPPLY = {'DAYS_SUPPLY', 'DAYS_SUPPLIED'}
@@ -59,7 +60,8 @@ def save(path, value):
 
 def run(root, relative, output, patient_column='PAT_MRN_ID', max_rows=100000,
         encoding='utf-8-sig', category_limit=1000, max_record_bytes=1048576,
-        max_field_chars=1048576, record_format='strict-csv', expected_schema_sha256=None):
+        max_field_chars=1048576, record_format='strict-csv', expected_schema_sha256=None,
+        detail_audit=False):
     """max_rows=None explicitly requests EOF; counts are per source, never pooled."""
     root, output = Path(root), Path(output)
     if not root.is_absolute() or not output.is_absolute():
@@ -79,7 +81,8 @@ def run(root, relative, output, patient_column='PAT_MRN_ID', max_rows=100000,
         raise ValueError('literal_tabs_requires_expected_schema')
     os.umask(0o077)
     output.mkdir(parents=True, mode=0o700, exist_ok=False)
-    report = {'version': 3, 'status': 'running', 'restricted_until_reviewed': True,
+    report = {'version': 4, 'status': 'running', 'restricted_until_reviewed': True,
+              'detail_audit': detail_audit,
               'source': str(root / relative), 'max_rows': max_rows,
               'selection': 'full_file_requested' if max_rows is None else 'first_records_not_random',
               'patient_key': patient_column,
@@ -115,7 +118,7 @@ def run(root, relative, output, patient_column='PAT_MRN_ID', max_rows=100000,
             raise CountError('patient_key_absent')
         index = {name: i for i, name in enumerate(names)}
         selected = sorted((FILL | SUPPLY | OTHER) & index.keys())
-        categories = [name for name in CATEGORY if name in index]
+        categories = [name for name in (DETAIL_CATEGORIES if detail_audit else CATEGORY) if name in index]
         fields = {name: Counter() for name in selected}
         groups, group_counts = {}, Counter()
         rows = missing_id = omitted = quoted_patient_keys = 0
@@ -128,6 +131,7 @@ def run(root, relative, output, patient_column='PAT_MRN_ID', max_rows=100000,
             connection = sqlite3.connect(str(Path(tmp) / 'counts.sqlite'))
             connection.execute('PRAGMA temp_store=MEMORY')
             connection.execute('CREATE TABLE members (group_id INTEGER, patient TEXT, PRIMARY KEY(group_id, patient)) WITHOUT ROWID')
+            quality = QualityAudit(connection, index) if detail_audit else None
             with source.open('rb') as stream:
                 stream.readline(65537)
                 lines = BoundedLines(stream, encoding, max_record_bytes)
@@ -153,6 +157,8 @@ def run(root, relative, output, patient_column='PAT_MRN_ID', max_rows=100000,
                     if len(row) != len(names):
                         raise CountError('row_width_mismatch')
                     stage = 'record_count'
+                    if quality is not None:
+                        quality.add(row)
                     rows += 1
                     patient = row[index[patient_column]].strip()
                     quoted_patient_keys += '"' in patient
@@ -189,6 +195,7 @@ def run(root, relative, output, patient_column='PAT_MRN_ID', max_rows=100000,
                 raise CountError('source_changed')
             stage = 'count_aggregation'
             counts = dict(connection.execute('SELECT group_id, COUNT(*) FROM members GROUP BY group_id'))
+            quality_result = quality.result() if quality is not None else None
             connection.close()
             connection = None
         stage = 'report_write'
@@ -203,6 +210,8 @@ def run(root, relative, output, patient_column='PAT_MRN_ID', max_rows=100000,
                       candidate_interpretation='nonempty only; date/numeric validity and dispensing semantics not validated',
                       category_omitted_records=omitted, schema_sha256=header['schema_sha256'],
                       source_bytes=before.st_size, source_mtime_ns=before.st_mtime_ns)
+        if quality_result is not None:
+            report['quality_audit'] = quality_result
         save(output / 'restricted_categories.json', {
             'restricted_keep_on_cluster': True, 'category_fields': categories,
             'groups': [{'values': list(values), 'records': group_counts[gid],
@@ -235,6 +244,7 @@ def main():
     parser.add_argument('--max-field-chars', type=int, default=1048576)
     parser.add_argument('--record-format', choices=['strict-csv', 'literal-tabs'], default='strict-csv')
     parser.add_argument('--expected-schema-sha256')
+    parser.add_argument('--detail-audit', action='store_true')
     scope = parser.add_mutually_exclusive_group()
     scope.add_argument('--max-rows', type=int, default=100000)
     scope.add_argument('--full-scan', action='store_true')
@@ -243,7 +253,8 @@ def main():
         report = run(args.root, args.file, args.output_dir, args.patient_column,
                      None if args.full_scan else args.max_rows, args.encoding,
                      max_record_bytes=args.max_record_bytes, max_field_chars=args.max_field_chars,
-                     record_format=args.record_format, expected_schema_sha256=args.expected_schema_sha256)
+                     record_format=args.record_format, expected_schema_sha256=args.expected_schema_sha256,
+                     detail_audit=args.detail_audit)
     except Exception as exc:
         print('Could not start: ' + type(exc).__name__, flush=True)
         return 1

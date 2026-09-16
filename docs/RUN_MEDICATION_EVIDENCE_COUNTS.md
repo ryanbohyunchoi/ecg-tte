@@ -24,6 +24,59 @@ examples, identifiers or dates. Return reviewed aggregate validation results onl
 
 ## What this new audit can count now
 
+### Combined quality audit (version 4)
+
+Use `--detail-audit` to add the next checks in the same scan. No dependencies beyond
+standard Python are required. It keeps the version 3 literal-tab contract explicit.
+
+```bash
+cd "$HOME/github/ecg-tte"
+git pull --ff-only origin psm-mice-imputation
+MED_QUALITY_OUT=$(mktemp -d "$HOME/medication-quality-XXXXXXXX")
+python scripts/count_medication_evidence.py \
+  --root /home/rbc58/mnt/implementation/cardsjdat-CC1022-MEDINT/2435227-CarDS-ECG/Data-2026-04-15 \
+  --file CarDS_2435227_Meds.txt \
+  --output-dir "$MED_QUALITY_OUT/report" \
+  --record-format literal-tabs \
+  --expected-schema-sha256 61f9556c4f054c3346d46f78e63d65a467e022f800fb0b388e5dbcf622903da8 \
+  --detail-audit --full-scan
+cat "$MED_QUALITY_OUT/report/summary.json"
+```
+
+New `quality_audit` summary includes:
+
+- Separate blank and case-insensitive candidate markers NULL, NONE, N/A, NA, NAN,
+  NAT, UNKNOWN and backslash-N. These are profiling hypotheses, not frozen clinical
+  missingness definitions. The earlier raw-key denominator remains unchanged;
+  separate quality counts flag marker/quoted identifiers for review.
+- Calendar parsing under explicit ISO and month-first slash-date hypotheses for
+  order/start/end/discontinuation fields. Unsupported formats and invalid dates
+  remain explicit; no dates/examples, ranges or patient histories are exported.
+  Parsing establishes neither clinically plausible time nor information availability.
+- Quantity and refill numeric categories: blank/marker, zero, positive, negative,
+  noninteger refill values, or unrecognized notation. No supply is inferred from
+  quantity, dose, frequency or end dates.
+- Distinct nonmarker order keys, repeated keys, excess rows per key, changed audit
+  projections, and keys associated with multiple nonmarker patient keys. Fingerprints
+  use only the listed audit fields, including medication ID/dose/route where present,
+  not all source columns. Different fingerprints may be updates, not errors. Equal
+  fingerprints are not proof of identical full records. No deduplication is applied.
+
+The separate restricted report now cross-tabulates available ORDERING_MODE,
+ORDER_MODE, ORDER_SOURCE, ORDER_CLASS, ORDER_STATUS, DISPENSED_UNIT, REORDERED_YN and
+MODIFIED_YN, with records and distinct raw patient keys per combination. The 1,000
+combination limit and omitted records are explicit; patients overlap across groups.
+Mode/source labels are not interpreted as validated setting. Review this file on
+the cluster and share only approved labels/counts. Do not paste it wholesale.
+
+This full scan does more work and uses more cluster-local scratch space than the
+previous count: temporary SQLite storage now also tracks order keys. Source files
+remain unchanged; no GPU or cluster network access is used by the script. Temporary
+storage is restricted and removed on handled completion/failure; interruption may
+leave it behind. A failed scan exports no partial quality statistics or denominator.
+The quality audit does not establish valid fills, an exposure index, cohort
+eligibility or patient-level adherence. No clinical rule is frozen by its output.
+
 `scripts/count_medication_evidence.py` reads one explicit raw JDAT text file without
 changing it. Standard-library Python only; no GPU or third-party packages needed.
 It reports:
