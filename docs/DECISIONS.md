@@ -103,3 +103,33 @@ stop a file and invalidate its catalog/counts. Nine new synthetic tests pass (29
 total). No source rows accessed locally. Standard mappings, timestamp validation,
 per-patient coverage and tokenizer evaluation remain pending source dictionaries
 and explicit contracts. See `RUN_JDAT_MAPPING_AUDIT.md`.
+
+## Evidence update — first bounded record audit, 2026-09-16
+
+Ryan returned successful 100,000-record prefix scans for seven selected files.
+All audited fields were nonempty under the whitespace-only definition; this is
+not evidence of complete capture. Next distinguish candidate null markers and
+invalid date/numeric formats before estimating usable-field coverage. Continue
+source dictionary discovery; do not infer standard mappings from local code IDs.
+See `JDAT_SOURCE_FINDINGS.md` for reviewed counts and limitations.
+
+## ACC priority and existing OMOP audit — 2026-09-16
+
+Ryan clarified the immediate ACC abstract goal: test unsupervised clustering and
+cosine similarity against a robust PSM target-trial baseline. Prioritize existing
+OMOP feasibility and conventional baseline design; CLMBR-T remapping is not the
+immediate prerequisite. Improvement remains a hypothesis, not a tuning target.
+
+Reviewed cards-misc main `33532e6` and feature branch `9e9fbc9`. Main is newer but
+narrower; the producing version of Ryan's gold is unresolved. The latest 64-file
+source inventory matches 24 main ETL input candidates, not a verified gold run.
+Medication semantics, observation history and missing visits/procedures prevent
+assuming readiness. See `CARDS_MISC_OMOP_PSM_AUDIT.md` for exact filenames and findings.
+
+## Existing bb2238 data are read-only — 2026-09-16
+
+Ryan explicitly wants inspection of the existing bb2238 OMOP output only: identify
+inputs and mapping resolution, with no changes to that dataset. Do not run ETL or
+remap/overwrite it. Added `audit_existing_omop.py` to read existing manifests and
+parquet footer schemas on the H100, writing reports only to a fresh directory in
+Ryan's home. Four synthetic tests pass (33 total). Actual report remains pending.

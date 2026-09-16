@@ -26,11 +26,23 @@ Status as of 2026-09-16. Checked means completed with evidence, not merely plann
 - [ ] Inventory source files and obtain source dictionaries/extract specifications.
 - [x] Implement bounded per-file mapping reconnaissance with aggregate summaries and a restricted on-cluster code catalog; nine synthetic tests pass (29 total).
 - [ ] Complete dictionary/crosswalk audit and broader source profiling; current tool checks presence and raw code-cell counts only.
-- [ ] Run metadata/schema profiling on the cluster; return reviewed aggregate reports.
+- [x] Receive first bounded record audit: seven 100,000-record prefixes, no reported parsing failures (2026-09-16).
+- [ ] Audit candidate null markers and date/numeric validity; all fields were nonempty under the initial whitespace-only rule.
+- [ ] Complete broader metadata/schema profiling and review aggregate reports.
 - [ ] Resolve parse rules, linkage, duplicates, and source date semantics.
 - [ ] Validate medication event classes and ascertainment windows.
 - [ ] Validate encounters, mortality, labs/vitals, and modality timestamps.
 - [ ] Produce a signed-off source map and initial trial-feasibility table.
+
+## ACC baseline priority — 2026-09-16
+
+- [x] Pull latest cards-misc main and trace source patterns, retained fields and feature-branch differences.
+- [x] Document 24 candidate ETL inputs within the latest 64-file source audit and PSM limitations.
+- [x] Build read-only existing-OMOP manifest/schema inspector; four synthetic tests pass (33 total).
+- [ ] Ryan returns reviewed existing-bb2238 manifest/schema evidence; establish producing run/version and mapping resolution without changing the dataset.
+- [ ] Define one feasible treatment/comparator protocol and required baseline covariates.
+- [ ] Validate exposure/index and observation history; add required raw fields before fitting PSM.
+- [ ] Establish clinical and expanded structured PSM baselines before clustering/cosine comparisons.
 
 ## Subsequent evidence gates
 
@@ -45,5 +57,5 @@ Status as of 2026-09-16. Checked means completed with evidence, not merely plann
 - [ ] Run the registered benchmark including failure and sensitivity reports.
 - [ ] Generate a reproducible evidence package and manuscript tables.
 
-Ryan supplied reviewed header candidates. Record-level reconnaissance on the
-cluster, replacement clinical analysis, and superiority results remain pending.
+Ryan supplied reviewed header candidates. Seven bounded record scans were also reviewed; broader source validation,
+replacement clinical analysis, and superiority results remain pending.

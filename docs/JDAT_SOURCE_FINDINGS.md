@@ -94,3 +94,26 @@ Next investigate local-to-standard code crosswalks, event-time semantics, lab un
 patient linkage and vocabulary coverage in the exact pretrained tokenizer. A full
 OMOP database is optional for the model adapter; standardized, temporally correct
 events must satisfy the pinned CLMBR-T/FEMR input contract.
+
+## 2026-09-16 — first bounded record audit returned by Ryan
+
+Header report SHA-256: `d22097606fd67c1410886c1ee9a8089cc297f33ec31a56285f4ca30996698972`.
+Seven files (indices 2, 5, 6, 7, 9, 10, 13) each accepted the first 100,000
+records, with status `bounded_prefix`, valid counts and no reported parse failures.
+This is 700,000 records across separate files, not unique patients or a random sample.
+
+Distinct raw cells: ICD9 list 362; ICD10 list 550; medication order IDs 6,112;
+administration medication IDs 1,063; encounter types 25; CPT cells 2,136;
+flowsheet IDs 7; lab component IDs 274; MAR action codes 14. These are not verified
+standard concepts, unique ingredients, individual diagnoses, or mapped events.
+
+Every audited field had zero empty/whitespace cells, including discontinuation,
+infusion-end and hospital dates. Literal null markers are counted as nonempty by
+version 1. Therefore these results do not establish completeness: next audit
+candidate missing-value markers and date/numeric validity without emitting source
+values. Placeholder use is a hypothesis, not an observed fact. Do not silently
+reclassify source-specific sentinel codes without evidence.
+
+Standard mapping and tokenizer coverage remain explicitly unassessed. Source
+dictionaries, lab units, time semantics and longitudinal diagnosis coverage remain
+unresolved. No patient-level records or restricted code catalog were received.

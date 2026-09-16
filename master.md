@@ -17,3 +17,10 @@
 
 This replaces earlier suggestions that the assistant might directly access the
 cluster. Read this file before planning source access or implementing cluster jobs.
+
+## Existing bb2238 OMOP boundary — user instruction, 2026-09-16
+
+- Inspect the existing bb2238 OMOP mapping only; do not change, rerun, remap,
+  overwrite or repair that dataset. Ryan wants its input lineage and mapping resolution.
+- Any inspection reports go to a new directory under Ryan's own home, outside
+  the bb2238 output. The assistant still never accesses the cluster directly.
