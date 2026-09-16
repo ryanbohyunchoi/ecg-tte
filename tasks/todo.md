@@ -1,6 +1,6 @@
 # Restart work tracker
 
-Status as of 2026-09-09. Checked means completed with evidence, not merely planned.
+Status as of 2026-09-16. Checked means completed with evidence, not merely planned.
 
 ## Restart delivered
 
@@ -17,12 +17,15 @@ Status as of 2026-09-09. Checked means completed with evidence, not merely plann
 - [ ] Ryan runs the inventory on the H100 and returns reviewed non-identifying filenames.
 - [x] Record Ryan's first T2DM summary and filename excerpt; identify version/partial-file issues and category-label errors (`docs/JDAT_SOURCE_FINDINGS.md`).
 - [x] Build bounded header-only inspection for 38 explicit T2DM candidates; 8 new tests pass (15 total).
-- [ ] Ryan runs header inspection and returns reviewed table/column names (`docs/RUN_JDAT_HEADERS.md`).
+- [x] Ryan runs header inspection and returns reviewed table/column names (`docs/RUN_JDAT_HEADERS.md`).
+- [x] Review supplied header report: 36 candidates, two dated lab variants rejected (2026-09-16).
+- [ ] Audit standard-code crosswalks and CLMBR-T tokenizer coverage; resolve lab units and event-time semantics.
 - [x] Resolve execution boundary: no assistant SSH; Ryan pulls and runs code on the H100 (see `master.md`).
 - [ ] Confirm raw source roots, extract versions, and output destination through user-run discovery.
 - [ ] Establish what notes, ECGs, echo images/videos, and checkpoints are available.
 - [ ] Inventory source files and obtain source dictionaries/extract specifications.
-- [ ] Implement a new aggregate-only, bounded-memory JDAT profiler with synthetic tests.
+- [x] Implement bounded per-file mapping reconnaissance with aggregate summaries and a restricted on-cluster code catalog; nine synthetic tests pass (29 total).
+- [ ] Complete dictionary/crosswalk audit and broader source profiling; current tool checks presence and raw code-cell counts only.
 - [ ] Run metadata/schema profiling on the cluster; return reviewed aggregate reports.
 - [ ] Resolve parse rules, linkage, duplicates, and source date semantics.
 - [ ] Validate medication event classes and ascertainment windows.
@@ -42,5 +45,5 @@ Status as of 2026-09-09. Checked means completed with evidence, not merely plann
 - [ ] Run the registered benchmark including failure and sensitivity reports.
 - [ ] Generate a reproducible evidence package and manuscript tables.
 
-No raw-data inspection, replacement clinical analysis, or superiority result has
-been completed during this restart.
+Ryan supplied reviewed header candidates. Record-level reconnaissance on the
+cluster, replacement clinical analysis, and superiority results remain pending.

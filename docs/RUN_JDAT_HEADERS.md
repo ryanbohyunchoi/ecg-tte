@@ -76,3 +76,12 @@ row counts, record overlap, or medication/timestamp semantics.
 
 Verification: eight new synthetic header tests and seven existing inventory tests
 passed locally. Real JDAT execution remains Ryan's next step.
+
+## Optional saved-inventory path resolution
+
+If files are nested beneath the original root, supply `--inventory-dir` with the
+completed inventory directory and `--inventory-source t2dm` instead of `--root`.
+The scanner uses exact recorded paths, or a unique basename match. Ambiguous
+basenames are reported without selecting a delivery. An explicit `--root` may
+override the recorded mount root. Five additional synthetic tests cover this mode
+and distinguish missing roots, missing files and nonregular paths.

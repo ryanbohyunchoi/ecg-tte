@@ -94,6 +94,59 @@ class HeaderTests(unittest.TestCase):
         self.assertEqual(len(H.PRESET), len(set(H.PRESET)))
         self.assertFalse(any(".partial" in p for p in H.PRESET))
 
+    def inventory(self, paths, status="complete"):
+        folder = self.root.parent / "inventory"
+        folder.mkdir()
+        (folder / "summary.json").write_text(json.dumps({"status": "running", "roots": [
+            {"label": "t2dm", "resolved_root": str(self.root), "status": status,
+             "counts": {"file": len(paths)}}]}))
+        (folder / "inventory.jsonl").write_text("".join(json.dumps(
+            {"source": "t2dm", "kind": "file", "path": p}) + "\n" for p in paths))
+        return folder
+
+    def test_inventory_recovers_nested_path_and_ignores_other_running_root(self):
+        (self.root / "delivery").mkdir()
+        self.write(b"MRN\tVALUE\n", "delivery/table.txt")
+        folder = self.inventory(["delivery/table.txt"])
+        with (folder / "inventory.jsonl").open("a") as stream:
+            stream.write('{"source": "other_unfinished')
+        with contextlib.redirect_stdout(io.StringIO()):
+            code = H.main(["--inventory-dir", str(folder), "--file", "table.txt",
+                           "--output-dir", str(self.out)])
+        self.assertEqual(code, 0)
+        result = json.loads((self.out / "summary.json").read_text())["files"][0]
+        self.assertEqual(result["relative_path"], "delivery/table.txt")
+        self.assertEqual(result["resolution"], "unique_inventory_basename")
+
+    def test_inventory_ambiguity_and_absence_never_choose_arbitrary_file(self):
+        folder = self.inventory(["one/table.txt", "two/table.txt"])
+        _, selection = H.inventory_selection(folder, "t2dm", ["table.txt", "absent.txt", "one/table.txt"])
+        self.assertEqual(selection["table.txt"]["reason"], "ambiguous_inventory_basename")
+        self.assertEqual(selection["absent.txt"]["reason"], "not_in_inventory")
+        self.assertEqual(selection["one/table.txt"]["resolved_path"], "one/table.txt")
+
+    def test_inventory_requires_complete_source_and_safe_paths(self):
+        folder = self.inventory(["../escape.txt"])
+        with self.assertRaises(H.SetupError):
+            H.inventory_selection(folder, "t2dm", ["escape.txt"])
+        with self.assertRaises(H.SetupError):
+            H.inventory_selection(folder, "other", ["table.txt"])
+        (folder / "inventory.jsonl").write_text("")
+        with self.assertRaises(H.SetupError):
+            H.inventory_selection(folder, "t2dm", ["table.txt"])
+
+    def test_missing_root_is_reported_once_without_source_reads(self):
+        with contextlib.redirect_stdout(io.StringIO()), patch.object(H, "inspect", side_effect=AssertionError):
+            result = H.run(self.root / "missing", ["file.txt"], self.out, "utf-8-sig", "auto", 128)
+        self.assertEqual(result["root_check"], "root_missing")
+        self.assertEqual(result["files"], [])
+        self.assertEqual(result["status"], "incomplete")
+
+    def test_missing_and_nonregular_files_have_distinct_reasons(self):
+        self.assertEqual(H.inspect(self.root, "missing.txt")["reason"], "file_missing")
+        (self.root / "directory.txt").mkdir()
+        self.assertEqual(H.inspect(self.root, "directory.txt")["reason"], "not_regular_file")
+
 
 if __name__ == "__main__":
     unittest.main()

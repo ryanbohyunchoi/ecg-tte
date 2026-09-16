@@ -85,3 +85,21 @@ excerpt. It reads only a bounded first physical line, rejects unrecognized heade
 candidates without echoing raw values, and records per-file progress/status.
 Copy/date variants are inspected separately; no authoritative version is selected.
 All 15 synthetic tests pass. Actual headers and clinical semantics remain unverified.
+
+## Evidence update — CLMBR-T mapping readiness, 2026-09-16
+
+Ryan supplied 36 successful header candidates and two rejected dated lab variants.
+Headers establish candidate identity/time/code/value fields, not record completeness
+or standard-vocabulary mappings. Prioritize a mapping-feasibility audit: local drug,
+lab and flowsheet dictionaries; ICD/procedure mapping; lab units; timestamp semantics;
+and exact tokenizer coverage. A full OMOP CDM build versus direct standardized-event
+adapter remains an implementation choice. No encoder input or model has been validated.
+
+## Implementation update — bounded mapping reconnaissance, 2026-09-16
+
+Added per-file record parsing, presence counts and restricted raw code-cell catalogs.
+Explicit file selection and row bounds prevent implicit delivery pooling; failures
+stop a file and invalidate its catalog/counts. Nine new synthetic tests pass (29
+total). No source rows accessed locally. Standard mappings, timestamp validation,
+per-patient coverage and tokenizer evaluation remain pending source dictionaries
+and explicit contracts. See `RUN_JDAT_MAPPING_AUDIT.md`.

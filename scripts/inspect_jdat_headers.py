@@ -11,6 +11,7 @@ import io
 import json
 from pathlib import Path
 import re
+import stat
 import sys
 
 
@@ -34,6 +35,55 @@ ANCHORS = {"MRN", "PAT_MRN_ID", "PAT_ID", "PATIENT_ID", "PERSON_ID",
            "PAT_ENC_CSN_ID", "PAT_ENC_CSN", "CSN", "ENCOUNTER_ID"}
 NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_ .()/:-]{0,127}\Z")
 DELIMITERS = {"tab": "\t", "pipe": "|", "comma": ","}
+
+
+class SetupError(ValueError):
+    """Static, non-sensitive setup diagnostic suitable for console output."""
+
+
+def inventory_selection(directory, source, requested):
+    """Use a completed source's saved paths, even if other roots are still scanning."""
+    summary = json.loads((directory / "summary.json").read_text(encoding="utf-8"))
+    roots = [r for r in summary.get("roots", []) if r.get("label") == source]
+    if len(roots) != 1 or roots[0].get("status") != "complete":
+        raise SetupError("inventory_source_not_complete_or_not_found")
+    root = Path(roots[0]["resolved_root"])
+    if not root.is_absolute():
+        raise SetupError("invalid_inventory_root")
+    expected = roots[0].get("counts", {}).get("file", 0)
+    if not isinstance(expected, int) or expected <= 0:
+        raise SetupError("inventory_source_has_no_files")
+    wanted = {Path(p).name for p in requested}
+    matches = {name: set() for name in wanted}
+    seen = 0
+    with (directory / "inventory.jsonl").open(encoding="utf-8") as stream:
+        while seen < expected:
+            line = stream.readline(1048577)
+            if not line or len(line) > 1048576 or not line.endswith("\n"):
+                raise SetupError("inventory_records_incomplete_or_oversized")
+            record = json.loads(line)
+            if record.get("source") != source or record.get("kind") != "file":
+                continue
+            seen += 1
+            relative = record["path"]
+            path = Path(relative)
+            if path.is_absolute() or ".." in path.parts:
+                raise SetupError("unsafe_inventory_path")
+            if path.name in wanted:
+                matches[path.name].add(relative)
+    selected = {}
+    for requested_path in requested:
+        candidates = sorted(matches[Path(requested_path).name])
+        if requested_path in candidates:
+            selected[requested_path] = {"resolved_path": requested_path, "resolution": "exact_inventory_path"}
+        elif len(candidates) == 1:
+            selected[requested_path] = {"resolved_path": candidates[0], "resolution": "unique_inventory_basename"}
+        else:
+            selected[requested_path] = {
+                "status": "unavailable", "reason": "ambiguous_inventory_basename" if candidates else "not_in_inventory",
+                "candidate_paths": candidates,
+            }
+    return root, selected
 
 
 def escape(value):
@@ -89,9 +139,10 @@ def inspect(root, relative, encoding="utf-8-sig", delimiter="auto", max_bytes=65
             candidate = candidate / part
             if candidate.is_symlink():
                 return {"status": "rejected", "reason": "symlink_not_followed"}
-        if not candidate.is_file():
-            return {"status": "unavailable", "reason": "missing_or_not_regular"}
-        size = candidate.stat().st_size
+        info = candidate.stat()
+        if not stat.S_ISREG(info.st_mode):
+            return {"status": "unavailable", "reason": "not_regular_file"}
+        size = info.st_size
         # Unbuffered binary readline stops at the first LF, without requesting
         # subsequent rows. A missing LF is bounded to max_bytes + one sentinel.
         with candidate.open("rb", buffering=0) as stream:
@@ -101,19 +152,24 @@ def inspect(root, relative, encoding="utf-8-sig", delimiter="auto", max_bytes=65
                     "bytes_read": len(raw)}
         result = parse_header(raw, encoding, delimiter)
         return {**result, "bytes_read": len(raw), "file_bytes": size}
+    except FileNotFoundError:
+        return {"status": "unavailable", "reason": "file_missing"}
+    except PermissionError:
+        return {"status": "unavailable", "reason": "file_permission_denied"}
     except OSError as exc:
         return {"status": "unavailable", "reason": "filesystem_error", "errno": exc.errno}
 
 
-def run(root, files, output, encoding, delimiter, max_bytes):
+def run(root, files, output, encoding, delimiter, max_bytes, selections=None):
     root = root.resolve()
     output = output.resolve()
     if output == root or root in output.parents or output in root.parents:
         raise ValueError("Source and output trees must be separate")
     output.mkdir(parents=True, mode=0o700, exist_ok=False)
-    summary = {"version": 1, "status": "running", "source_root": str(root),
+    summary = {"version": 2, "status": "running", "source_root": str(root),
                "max_header_bytes": max_bytes, "encoding": encoding,
                "delimiter_policy": delimiter, "data_rows_parsed": False,
+               "selection_mode": "saved_inventory" if selections is not None else "explicit_paths",
                "files": []}
 
     def save():
@@ -127,11 +183,36 @@ def run(root, files, output, encoding, delimiter, max_bytes):
             report.write("# JDAT header candidates\n\nRestricted until reviewed. Columns are first-line candidates, "
                          "not validated semantics. No patient rows are printed.\n\n"
                          "Matching schema hashes do not prove equal records or a complete delivery.\n")
+            report.write(f"\nResolved source root: {escape(root)}\n")
+            try:
+                info = root.stat()
+                root_status = "available" if stat.S_ISDIR(info.st_mode) else "root_not_directory"
+            except FileNotFoundError:
+                root_status = "root_missing"
+            except PermissionError:
+                root_status = "root_permission_denied"
+            except OSError:
+                root_status = "root_filesystem_error"
+            summary["root_check"] = root_status
+            if root_status != "available":
+                summary["status"] = "incomplete"
+                report.write(f"\nRoot check: {root_status}. No source headers inspected.\n")
+                print(f"Cannot inspect headers: {root_status}. Check the source mount/path on the H100.", flush=True)
+                save()
+                return summary
             for index, relative in enumerate(files, 1):
                 print(f"Inspecting file {index}/{len(files)}...", flush=True)
-                result = {"relative_path": relative, **inspect(root, relative, encoding, delimiter, max_bytes)}
+                selection = selections[relative] if selections is not None else {"resolved_path": relative}
+                if "resolved_path" in selection:
+                    actual = selection["resolved_path"]
+                    result = {"relative_path": actual, "requested_path": relative, **selection,
+                              **inspect(root, actual, encoding, delimiter, max_bytes)}
+                else:
+                    result = {"relative_path": relative, "requested_path": relative, **selection}
                 summary["files"].append(result)
-                report.write(f"\n## File {index}: {escape(relative)}\n\nStatus: {result['status']}\n\n")
+                report.write(f"\n## File {index}: {escape(result['relative_path'])}\n\nStatus: {result['status']}\n\n")
+                if result["relative_path"] != relative:
+                    report.write(f"Requested: {escape(relative)}; resolved from saved inventory.\n\n")
                 if result["status"] == "header_candidate":
                     report.write(f"Delimiter: {result['delimiter']}; columns: {result['column_count']}; "
                                  f"schema SHA-256: {result['schema_sha256']}\n\n")
@@ -139,6 +220,8 @@ def run(root, files, output, encoding, delimiter, max_bytes):
                         report.write(f"{position}. {escape(column)}\n")
                 else:
                     report.write(f"Reason: {result['reason']}\n")
+                    for candidate in result.get("candidate_paths", []):
+                        report.write(f"\n- Candidate (not opened): {escape(candidate)}\n")
                 report.flush()
                 save()
                 print(f"  {result['status']}", flush=True)
@@ -155,7 +238,9 @@ def run(root, files, output, encoding, delimiter, max_bytes):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--root", type=Path, required=True)
+    parser.add_argument("--root", type=Path, help="Source root; overrides saved inventory root if supplied")
+    parser.add_argument("--inventory-dir", type=Path, help="Directory with inventory.jsonl and summary.json")
+    parser.add_argument("--inventory-source", default="t2dm", help="Completed source label in the saved inventory")
     parser.add_argument("--preset", choices=["t2dm"])
     parser.add_argument("--file", action="append", default=[], help="Relative .txt path; repeat as needed")
     parser.add_argument("--output-dir", type=Path, required=True)
@@ -163,16 +248,26 @@ def main(argv=None):
     parser.add_argument("--delimiter", choices=["auto", *DELIMITERS], default="auto")
     parser.add_argument("--max-header-bytes", type=int, default=65536)
     args = parser.parse_args(argv)
-    if not args.root.is_absolute() or not args.output_dir.is_absolute():
+    if (args.root is not None and not args.root.is_absolute()) or not args.output_dir.is_absolute():
         parser.error("Source and output paths must be absolute")
+    if args.root is None and args.inventory_dir is None:
+        parser.error("Supply --root or --inventory-dir")
     if not 128 <= args.max_header_bytes <= 1048576:
         parser.error("Header byte limit must be between 128 and 1048576")
     files = list(dict.fromkeys((PRESET if args.preset else []) + args.file))
     if not files:
         parser.error("Supply --preset or at least one --file")
     try:
-        result = run(args.root, files, args.output_dir, args.encoding, args.delimiter, args.max_header_bytes)
-    except (OSError, ValueError, RuntimeError) as exc:
+        selections = None
+        root = args.root
+        if args.inventory_dir is not None:
+            saved_root, selections = inventory_selection(args.inventory_dir, args.inventory_source, files)
+            root = root or saved_root
+        result = run(root, files, args.output_dir, args.encoding, args.delimiter, args.max_header_bytes, selections)
+    except SetupError as exc:
+        print("Header inspection setup: " + str(exc), file=sys.stderr)
+        return 2
+    except (OSError, ValueError, RuntimeError, KeyError, TypeError) as exc:
         print("Header inspection failed: " + type(exc).__name__, file=sys.stderr)
         return 2
     print(f"Header inspection {result['status']}. Review headers.md on the cluster.", flush=True)

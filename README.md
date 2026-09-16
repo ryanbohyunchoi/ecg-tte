@@ -15,6 +15,10 @@ It lists filenames and sizes only. Ryan runs it and reviews the report before sh
 Next: [inspect selected JDAT column headers](docs/RUN_JDAT_HEADERS.md), using the
 T2DM filenames Ryan supplied. This reads only a bounded first line per candidate.
 
+Next record-level step: [run bounded mapping reconnaissance](docs/RUN_JDAT_MAPPING_AUDIT.md).
+This checks field presence and code counts; standard mappings and CLMBR-T inputs
+are not yet validated.
+
 ## Start here
 
 - [Detailed restart plan](docs/RESTART_PLAN.md): questions, experimental design,

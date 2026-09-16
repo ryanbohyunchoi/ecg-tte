@@ -63,3 +63,34 @@ delivery documentation to establish patient/encounter linkage, timestamp columns
 medication record classes, lab codes/units, and version/shard relationships before
 any row-level profiling or merging. Mortality, hospital encounter linkage, notes,
 and actual imaging assets have not been established by this excerpt.
+
+## 2026-09-16 — user-provided successful header report
+
+The attached report supersedes the earlier missing-file report: 36 files have
+tab-delimited header candidates; two dated lab variants were rejected as
+`unrecognized_or_ambiguous_header`. The cause of the earlier path failure remains
+unknown. No source records have been inspected by the assistant.
+
+Observed column evidence:
+
+- Patient table: `PAT_ID`, `PAT_MRN_ID`, `BIRTH_DATE`, `DEATH_DATE`, sex/race/ethnicity.
+  Linkage, completeness, and historical demographic availability remain untested.
+- Diagnosis/history tables: ICD9/ICD10 lists, local diagnosis IDs and several
+  event/entry dates. These do not establish comprehensive encounter diagnosis coverage.
+- Medication orders: local medication IDs/names, order class/source/status, dose,
+  route, order/start/end dates, and refill/quantity fields. No explicit RxNorm/NDC
+  field in the supplied header; pharmacy dispensing semantics remain unverified.
+- Administration: order and encounter IDs, `TAKEN_TIME`, `MAR_ACTION`, dose/route.
+- Procedures: CPT codes and ICD procedure billing codes with code-set fields/dates.
+- Vitals: local flowsheet IDs/names, recorded time, value and `UNIT`.
+- Labs: local component IDs/names, specimen metadata, values, collection and result
+  times. No explicit LOINC or lab-unit field in the supplied lab headers. T2DM labs
+  have 60 columns; the nested delivery has 55. Same column count is not a sufficient
+  schema match: the two administration families have 39 columns but different hashes.
+
+Assessment: adequate structural evidence to begin an OMOP-vocabulary mapping pilot,
+not yet evidence that a complete or faithful CLMBR-T input can be produced.
+Next investigate local-to-standard code crosswalks, event-time semantics, lab units,
+patient linkage and vocabulary coverage in the exact pretrained tokenizer. A full
+OMOP database is optional for the model adapter; standardized, temporally correct
+events must satisfy the pinned CLMBR-T/FEMR input contract.
