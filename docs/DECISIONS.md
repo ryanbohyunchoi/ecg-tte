@@ -154,3 +154,60 @@ inspection for documented candidate roots and Ryan's RAID directory. No historic
 mapper is executed and no source is changed. Three new synthetic tests pass (36
 total). Actual RBC location, schema and mapping coverage remain unverified until
 Ryan returns the reviewed report. See RUN_RBC_OMOP_DISCOVERY.md.
+
+## RBC outputs located — 2026-09-16
+
+Reviewed discovery identifies a full-table directory candidate at rbc58/omop/gold
+and the four discovered supplemental table directories at mosaic/gold_rbc.
+Broad searches exhausted limits before their schemas; no mapping-quality verdict
+yet. Separate ecg-tte/drugs and mm_vhd/drug schemas preserve additional medication
+fields. Next use exact-root read-only inspections, not broader repeated searches.
+
+## Full RBC mapping assessed — 2026-09-16
+
+User report confirms expanded rbc58/omop gold, twelve manifests and ten populated
+table directories. Latest recorded drugs retain 125.49M cleaned rows with 92.12%
+RxNorm mapping, labs 321.43M, vitals 88.24M; visits/procedures/history are present.
+This full rebuild differs from the standalone enrichment: upstream ATC rejects
+were retained. Prefer RBC as candidate PSM foundation, pending trial-specific
+exposure, history, covariate/endpoint and mapping checks. No automatic remapping
+or changes to existing datasets. See detailed audit for denominators and run lineage.
+
+## Pipeline checklist and CIPHER-EHR comparison — 2026-09-16
+
+Added Stage 0–5 checklist to handoff.md, with conventional 1a and optional CIPHER-EHR
+1b cohort-generation tracks. Target-trial design precedes cohort execution; eligibility,
+treatment classification and follow-up share time zero. Future adherence is not a
+baseline filter. Adjustment/representations are explicit Stage 3b; clinical cohort
+accuracy is assessed separately from RCT effect recovery. CIPHER-EHR cloned/reviewed
+at 7fd54c7; no app execution, integration, inference or clinical validation performed.
+
+## Conventional cohort first; medication persistence proposal — 2026-09-16
+
+Ryan selected non-CIPHER-EHR cohort construction for the initial PSM baseline;
+CIPHER-EHR integration is deferred. Record 2–3 refills within 180 or 365 days as a
+proposed sustained-use criterion, with exact count/window and data semantics still
+open. Actual fills must be distinguished from refill authorizations/repeated orders.
+Future refill attainment cannot be a retrospective eligibility filter at initiation.
+Plan baseline exposure validation and a separately specified per-protocol or landmark
+analysis if supported; neither adherence nor dispensing is yet verified in RBC data.
+See handoff.md for checklist, estimand distinctions and evidence gates.
+
+## Care-setting assessment — 2026-09-16
+
+Propose outpatient maintenance exposure for refill assessment only when aligned
+with the chosen chronic-treatment trial. Setting and medication evidence type are
+separate axes; neither outpatient administration nor inpatient doses establish
+pharmacy refills. No setting rule is frozen. Audit preserved setting/order/source
+fields and raw encounter/action linkage before implementing a filter. Existing gold
+metadata cannot resolve this; Ryan runs read-only aggregate checks on H100.
+
+## Medication setting audit implementation — 2026-09-16
+
+Added a read-only, allowlisted parquet-prefix audit for the source-preserving
+medication directory. Reports setting/status/source categories locally and exports
+only metadata/missingness in summary. Does not read patient identifiers, infer
+actual fills, classify evidence semantics or compute patient-level adherence.
+Six synthetic tests verify bounds, null/blank handling, raw-value separation,
+source preservation, output refusal, symlink handling and failed-file status.
+Cluster execution and clinical validation remain pending. See run instructions.

@@ -19,6 +19,9 @@ Next record-level step: [run bounded mapping reconnaissance](docs/RUN_JDAT_MAPPI
 This checks field presence and code counts; standard mappings and CLMBR-T inputs
 are not yet validated.
 
+**Current dataset handoff:** [handoff.md](handoff.md) records the expanded RBC OMOP
+location, latest reviewed run evidence, limitations and next PSM feasibility checks.
+
 ## Start here
 
 - [Detailed restart plan](docs/RESTART_PLAN.md): questions, experimental design,

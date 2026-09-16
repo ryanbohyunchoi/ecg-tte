@@ -36,8 +36,20 @@ Status as of 2026-09-16. Checked means completed with evidence, not merely plann
 
 ## ACC baseline priority — 2026-09-16
 
+- [x] Record conventional cohort construction as first priority; defer CIPHER-EHR.
+- [x] Record proposed 2–3 refills over 180/365 days and distinguish baseline exposure from sustained-use analyses in handoff.md.
+- [ ] Verify actual fills/days supply versus orders and refill authorizations in read-only medication source checks.
+- [ ] Freeze feasible exposure/persistence rules for both arms and the estimand; do not condition initiation eligibility on future refill attainment.
+
+- [x] Add Stage 0–5 pipeline checklist with 1a/1b cohort tracks and explicit matching/evaluation gates to handoff.md.
+- [x] Clone/review CIPHER-EHR v2 workflow; integration and independent eligibility validation are deferred for the first baseline.
+
+- [x] Consolidate current RBC mapping, run lineage, comparison and remaining gates in root handoff.md.
+
 - [x] Build bounded read-only RBC output discovery from local path references; three new tests pass (36 total).
-- [ ] Locate actual RBC remapping via user-run report and compare schemas/lineage with bb2238; do not alter either dataset.
+- [x] Locate RBC candidates: rbc58/omop/gold and mosaic/gold_rbc; review medication supplement schemas.
+- [x] Review full rbc58/omop report: expanded tables, latest per-step counts and RxNorm coverage; prefer as candidate baseline source.
+- [ ] Complete trial-specific read-only feasibility on RBC; resolve exposure/history and code/measurement validity before fitting.
 
 - [x] Pull latest cards-misc main and trace source patterns, retained fields and feature-branch differences.
 - [x] Document 24 candidate ETL inputs within the latest 64-file source audit and PSM limitations.
@@ -63,3 +75,8 @@ Status as of 2026-09-16. Checked means completed with evidence, not merely plann
 
 Ryan supplied reviewed header candidates. Seven bounded record scans were also reviewed; broader source validation,
 replacement clinical analysis, and superiority results remain pending.
+
+- [ ] Audit medication setting × evidence type × source and trial-specific exposure counts on H100; distinguish outpatient maintenance, inpatient administration and discharge prescribing (handoff.md).
+
+- [x] Implement bounded medication setting/status/source audit with restricted local category report; six synthetic tests pass.
+- [ ] Ryan runs docs/RUN_MEDICATION_SETTINGS_AUDIT.md and returns reviewed aggregate findings.

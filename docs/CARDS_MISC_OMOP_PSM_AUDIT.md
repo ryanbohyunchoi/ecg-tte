@@ -3,6 +3,111 @@
 Reviewed 2026-09-16. This is a code and committed aggregate-metadata audit, not a
 validation of the H100 gold tables. No cluster connection or patient-row inspection.
 
+## Full RBC metadata report received — 2026-09-16
+
+Exact root `/mnt/raid0/rbc58/omop`. All twelve discovered manifests were returned;
+all ten expected gold tables have parquet files. This is the expanded rebuild,
+not merely the mosaic/gold_rbc postprocessing supplement. It supersedes the earlier
+uncertainty about whether the full RBC dataset exists.
+
+Latest recorded outputs per step, from July 17–19 UTC runs (not summed over reruns):
+
+| Domain | RBC recorded output | bb2238 recorded output |
+|---|---:|---:|
+| Person | 879,547 | 879,547 |
+| Drug exposure | 125,488,272 | 85,767,598 |
+| Laboratory measurement | 321,428,791 | 15,519,308 |
+| Vital measurement | 88,240,830 | 19,349,129 |
+| Hospital visits | 18,426,882 | Not found |
+| Outpatient visits | 14,070,092 | Not found |
+| Procedures | 469,011,381 | Not found |
+
+RBC drugs retain the entire recorded cleaned silver count, including the 39,720,674
+rows rejected as unmapped_atc by bb2238. Latest RxNorm mapping: 115,605,653 mapped,
+9,882,619 unmapped, rate 92.12%. Current sampled drug schemas include drug_concept_id.
+This corrects the conditional warning about the standalone enrichment script:
+that script cannot recover upstream rejects, but this full rebuild did retain them.
+No claim that all mapped ingredients are clinically correct is made.
+
+Latest condition contributions are 138,979,018 from encounter diagnoses, 9,278,210
+from problem lists and 6,667,568 from medical history. These are contributions,
+not unique clinical facts. Encounter-diagnosis unmapped_snomed rejects are
+19,785,221, versus 15,187,034 in bb2238, so expansion is not uniform improvement
+of every mapping. Reconcile vocabulary versions, domains and trial code coverage.
+
+Recorded lab_map_rate is 97.52%, but the reviewed feature-branch implementation
+computes it as output measurements / (output measurements + counted unmapped base
+names), excluding explicit clinical rejects and not demonstrating full source row
+accounting. Do not compare it directly with bb2238's 4.48% silver-to-gold retention.
+Vital output exceeds input because a composite BP can emit systolic and diastolic
+measurements; row expansion is not by itself evidence of duplicate corruption.
+Procedure output volume and zero rejects do not establish standard concept coverage;
+concept_id=0 is allowed by the implementation, and procedure source manifests are
+not present in this report (only gold-stage runs for step11).
+
+Most recent run 5480ae5b executes steps 1 and 6 successfully after preceding run
+2fbb3f83 recorded errors for those steps while completing 2, 7, 8, 9 and 10.
+Other domains were built in separate runs. Latest successful per-step evidence is
+therefore needed; there is no single demonstrated successful full eleven-step run.
+The actual producing Git revision and current partition-to-run linkage remain unknown.
+
+Source evidence covers the same ECG extract family plus hospital/outpatient
+encounters, problem lists and medical history from both deliveries. RBC's lab
+source list includes 2026 hospital Labs_4, absent from the bb2238 run. Person/death
+still use the 2025 Patients file. Equal person counts do not prove identical membership.
+
+Remaining PSM gates: medication order-versus-administration timing and dose/formulation
+(detail still absent from sampled gold schemas), true pre-index history rather than
+birth-based observation periods, laboratory units/result availability, patient linkage,
+procedure concept coverage, diagnosis mapping losses and trial-specific endpoints.
+Observation_period remains inferred with 20,597 persons without an end date (down
+from 35,915); this does not validate continuous observation. Sampled source ATC field
+is typed double; investigate nulls/type consistency before using it, without inferring
+all values are null from metadata alone. Sampled visits/procedures do not establish
+encounter linkage to diagnoses or medication events.
+
+Assessment: prefer this RBC dataset as the candidate foundation for clinical and
+expanded structured PSM feasibility. Stop broad location searches; assess a specific
+trial's required covariates, treatment/index and endpoint using read-only aggregates.
+No remapping, new clinical analysis or modifications of either dataset occurred.
+
+## RBC discovery report received — 2026-09-16
+
+The bounded user-run search located `/mnt/raid0/rbc58/omop/gold` with directory
+names for person, death, cohort, observation_period, condition_occurrence,
+observation, measurement, drug_exposure, visit_occurrence and procedure_occurrence.
+This is the strongest candidate for the expanded full output. The broad RAID search
+hit its entry and schema limits before reading these table schemas, so presence of
+directories does not establish populated/complete tables or mapping accuracy.
+
+`/mnt/raid0/rbc58/mosaic/gold_rbc` has discovered directories for conditions,
+observations, procedures and drugs. That search also hit limits before sampling
+their schemas. No completeness or absence claim for other tables is warranted.
+`/mnt/raid0/bb2238/omop/gold_rbc` was reported missing or not a directory.
+
+Separate source-preserving medication products were sampled:
+
+- `/home/rbc58/mnt/ecg-tte/drugs`: sampled home/inpatient/outpatient-admin CMP files
+  retain MRN, drug and generic names, order date/status/class, dose/unit, route,
+  frequency, end date, discontinuation reason, setting, cohort and source_file.
+- `/mnt/raid0/rbc58/mm_vhd/drug/drug_master.parquet`: footer reports 135,879,464
+  records and fields including order/start/end/discontinue dates, dose/unit, route,
+  frequency, order status, multiple names/classes and source. These are records,
+  not unique patients. Only one filename-family sample was taken, so this does
+  not establish whether drug_master_v2 is present or preferable.
+
+Those sampled schemas preserve more exposure detail than bb2238 gold, but field
+presence does not establish populated or clinically valid exposure information.
+They are not complete OMOP datasets and cannot be joined without linkage/provenance
+checks. The older ASCVD OMOP person file has 1,113,002 rows, distinct from the
+879,547-person newer bb2238 output; population equivalence is not established.
+The two ASCVD paths may overlap or mirror one another; do not add their counts.
+
+Next run the existing read-only OMOP inspector directly on `/mnt/raid0/rbc58/omop`
+and the bounded discovery directly on `/mnt/raid0/rbc58/mosaic/gold_rbc`. These
+narrow roots avoid unrelated embedding schemas exhausting the discovery budget.
+No source data changed, remapped or directly accessed by the assistant.
+
 ## Existing bb2238 report received — 2026-09-16
 
 The user-run inspector found seven manifests and selected all seven. The newest
