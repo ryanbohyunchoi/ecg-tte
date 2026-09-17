@@ -20,7 +20,7 @@ def run(root, relative, output, limit=500000, encoding='utf-8-sig', expected_sch
         raise ValueError('output_must_be_separate')
     os.umask(0o077)
     output.mkdir(parents=True, mode=0o700, exist_ok=False)
-    report = {'version': 2, 'status': 'running', 'restricted_until_reviewed': True,
+    report = {'version': 3, 'status': 'running', 'restricted_until_reviewed': True,
               'source': str(root / relative), 'limit_per_pass': limit,
               'max_record_bytes': 1048576, 'max_field_chars': 1048576,
               'interpretation': 'Format diagnostics only; no patient N, no repaired rows, no approved parser change.'}
@@ -81,11 +81,14 @@ def run(root, relative, output, limit=500000, encoding='utf-8-sig', expected_sch
             try:
                 for _ in (count() if limit is None else range(limit)):
                     lines.used = 0
+                    line_start = stream.tell()
                     try:
                         line = next(lines)
                     except StopIteration:
                         physical['status'] = 'reached_eof'
                         break
+                    line_bytes = stream.tell() - line_start
+                    payload = line[:-2] if line.endswith('\r\n') else line[:-1] if line.endswith('\n') else line
                     physical['lines_read'] += 1
                     physical['unterminated_final_line'] += not line.endswith('\n')
                     n = line.count(delimiter) + 1
@@ -95,6 +98,9 @@ def run(root, relative, output, limit=500000, encoding='utf-8-sig', expected_sch
                             physical['first_width_mismatches'].append({
                                 'data_physical_line_1based': physical['lines_read'],
                                 'observed_columns': n,
+                                'payload_bytes': line_bytes - (2 if line.endswith('\r\n') else 1 if line.endswith('\n') else 0),
+                                'exact_empty_line': line in ('\n','\r\n') and line_bytes == len(line),
+                                'ascii_whitespace_payload_only': bool(payload) and all(c in ' \t\r\v\f' for c in payload) and line_bytes == len(line),
                                 'contains_quote': '"' in line,
                                 'field_start_quote': line.startswith('"') or (delimiter + '"') in line,
                                 'terminated_with_newline': line.endswith('\n')})
@@ -108,6 +114,8 @@ def run(root, relative, output, limit=500000, encoding='utf-8-sig', expected_sch
                     physical['status'] = 'bounded_prefix'
             except Exception as exc:
                 physical.update(status='stopped', reason=failure_reason(exc), error_type=type(exc).__name__)
+        for sample in physical['first_width_mismatches']:
+            sample['is_final_physical_line'] = (sample['data_physical_line_1based'] == physical['lines_read']) if physical.get('status') == 'reached_eof' else None
         after = source.stat()
         changed = (before.st_size, before.st_mtime_ns) != (after.st_size, after.st_mtime_ns)
         report.update(status='source_changed_diagnostics_invalid' if changed else 'diagnostic_complete',

@@ -1,3 +1,30 @@
+# Latest: outpatient DX failure after hospital fix
+
+The HF version 3 run progressed to outpatient DX, then failed row_width_mismatch
+near the 9,600,000-record progress message. The exact line and cause are unknown.
+Do not repeat the full HF audit unchanged. Run only the outpatient diagnostic:
+
+```bash
+cd "$HOME/github/ecg-tte"
+git pull --ff-only origin psm-mice-imputation
+umask 077
+mkdir -p /mnt/raid0/rbc58/ecg-tte/audits
+HF_DX_FORMAT_OUT=$(mktemp -d /mnt/raid0/rbc58/ecg-tte/audits/hf-dx-format-XXXXXXXX)
+python scripts/diagnose_medication_format.py \
+  --root /home/rbc58/mnt/implementation/cardsjdat-CC1022-MEDINT/2435227-CarDS-ECG/Data-2026-04-15 \
+  --file CarDS_2435227_Outpatient_Enc_DX.txt \
+  --expected-schema-sha256 eee6c9922b68b8f5c95022eff2a9c7b827478195d07167c62343060cb7e75cb4 \
+  --output-dir "$HF_DX_FORMAT_OUT/report" \
+  --full-scan
+cat "$HF_DX_FORMAT_OUT/report/summary.json"
+```
+
+Diagnostic version 3 reports byte payload lengths, exact-empty/ASCII-whitespace
+flags and final-physical-line status with the capped mismatch samples. It does not
+print source text. EOF status remains unknown for a bounded/stopped pass. A BOM
+payload is not treated as an empty line. Eleven synthetic diagnostic tests pass.
+No outpatient parser exception is enabled by this change.
+
 # Hospital diagnosis format diagnostic
 
 The version 2 HF source audit stopped in CarDS_2435227_Hosp_Enc_DX.txt after its

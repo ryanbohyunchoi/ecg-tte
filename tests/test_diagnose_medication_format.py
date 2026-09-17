@@ -36,6 +36,25 @@ class FormatTests(unittest.TestCase):
         self.assertEqual(physical['first_width_mismatches'][0]['observed_columns'],3)
         self.assertEqual(r['strict_csv']['failing_logical_record_1based'],13)
 
+    def test_terminal_blank_is_verified_without_exposing_content(self):
+        r=self.audit('SECRET_A\tok\n\n',limit=None)
+        sample=r['literal_delimiter_physical_lines']['first_width_mismatches'][0]
+        self.assertTrue(sample['exact_empty_line'])
+        self.assertTrue(sample['is_final_physical_line'])
+        self.assertEqual(sample['payload_bytes'],0)
+
+    def test_prefix_does_not_claim_eof(self):
+        r=self.audit('\nSECRET_A\tok\n',limit=1)
+        sample=r['literal_delimiter_physical_lines']['first_width_mismatches'][0]
+        self.assertTrue(sample['exact_empty_line'])
+        self.assertIsNone(sample['is_final_physical_line'])
+
+    def test_bom_payload_is_not_empty(self):
+        r=self.audit('SECRET_A\tok\n\ufeff\n',limit=None)
+        sample=r['literal_delimiter_physical_lines']['first_width_mismatches'][0]
+        self.assertFalse(sample['exact_empty_line'])
+        self.assertEqual(sample['payload_bytes'],3)
+
     def test_schema_pin_rejects_before_passes(self):
         self.path.write_text('PAT_MRN_ID\tSIG\nSECRET\ttext\n')
         r=D.run(self.root,'meds.txt',self.base/'report',expected_schema='wrong')
