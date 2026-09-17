@@ -20,8 +20,8 @@ are emitted. No SQLite patient counts are built. No additional dependencies.
 cd "$HOME/github/ecg-tte"
 git pull --ff-only origin psm-mice-imputation
 umask 077
-mkdir -p /mnt/raid0/rbc58/ecg-tte-audits
-MED_DATE_OUT=$(mktemp -d "/mnt/raid0/rbc58/ecg-tte-audits/medication-dates-XXXXXXXX")
+mkdir -p /mnt/raid0/rbc58/ecg-tte/audits
+MED_DATE_OUT=$(mktemp -d "/mnt/raid0/rbc58/ecg-tte/audits/medication-dates-XXXXXXXX")
 python scripts/audit_medication_dates.py \
   --root /home/rbc58/mnt/implementation/cardsjdat-CC1022-MEDINT/2435227-CarDS-ECG/Data-2026-04-15 \
   --file CarDS_2435227_Meds.txt \

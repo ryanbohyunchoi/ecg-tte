@@ -12,8 +12,8 @@ cd "$HOME/github/ecg-tte"
 git pull --ff-only origin psm-mice-imputation
 
 umask 077
-mkdir -p /mnt/raid0/rbc58/ecg-tte-audits
-MED_SETTING_OUT="/mnt/raid0/rbc58/ecg-tte-audits/medication-settings-$(date +%Y%m%d-%H%M%S)"
+mkdir -p /mnt/raid0/rbc58/ecg-tte/audits
+MED_SETTING_OUT="/mnt/raid0/rbc58/ecg-tte/audits/medication-settings-$(date +%Y%m%d-%H%M%S)"
 python scripts/audit_medication_settings.py \
   --root "$HOME/mnt/ecg-tte/drugs" \
   --output-dir "$MED_SETTING_OUT"

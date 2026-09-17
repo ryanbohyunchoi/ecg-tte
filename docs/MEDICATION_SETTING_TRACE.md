@@ -120,8 +120,8 @@ silently replaced. Ryan runs it from his checkout after obtaining these changes:
 ```bash
 cd "$HOME/github/ecg-tte"
 umask 077
-mkdir -p /mnt/raid0/rbc58/ecg-tte-audits
-MED_TRACE_OUT=$(mktemp -d "/mnt/raid0/rbc58/ecg-tte-audits/medication-source-headers-XXXXXXXX")
+mkdir -p /mnt/raid0/rbc58/ecg-tte/audits
+MED_TRACE_OUT=$(mktemp -d "/mnt/raid0/rbc58/ecg-tte/audits/medication-source-headers-XXXXXXXX")
 python scripts/inspect_jdat_headers.py \
   --root /home/rbc58/mnt/implementation/cardsjdat-CC1022-MEDINT/2435227-CarDS-ECG/Data-2026-04-15 \
   --file CarDS_2435227_Meds.txt \

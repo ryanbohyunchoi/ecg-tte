@@ -9,8 +9,8 @@ cd "$HOME/github/ecg-tte"
 git pull --ff-only origin psm-mice-imputation
 
 umask 077
-mkdir -p /mnt/raid0/rbc58/ecg-tte-audits
-OMOP_AUDIT_OUT="/mnt/raid0/rbc58/ecg-tte-audits/existing-omop-audit-$(date +%Y%m%d-%H%M%S)"
+mkdir -p /mnt/raid0/rbc58/ecg-tte/audits
+OMOP_AUDIT_OUT="/mnt/raid0/rbc58/ecg-tte/audits/existing-omop-audit-$(date +%Y%m%d-%H%M%S)"
 python scripts/audit_existing_omop.py \
   --omop-root /mnt/raid0/bb2238/omop \
   --output-dir "$OMOP_AUDIT_OUT"
@@ -20,7 +20,7 @@ cursor "$OMOP_AUDIT_OUT/summary.json"
 
 The input path is from cards-misc documentation; it has not been independently
 verified on the cluster. The script fails safely if unavailable. Output is a new
-restricted directory under `/mnt/raid0/rbc58/ecg-tte-audits`, entirely outside the existing OMOP tree.
+restricted directory under `/mnt/raid0/rbc58/ecg-tte/audits`, entirely outside the existing OMOP tree.
 
 The script reads only existing run manifests, directory entries, and parquet
 footer/schema metadata. It never reads patient rows or writes to the existing

@@ -9,13 +9,13 @@ After transferring the current code to your cluster checkout, run from its root:
 
 ```bash
 umask 077
-mkdir -p /mnt/raid0/rbc58/ecg-tte-audits
+mkdir -p /mnt/raid0/rbc58/ecg-tte/audits
 python scripts/inventory_jdat.py \
   --root t2dm=/home/rbc58/mnt/t2dm-jdat-data \
   --root cmp=/home/rbc58/mnt/cmp-jdat-data \
   --root implementation=/home/rbc58/mnt/implementation \
   --root ascvd=/home/rbc58/mnt/ascvd \
-  --output-dir "/mnt/raid0/rbc58/ecg-tte-audits/jdat-inventory-$(date +%Y%m%d-%H%M%S)"
+  --output-dir "/mnt/raid0/rbc58/ecg-tte/audits/jdat-inventory-$(date +%Y%m%d-%H%M%S)"
 ```
 
 These four locations are **unverified leads from the old project**, not confirmed

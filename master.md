@@ -27,8 +27,11 @@ cluster. Read this file before planning source access or implementing cluster jo
 
 ## Cluster output location — user instruction, 2026-09-17
 
+- Ryan's specified project output root is `/mnt/raid0/rbc58/ecg-tte/`.
+  Audit runs use its `audits/` subdirectory. This replaces the assistant-proposed
+  sibling directory `ecg-tte-audits`; do not use that older location for new runs.
 - Write all new project audit reports and run-specific temporary counting databases
-  beneath `/mnt/raid0/rbc58/ecg-tte-audits/`, not directly in `$HOME`.
+  beneath `/mnt/raid0/rbc58/ecg-tte/audits/`, not directly in `$HOME`.
 - Create a fresh private subdirectory for each run (`umask 077`); never overwrite
   an existing run or mix reports with raw JDAT or existing OMOP datasets.
 - This supersedes the earlier home-directory report destination. Source paths and

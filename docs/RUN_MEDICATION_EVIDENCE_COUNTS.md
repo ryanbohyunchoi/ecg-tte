@@ -33,8 +33,8 @@ standard Python are required. It keeps the version 3 literal-tab contract explic
 cd "$HOME/github/ecg-tte"
 git pull --ff-only origin psm-mice-imputation
 umask 077
-mkdir -p /mnt/raid0/rbc58/ecg-tte-audits
-MED_QUALITY_OUT=$(mktemp -d "/mnt/raid0/rbc58/ecg-tte-audits/medication-quality-XXXXXXXX")
+mkdir -p /mnt/raid0/rbc58/ecg-tte/audits
+MED_QUALITY_OUT=$(mktemp -d "/mnt/raid0/rbc58/ecg-tte/audits/medication-quality-XXXXXXXX")
 python scripts/count_medication_evidence.py \
   --root /home/rbc58/mnt/implementation/cardsjdat-CC1022-MEDINT/2435227-CarDS-ECG/Data-2026-04-15 \
   --file CarDS_2435227_Meds.txt \
@@ -107,13 +107,13 @@ overlap in patients; never add their distinct counts together.
 After obtaining the local code changes, run from the cluster checkout. The source
 is the 2026 RBC implementation medication-list file from reviewed lineage. A missing
 file fails rather than substituting another cohort. Keep report and scratch storage
-under `/mnt/raid0/rbc58/ecg-tte-audits` on the cluster, outside the source dataset.
+under `/mnt/raid0/rbc58/ecg-tte/audits` on the cluster, outside the source dataset.
 
 ```bash
 cd "$HOME/github/ecg-tte"
 umask 077
-mkdir -p /mnt/raid0/rbc58/ecg-tte-audits
-MED_COUNT_OUT=$(mktemp -d "/mnt/raid0/rbc58/ecg-tte-audits/medication-evidence-counts-XXXXXXXX")
+mkdir -p /mnt/raid0/rbc58/ecg-tte/audits
+MED_COUNT_OUT=$(mktemp -d "/mnt/raid0/rbc58/ecg-tte/audits/medication-evidence-counts-XXXXXXXX")
 python scripts/count_medication_evidence.py \
   --root /home/rbc58/mnt/implementation/cardsjdat-CC1022-MEDINT/2435227-CarDS-ECG/Data-2026-04-15 \
   --file CarDS_2435227_Meds.txt \
@@ -166,8 +166,8 @@ patient keys is built, and no source values or exception messages are exported.
 cd "$HOME/github/ecg-tte"
 git pull --ff-only origin psm-mice-imputation
 umask 077
-mkdir -p /mnt/raid0/rbc58/ecg-tte-audits
-MED_FORMAT_OUT=$(mktemp -d "/mnt/raid0/rbc58/ecg-tte-audits/medication-format-XXXXXXXX")
+mkdir -p /mnt/raid0/rbc58/ecg-tte/audits
+MED_FORMAT_OUT=$(mktemp -d "/mnt/raid0/rbc58/ecg-tte/audits/medication-format-XXXXXXXX")
 python scripts/diagnose_medication_format.py \
   --root /home/rbc58/mnt/implementation/cardsjdat-CC1022-MEDINT/2435227-CarDS-ECG/Data-2026-04-15 \
   --file CarDS_2435227_Meds.txt \
@@ -209,8 +209,8 @@ Run this in a fresh directory to assess full-file structure and preliminary N:
 cd "$HOME/github/ecg-tte"
 git pull --ff-only origin psm-mice-imputation
 umask 077
-mkdir -p /mnt/raid0/rbc58/ecg-tte-audits
-MED_COUNT_OUT=$(mktemp -d "/mnt/raid0/rbc58/ecg-tte-audits/medication-literal-counts-XXXXXXXX")
+mkdir -p /mnt/raid0/rbc58/ecg-tte/audits
+MED_COUNT_OUT=$(mktemp -d "/mnt/raid0/rbc58/ecg-tte/audits/medication-literal-counts-XXXXXXXX")
 python scripts/count_medication_evidence.py \
   --root /home/rbc58/mnt/implementation/cardsjdat-CC1022-MEDINT/2435227-CarDS-ECG/Data-2026-04-15 \
   --file CarDS_2435227_Meds.txt \
