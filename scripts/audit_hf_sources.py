@@ -3,6 +3,7 @@
 import argparse
 from collections import Counter
 import math
+from datetime import date
 from pathlib import Path
 import os
 import re
@@ -59,6 +60,53 @@ def code_structure(value):
     return 'contains_' + '_and_'.join(found) if found else 'other_structure'
 
 
+def recency_band(days):
+    if days is None:
+        return 'no_prior_candidate_ef'
+    if days <= 0:
+        raise ValueError('strictly_prior_required')
+    for bound in (90, 180, 365, 730):
+        if days <= bound:
+            return 'days_' + ('1' if bound == 90 else str({180:91,365:181,730:366}[bound])) + '_' + str(bound)
+    return 'days_over_730'
+
+
+def token_structure(value):
+    if missing_kind(value):
+        return 'missing'
+    # Explicit lexical hypothesis; no vocabulary validity or HF classification.
+    if len(value) > 4096:
+        return 'oversized_not_tokenized'
+    tokens = re.split(r'[,;|]', value)
+    if any(not t.strip() for t in tokens):
+        return 'empty_token_review'
+    if all(code_structure(t.strip()) == 'single_icd10_shaped_token' for t in tokens):
+        return 'single_shaped_token' if len(tokens) == 1 else 'all_split_tokens_code_shaped'
+    return 'unresolved_tokens_review'
+
+
+def calendar_report(db):
+    result = {}
+    for bucket in ARMS:
+        years = [r[0] for r in db.execute('SELECT DISTINCT substr(day,1,4) FROM meds WHERE bucket=? ORDER BY 1',(bucket,))]
+        groups = []
+        for year in years:
+            bands = Counter()
+            latest = Counter()
+            for patient, anchor in db.execute('SELECT patient,day FROM meds WHERE bucket=? AND substr(day,1,4)=?',(bucket,year)).fetchall():
+                row = db.execute('SELECT lag FROM recency WHERE bucket=? AND patient=?',(bucket,patient)).fetchone()
+                bands[recency_band(row[0] if row else None)] += 1
+                ef_rows = db.execute('SELECT band FROM latest_echo WHERE bucket=? AND patient=?',(bucket,patient)).fetchall()
+                labels = {r[0] for r in ef_rows}
+                latest['no_prior_echo' if not labels else next(iter(labels)) if len(labels)==1 else 'same_latest_day_band_disagreement'] += 1
+            groups.append(dict(anchor_year=year, candidate_patient_keys=sum(bands.values()),
+                nearest_prior_candidate_ef_recency=dict(bands), latest_prior_echo_ef_bands=dict(latest)))
+        result[bucket] = dict(first_candidate_anchor_years=groups,
+            any_candidate_order_years=[dict(year=y,patient_keys=n) for y,n in db.execute(
+                'SELECT year,COUNT(*) FROM med_years WHERE bucket=? GROUP BY year ORDER BY year',(bucket,))])
+    return result
+
+
 def literal_rows(path, schema, report, limit=None):
     before = path.stat()
     header = inspect(path.parent, path.name)
@@ -98,6 +146,12 @@ def init_db(db):
       CREATE TABLE meds(bucket TEXT, patient TEXT, day TEXT,
         PRIMARY KEY(bucket,patient)) WITHOUT ROWID;
       CREATE INDEX med_patient ON meds(patient);
+      CREATE TABLE med_years(bucket TEXT, patient TEXT, year TEXT,
+        PRIMARY KEY(bucket,patient,year)) WITHOUT ROWID;
+      CREATE TABLE recency(bucket TEXT, patient TEXT, lag INTEGER,
+        PRIMARY KEY(bucket,patient)) WITHOUT ROWID;
+      CREATE TABLE latest_echo(bucket TEXT, patient TEXT, day TEXT, band TEXT,
+        PRIMARY KEY(bucket,patient,band)) WITHOUT ROWID;
       CREATE TABLE echo(patient TEXT PRIMARY KEY) WITHOUT ROWID;
       CREATE TABLE accessions(accession TEXT PRIMARY KEY, patient TEXT, day TEXT, ef TEXT) WITHOUT ROWID;
       CREATE TABLE coverage(bucket TEXT, patient TEXT, flag TEXT,
@@ -143,6 +197,16 @@ def echo_records(records, db, report):
                 if day:
                     relation = 'before' if day.isoformat() < index else 'same_day' if day.isoformat() == index else 'after'
                     flags.append('echo_' + relation)
+                    if relation == 'before':
+                        old_day = db.execute('SELECT MAX(day) FROM latest_echo WHERE bucket=? AND patient=?',(bucket,patient)).fetchone()[0]
+                        if old_day is None or day.isoformat() > old_day:
+                            db.execute('DELETE FROM latest_echo WHERE bucket=? AND patient=?',(bucket,patient))
+                            old_day = day.isoformat()
+                        if day.isoformat() == old_day:
+                            db.execute('INSERT OR IGNORE INTO latest_echo VALUES (?,?,?,?)',(bucket,patient,day.isoformat(),band))
+                        if band.startswith('gt_'):
+                            lag = (date.fromisoformat(index)-day).days
+                            db.execute('INSERT INTO recency VALUES (?,?,?) ON CONFLICT(bucket,patient) DO UPDATE SET lag=MIN(lag,excluded.lag)',(bucket,patient,lag))
                     if band.startswith('gt_'):
                         flags.append('ef_gt1_le100_' + relation)
                 for flag in flags:
@@ -158,7 +222,7 @@ def echo_records(records, db, report):
 
 def run(root, echo_path, output, dx_limit=500000):
     root, echo_path, output = map(Path, (root, echo_path, output))
-    if not all(p.is_absolute() for p in (root, echo_path, output)) or dx_limit <= 0:
+    if not all(p.is_absolute() for p in (root, echo_path, output)) or (dx_limit is not None and dx_limit <= 0):
         raise ValueError('absolute_paths_and_positive_dx_limit_required')
     root, echo_path, output = root.resolve(), echo_path.resolve(), output.resolve()
     for source in (root, echo_path.parent):
@@ -166,7 +230,7 @@ def run(root, echo_path, output, dx_limit=500000):
             raise ValueError('output_must_be_separate_from_sources')
     os.umask(0o077)
     output.mkdir(parents=True, exist_ok=False, mode=0o700)
-    report = dict(version=1, status='running', restricted_until_reviewed=True,
+    report = dict(version=2, status='running', restricted_until_reviewed=True,
         counts_valid=False, root=str(root), echo_source=str(echo_path), dx_max_rows_per_file=dx_limit,
         interpretation='QC only. No HF phenotype, validated identity, eligibility, new use, fills or adherence.',
         index='Earliest dated outpatient Normal/Print lexical order per arm; exploratory anchor only.',
@@ -196,6 +260,7 @@ def run(root, echo_path, output, dx_limit=500000):
                         continue
                     patient, day = key(row['PAT_MRN_ID']), parse(row['ORDER_INST'])[1]
                     if patient and day:
+                        db.execute('INSERT OR IGNORE INTO med_years VALUES (?,?,?)',(bucket,patient,str(day.year).zfill(4)))
                         db.execute('INSERT INTO meds VALUES (?,?,?) ON CONFLICT(bucket,patient) DO UPDATE SET day=MIN(day,excluded.day)',
                                    (bucket, patient, day.isoformat()))
                 db.commit()
@@ -220,12 +285,13 @@ def run(root, echo_path, output, dx_limit=500000):
                     report['arm_echo_coverage'][bucket] = dict(
                         candidate_patient_keys=db.execute('SELECT COUNT(*) FROM meds WHERE bucket=?',(bucket,)).fetchone()[0],
                         flags=dict(db.execute('SELECT flag,COUNT(*) FROM coverage WHERE bucket=? GROUP BY flag',(bucket,))))
+                report['calendar_and_recency'] = calendar_report(db)
                 for filename in ('CarDS_2435227_Hosp_Enc_DX.txt', 'CarDS_2435227_Outpatient_Enc_DX.txt'):
                     stage = filename
                     result = report['diagnoses'][filename] = {}
                     formats = {f:Counter() for f in DX_DATES}
                     comparisons = {f:Counter() for f in DX_DATES[1:]}
-                    structures, missing = Counter(), Counter()
+                    structures, missing, tokens, dx_years = Counter(), Counter(), Counter(), Counter()
                     db.execute('DELETE FROM dx_keys')
                     for row in literal_rows(root/filename, DX_SCHEMA, result, dx_limit):
                         patient = key(row['PAT_MRN_ID'])
@@ -239,10 +305,16 @@ def run(root, echo_path, output, dx_limit=500000):
                             formats[field][fmt] += 1
                         for field in comparisons:
                             comparisons[field][compare(parsed['CALC_DX_DATE'],parsed[field])] += 1
-                        structures[code_structure(row['CURRENT_ICD10_LIST'].strip())] += 1
+                        cell = row['CURRENT_ICD10_LIST'].strip()
+                        structures[code_structure(cell)] += 1
+                        tokens[token_structure(cell)] += 1
+                        year = str(parsed['CALC_DX_DATE'].year).zfill(4) if parsed['CALC_DX_DATE'] else 'unparseable_calc_date'
+                        state = 'dx_date_present' if parsed['DX_DATE'] else 'dx_date_unusable'
+                        dx_years[(year,state)] += 1
                     result.update(date_formats=formats, date_comparisons_to_CALC_DX_DATE=comparisons,
                         comparison_labels='order means CALC_DX_DATE; start means the other field; no preferred date selected',
-                        icd10_cell_structure=structures, missing=missing,
+                        icd10_cell_structure=structures, tokenization_hypothesis_counts=tokens,
+                        calc_year_dx_date_availability=[dict(calc_year=y,state=k,records=n) for (y,k),n in sorted(dx_years.items())], missing=missing,
                         distinct_patient_keys_in_scanned_rows=db.execute('SELECT COUNT(*) FROM dx_keys').fetchone()[0],
                         keys_also_in_echo=db.execute('SELECT COUNT(*) FROM dx_keys JOIN echo USING(patient)').fetchone()[0],
                         medication_candidate_overlap=dict(db.execute('SELECT bucket,COUNT(*) FROM meds JOIN dx_keys USING(patient) GROUP BY bucket')))
@@ -253,7 +325,7 @@ def run(root, echo_path, output, dx_limit=500000):
             raise CountError('source_changed')
         report.update(status='complete_requested_scope', counts_valid=True)
     except Exception as exc:
-        report = {k:v for k,v in report.items() if k not in ('medications','echo','diagnoses','arm_echo_coverage')}
+        report = {k:v for k,v in report.items() if k not in ('medications','echo','diagnoses','arm_echo_coverage','calendar_and_recency')}
         report.update(status='failed_counts_invalid', counts_valid=False, failure_stage=stage,
                       error_type=type(exc).__name__, reason=failure_reason(exc))
     save(output/'summary.json', report)
@@ -265,10 +337,12 @@ def main():
     p.add_argument('--root', required=True)
     p.add_argument('--echo', required=True)
     p.add_argument('--output-dir', required=True)
-    p.add_argument('--dx-max-rows', type=int, default=500000)
+    scope = p.add_mutually_exclusive_group()
+    scope.add_argument('--dx-max-rows', type=int, default=500000)
+    scope.add_argument('--dx-full-scan', action='store_true')
     args = p.parse_args()
     try:
-        report = run(args.root,args.echo,args.output_dir,args.dx_max_rows)
+        report = run(args.root,args.echo,args.output_dir,None if args.dx_full_scan else args.dx_max_rows)
     except Exception as exc:
         print('Setup failed: ' + type(exc).__name__)
         return 1

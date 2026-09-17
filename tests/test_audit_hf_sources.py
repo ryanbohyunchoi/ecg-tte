@@ -9,6 +9,31 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]/'scripts'))
 import audit_hf_sources as A
 
 class SourceAuditTests(unittest.TestCase):
+    def test_recency_boundaries_and_tokenization(self):
+        for lag,label in [(None,'no_prior_candidate_ef'),(1,'days_1_90'),(90,'days_1_90'),
+            (91,'days_91_180'),(180,'days_91_180'),(181,'days_181_365'),
+            (365,'days_181_365'),(366,'days_366_730'),(730,'days_366_730'),(731,'days_over_730')]:
+            self.assertEqual(A.recency_band(lag),label)
+        with self.assertRaises(ValueError): A.recency_band(0)
+        self.assertEqual(A.token_structure('I50.2, I10'),'all_split_tokens_code_shaped')
+        self.assertEqual(A.token_structure('I50.2|I10'),'all_split_tokens_code_shaped')
+        self.assertEqual(A.token_structure('I50.2,'),'empty_token_review')
+        self.assertEqual(A.token_structure('description I50.2'),'unresolved_tokens_review')
+
+    def test_latest_echo_missingness_and_ties_not_hidden_by_older_ef(self):
+        db=sqlite3.connect(':memory:'); self.addCleanup(db.close); A.init_db(db)
+        bucket=A.ARMS[0]
+        db.executemany('INSERT INTO meds VALUES (?,?,?)',[(bucket,'A','2024-06-01'),(bucket,'B','2024-06-01')])
+        db.execute('INSERT INTO med_years VALUES (?,?,?)',(bucket,'A','2024'))
+        def r(day,ef): return dict(MRN='A',EchoDate=day,EF=ef,AccessionNumber=day+str(ef))
+        A.echo_records([r('2024-03-01',35),r('2024-05-01',None),r('2024-05-01',60),
+            r('2024-02-01',20),r('2024-06-01',40),r('2024-07-01',30)],db,{})
+        report=A.calendar_report(db)[bucket]['first_candidate_anchor_years'][0]
+        self.assertEqual(report['candidate_patient_keys'],2)
+        self.assertEqual(report['nearest_prior_candidate_ef_recency'],{'days_1_90':1,'no_prior_candidate_ef':1})
+        self.assertEqual(report['latest_prior_echo_ef_bands'],{'same_latest_day_band_disagreement':1,'no_prior_echo':1})
+        self.assertNotIn('2024-06-01',json.dumps(report))
+
     def test_ef_quality_not_threshold_selection(self):
         for value, label in [(None,'null'),(float('nan'),'nonfinite'),(float('inf'),'nonfinite'),
             (-1,'outside_0_100'),(101,'outside_0_100'),(0,'zero'),(.4,'positive_le_1_scale_ambiguous'),

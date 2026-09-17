@@ -14,13 +14,13 @@ python scripts/audit_hf_sources.py \
   --root /home/rbc58/mnt/implementation/cardsjdat-CC1022-MEDINT/2435227-CarDS-ECG/Data-2026-04-15 \
   --echo /mnt/raid0/rbc58/mm_vhd/metadata/echo_accession_number.parquet \
   --output-dir "$HF_SOURCE_OUT/report" \
-  --dx-max-rows 500000
+  --dx-full-scan
 cat "$HF_SOURCE_OUT/report/summary.json"
 ```
 
 The medication scan is full-file to recreate each of the four lexical arm's earliest
 dated outpatient Normal/Print orders. Echo is full-file; each diagnosis file is
-limited to 500,000 rows initially. `complete_requested_scope` does NOT mean full
+scanned to EOF with the command above. Use `--dx-max-rows 500000` instead for an explicitly bounded run. `complete_requested_scope` does NOT mean full
 DX coverage. Per-file status and reached_eof distinguish prefix versus full reads.
 Prefix overlaps are descriptive only, not representative HF prevalence estimates.
 
@@ -57,3 +57,34 @@ Local validation: synthetic tests cover EF bands, exact keys, duplicate accessio
 conflicts, pre/same/post-day distinctions, ambiguous dates, row-width/schema and
 source-change failures, privacy and output overlap. Local Python lacks PyArrow;
 real Parquet I/O remains to be exercised on H100.
+
+## Version 2: calendar coverage, recency and DX structure
+
+The next run deliberately rescans medications/echo and now both complete DX files;
+version 1 scratch keys were removed, so its aggregate report cannot answer these
+new questions. All prior scope, format and clinical limitations still apply.
+
+`calendar_and_recency` reports each arm's first candidate anchor counts by year,
+plus distinct patient keys with any candidate order in each year. The latter
+patients overlap across years; counts are not new initiators. First-anchor cohorts
+can differ from treatment decisions in a chosen later common calendar window.
+No contemporaneous window is selected automatically.
+
+Within anchor year, mutually exclusive nearest-prior candidate-range EF recency
+bins are 1–90, 91–180, 181–365, 366–730, >730 days and no prior candidate EF.
+These are feasibility bands, not accepted baseline windows. A separate distribution
+uses the latest prior echo day regardless of EF missingness. Different EF bands
+on that same latest day are explicitly unresolved; agreement within one band does
+not establish identical measurements. Neither same-day nor later echoes enter
+these prior summaries. No last-valid-value fallback is adopted for eligibility.
+
+DX tokenization tests a comma/semicolon/pipe split hypothesis and reports only
+structure counts, including empty tokens and unresolved cells. Code-shaped tokens
+are not validated ICD codes or HF diagnoses. CALC_DX_DATE-year strata show where
+DX_DATE is usable; this cannot establish the derivation or availability time of
+CALC_DX_DATE. No definition was found in the available local source code. A JDAT
+source specification/extraction SQL is needed before choosing any date fallback.
+
+Sixteen HF synthetic tests pass after version 2 additions, including exact recency
+boundaries, latest-day band disagreements and preservation of missing latest EF.
+H100 exercised real Parquet reading in version 1; version 2 awaits a cluster run.
