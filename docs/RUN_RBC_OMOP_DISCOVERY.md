@@ -15,7 +15,9 @@ Local references identify candidate locations, not verified cluster paths:
 cd "$HOME/github/ecg-tte"
 git pull --ff-only origin psm-mice-imputation
 
-RBC_AUDIT_OUT="$HOME/rbc-output-discovery-$(date +%Y%m%d-%H%M%S)"
+umask 077
+mkdir -p /mnt/raid0/rbc58/ecg-tte-audits
+RBC_AUDIT_OUT="/mnt/raid0/rbc58/ecg-tte-audits/rbc-output-discovery-$(date +%Y%m%d-%H%M%S)"
 python scripts/discover_omop_outputs.py \
   --root /mnt/raid0/rbc58/mosaic \
   --root "$HOME/mnt/ecg-tte" \
@@ -32,7 +34,7 @@ cursor "$RBC_AUDIT_OUT/summary.json"
 
 Each root is reported independently. Overlapping roots may rediscover the same
 files; their counts must not be added as independent data. Reports stay outside
-all source trees in a new private home directory; existing outputs are refused.
+all source trees in a new private audit directory under `/mnt/raid0/rbc58/ecg-tte-audits`; existing outputs are refused.
 
 The script uses breadth-first directory discovery, capped per root at depth 5,
 50,000 directory entries and 40 schema samples. It records paths of table-like

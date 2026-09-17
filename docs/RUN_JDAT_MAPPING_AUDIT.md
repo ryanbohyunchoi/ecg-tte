@@ -17,8 +17,10 @@ orders (5), encounters (6), CPT procedures (7), vitals (9), outpatient administr
 git switch psm-mice-imputation
 git pull --ff-only origin psm-mice-imputation
 
-JDAT_HEADER_REPORT="$HOME/jdat-headers-REPLACE_WITH_ACTUAL_TIMESTAMP/summary.json"
-JDAT_MAPPING_OUT="$HOME/jdat-mapping-$(date +%Y%m%d-%H%M%S)"
+JDAT_HEADER_REPORT="/mnt/raid0/rbc58/ecg-tte-audits/jdat-headers-REPLACE_WITH_ACTUAL_TIMESTAMP/summary.json"
+umask 077
+mkdir -p /mnt/raid0/rbc58/ecg-tte-audits
+JDAT_MAPPING_OUT="/mnt/raid0/rbc58/ecg-tte-audits/jdat-mapping-$(date +%Y%m%d-%H%M%S)"
 python scripts/profile_jdat_mapping.py \
   --headers "$JDAT_HEADER_REPORT" \
   --file-index 2 --file-index 5 --file-index 6 --file-index 7 \

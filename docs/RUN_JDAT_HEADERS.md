@@ -8,7 +8,9 @@ From the cluster repository checkout:
 ```bash
 git pull --ff-only origin psm-mice-imputation
 
-JDAT_HEADERS="$HOME/jdat-headers-$(date +%Y%m%d-%H%M%S)"
+umask 077
+mkdir -p /mnt/raid0/rbc58/ecg-tte-audits
+JDAT_HEADERS="/mnt/raid0/rbc58/ecg-tte-audits/jdat-headers-$(date +%Y%m%d-%H%M%S)"
 python scripts/inspect_jdat_headers.py \
   --root /home/rbc58/mnt/t2dm-jdat-data \
   --preset t2dm \
@@ -27,11 +29,13 @@ No `.partial` companions or operational logs are included.
 For other tables, use explicit relative filenames instead of the preset:
 
 ```bash
+umask 077
+mkdir -p /mnt/raid0/rbc58/ecg-tte-audits
 python scripts/inspect_jdat_headers.py \
   --root /home/rbc58/mnt/t2dm-jdat-data \
   --file 2380791_CarDS_Outcomes_DM2_Meds.txt \
   --file 2380791_CarDS_Outcomes_DM2_Patients.txt \
-  --output-dir "$HOME/jdat-selected-headers-$(date +%Y%m%d-%H%M%S)"
+  --output-dir "/mnt/raid0/rbc58/ecg-tte-audits/jdat-selected-headers-$(date +%Y%m%d-%H%M%S)"
 ```
 
 ## What it does

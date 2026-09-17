@@ -1,14 +1,16 @@
 # COMET and PARADIGM-HF medication feasibility screen
 
 2026-09-17. Ryan runs this on H100. Standard-library Python only, no GPU. Read-only
-source scan; fresh reports and temporary restricted SQLite storage in Ryan's home.
+source scan; fresh reports and temporary restricted SQLite storage under `/mnt/raid0/rbc58/ecg-tte-audits`.
 This is a **lexical medication candidate screen**, not a validated drug mapping,
 HF cohort, initiation definition, dispensing audit or effect estimate.
 
 ```bash
 cd "$HOME/github/ecg-tte"
 git pull --ff-only origin psm-mice-imputation
-HF_MED_OUT=$(mktemp -d "$HOME/hf-medication-screen-XXXXXXXX")
+umask 077
+mkdir -p /mnt/raid0/rbc58/ecg-tte-audits
+HF_MED_OUT=$(mktemp -d "/mnt/raid0/rbc58/ecg-tte-audits/hf-medication-screen-XXXXXXXX")
 python scripts/audit_hf_medications.py \
   --root /home/rbc58/mnt/implementation/cardsjdat-CC1022-MEDINT/2435227-CarDS-ECG/Data-2026-04-15 \
   --file CarDS_2435227_Meds.txt \
