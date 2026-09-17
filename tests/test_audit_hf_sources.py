@@ -54,6 +54,16 @@ class SourceAuditTests(unittest.TestCase):
                 schema=A.inspect(p.parent,p.name)['schema_sha256']
                 with self.assertRaises(A.CountError): list(A.literal_rows(p,schema,{},allow_terminal_empty_line=True))
 
+    def test_terminal_policy_is_source_specific_and_opt_in(self):
+        h='CarDS_2435227_Hosp_Enc_DX.txt'; o='CarDS_2435227_Outpatient_Enc_DX.txt'
+        self.assertFalse(A.terminal_policy(h)); self.assertFalse(A.terminal_policy(o))
+        self.assertTrue(A.terminal_policy(h,hospital=True))
+        self.assertFalse(A.terminal_policy(o,hospital=True))
+        self.assertFalse(A.terminal_policy(h,outpatient=True))
+        self.assertTrue(A.terminal_policy(o,outpatient=True))
+        self.assertFalse(A.terminal_policy('CarDS_2435227_Meds.txt',True,True))
+        self.assertFalse(A.terminal_policy('unreviewed.txt',True,True))
+
     def test_ef_quality_not_threshold_selection(self):
         for value, label in [(None,'null'),(float('nan'),'nonfinite'),(float('inf'),'nonfinite'),
             (-1,'outside_0_100'),(101,'outside_0_100'),(0,'zero'),(.4,'positive_le_1_scale_ambiguous'),

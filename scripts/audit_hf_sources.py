@@ -231,7 +231,14 @@ def echo_records(records, db, report):
         distinct_nonmarker_accessions=db.execute('SELECT COUNT(*) FROM accessions').fetchone()[0])
 
 
-def run(root, echo_path, output, dx_limit=500000, allow_hospital_terminal_empty_line=False):
+def terminal_policy(filename, hospital=False, outpatient=False):
+    return {
+        'CarDS_2435227_Hosp_Enc_DX.txt': hospital,
+        'CarDS_2435227_Outpatient_Enc_DX.txt': outpatient,
+    }.get(filename, False)
+
+
+def run(root, echo_path, output, dx_limit=500000, allow_hospital_terminal_empty_line=False, allow_outpatient_terminal_empty_line=False):
     root, echo_path, output = map(Path, (root, echo_path, output))
     if not all(p.is_absolute() for p in (root, echo_path, output)) or (dx_limit is not None and dx_limit <= 0):
         raise ValueError('absolute_paths_and_positive_dx_limit_required')
@@ -241,7 +248,7 @@ def run(root, echo_path, output, dx_limit=500000, allow_hospital_terminal_empty_
             raise ValueError('output_must_be_separate_from_sources')
     os.umask(0o077)
     output.mkdir(parents=True, exist_ok=False, mode=0o700)
-    report = dict(version=3, status='running', restricted_until_reviewed=True,
+    report = dict(version=4, status='running', restricted_until_reviewed=True,
         counts_valid=False, root=str(root), echo_source=str(echo_path), dx_max_rows_per_file=dx_limit,
         interpretation='QC only. No HF phenotype, validated identity, eligibility, new use, fills or adherence.',
         index='Earliest dated outpatient Normal/Print lexical order per arm; exploratory anchor only.',
@@ -250,6 +257,7 @@ def run(root, echo_path, output, dx_limit=500000, allow_hospital_terminal_empty_
         identity='Trimmed exact strings; null markers excluded; no prefix stripping or zero removal.',
         parser='Provisional literal tabs; 1MiB lines; no skipped rows; DX prefixes not representative.',
         hospital_terminal_empty_line_enabled=allow_hospital_terminal_empty_line,
+        outpatient_terminal_empty_line_enabled=allow_outpatient_terminal_empty_line,
         medications={}, echo={}, diagnoses={})
     save(output/'summary.json', report)
     stage = 'dependencies'
@@ -306,7 +314,7 @@ def run(root, echo_path, output, dx_limit=500000, allow_hospital_terminal_empty_
                     structures, missing, tokens, dx_years = Counter(), Counter(), Counter(), Counter()
                     db.execute('DELETE FROM dx_keys')
                     for row in literal_rows(root/filename, DX_SCHEMA, result, dx_limit,
-                            allow_terminal_empty_line=allow_hospital_terminal_empty_line and filename == 'CarDS_2435227_Hosp_Enc_DX.txt'):
+                            allow_terminal_empty_line=terminal_policy(filename, allow_hospital_terminal_empty_line, allow_outpatient_terminal_empty_line)):
                         patient = key(row['PAT_MRN_ID'])
                         if patient:
                             db.execute('INSERT OR IGNORE INTO dx_keys VALUES (?)',(patient,))
@@ -355,9 +363,11 @@ def main():
     scope.add_argument('--dx-full-scan', action='store_true')
     p.add_argument('--allow-hospital-terminal-empty-line', action='store_true',
                    help='Accept and count exactly one empty final physical line in hospital DX only')
+    p.add_argument('--allow-outpatient-terminal-empty-line', action='store_true',
+                   help='Accept and count exactly one empty final physical line in outpatient DX only')
     args = p.parse_args()
     try:
-        report = run(args.root,args.echo,args.output_dir,None if args.dx_full_scan else args.dx_max_rows, args.allow_hospital_terminal_empty_line)
+        report = run(args.root,args.echo,args.output_dir,None if args.dx_full_scan else args.dx_max_rows, args.allow_hospital_terminal_empty_line, args.allow_outpatient_terminal_empty_line)
     except Exception as exc:
         print('Setup failed: ' + type(exc).__name__)
         return 1

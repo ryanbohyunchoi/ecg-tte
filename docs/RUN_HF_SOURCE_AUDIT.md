@@ -15,7 +15,8 @@ python scripts/audit_hf_sources.py \
   --echo /mnt/raid0/rbc58/mm_vhd/metadata/echo_accession_number.parquet \
   --output-dir "$HF_SOURCE_OUT/report" \
   --dx-full-scan \
-  --allow-hospital-terminal-empty-line
+  --allow-hospital-terminal-empty-line \
+  --allow-outpatient-terminal-empty-line
 cat "$HF_SOURCE_OUT/report/summary.json"
 ```
 
@@ -105,3 +106,13 @@ policy. A bounded scan stopping before EOF cannot claim the terminal line accept
 
 Eighteen HF synthetic tests pass. Rerun in a fresh directory with the flag above;
 there is no recoverable patient-level cache from the failed version 2 run.
+
+## Version 4: outpatient terminal empty line confirmed
+
+The full outpatient structural diagnostic confirms 9,633,590 width-17 data lines
+plus exactly one zero-payload empty final line, with EOF and unchanged source.
+Use both explicit flags in the current command. Each file's option applies only
+to that named DX source; medication parsing is unchanged. Expect one separately
+counted terminal empty line per DX file and no change to source bytes. Default
+behavior remains strict rejection. Nineteen HF synthetic tests pass, including
+independent source-specific policy controls. Full version 4 results remain pending.
