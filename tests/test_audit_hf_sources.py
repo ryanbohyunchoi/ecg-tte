@@ -34,6 +34,26 @@ class SourceAuditTests(unittest.TestCase):
         self.assertEqual(report['latest_prior_echo_ef_bands'],{'same_latest_day_band_disagreement':1,'no_prior_echo':1})
         self.assertNotIn('2024-06-01',json.dumps(report))
 
+    def test_terminal_empty_line_is_explicit_and_counted(self):
+        for ending in ('\n','\r\n'):
+            with self.subTest(ending=repr(ending)), tempfile.TemporaryDirectory() as t:
+                p=Path(t)/'dx.txt'; p.write_bytes(('PAT_MRN_ID\tDX_DATE\nA\t2024-01-01\n'+ending).encode())
+                schema=A.inspect(p.parent,p.name)['schema_sha256']; before=p.read_bytes()
+                with self.assertRaises(A.CountError): list(A.literal_rows(p,schema,{}))
+                r={}; self.assertEqual(len(list(A.literal_rows(p,schema,r,allow_terminal_empty_line=True))),1)
+                self.assertEqual(r['rows_read'],1); self.assertEqual(r['physical_lines_read'],2)
+                self.assertEqual(r['terminal_empty_lines_accepted'],1); self.assertTrue(r['reached_eof'])
+                self.assertEqual(p.read_bytes(),before)
+                r={}; list(A.literal_rows(p,schema,r,limit=1,allow_terminal_empty_line=True))
+                self.assertFalse(r['reached_eof']); self.assertEqual(r['terminal_empty_lines_accepted'],0)
+
+    def test_terminal_policy_rejects_nonempty_interior_and_multiple_blanks(self):
+        for tail in (' \n','\t\nEXTRA\n','\nB\t2024-01-02\n','\n\n','\ufeff\n','\r\r\n','BAD\n'):
+            with self.subTest(tail=repr(tail)), tempfile.TemporaryDirectory() as t:
+                p=Path(t)/'dx.txt'; p.write_bytes(('PAT_MRN_ID\tDX_DATE\nA\t2024-01-01\n'+tail).encode())
+                schema=A.inspect(p.parent,p.name)['schema_sha256']
+                with self.assertRaises(A.CountError): list(A.literal_rows(p,schema,{},allow_terminal_empty_line=True))
+
     def test_ef_quality_not_threshold_selection(self):
         for value, label in [(None,'null'),(float('nan'),'nonfinite'),(float('inf'),'nonfinite'),
             (-1,'outside_0_100'),(101,'outside_0_100'),(0,'zero'),(.4,'positive_le_1_scale_ambiguous'),

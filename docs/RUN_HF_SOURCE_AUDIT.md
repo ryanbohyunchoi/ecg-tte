@@ -14,7 +14,8 @@ python scripts/audit_hf_sources.py \
   --root /home/rbc58/mnt/implementation/cardsjdat-CC1022-MEDINT/2435227-CarDS-ECG/Data-2026-04-15 \
   --echo /mnt/raid0/rbc58/mm_vhd/metadata/echo_accession_number.parquet \
   --output-dir "$HF_SOURCE_OUT/report" \
-  --dx-full-scan
+  --dx-full-scan \
+  --allow-hospital-terminal-empty-line
 cat "$HF_SOURCE_OUT/report/summary.json"
 ```
 
@@ -88,3 +89,19 @@ source specification/extraction SQL is needed before choosing any date fallback.
 Sixteen HF synthetic tests pass after version 2 additions, including exact recency
 boundaries, latest-day band disagreements and preservation of missing latest EF.
 H100 exercised real Parquet reading in version 1; version 2 awaits a cluster run.
+
+## Version 3: observed terminal empty line
+
+Ryan's full hospital DX diagnostic found exactly one short physical line, at EOF,
+following 42,763,152 lines of width 17. A bounded byte-level tail check confirmed
+zero payload bytes, not whitespace or nonblank content. The explicit
+`--allow-hospital-terminal-empty-line` option accepts one empty LF/CRLF physical
+line only at EOF of hospital DX. It counts that line separately from data rows;
+interior/multiple blanks, whitespace, BOM payloads and other malformed widths
+still fail. The medication and outpatient DX parsers retain their existing rules.
+Source bytes are never modified. The summary is now version 3 and exposes
+physical_lines_read, rows_read, terminal_empty_lines_accepted and the per-file
+policy. A bounded scan stopping before EOF cannot claim the terminal line accepted.
+
+Eighteen HF synthetic tests pass. Rerun in a fresh directory with the flag above;
+there is no recoverable patient-level cache from the failed version 2 run.

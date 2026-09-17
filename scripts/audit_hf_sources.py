@@ -107,22 +107,33 @@ def calendar_report(db):
     return result
 
 
-def literal_rows(path, schema, report, limit=None):
+def literal_rows(path, schema, report, limit=None, allow_terminal_empty_line=False):
     before = path.stat()
     header = inspect(path.parent, path.name)
     if header.get('status') != 'header_candidate' or header.get('delimiter') != 'tab':
         raise CountError('invalid_header_or_source')
     if header['schema_sha256'] != schema:
         raise CountError('schema_hash_mismatch')
-    report.update(rows_read=0, reached_eof=False, schema_sha256=schema)
+    report.update(rows_read=0, physical_lines_read=0, terminal_empty_lines_accepted=0,
+                  terminal_empty_line_policy='one_empty_line_at_eof' if allow_terminal_empty_line else 'reject',
+                  reached_eof=False, schema_sha256=schema)
     with path.open('rb') as stream:
         stream.readline(65537)
         lines = BoundedLines(stream, 'utf-8-sig', 1048576)
         while limit is None or report['rows_read'] < limit:
             lines.used = 0
+            line_offset = stream.tell()
             try:
                 line = next(lines)
             except StopIteration:
+                report['reached_eof'] = True
+                break
+            report['physical_lines_read'] += 1
+            if (allow_terminal_empty_line and line in ('\n', '\r\n')
+                    and stream.tell() - line_offset == len(line.encode('utf-8'))):
+                if stream.read(1) != b'':
+                    raise CountError('row_width_mismatch')
+                report['terminal_empty_lines_accepted'] = 1
                 report['reached_eof'] = True
                 break
             cells = line.rstrip('\r\n').split('\t')
@@ -220,7 +231,7 @@ def echo_records(records, db, report):
         distinct_nonmarker_accessions=db.execute('SELECT COUNT(*) FROM accessions').fetchone()[0])
 
 
-def run(root, echo_path, output, dx_limit=500000):
+def run(root, echo_path, output, dx_limit=500000, allow_hospital_terminal_empty_line=False):
     root, echo_path, output = map(Path, (root, echo_path, output))
     if not all(p.is_absolute() for p in (root, echo_path, output)) or (dx_limit is not None and dx_limit <= 0):
         raise ValueError('absolute_paths_and_positive_dx_limit_required')
@@ -230,7 +241,7 @@ def run(root, echo_path, output, dx_limit=500000):
             raise ValueError('output_must_be_separate_from_sources')
     os.umask(0o077)
     output.mkdir(parents=True, exist_ok=False, mode=0o700)
-    report = dict(version=2, status='running', restricted_until_reviewed=True,
+    report = dict(version=3, status='running', restricted_until_reviewed=True,
         counts_valid=False, root=str(root), echo_source=str(echo_path), dx_max_rows_per_file=dx_limit,
         interpretation='QC only. No HF phenotype, validated identity, eligibility, new use, fills or adherence.',
         index='Earliest dated outpatient Normal/Print lexical order per arm; exploratory anchor only.',
@@ -238,6 +249,7 @@ def run(root, echo_path, output, dx_limit=500000):
         ef_policy='Descriptive bands only; >1 to 100 is a candidate numeric range, not validated percent EF.',
         identity='Trimmed exact strings; null markers excluded; no prefix stripping or zero removal.',
         parser='Provisional literal tabs; 1MiB lines; no skipped rows; DX prefixes not representative.',
+        hospital_terminal_empty_line_enabled=allow_hospital_terminal_empty_line,
         medications={}, echo={}, diagnoses={})
     save(output/'summary.json', report)
     stage = 'dependencies'
@@ -293,7 +305,8 @@ def run(root, echo_path, output, dx_limit=500000):
                     comparisons = {f:Counter() for f in DX_DATES[1:]}
                     structures, missing, tokens, dx_years = Counter(), Counter(), Counter(), Counter()
                     db.execute('DELETE FROM dx_keys')
-                    for row in literal_rows(root/filename, DX_SCHEMA, result, dx_limit):
+                    for row in literal_rows(root/filename, DX_SCHEMA, result, dx_limit,
+                            allow_terminal_empty_line=allow_hospital_terminal_empty_line and filename == 'CarDS_2435227_Hosp_Enc_DX.txt'):
                         patient = key(row['PAT_MRN_ID'])
                         if patient:
                             db.execute('INSERT OR IGNORE INTO dx_keys VALUES (?)',(patient,))
@@ -340,9 +353,11 @@ def main():
     scope = p.add_mutually_exclusive_group()
     scope.add_argument('--dx-max-rows', type=int, default=500000)
     scope.add_argument('--dx-full-scan', action='store_true')
+    p.add_argument('--allow-hospital-terminal-empty-line', action='store_true',
+                   help='Accept and count exactly one empty final physical line in hospital DX only')
     args = p.parse_args()
     try:
-        report = run(args.root,args.echo,args.output_dir,None if args.dx_full_scan else args.dx_max_rows)
+        report = run(args.root,args.echo,args.output_dir,None if args.dx_full_scan else args.dx_max_rows, args.allow_hospital_terminal_empty_line)
     except Exception as exc:
         print('Setup failed: ' + type(exc).__name__)
         return 1
