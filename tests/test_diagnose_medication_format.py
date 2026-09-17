@@ -28,6 +28,20 @@ class FormatTests(unittest.TestCase):
         self.assertNotIn('SECRET', json.dumps(r))
         return r
 
+    def test_full_scan_late_width_mismatch_reports_only_structure(self):
+        r = self.audit('SECRET_A\tok\n'*12 + 'SECRET_B\tSECRET_TEXT\textra\n',limit=None)
+        physical = r['literal_delimiter_physical_lines']
+        self.assertEqual(physical['status'],'reached_eof')
+        self.assertEqual(physical['first_width_mismatches'][0]['data_physical_line_1based'],13)
+        self.assertEqual(physical['first_width_mismatches'][0]['observed_columns'],3)
+        self.assertEqual(r['strict_csv']['failing_logical_record_1based'],13)
+
+    def test_schema_pin_rejects_before_passes(self):
+        self.path.write_text('PAT_MRN_ID\tSIG\nSECRET\ttext\n')
+        r=D.run(self.root,'meds.txt',self.base/'report',expected_schema='wrong')
+        self.assertEqual(r['reason'],'schema_hash_mismatch')
+        self.assertNotIn('strict_csv',r)
+
     def test_quote_conflict_without_tab_width_mismatch(self):
         r = self.audit('SECRET_A\tok\nSECRET_B\t"SECRET_TEXT"suffix\n')
         self.assertEqual(r['strict_csv']['reason'], 'csv_unexpected_character_after_closing_quote')
