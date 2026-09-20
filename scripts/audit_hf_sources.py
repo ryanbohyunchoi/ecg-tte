@@ -10,6 +10,7 @@ import re
 import sqlite3
 import tempfile
 
+import hf_joint_evidence
 from audit_hf_medications import classify, NAMES, PAIR_ARMS
 from audit_medication_dates import parse, compare, shape
 from count_medication_evidence import CountError, failure_reason, save
@@ -238,7 +239,7 @@ def terminal_policy(filename, hospital=False, outpatient=False):
     }.get(filename, False)
 
 
-def run(root, echo_path, output, dx_limit=500000, allow_hospital_terminal_empty_line=False, allow_outpatient_terminal_empty_line=False):
+def run(root, echo_path, output, dx_limit=500000, allow_hospital_terminal_empty_line=False, allow_outpatient_terminal_empty_line=False, joint_echo_window_days=None):
     root, echo_path, output = map(Path, (root, echo_path, output))
     if not all(p.is_absolute() for p in (root, echo_path, output)) or (dx_limit is not None and dx_limit <= 0):
         raise ValueError('absolute_paths_and_positive_dx_limit_required')
@@ -246,9 +247,11 @@ def run(root, echo_path, output, dx_limit=500000, allow_hospital_terminal_empty_
     for source in (root, echo_path.parent):
         if output == source or source in output.parents or output in source.parents:
             raise ValueError('output_must_be_separate_from_sources')
+    if joint_echo_window_days is not None and joint_echo_window_days <= 0:
+        raise ValueError('positive_echo_window_required')
     os.umask(0o077)
     output.mkdir(parents=True, exist_ok=False, mode=0o700)
-    report = dict(version=4, status='running', restricted_until_reviewed=True,
+    report = dict(version=5, status='running', restricted_until_reviewed=True,
         counts_valid=False, root=str(root), echo_source=str(echo_path), dx_max_rows_per_file=dx_limit,
         interpretation='QC only. No HF phenotype, validated identity, eligibility, new use, fills or adherence.',
         index='Earliest dated outpatient Normal/Print lexical order per arm; exploratory anchor only.',
@@ -271,6 +274,8 @@ def run(root, echo_path, output, dx_limit=500000, allow_hospital_terminal_empty_
             db = sqlite3.connect(str(Path(tmp)/'audit.sqlite'))
             try:
                 init_db(db)
+                if joint_echo_window_days is not None:
+                    hf_joint_evidence.init(db)
                 stage = 'medications'
                 for row in literal_rows(root/'CarDS_2435227_Meds.txt', MED_SCHEMA, report['medications']):
                     if any(len(row[n]) > 4096 for n in NAMES):
@@ -324,6 +329,8 @@ def run(root, echo_path, output, dx_limit=500000, allow_hospital_terminal_empty_
                         for field in DX_DATES:
                             fmt, parsed[field] = parse(row[field])
                             formats[field][fmt] += 1
+                        if joint_echo_window_days is not None:
+                            hf_joint_evidence.add(db,patient,row['CURRENT_ICD10_LIST'],parsed)
                         for field in comparisons:
                             comparisons[field][compare(parsed['CALC_DX_DATE'],parsed[field])] += 1
                         cell = row['CURRENT_ICD10_LIST'].strip()
@@ -339,6 +346,8 @@ def run(root, echo_path, output, dx_limit=500000, allow_hospital_terminal_empty_
                         distinct_patient_keys_in_scanned_rows=db.execute('SELECT COUNT(*) FROM dx_keys').fetchone()[0],
                         keys_also_in_echo=db.execute('SELECT COUNT(*) FROM dx_keys JOIN echo USING(patient)').fetchone()[0],
                         medication_candidate_overlap=dict(db.execute('SELECT bucket,COUNT(*) FROM meds JOIN dx_keys USING(patient) GROUP BY bucket')))
+                if joint_echo_window_days is not None:
+                    report['joint_hf_ef_evidence'] = hf_joint_evidence.report(db, ARMS, joint_echo_window_days)
             finally:
                 db.close()
         stage = 'final_source_stability'
@@ -346,7 +355,7 @@ def run(root, echo_path, output, dx_limit=500000, allow_hospital_terminal_empty_
             raise CountError('source_changed')
         report.update(status='complete_requested_scope', counts_valid=True)
     except Exception as exc:
-        report = {k:v for k,v in report.items() if k not in ('medications','echo','diagnoses','arm_echo_coverage','calendar_and_recency')}
+        report = {k:v for k,v in report.items() if k not in ('medications','echo','diagnoses','arm_echo_coverage','calendar_and_recency','joint_hf_ef_evidence')}
         report.update(status='failed_counts_invalid', counts_valid=False, failure_stage=stage,
                       error_type=type(exc).__name__, reason=failure_reason(exc))
     save(output/'summary.json', report)
@@ -365,9 +374,10 @@ def main():
                    help='Accept and count exactly one empty final physical line in hospital DX only')
     p.add_argument('--allow-outpatient-terminal-empty-line', action='store_true',
                    help='Accept and count exactly one empty final physical line in outpatient DX only')
+    p.add_argument('--joint-echo-window-days', type=int, help='Enable exploratory joint HF-code/latest-EF cross-counts with explicit lookback')
     args = p.parse_args()
     try:
-        report = run(args.root,args.echo,args.output_dir,None if args.dx_full_scan else args.dx_max_rows, args.allow_hospital_terminal_empty_line, args.allow_outpatient_terminal_empty_line)
+        report = run(args.root,args.echo,args.output_dir,None if args.dx_full_scan else args.dx_max_rows, args.allow_hospital_terminal_empty_line, args.allow_outpatient_terminal_empty_line, args.joint_echo_window_days)
     except Exception as exc:
         print('Setup failed: ' + type(exc).__name__)
         return 1
