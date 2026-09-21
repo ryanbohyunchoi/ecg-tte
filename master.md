@@ -38,3 +38,11 @@ cluster. Read this file before planning source access or implementing cluster jo
   the repository checkout location are unchanged.
 - Ryan performs cluster relocation and execution. Move only known project audit
   directories, after their jobs stop; skip symlinks and existing destinations.
+
+## Shared source snapshots — user direction, 2026-09-21
+
+- Build trial-independent source tables under `/mnt/raid0/rbc58/ecg-tte/shared/`.
+  Each build uses a new private snapshot directory. This is separate from audits.
+- Preserve all source rows/values and raw files; cohort filters belong downstream.
+- Reuse completed tables only through compatible manifests and integrity checks.
+  No patient-level tables or raw values enter Git or chat.

@@ -22,6 +22,12 @@ are not yet validated.
 **Current dataset handoff:** [handoff.md](handoff.md) records the expanded RBC OMOP
 location, latest reviewed run evidence, limitations and next PSM feasibility checks.
 
+The first reusable source-table builder is ready for H100:
+[build shared medication, diagnosis and echo tables](docs/RUN_SHARED_TABLES.md).
+It preserves source values, adds explicit date/key helpers and supports verified
+per-source restart. It has passed synthetic Parquet tests; a real shared snapshot
+has not yet been built. Clinical source validation and trial definitions remain open.
+
 ## Start here
 
 - [Detailed restart plan](docs/RESTART_PLAN.md): questions, experimental design,
