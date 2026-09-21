@@ -173,10 +173,15 @@ def build_stage(spec, target, batch_rows):
             state['source_sha256']=digest(source)
         else:raise BuildError('unsupported_format')
         close_part()
-        if state['rows']!=spec['expected_rows']:raise BuildError('expected_rows_mismatch')
+        if spec['expected_rows'] is None:
+            if spec.get('row_count_policy')!='discover_at_eof':raise BuildError('missing_expected_rows_policy')
+            if state['rows']==0:raise BuildError('empty_source')
+        elif state['rows']!=spec['expected_rows']:raise BuildError('expected_rows_mismatch')
+        if spec['format']=='literal_tabs' and state['physical_lines']!=state['rows']+state['terminal_empty_lines']:
+            raise BuildError('physical_line_accounting_mismatch')
         if fingerprint(source)!=before:raise BuildError('source_changed')
         if sum(p['rows'] for p in state['parts'])!=state['rows']:raise BuildError('parts_count_mismatch')
-        state.update(status='complete',qc=qc,elapsed_seconds=round(time.monotonic()-start,3),
+        state.update(status='complete',reached_eof=True,qc=qc,elapsed_seconds=round(time.monotonic()-start,3),
                      output_schema=[(f.name,str(f.type)) for f in schema],source_spec=spec)
         atomic_json(target/'manifest.json',state)
         return state
@@ -188,7 +193,8 @@ def build_stage(spec, target, batch_rows):
 def implementation_hash():
     h=hashlib.sha256()
     for name in ('build_shared_tables.py','inspect_jdat_headers.py','audit_medication_dates.py',
-                 'medication_quality.py','count_medication_evidence.py','profile_jdat_mapping.py'):
+                 'medication_quality.py','count_medication_evidence.py','profile_jdat_mapping.py',
+                 'build_psm_shared_tables.py','profile_psm_sources.py','inspect_psm_source_headers.py'):
         h.update(name.encode());h.update(Path(__file__).with_name(name).read_bytes())
     return h.hexdigest()
 

@@ -25,8 +25,12 @@ location, latest reviewed run evidence, limitations and next PSM feasibility che
 The first reusable source-table builder is ready for H100:
 [build shared medication, diagnosis and echo tables](docs/RUN_SHARED_TABLES.md).
 It preserves source values, adds explicit date/key helpers and supports verified
-per-source restart. It has passed synthetic Parquet tests; a real shared snapshot
-has not yet been built. Clinical source validation and trial definitions remain open.
+per-source restart. The first H100 snapshot completed with 83,987,596 source rows in 18.6 minutes.
+Clinical source validation and trial definitions remain open.
+
+The [PSM source extension builder](docs/RUN_PSM_SHARED_TABLES.md) now covers the
+19 reviewed demographic, encounter, vital and lab files, keeping deliveries
+separate. It has passed synthetic tests; its H100 full-source build is pending.
 
 ## Start here
 
