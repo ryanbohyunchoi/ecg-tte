@@ -1,0 +1,317 @@
+{
+  "version": "comet_psm_table_v1",
+  "status": "declared_extraction_target_not_validated_model",
+  "covariate_count": 33,
+  "metadata_columns": [
+    "patient_key",
+    "treatment_arm",
+    "index_date"
+  ],
+  "covariates": [
+    {
+      "name": "age_at_index",
+      "group": "demographics_calendar",
+      "type": "mixed",
+      "lookback_days": null,
+      "unit": null,
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "recorded_sex",
+      "group": "demographics_calendar",
+      "type": "mixed",
+      "lookback_days": null,
+      "unit": null,
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "index_year",
+      "group": "demographics_calendar",
+      "type": "mixed",
+      "lookback_days": null,
+      "unit": null,
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "lvef",
+      "group": "physiology",
+      "type": "continuous",
+      "lookback_days": 365,
+      "unit": "percent",
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "sbp",
+      "group": "physiology",
+      "type": "continuous",
+      "lookback_days": 90,
+      "unit": "mmHg",
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "dbp",
+      "group": "physiology",
+      "type": "continuous",
+      "lookback_days": 90,
+      "unit": "mmHg",
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "heart_rate",
+      "group": "physiology",
+      "type": "continuous",
+      "lookback_days": 90,
+      "unit": "beats/min",
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "bmi",
+      "group": "physiology",
+      "type": "continuous",
+      "lookback_days": 365,
+      "unit": "kg/m2",
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "creatinine",
+      "group": "laboratory",
+      "type": "continuous",
+      "lookback_days": 90,
+      "unit": "mg/dL",
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "potassium",
+      "group": "laboratory",
+      "type": "continuous",
+      "lookback_days": 90,
+      "unit": "mmol/L",
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "sodium",
+      "group": "laboratory",
+      "type": "continuous",
+      "lookback_days": 90,
+      "unit": "mmol/L",
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "hemoglobin",
+      "group": "laboratory",
+      "type": "continuous",
+      "lookback_days": 90,
+      "unit": "g/dL",
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "ischemic_heart_disease_or_mi",
+      "group": "comorbidity",
+      "type": "binary_recorded_evidence",
+      "lookback_days": 365,
+      "unit": null,
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "atrial_fibrillation",
+      "group": "comorbidity",
+      "type": "binary_recorded_evidence",
+      "lookback_days": 365,
+      "unit": null,
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "hypertension",
+      "group": "comorbidity",
+      "type": "binary_recorded_evidence",
+      "lookback_days": 365,
+      "unit": null,
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "diabetes",
+      "group": "comorbidity",
+      "type": "binary_recorded_evidence",
+      "lookback_days": 365,
+      "unit": null,
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "ckd",
+      "group": "comorbidity",
+      "type": "binary_recorded_evidence",
+      "lookback_days": 365,
+      "unit": null,
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "stroke_history",
+      "group": "comorbidity",
+      "type": "binary_recorded_evidence",
+      "lookback_days": 365,
+      "unit": null,
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "copd_or_asthma",
+      "group": "comorbidity",
+      "type": "binary_recorded_evidence",
+      "lookback_days": 365,
+      "unit": null,
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "peripheral_arterial_disease",
+      "group": "comorbidity",
+      "type": "binary_recorded_evidence",
+      "lookback_days": 365,
+      "unit": null,
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "valve_disease",
+      "group": "comorbidity",
+      "type": "binary_recorded_evidence",
+      "lookback_days": 365,
+      "unit": null,
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "ace_inhibitor_order",
+      "group": "prior_medication_orders",
+      "type": "binary_recorded_evidence",
+      "lookback_days": 90,
+      "unit": null,
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "arb_order",
+      "group": "prior_medication_orders",
+      "type": "binary_recorded_evidence",
+      "lookback_days": 90,
+      "unit": null,
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "arni_order",
+      "group": "prior_medication_orders",
+      "type": "binary_recorded_evidence",
+      "lookback_days": 90,
+      "unit": null,
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "mra_order",
+      "group": "prior_medication_orders",
+      "type": "binary_recorded_evidence",
+      "lookback_days": 90,
+      "unit": null,
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "loop_diuretic_order",
+      "group": "prior_medication_orders",
+      "type": "binary_recorded_evidence",
+      "lookback_days": 90,
+      "unit": null,
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "sglt2_inhibitor_order",
+      "group": "prior_medication_orders",
+      "type": "binary_recorded_evidence",
+      "lookback_days": 90,
+      "unit": null,
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "digoxin_order",
+      "group": "prior_medication_orders",
+      "type": "binary_recorded_evidence",
+      "lookback_days": 90,
+      "unit": null,
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "amiodarone_order",
+      "group": "prior_medication_orders",
+      "type": "binary_recorded_evidence",
+      "lookback_days": 90,
+      "unit": null,
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "outpatient_visits",
+      "group": "healthcare_use",
+      "type": "count",
+      "lookback_days": 365,
+      "unit": null,
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "ed_encounters",
+      "group": "healthcare_use",
+      "type": "count",
+      "lookback_days": 365,
+      "unit": null,
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "hospital_admissions",
+      "group": "healthcare_use",
+      "type": "count",
+      "lookback_days": 365,
+      "unit": null,
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    },
+    {
+      "name": "hf_hospital_admissions",
+      "group": "healthcare_use",
+      "type": "count",
+      "lookback_days": 365,
+      "unit": null,
+      "role": "psm_covariate",
+      "mapping_status": "pending"
+    }
+  ],
+  "rules": {
+    "index_day_excluded": true,
+    "outcomes_in_ps_predictors": false,
+    "unknown_not_zero": true,
+    "silent_feature_drop": false,
+    "imputation": "cohort_specific_after_eligibility_and_missingness_review",
+    "clinical_semantics_validated": false
+  }
+}

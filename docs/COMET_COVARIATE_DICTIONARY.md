@@ -1,5 +1,7 @@
 # COMET clinical covariate dictionary — proposed v0
 
+The primary extraction target is now the [declared 33-variable table](COMET_PSM_TABLE_V1.md). The broader inventory below remains mapping/auxiliary context; it is not the active predictor list.
+
 2026-09-21. A reviewable feature specification, not a finalized PSM model. Windows
 below are proposed design choices; none were selected using treatment effects.
 One row may expand into several model terms. Variable count is not a quality
