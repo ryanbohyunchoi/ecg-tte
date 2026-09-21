@@ -36,6 +36,10 @@ COMET preparation is documented in the [cohort draft](docs/COMET_COHORT_DRAFT.md
 and [covariate dictionary](docs/COMET_COVARIATE_DICTIONARY.md). These are proposed
 contracts; only the synthetic-tested measurement selection primitive is implemented.
 
+[Build the provisional COMET candidate roster](docs/RUN_COMET_CANDIDATES.md)
+from the completed core snapshot while lab conversion runs. This produces
+restricted patient-level candidates, not a validated eligible cohort.
+
 ## Start here
 
 - [Detailed restart plan](docs/RESTART_PLAN.md): questions, experimental design,
