@@ -46,3 +46,7 @@ The completed beta-history screen is one input: 3,787 candidates have no named g
 4. Fit propensity scores, match and assess overlap/balance before estimating effects. PSM does not substitute for eligibility or resolve unknown treatment timing.
 
 A stricter COMET-aligned sensitivity cohort can be specified separately where data support its requirements. Do not call it an exact emulation if mandatory criteria remain unmeasured. The current main direction remains adapted; no switching between definitions based on results.
+
+## Available feasibility implementation
+
+The first core-source audit is ready: [run instructions](RUN_COMET_ELIGIBILITY_FEASIBILITY.md). It reports numeric/lexical screens and a 32-criterion register with explicit clinical unknowns. Demographic/vital/lab validation, executable clinical eligibility and sequential exclusions remain pending.
