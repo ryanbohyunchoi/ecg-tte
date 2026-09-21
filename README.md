@@ -32,6 +32,10 @@ The [PSM source extension builder](docs/RUN_PSM_SHARED_TABLES.md) now covers the
 19 reviewed demographic, encounter, vital and lab files, keeping deliveries
 separate. It has passed synthetic tests; its H100 full-source build is pending.
 
+COMET preparation is documented in the [cohort draft](docs/COMET_COHORT_DRAFT.md)
+and [covariate dictionary](docs/COMET_COVARIATE_DICTIONARY.md). These are proposed
+contracts; only the synthetic-tested measurement selection primitive is implemented.
+
 ## Start here
 
 - [Detailed restart plan](docs/RESTART_PLAN.md): questions, experimental design,
