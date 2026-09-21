@@ -2,6 +2,7 @@
 from collections import Counter
 from datetime import date
 import re
+from functools import lru_cache
 
 # Explicit I50 search set; code-only evidence, no source/year validation or ICD9 mapping.
 HF = {'I50','I501','I502','I503','I504','I508','I509','I5081','I5082','I5083','I5084','I5089'}
@@ -12,6 +13,19 @@ VIEWS = ('DX_DATE','CALC_DX_DATE')
 
 
 def evidence(cell):
+    return _cached_evidence(cell) if len(cell) <= 128 else _evidence(cell)
+
+
+@lru_cache(maxsize=16384)
+def _cached_evidence(cell):
+    return _evidence(cell)
+
+
+def clear_cache():
+    _cached_evidence.cache_clear()
+
+
+def _evidence(cell):
     if len(cell)>4096:
         return False,False
     tokens=[t.strip().upper() for t in re.split('[,;|]',cell)]

@@ -3,6 +3,8 @@
 import argparse
 from collections import Counter
 import math
+from functools import lru_cache
+from time import monotonic
 from datetime import date
 from pathlib import Path
 import os
@@ -22,6 +24,16 @@ MED_SCHEMA = '61f9556c4f054c3346d46f78e63d65a467e022f800fb0b388e5dbcf622903da8'
 DX_SCHEMA = 'eee6c9922b68b8f5c95022eff2a9c7b827478195d07167c62343060cb7e75cb4'
 ARMS = tuple(dict.fromkeys(b for pair in PAIR_ARMS.values() for b in pair))
 DX_DATES = ('CALC_DX_DATE', 'DX_DTTM', 'DX_DATE')
+
+
+@lru_cache(maxsize=32768)
+def _cached_date(value):
+    return parse(value)
+
+
+def cached_date(value):
+    # Do not retain long unexpected source strings in the in-memory cache.
+    return _cached_date(value) if len(value) <= 128 else parse(value)
 
 
 def key(value):
@@ -108,7 +120,8 @@ def calendar_report(db):
     return result
 
 
-def literal_rows(path, schema, report, limit=None, allow_terminal_empty_line=False):
+def literal_rows(path, schema, report, limit=None, allow_terminal_empty_line=False, progress_label="source"):
+    started = monotonic()
     before = path.stat()
     header = inspect(path.parent, path.name)
     if header.get('status') != 'header_candidate' or header.get('delimiter') != 'tab':
@@ -142,12 +155,13 @@ def literal_rows(path, schema, report, limit=None, allow_terminal_empty_line=Fal
                 raise CountError('row_width_mismatch')
             report['rows_read'] += 1
             if report['rows_read'] % 100000 == 0:
-                print('Processed records: ' + str(report['rows_read']), flush=True)
+                elapsed = max(monotonic() - started, 0.000001)
+                print(f"{progress_label}: {report['rows_read']:,} records; {elapsed/60:.1f} min; {report['rows_read']/elapsed:,.0f} records/s", flush=True)
             yield dict(zip(header['columns'], cells))
     after = path.stat()
     if (before.st_size, before.st_mtime_ns) != (after.st_size, after.st_mtime_ns):
         raise CountError('source_changed')
-    report.update(source_changed=False, source_bytes=after.st_size,
+    report.update(elapsed_seconds=round(monotonic()-started,3), source_changed=False, source_bytes=after.st_size,
                   source_mtime_ns=after.st_mtime_ns,
                   status='complete_file' if report['reached_eof'] else 'bounded_prefix')
 
@@ -173,6 +187,7 @@ def init_db(db):
 
 
 def echo_records(records, db, report):
+    started = monotonic()
     counts, dates, shapes = Counter(), Counter(), Counter()
     for row in records:
         counts['rows'] += 1
@@ -225,9 +240,10 @@ def echo_records(records, db, report):
                     db.execute('INSERT OR IGNORE INTO coverage VALUES (?,?,?)', (bucket, patient, flag))
         if counts['rows'] % 100000 == 0:
             db.commit()
-            print('Echo records: ' + str(counts['rows']), flush=True)
+            elapsed = max(monotonic()-started,0.000001)
+            print(f"echo: {counts['rows']:,} records; {elapsed/60:.1f} min; {counts['rows']/elapsed:,.0f} records/s",flush=True)
     db.commit()
-    report.update(counts=dict(counts), date_formats=dict(dates), masked_date_shapes=dict(shapes),
+    report.update(elapsed_seconds=round(monotonic()-started,3), counts=dict(counts), date_formats=dict(dates), masked_date_shapes=dict(shapes),
         distinct_nonmarker_patient_keys=db.execute('SELECT COUNT(*) FROM echo').fetchone()[0],
         distinct_nonmarker_accessions=db.execute('SELECT COUNT(*) FROM accessions').fetchone()[0])
 
@@ -240,6 +256,9 @@ def terminal_policy(filename, hospital=False, outpatient=False):
 
 
 def run(root, echo_path, output, dx_limit=500000, allow_hospital_terminal_empty_line=False, allow_outpatient_terminal_empty_line=False, joint_echo_window_days=None):
+    run_started = monotonic()
+    _cached_date.cache_clear()
+    hf_joint_evidence.clear_cache()
     root, echo_path, output = map(Path, (root, echo_path, output))
     if not all(p.is_absolute() for p in (root, echo_path, output)) or (dx_limit is not None and dx_limit <= 0):
         raise ValueError('absolute_paths_and_positive_dx_limit_required')
@@ -251,7 +270,7 @@ def run(root, echo_path, output, dx_limit=500000, allow_hospital_terminal_empty_
         raise ValueError('positive_echo_window_required')
     os.umask(0o077)
     output.mkdir(parents=True, exist_ok=False, mode=0o700)
-    report = dict(version=5, status='running', restricted_until_reviewed=True,
+    report = dict(version=6, status='running', restricted_until_reviewed=True,
         counts_valid=False, root=str(root), echo_source=str(echo_path), dx_max_rows_per_file=dx_limit,
         interpretation='QC only. No HF phenotype, validated identity, eligibility, new use, fills or adherence.',
         index='Earliest dated outpatient Normal/Print lexical order per arm; exploratory anchor only.',
@@ -277,7 +296,7 @@ def run(root, echo_path, output, dx_limit=500000, allow_hospital_terminal_empty_
                 if joint_echo_window_days is not None:
                     hf_joint_evidence.init(db)
                 stage = 'medications'
-                for row in literal_rows(root/'CarDS_2435227_Meds.txt', MED_SCHEMA, report['medications']):
+                for row in literal_rows(root/'CarDS_2435227_Meds.txt', MED_SCHEMA, report['medications'], progress_label='medications'):
                     if any(len(row[n]) > 4096 for n in NAMES):
                         raise ValueError('oversized_name')
                     bucket = classify(tuple(row[n] for n in NAMES))
@@ -319,7 +338,8 @@ def run(root, echo_path, output, dx_limit=500000, allow_hospital_terminal_empty_
                     structures, missing, tokens, dx_years = Counter(), Counter(), Counter(), Counter()
                     db.execute('DELETE FROM dx_keys')
                     for row in literal_rows(root/filename, DX_SCHEMA, result, dx_limit,
-                            allow_terminal_empty_line=terminal_policy(filename, allow_hospital_terminal_empty_line, allow_outpatient_terminal_empty_line)):
+                            allow_terminal_empty_line=terminal_policy(filename, allow_hospital_terminal_empty_line, allow_outpatient_terminal_empty_line),
+                            progress_label='hospital diagnoses' if 'Hosp_Enc' in filename else 'outpatient diagnoses'):
                         patient = key(row['PAT_MRN_ID'])
                         if patient:
                             db.execute('INSERT OR IGNORE INTO dx_keys VALUES (?)',(patient,))
@@ -327,7 +347,7 @@ def run(root, echo_path, output, dx_limit=500000, allow_hospital_terminal_empty_
                             missing['missing_patient_key_rows'] += 1
                         parsed = {}
                         for field in DX_DATES:
-                            fmt, parsed[field] = parse(row[field])
+                            fmt, parsed[field] = cached_date(row[field])
                             formats[field][fmt] += 1
                         if joint_echo_window_days is not None:
                             hf_joint_evidence.add(db,patient,row['CURRENT_ICD10_LIST'],parsed)
@@ -358,6 +378,10 @@ def run(root, echo_path, output, dx_limit=500000, allow_hospital_terminal_empty_
         report = {k:v for k,v in report.items() if k not in ('medications','echo','diagnoses','arm_echo_coverage','calendar_and_recency','joint_hf_ef_evidence')}
         report.update(status='failed_counts_invalid', counts_valid=False, failure_stage=stage,
                       error_type=type(exc).__name__, reason=failure_reason(exc))
+    report['elapsed_seconds'] = round(monotonic()-run_started,3)
+    report['date_cache_stats'] = _cached_date.cache_info()._asdict()
+    _cached_date.cache_clear()
+    hf_joint_evidence.clear_cache()
     save(output/'summary.json', report)
     return report
 

@@ -64,6 +64,16 @@ class SourceAuditTests(unittest.TestCase):
         self.assertFalse(A.terminal_policy('CarDS_2435227_Meds.txt',True,True))
         self.assertFalse(A.terminal_policy('unreviewed.txt',True,True))
 
+    def test_cached_dates_preserve_parser_and_bound_retention(self):
+        A._cached_date.cache_clear()
+        values=['2024-01-01','2024-01-01 12:34','NULL','02/03/2024','2024-01-01T12:34Z','bad','x'*129]
+        for _ in range(2):
+            for value in values: self.assertEqual(A.cached_date(value),A.parse(value))
+        self.assertEqual(A._cached_date.cache_info().currsize,6)
+        self.assertEqual(A._cached_date.cache_info().maxsize,32768)
+        self.assertGreater(A._cached_date.cache_info().hits,0)
+        A._cached_date.cache_clear()
+
     def test_ef_quality_not_threshold_selection(self):
         for value, label in [(None,'null'),(float('nan'),'nonfinite'),(float('inf'),'nonfinite'),
             (-1,'outside_0_100'),(101,'outside_0_100'),(0,'zero'),(.4,'positive_le_1_scale_ambiguous'),

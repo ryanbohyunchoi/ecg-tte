@@ -9,6 +9,14 @@ import hf_joint_evidence as J
 import audit_hf_sources as A
 
 class JointTests(unittest.TestCase):
+    def test_cached_code_evidence_preserves_results(self):
+        J.clear_cache()
+        for value in ['I50.22','I50.4,I10','NULL','I50.22,garbage','x'*129]:
+            for _ in range(2): self.assertEqual(J.evidence(value),J._evidence(value))
+        self.assertEqual(J._cached_evidence.cache_info().currsize,4)
+        self.assertEqual(J._cached_evidence.cache_info().maxsize,16384)
+        J.clear_cache()
+
     def test_codes_no_free_text_or_partial_cell_acceptance(self):
         for cell,result in [('I50.22',(True,True)),('I5043; I10',(True,True)),
             ('I50.32',(True,False)),('I50.9',(True,False)),('I50.999',(False,False)),
