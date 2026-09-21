@@ -1,5 +1,7 @@
 # Current user-selected exploratory cohort: HF OR low EF, with exclusions
 
+Current design direction: [explicitly adapted COMET study](COMET_ADAPTED_PROTOCOL.md), selected 2026-09-21. Conflicting earlier proposals below are superseded; no additional eligibility filters are frozen.
+
 This supersedes the earlier mistaken interpretation of "largest cohort." The user
 explicitly selected the first clarified rule:
 

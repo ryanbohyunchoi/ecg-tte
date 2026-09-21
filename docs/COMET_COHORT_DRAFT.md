@@ -1,5 +1,7 @@
 # COMET cohort specification — design draft
 
+Current design direction: [explicitly adapted COMET study](COMET_ADAPTED_PROTOCOL.md), selected 2026-09-21. Conflicting earlier proposals below are superseded; no additional eligibility filters are frozen.
+
 2026-09-21. Proposed, not frozen; no eligible cohort, matching or effect estimate
 is produced by this document. The existing first-order anchors are feasibility
 anchors only. Source semantics, phenotype, observation and endpoint gates remain
