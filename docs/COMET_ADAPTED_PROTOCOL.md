@@ -50,3 +50,5 @@ A stricter COMET-aligned sensitivity cohort can be specified separately where da
 ## Available feasibility implementation
 
 The first core-source audit is ready: [run instructions](RUN_COMET_ELIGIBILITY_FEASIBILITY.md). It reports numeric/lexical screens and a 32-criterion register with explicit clinical unknowns. Demographic/vital/lab validation, executable clinical eligibility and sequential exclusions remain pending.
+
+The next source-unblocking step is an [independent demographics/encounters/vitals build](RUN_CLINICAL_SHARED_TABLES.md), with no lab dependency. Completion is pending on H100.
