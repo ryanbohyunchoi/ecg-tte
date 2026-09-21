@@ -40,6 +40,8 @@ contracts; only the synthetic-tested measurement selection primitive is implemen
 from the completed core snapshot while lab conversion runs. This produces
 restricted patient-level candidates, not a validated eligible cohort.
 
+Current user-selected starting population: [broad COMET-inspired HF OR EF<40 cohort](docs/COMET_SELECTED_EXPLORATORY_COHORT.md), 7,376 exploratory candidates before further eligibility checks.
+
 ## Start here
 
 - [Detailed restart plan](docs/RESTART_PLAN.md): questions, experimental design,
