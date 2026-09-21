@@ -54,3 +54,22 @@ The current reader correctly refuses this globally incomplete snapshot. No
 partial-snapshot access or exclusion of the failed shard is implemented here.
 Later extension sources have not yet been processed by this sequential run;
 this diagnostic establishes nothing about their structural integrity.
+
+## Small follow-up content characterization
+
+`inspect_lab_tail_bytes.py` reads five 4 KiB windows across the diagnosed tail
+(20 KiB total), enforcing the reviewed whole-file size. It reports counts of NUL,
+printable ASCII, tabs, newlines and high bytes without printing text. Zero-filled
+samples are evidence about those windows only, not proof that the entire tail is
+padding or that the export was complete before it. No source is changed. If raw
+clinical text is reviewed manually, keep that review in the approved environment;
+never paste record fragments into chat. The assistant does not access H100.
+
+```bash
+umask 077
+LAB_TAIL_RUN=$(mktemp -d /mnt/raid0/rbc58/ecg-tte/audits/lab-tail-sample-XXXXXXXX)
+PYTHONDONTWRITEBYTECODE=1 python scripts/inspect_lab_tail_bytes.py \
+  --source /home/rbc58/mnt/implementation/cardsjdat-CC1022-MEDINT/2435227-CarDS-ECG/Data-2025-04-03/CarDS_2435227_Hosp_Enc_Labs_3.txt \
+  --output-dir "$LAB_TAIL_RUN/report"
+cat "$LAB_TAIL_RUN/report/summary.json"
+```

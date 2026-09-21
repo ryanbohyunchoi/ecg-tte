@@ -92,3 +92,19 @@ Parquet row count and hash are recorded. Clinical maps and identity are not
 validated by these integrity checks. Synthetic tests cover arm ties, future
 switching, prior/undated history, echo fallback prevention, date-view separation,
 EF=35, discovery ambiguity, incomplete cores, changed manifests and output overlap.
+
+## Find out whether a candidate run already finished
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python scripts/check_comet_runs.py \
+  --audit-root /mnt/raid0/rbc58/ecg-tte/audits
+```
+
+This read-only check lists saved candidate-run directories without launching a new
+job. Completed runs must have matching summary/manifest counts and source-manifest
+references, a matching candidate-file SHA-256 and matching Parquet footer count.
+No patient records are printed. `complete_candidate_artifact_verified` means the
+provisional artifact passes those checks, not that clinical eligibility is
+validated. `not_complete_process_state_unknown` does not distinguish a live job
+from an interrupted one. Zero matching directories means no runs found under this
+specific naming/location convention, not proof that no job ever ran elsewhere.
