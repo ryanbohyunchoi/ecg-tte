@@ -59,3 +59,5 @@ The legacy feature name `hf_hospital_admissions` now has the explicit descriptio
 ## Version3: all-cause inpatient encounters retained
 
 User approved removing `hf_hospital_admissions` from baseline predictors. The table now contains32 covariates plus3metadata fields, using COMET_PSM_TABLE_V2.json. `hospital_admissions` retains its existing all-cause inpatient encounter count and status rules. The HF linkage report remains a separate source-QC artifact, never a predictor. No cohort, index, endpoint, imputation or other predictor changes. Prior reports remain untouched.
+
+For completed v3 outputs, apply the approved recorded utilization zeros using [the fast v4 converter](RUN_COMET_UTILIZATION_ZEROS.md); no raw rebuild is needed.

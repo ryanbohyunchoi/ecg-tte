@@ -12,6 +12,7 @@ import pyarrow.parquet as pq
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
 import build_comet_baseline_staging as S
 import build_shared_tables as B
+import finalize_comet_utilization as U
 
 class StagingTests(unittest.TestCase):
     def test_name_and_code_leads_not_substring_accidents(self):
@@ -90,6 +91,18 @@ class StagingTests(unittest.TestCase):
             self.assertEqual(hospital['inpatient_encounter_denominator'],1)
             self.assertEqual(hospital['hf_dx_date_prior365'],1)
             self.assertNotIn('hf_dx_date_future',hospital) # E2 is outpatient, not inpatient.
+            converted=U.run(root/'out',root/'converted')
+            self.assertEqual(converted['version'],'comet_baseline_staging_v4')
+            newer=pq.read_table(root/'converted'/'restricted_baseline_staging.parquet').to_pylist()
+            self.assertEqual(newer[1]['hospital_admissions'],0)
+            self.assertEqual(newer[0]['hospital_admissions'],1)
+            for old,new in zip(t.to_pylist(),newer):
+                for name in old:
+                    if name not in U.FIELDS:self.assertEqual(old[name],new[name])
+            self.assertIsNone(newer[1]['creatinine'])
+            with self.assertRaises(FileExistsError):U.run(root/'out',root/'converted')
+            with (root/'out'/'restricted_feature_status.parquet').open('ab') as f:f.write(b'changed')
+            with self.assertRaisesRegex(B.BuildError,'input_checksum_mismatch'):U.run(root/'out',root/'bad_convert')
             with patch.object(S,'IDS',ids),self.assertRaises(FileExistsError):S.run(report,clinical,vr,root/'out')
             with vp.open('ab') as f:f.write(b'changed')
             with patch.object(S,'IDS',ids),self.assertRaisesRegex(B.BuildError,'incompatible_vital'):S.run(report,clinical,vr,root/'bad')
