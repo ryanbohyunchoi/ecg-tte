@@ -4,6 +4,8 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
+import test_build_comet_baseline_staging as S
 from datetime import date
 from types import SimpleNamespace
 import pyarrow as pa
@@ -57,3 +59,25 @@ class ResolutionTests(unittest.TestCase):
         self.assertIn('ckd',aux['A']);self.assertFalse(blocked['A']);self.assertFalse(pos['A'])
         self.assertIn('ckd',blocked['B']);self.assertFalse(pos['B'])
         self.assertEqual(R.recorded_binary('atrial_fibrillation' in pos['C'],'atrial_fibrillation' in blocked['C']),(1,'recorded_positive'))
+
+    def test_integrated_mapped_mode_populates_only_candidate_labs(self):
+        original=S.StagingTests.build
+        def build(instance,root,name,tables):
+            converted={}
+            for key,(table,dates) in tables.items():
+                if 'COMPONENT_ID' in table.column_names:
+                    for col,value in [('COMPONENT_ID','795'),('COMPONENT_NAME','BKR CREATININE'),('BASE_NAME','CREATININE')]:
+                        table=table.set_column(table.column_names.index(col),col,pa.array([value]*table.num_rows))
+                    table=table.append_column('SPECIMEN_TYPE',pa.array(['Blood']*table.num_rows))
+                converted[key]=(table,dates)
+            return original(instance,root,name,converted)
+        with tempfile.TemporaryDirectory() as tmp,contextlib.redirect_stdout(io.StringIO()),patch.object(S.StagingTests,'build',build):
+            p=Path(tmp);report,cache=T.CachedBaselineTests().fixture(p)
+            B.run(report,cache,p/'baseline');G.run(p/'baseline',p/'mapping')
+            result=R.run(p/'mapping',p/'resolved',map_reviewed_labs=True)
+            self.assertEqual(result['version'],'comet_baseline_resolution_v2_mapped_labs')
+            self.assertFalse(result['ready_for_mice'])
+            rows=pq.read_table(p/'resolved'/'restricted_baseline_resolution.parquet').to_pylist()
+            self.assertEqual(rows[0]['creatinine'],1.2)
+            self.assertIsNone(rows[1]['creatinine'])
+            self.assertIsNone(rows[0]['potassium'])

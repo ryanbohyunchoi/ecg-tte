@@ -72,7 +72,7 @@ def diagnosis_values(context,keys):
     return positives,blocked,undated,dict(qc)
 
 
-def run(mapping_report,output):
+def run(mapping_report,output,*,map_reviewed_labs=False):
     mapping_report,output=map(Path,(mapping_report,output))
     if any(not p.is_absolute() or p.is_symlink() for p in (mapping_report,output)):raise BuildError('absolute_nonsymlink_paths_required')
     audit=json.loads((mapping_report/'summary.json').read_text());am=json.loads((mapping_report/'manifest.json').read_text())
@@ -93,7 +93,7 @@ def run(mapping_report,output):
     retained,excluded=adult_rows(rows);keys={r['patient_key'] for r in retained}
     if not keys:raise BuildError('no_adult_range_candidates')
     os.umask(0o077);output.mkdir(parents=True,mode=0o700,exist_ok=False);start=time.monotonic()
-    out=dict(version=VERSION,status='building',counts_valid=False,ready_for_mice=False,restricted_until_reviewed=True,
+    out=dict(version=VERSION if not map_reviewed_labs else 'comet_baseline_resolution_v2_mapped_labs',status='building',counts_valid=False,ready_for_mice=False,restricted_until_reviewed=True,
         source_report=str(parent),mapping_report=str(mapping_report),diagnosis_policy=POLICY,
         eligibility_change='Adult age18-120 at unchanged index; under18 excluded, absent/invalid age quarantined, not imputed. Other cohort rules unchanged. Not full COMET eligibility or phenotype validation.')
     atomic_json(output/'summary.json',out)
@@ -111,12 +111,20 @@ def run(mapping_report,output):
                 lookup[k,f]['status']=status
                 transitions[r['treatment_arm'],f,'null' if old is None else str(int(old)),'null' if new is None else str(new)]+=1
                 aux.append(dict(patient_key=k,feature=f,undated_evidence_or_uncertainty=f in undated[k]))
+        if map_reviewed_labs:
+            from comet_reviewed_lab_map import extract, TARGETS
+            values,statuses,lab_report=extract(parent,{k:context.anchors[k] for k in keys},output)
+            for r in retained:
+                for f in TARGETS:
+                    r[f]=values[r['patient_key'],f]
+                    lookup[r['patient_key'],f]['status']=statuses[r['patient_key'],f]
+            out['lab_mapping']=lab_report
         groups=json.loads(catalog.read_text())['groups'];draft=[]
         for g in groups:
             target,decision=lab_draft(g)
             draft.append(dict(g,proposed_target=target,mapping_status=decision,approved=False,canonical_unit=None))
         atomic_json(output/'restricted_lab_mapping_draft.json',dict(restricted_keep_on_cluster=True,
-            interpretation='Label triage only. No source-specific component identity or canonical unit approved. No lab values inserted into baseline.',groups=draft))
+            interpretation=('Legacy label triage; lab_mapping_report.json supersedes identity assignments, units remain unverified.' if map_reviewed_labs else 'Label triage only. No source-specific component identity or canonical unit approved. No lab values inserted into baseline.'),groups=draft))
         pq.write_table(pa.Table.from_pylist(retained,schema=table.schema),output/'restricted_baseline_resolution.parquet',compression='zstd')
         pq.write_table(pa.Table.from_pylist(states),output/'restricted_feature_status.parquet',compression='zstd')
         pq.write_table(pa.Table.from_pylist(aux),output/'restricted_undated_dx_auxiliary.parquet',compression='zstd')
@@ -125,13 +133,13 @@ def run(mapping_report,output):
         if any(digest(p)!=h for p,h in checks.items()):raise BuildError('inputs_changed')
         counts=Counter((r['treatment_arm'],f,lookup[r['patient_key'],f]['status'],r[f] is not None) for r in retained for f in features)
         outputs={p.name:digest(p) for p in output.iterdir() if p.name!='summary.json'}
-        atomic_json(output/'manifest.json',dict(version=VERSION,script_sha256=digest(Path(__file__)),input_checksums={str(p):h for p,h in checks.items()},context_checksums={str(p):h for p,h in context.fingerprints.items()},outputs=outputs,diagnosis_policy=POLICY))
+        atomic_json(output/'manifest.json',dict(version=out['version'],script_sha256=digest(Path(__file__)),input_checksums={str(p):h for p,h in checks.items()},context_checksums={str(p):h for p,h in context.fingerprints.items()},outputs=outputs,diagnosis_policy=POLICY))
         out.update(status='complete_resolution_candidate',counts_valid=True,rows=len(retained),denominators=dict(Counter(r['treatment_arm'] for r in retained)),
             age_exclusions=[dict(arm=a,reason=s,patient_keys=n) for (a,s),n in sorted(Counter((r['arm'],r['reason']) for r in excluded).items())],
             diagnosis_transitions=[dict(arm=a,feature=f,before=b,after=v,patient_keys=n) for (a,f,b,v),n in sorted(transitions.items())],
             feature_status_counts=[dict(arm=a,feature=f,status=s,has_candidate_value=v,patient_keys=n) for (a,f,s,v),n in sorted(counts.items())],
             diagnosis_qc=qc,lab_mapping_draft_counts=dict(Counter(r['mapping_status'] for r in draft)),
-            remaining='Lab component/specimen/unit map not approved; vital units and availability remain unresolved. No imputation, propensity score, outcome or effect estimate. Recorded-diagnosis policy change is explicit and original baseline preserved.')
+            remaining=('Lab identities mapped to raw-scale candidates; canonical units remain unverified. ' if map_reviewed_labs else 'Lab component/specimen/unit map not approved. ')+'Vital units and availability remain unresolved. No imputation, propensity score, outcome or effect estimate. Recorded-diagnosis policy change is explicit and original baseline preserved.')
     except Exception as e:
         out.update(status='failed_counts_invalid',counts_valid=False,reason=str(e) if isinstance(e,BuildError) else type(e).__name__);raise
     finally:
@@ -140,9 +148,9 @@ def run(mapping_report,output):
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--mapping-report',type=Path);p.add_argument('--project-root',type=Path,default=Path('/mnt/raid0/rbc58/ecg-tte'));p.add_argument('--output-dir',type=Path,required=True);a=p.parse_args()
-    try:run(a.mapping_report or discover(a.project_root,'audits/comet-mapping-gaps-*/report/summary.json','comet_mapping_gaps_v1','complete_mapping_gap_audit'),a.output_dir)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--mapping-report',type=Path);p.add_argument('--map-reviewed-labs',action='store_true');p.add_argument('--project-root',type=Path,default=Path('/mnt/raid0/rbc58/ecg-tte'));p.add_argument('--output-dir',type=Path,required=True);a=p.parse_args()
+    try:run(a.mapping_report or discover(a.project_root,'audits/comet-mapping-gaps-*/report/summary.json','comet_mapping_gaps_v1','complete_mapping_gap_audit'),a.output_dir,map_reviewed_labs=a.map_reviewed_labs)
     except Exception as e:print('Stopped: '+(str(e) if isinstance(e,BuildError) else type(e).__name__));return 1
-    print('Completed resolution candidate. Lab draft requires review; no MICE.');return 0
+    print('Completed resolution candidate. Review summary; units remain unverified and no MICE was run.');return 0
 
 if __name__=='__main__':raise SystemExit(main())
