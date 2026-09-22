@@ -1,6 +1,9 @@
 # Required covariate balance evaluation
 
-User requirement, 2026-09-22: evaluate covariate balance later in the analysis.
+User requirement, 2026-09-22: improvement in covariate balance is a primary
+methodological benchmark objective. Superiority of proposed methods is a hypothesis
+to test, not an expected result to engineer. RCT effect agreement remains a separate
+evaluation objective; measured balance alone cannot establish causal accuracy.
 This document records a required analysis stage. The balance implementation and
 matched results do not yet exist; matching/imputation details remain to be frozen.
 
@@ -54,3 +57,19 @@ of Confounding in Observational Studies](https://pmc.ncbi.nlm.nih.gov/articles/P
 These support SMD/distribution diagnostics and caution against balance decisions
 based solely on significance tests. The project-specific imputation summaries and
 review workflow above remain our proposed analysis specification.
+
+## Fair comparisons across methods
+
+Freeze a common clinical evaluation set before comparing unadjusted groups, clinical
+PSM, CLMBR-T, ECG representations and combinations. Report mean and maximum absolute
+SMD, fraction below the review threshold, distributional diagnostics and retention
+together. A method must not appear superior solely by discarding more patients.
+Use common eligible populations and the same matching/estimation settings for
+controlled method comparisons; report modality-specific available populations
+separately. Keep pre-match standardization denominators fixed within each comparison.
+
+Prespecified additional clinical variables outside model fitting may provide a
+secondary representation evaluation. Do not remove essential confounders from the
+primary clinical comparator just to create a held-out test. Assess original observed
+values and missingness alongside completed-data balance: imputation must not create
+an appearance of balance that depends entirely on modeled values.
