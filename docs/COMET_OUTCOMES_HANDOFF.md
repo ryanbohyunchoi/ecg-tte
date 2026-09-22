@@ -63,3 +63,13 @@ Observed pooled facts:
 Consequences: a missing death date cannot be converted to survival, and encounter data through 2026 cannot extend mortality follow-up beyond the independently verified death-source coverage end. All-cause mortality remains a candidate but is blocked on death provenance and cutoff. The admission composite remains separately blocked on episode semantics. These pooled results must be rerun on Track 1's final roster; no outcome-based eligibility change is authorized.
 
 A second pooled audit, `audit_comet_followup_feasibility.py`, now reports index-year counts, death-time bins, first/last inpatient candidate-time bins, last-any-encounter landmarks, and recent month-level source density. Future encounters are explicitly audit signals and never become eligibility, survival proof, censoring or a complete-observation claim.
+
+## 2026-09-22 pooled follow-up feasibility evidence
+
+The second audit completed with valid counts in 84.309 seconds on the same roster and clinical hashes. Candidate indices span 2012–2026. Counts are 6,253 through 2023, 272 in 2024, four in 2025 and one in 2026; therefore a one-year design ending 2024-12-31 would retain 6,253 provisional indices before Track 1 cohort changes. A two-year design ending on the same date would retain 5,900 through 2022.
+
+Recorded death counts are stable month to month through December 2024 (monthly 2024 range 666–827), remain substantial in January 2025 (820) and February (699), drop to 470 in March, and to five in April. Both 2025-delivery encounter tables show the same extraction transition during March/April, while the 2026 encounter delivery contains full-looking months after April 2025 through March 2026. This supports using 2024-12-31 as a conservative **proposed** complete-calendar boundary; it does not prove the death source is complete or registry-linked through that day.
+
+Pooled recorded-contact signals were high: 4,963/6,530 had an encounter at least 365 days after index and 4,212 at least 730 days after index. Another 323 had no post-index encounter. These are health-system contact patterns only. They cannot select entrants, prove event-free survival or define individual loss to follow-up.
+
+The exact proposal is in `COMET_OUTCOME_PROPOSAL_V1.json`: one-year all-cause mortality, administrative end 2024-12-31 and latest index 2023-12-31, conditional on death-source provenance and completeness. It is not frozen. The 2024–2026 indices are calendar-ineligible under that candidate design because they cannot receive the full fixed horizon before the proposed administrative end; this is an arm-independent design rule, not an exclusion based on future events. The composite remains blocked on admission episode semantics.
