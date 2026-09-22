@@ -119,11 +119,11 @@ def run(cohort_report,clinical,vital_report,output):
     if len(anchors)!=len(cohort) or any(not r['patient_key'] or not isinstance(r['candidate_order_day'],date) for r in cohort):raise BuildError('invalid_cohort')
     vr=pq.read_table(vp).to_pylist();vitals={r['patient_key']:r for r in vr}
     if len(vitals)!=len(vr) or set(vitals)!=set(anchors) or any(vitals[k]['index_date']!=r['candidate_order_day'] or vitals[k]['arm']!=r['candidate_arm'] for k,r in anchors.items()):raise BuildError('vital_cohort_alignment_failed')
-    definition=Path(__file__).resolve().parents[1]/'docs/COMET_PSM_TABLE_V1.json';spec=json.loads(definition.read_text());features=[r['name'] for r in spec['covariates']]
-    if len(features)!=33 or len(set(features))!=33:raise BuildError('feature_contract_changed')
+    definition=Path(__file__).resolve().parents[1]/'docs/COMET_PSM_TABLE_V2.json';spec=json.loads(definition.read_text());features=[r['name'] for r in spec['covariates']]
+    if len(features)!=32 or len(set(features))!=32:raise BuildError('feature_contract_changed')
     os.umask(0o077);output.mkdir(parents=True,exist_ok=False,mode=0o700);start=time.monotonic()
-    summary=dict(version='comet_baseline_staging_v2',status='building',counts_valid=False,ready_for_mice=False,restricted_until_reviewed=True,
-        interpretation='33-column fixed-roster candidate staging, not validated clinical baseline. Code/name leads and encounter-flag counts are provisional. No cohort exclusions, imputation or PSM.',
+    summary=dict(version='comet_baseline_staging_v3',status='building',counts_valid=False,ready_for_mice=False,restricted_until_reviewed=True,
+        interpretation='32-column fixed-roster candidate staging, not validated clinical baseline. Code/name leads and encounter-flag counts are provisional. No cohort exclusions, imputation or PSM.',
         blocker='Lab source unavailable; units/availability/identity and clinical mappings unresolved; eligibility/index not frozen.',
         clinical_snapshot=str(clinical),cohort_report=str(cohort_report),vital_report=str(vital_report))
     atomic_json(output/'summary.json',summary)
@@ -208,7 +208,6 @@ def run(cohort_report,clinical,vital_report,output):
             if kind=='outpatient_source':utilization[k]['outpatient_visits']+=1
             elif ed in ('0','1') and inp in ('0','1'):
                 utilization[k]['ed_encounters']+=ed=='1';utilization[k]['hospital_admissions']+=inp=='1'
-                utilization[k]['hf_hospital_admissions']+=inp=='1' and (k,csn) in hfkeys
             else:bad_enc[k]+=1
         output_rows=[];states=[];counts=Counter()
         for k,r in anchors.items():
@@ -227,7 +226,7 @@ def run(cohort_report,clinical,vital_report,output):
             for f in LABS:put(f,None,'blocked_lab_source')
             for f in DX:put(f,*recorded_binary(f in dx[k],f in dx_block[k]))
             for f in (*DRUG,'arni_order'):put(f,*recorded_binary(f in rx[k],f in rx_block[k]))
-            for f in ('outpatient_visits','ed_encounters','hospital_admissions','hf_hospital_admissions'):
+            for f in ('outpatient_visits','ed_encounters','hospital_admissions'):
                 n=utilization[k][f];put(f,None if bad_enc[k] or n==0 else n,'encounter_key_conflict' if bad_enc[k] else 'candidate_setting_count' if n else 'zero_coverage_unvalidated')
             output_rows.append(dict(patient_key=k,treatment_arm=r['candidate_arm'],index_date=r['candidate_order_day'],**values))
             for f in features:
@@ -248,7 +247,7 @@ def run(cohort_report,clinical,vital_report,output):
             vital_output_sha256=vm['output_sha256'],feature_spec_sha256=digest(definition),script_sha256=digest(Path(__file__)),
             candidate_dx_prefixes=DX,hf_linkage_codes=sorted(HF),candidate_drug_names={k:sorted(v) for k,v in DRUG.items()},
             outputs={n:digest(output/n) for n in ('restricted_baseline_staging.parquet','restricted_feature_status.parquet','hf_linkage_diagnostic.json')}))
-        summary.update(status='complete_baseline_staging',counts_valid=True,rows=len(cohort),covariates=33,
+        summary.update(status='complete_baseline_staging',counts_valid=True,rows=len(cohort),covariates=32,
             feature_status_counts=[dict(arm=a,feature=f,status=s,has_candidate_value=v,patient_keys=n) for (a,f,s,v),n in sorted(counts.items())],
             qc=dict(patients_with_unparsed_prior_dx=len(bad_dx),patients_with_undated_orders=len(undated),patients_with_encounter_key_problems=len(bad_enc)),
             not_found_policy='Diagnosis/order binaries: 1 qualifying recorded lead; 0 no qualifying record under declared vocabulary/window; null technical uncertainty. Positive evidence overrides uncertainty. Zero is not disease absence and is not imputed. Utilization zero policy unchanged pending linkage review.',

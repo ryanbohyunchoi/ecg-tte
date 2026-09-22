@@ -1,13 +1,13 @@
 # Assemble the declared COMET baseline staging table
 
-This joins the fixed cohort, completed core/clinical snapshots and version2 vital candidates into one36-column table:33 declared feature slots plus patient key, treatment arm and index date. It is an explicit staging artifact, not a validated analysis table. `ready_for_mice` remains false.
+This joins the fixed cohort, completed core/clinical snapshots and version2 vital candidates into one35-column table:32 declared feature slots plus patient key, treatment arm and index date. It is an explicit staging artifact, not a validated analysis table. `ready_for_mice` remains false.
 
 ```bash
 cd "$HOME/github/ecg-tte"
 git pull --ff-only origin psm-mice-imputation
 umask 077
 mkdir -p /mnt/raid0/rbc58/ecg-tte/audits
-COMET_BASELINE_RUN=$(mktemp -d /mnt/raid0/rbc58/ecg-tte/audits/comet-baseline-v2-XXXXXXXX)
+COMET_BASELINE_RUN=$(mktemp -d /mnt/raid0/rbc58/ecg-tte/audits/comet-baseline-v3-XXXXXXXX)
 PYTHONDONTWRITEBYTECODE=1 python scripts/build_comet_baseline_staging.py \
   --cohort-report /mnt/raid0/rbc58/ecg-tte/audits/comet-broad-excluded-cnG52aaY/report \
   --clinical-snapshot /mnt/raid0/rbc58/ecg-tte/shared/clinical-sources-v1-t9ZGomLT/snapshot \
@@ -21,7 +21,7 @@ Discovery requires exactly one complete version2 vital report. If several exist,
 
 ## Outputs
 
-- `restricted_baseline_staging.parquet`: one row per candidate, the33 feature slots in COMET_PSM_TABLE_V1.json, and three metadata columns.
+- `restricted_baseline_staging.parquet`: one row per candidate, the32 feature slots in COMET_PSM_TABLE_V2.json, and three metadata columns.
 - `restricted_feature_status.parquet`: one row per patient/feature giving its candidate or blocking state. Must accompany the numeric table; do not send all nulls directly to MICE.
 - `manifest.json`: binds the candidate cohort, core/clinical snapshots, vital output, feature specification, script and outputs. Explicit discovery code prefixes and medication-name lists are recorded. Selection rules and source snapshots support reproducing this stage; complete event-level provenance adapters remain required for clinical promotion.
 - `summary.json`: per-arm feature/status/non-null counts and source-quality flags. Return only reviewed aggregates; all patient tables remain on H100.
@@ -30,7 +30,7 @@ Discovery requires exactly one complete version2 vital report. If several exist,
 
 Demographics use exact patient keys, consistent DOBs and the observed raw sex pairs1/Female and2/Male. Index year is derived. These do not validate identity or demographic availability at index. Echo uses the latest strictly prior day within365 days, accepts only a single candidate value in(1,100], and never falls back from a missing/conflicting latest value.
 
-The vital columns copy version2 candidates. `sbp` and `dbp` are the declared first/second BP target slots, with explicit unit/orientation-unverified status; their names do not certify the interpretation. Older BP/pulse auxiliaries remain in the linked vital artifact, outside the33 predictor slots.
+The vital columns copy version2 candidates. `sbp` and `dbp` are the declared first/second BP target slots, with explicit unit/orientation-unverified status; their names do not certify the interpretation. Older BP/pulse auxiliaries remain in the linked vital artifact, outside the32 predictor slots.
 
 Diagnosis slots are positive ICD10-family discovery leads in the prior365 days. Exact candidate prefixes are in the script/manifest. They are not validated year-specific ICD10-CM phenotypes, do not interpret ICD9, and do not establish lifetime history. For example,I48 includes flutter;I60–I64/I69 includes broader cerebrovascular history;the PAD vocabulary is incomplete;valve codes do not establish severity. The mappings are for feasibility review only. Version2 uses the user-approved recorded-evidence policy: 1 for a qualifying prior lead; 0 for no qualifying record under this vocabulary/window; null for technical uncertainty. A missing/unparseable ICD10 cell within365 days blocks otherwise negative diagnosis slots. Undated parseable codes block only their matching features; undated unparseable cells block all diagnosis slots. An observed qualifying positive wins over uncertainty. Zero does not establish disease absence, requires no gold-standard adjudication or continuous-enrollment proof, and is not imputed. No observation-based cohort exclusions are added. ICD9 presence is reported separately and is not silently mapped.
 
@@ -46,7 +46,7 @@ This is the complete declared column layout, not completed clinical validation. 
 
 The recorded-evidence binary encoding is now accepted; review the resulting technical-null counts and linkage diagnostic, then resolve the remaining mappings and measurement contracts. Only then produce a separately versioned model-ready baseline table. Do not quietly interpret all absent codes as disease-free, all absent orders as no treatment, or all source-blocked nulls as imputable. Clinical missingness diagnostics, predictive support and a MICE pilot follow that gate.
 
-Synthetic integration checks exact36-column layout,2-patient/66-status-row reconciliation, matched vital lineage, pre-index dates, duplicate encounter handling, HF-key linkage, missing labs and recorded zeros, technical-null precedence, no overwrite, and rejection of altered vital artifacts.
+Synthetic integration checks exact35-column layout,2-patient/64-status-row reconciliation, matched vital lineage, pre-index dates, duplicate encounter handling, HF-key linkage, missing labs and recorded zeros, technical-null precedence, no overwrite, and rejection of altered vital artifacts.
 
 ## Version2 HF linkage diagnostic
 
@@ -55,3 +55,7 @@ Synthetic integration checks exact36-column layout,2-patient/66-status-row recon
 Row-level coverage aggregates by arm/index year/source show ICD10 parsing, ICD9 presence, missing encounter keys and DX_DATE timing. They help distinguish limited historical coding from encounter-key/date mismatch. Exact trimmed patient/CSN matching is preserved; no identifier transformations or alternate-date fallback are applied. The diagnostic and its checksum are bound to the run manifest. No raw codes, identifiers or patient-specific dates are printed. Review aggregates locally before sharing.
 
 The legacy feature name `hf_hospital_admissions` now has the explicit description **inpatient encounters with an HF diagnosis**. It does not establish HF as the cause of admission or merge encounters into hospitalization episodes. This version does not change its values or null/zero policy; investigate linkage before that separate change. All existing snapshots and v1 reports remain untouched.
+
+## Version3: all-cause inpatient encounters retained
+
+User approved removing `hf_hospital_admissions` from baseline predictors. The table now contains32 covariates plus3metadata fields, using COMET_PSM_TABLE_V2.json. `hospital_admissions` retains its existing all-cause inpatient encounter count and status rules. The HF linkage report remains a separate source-QC artifact, never a predictor. No cohort, index, endpoint, imputation or other predictor changes. Prior reports remain untouched.
