@@ -53,7 +53,7 @@ def run(report, output):
     if report.resolve()==output.resolve() or report.resolve() in output.resolve().parents or output.resolve() in report.resolve().parents:
         raise BuildError('source_output_overlap')
     s=json.loads((report/'summary.json').read_text());m=json.loads((report/'manifest.json').read_text())
-    if s.get('version')!='comet_mice_pilot_v1' or m.get('version')!=s['version'] or s.get('status')!='complete_pilot_requires_review' or s.get('counts_valid') is not True:
+    if s.get('version') not in ('comet_mice_pilot_v1','comet_mice_pilot_v2_ordered_bp') or m.get('version')!=s['version'] or s.get('status')!='complete_pilot_requires_review' or s.get('counts_valid') is not True:
         raise BuildError('complete_pilot_required')
     checks={report/n:digest(report/n) for n in ('summary.json','manifest.json')}
     for name,h in m['outputs'].items():

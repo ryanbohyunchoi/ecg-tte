@@ -19,7 +19,7 @@ BASE = Path(__file__).resolve().parents[1]
 VERSION = 'comet_mice_pilot_v1'
 
 
-def model_spec(rows):
+def model_spec(rows, ordered_bp=False):
     contract=json.loads((BASE/'docs/COMET_PSM_TABLE_V2.json').read_text())
     features=[r['name'] for r in contract['covariates']]
     binary=[r['name'] for r in contract['covariates'] if r['type']=='binary_recorded_evidence']
@@ -40,7 +40,8 @@ def model_spec(rows):
     for f in features:
         observed=[r[f] for r in rows if r[f] is not None]
         if len(observed)<len(rows) and (len(observed)<20 or len(set(observed))<2):raise BuildError('insufficient_target_support_'+f)
-    return dict(version=VERSION,columns=columns,binary=binary,numeric=numeric,m=5,iterations=20,seed=20260922,
+    if ordered_bp and any(r['sbp'] is not None and r['dbp'] is not None and r['sbp']<=r['dbp'] for r in rows):raise BuildError('observed_bp_order_invalid')
+    return dict(version='comet_mice_pilot_v2_ordered_bp' if ordered_bp else VERSION,ordered_bp=ordered_bp,columns=columns,binary=binary,numeric=numeric,m=5,iterations=50 if ordered_bp else 20,seed=20260922,
                 interpretation='Diagnostic outcome-blind pilot. Units unverified; imputed binary values represent recorded-evidence indicators, not gold-standard disease. No eligibility imputation.')
 
 
@@ -70,10 +71,11 @@ def validate_completed(original,completed,spec):
                 match=next((v for v in donors if math.isclose(v,r[f],rel_tol=1e-14,abs_tol=1e-14)),None)
                 if match is None:raise BuildError('pmm_outside_observed_donors')
                 r[f]=match
+    if spec.get('ordered_bp') and any(r['sbp']<=r['dbp'] for r in converted):raise BuildError('completed_bp_order_invalid')
     return converted
 
 
-def run(source,output,rscript='Rscript'):
+def run(source,output,rscript='Rscript',ordered_bp=False):
     source,output=Path(source),Path(output)
     if any(not p.is_absolute() or p.is_symlink() for p in (source,output)):raise BuildError('absolute_nonsymlink_paths_required')
     if source.resolve()==output.resolve() or source.resolve() in output.resolve().parents or output.resolve() in source.resolve().parents:raise BuildError('source_output_overlap')
@@ -88,10 +90,10 @@ def run(source,output,rscript='Rscript'):
     if name not in m['outputs']:raise BuildError('baseline_unmanifested')
     rows=pq.read_table(source/name).to_pylist()
     if len(rows)!=s['rows'] or dict(Counter(r['treatment_arm'] for r in rows))!=s['denominators']:raise BuildError('roster_mismatch')
-    spec=model_spec(rows)
+    spec=model_spec(rows,ordered_bp)
     if shutil.which(rscript) is None:raise BuildError('Rscript_not_found')
     os.umask(0o077);output.mkdir(parents=True,exist_ok=False,mode=0o700)
-    summary=dict(version=VERSION,status='running',counts_valid=False,ready_for_psm=False,ready_for_effects=False,restricted_until_reviewed=True,rows=len(rows),denominators=s['denominators'],source_report=str(source))
+    summary=dict(version=spec['version'],status='running',counts_valid=False,ready_for_psm=False,ready_for_effects=False,restricted_until_reviewed=True,rows=len(rows),denominators=s['denominators'],source_report=str(source))
     atomic_json(output/'summary.json',summary);start=time.monotonic()
     try:
         atomic_json(output/'model_spec.json',spec)
@@ -123,7 +125,7 @@ def run(source,output,rscript='Rscript'):
         needs=bool(engine['warning_count'] or engine['logged_event_count'] or engine['predictor_matrix_changed'] or engine['method_changed'] or not engine['convergence_available'])
         summary.update(status='complete_pilot_requires_review',counts_valid=True,imputations=spec['m'],iterations=spec['iterations'],engine=engine,model_events_require_review=needs,bp_order_checks=bp,
                        interpretation='Computational pilot only; no convergence pass, missingness-assumption validation, matching or effects. Review traces, events, distributions and source limitations before reuse.')
-        atomic_json(output/'manifest.json',dict(version=VERSION,input_checksums={str(p):h for p,h in checks.items()},code_checksums={str(p):digest(p) for p in [Path(__file__),BASE/'scripts/comet_mice_engine.R',BASE/'docs/COMET_PSM_TABLE_V2.json']},outputs={p.name:digest(p) for p in output.iterdir() if p.is_file() and p.name!='summary.json'}))
+        atomic_json(output/'manifest.json',dict(version=spec['version'],input_checksums={str(p):h for p,h in checks.items()},code_checksums={str(p):digest(p) for p in [Path(__file__),BASE/'scripts/comet_mice_engine.R',BASE/'scripts/comet_bp_imputation.R',BASE/'docs/COMET_PSM_TABLE_V2.json']},outputs={p.name:digest(p) for p in output.iterdir() if p.is_file() and p.name!='summary.json'}))
     except Exception as e:
         summary.update(status='failed_pilot',counts_valid=False,reason=str(e) if isinstance(e,BuildError) else type(e).__name__);raise
     finally:
@@ -132,8 +134,8 @@ def run(source,output,rscript='Rscript'):
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--source-report',type=Path);p.add_argument('--output-dir',required=True,type=Path);p.add_argument('--rscript',default='Rscript');a=p.parse_args()
-    try:run(a.source_report or discover(Path('/mnt/raid0/rbc58/ecg-tte'),'audits/comet-mice-prep-*/report/summary.json','comet_mice_preparation_v1','complete_mice_preparation'),a.output_dir,a.rscript)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--source-report',type=Path);p.add_argument('--output-dir',required=True,type=Path);p.add_argument('--rscript',default='Rscript');p.add_argument('--ordered-bp',action='store_true');a=p.parse_args()
+    try:run(a.source_report or discover(Path('/mnt/raid0/rbc58/ecg-tte'),'audits/comet-mice-prep-*/report/summary.json','comet_mice_preparation_v1','complete_mice_preparation'),a.output_dir,a.rscript,a.ordered_bp)
     except Exception as e:print('Stopped: '+(str(e) if isinstance(e,BuildError) else type(e).__name__));return 1
     print('MICE pilot completed; review summary and diagnostics locally. Not cleared for PSM.');return 0
 if __name__=='__main__':raise SystemExit(main())

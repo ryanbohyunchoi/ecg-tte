@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 
 PATTERNS = {
+    'startup_abi_mismatch': ('startup_abi_mismatch', 'abi version mismatch'),
+    'insufficient_ordered_bp_donors': ('insufficient_ordered_bp_donors',),
     'missing_mice_or_jsonlite': ('missing_mice_or_jsonlite',),
     'missing_r_package': ('there is no package called',),
     'r_shared_library_load_failure': ('unable to load shared object', 'error while loading shared libraries'),
@@ -25,7 +27,7 @@ def classify(text):
 
 def diagnose(report):
     summary = json.loads((report / 'summary.json').read_text())
-    if summary.get('version') != 'comet_mice_pilot_v1' or summary.get('status') != 'failed_pilot':
+    if summary.get('version') not in ('comet_mice_pilot_v1', 'comet_mice_pilot_v2_ordered_bp') or summary.get('status') != 'failed_pilot':
         raise ValueError('failed_pilot_report_required')
     log = report / 'restricted_engine.log'
     with log.open('rb') as stream:
