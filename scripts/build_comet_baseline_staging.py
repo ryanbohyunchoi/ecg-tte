@@ -131,7 +131,7 @@ def run(cohort_report,clinical,vital_report,output):
         stamps={};births=defaultdict(set);sexes=defaultdict(set);echoes={};dx=defaultdict(set);rx=defaultdict(set);bad_dx=Counter();undated=Counter();enc={};hfkeys=set();linked=set();dx_block=defaultdict(set);rx_block=defaultdict(set);links=defaultdict(set);dx_coverage=Counter()
         def scan(snapshot,name,cols):
             t=open_table(snapshot,name);stamps.update({p:(Path(p).stat().st_size,Path(p).stat().st_mtime_ns) for p in t.files})
-            return records(t,cols)
+            return records(t,cols,patient_keys=anchors)
         def in_window(key,day,w):return key in anchors and day is not None and 1<=(anchors[key]['candidate_order_day']-day).days<=w
         patients=next(n for n in IDS if n.endswith('_patients'))
         print('Extracting demographics',flush=True)

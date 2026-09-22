@@ -28,7 +28,7 @@ def selected(row,state,flags):
     return row['candidate_arm'] in ARMS and (row['DX_DATE_prior_hf_evidence'] or state=='gt1_lt40') and not (flags & EXCLUSIONS)
 
 
-def run(candidate_report,dx2025,previous_report,output):
+def run(candidate_report,dx2025,previous_report,output,candidate_cache=None):
     import pyarrow as pa
     import pyarrow.parquet as pq
     candidate_report,dx2025,previous_report,output=map(Path,(candidate_report,dx2025,previous_report,output))
@@ -42,7 +42,11 @@ def run(candidate_report,dx2025,previous_report,output):
     if check(candidate_report.parent).get('check')!='complete_candidate_artifact_verified':raise BuildError('candidate_not_verified')
     m=json.loads((candidate_report/'restricted_manifest.json').read_text());core=Path(m['core_snapshot'])
     if digest(core/'manifest.json')!=m['core_manifest_sha256']:raise BuildError('core_manifest_changed')
-    for source in (core.resolve(),candidate_report.resolve(),dx2025.resolve(),previous_report.resolve()):
+    if candidate_cache is not None:
+        candidate_cache=Path(candidate_cache)
+        if not candidate_cache.is_absolute() or candidate_cache.is_symlink():raise BuildError('absolute_nonsymlink_cache_required')
+    sources=(core,candidate_report,dx2025,previous_report)+((candidate_cache,) if candidate_cache is not None else ())
+    for source in (p.resolve() for p in sources):
         if output.resolve()==source or source in output.resolve().parents or output.resolve() in source.parents:raise BuildError('output_source_overlap')
     started=time.monotonic();os.umask(0o077);output.mkdir(parents=True,mode=0o700,exist_ok=False)
     report=dict(version='comet_expanded_dx_reassessment_v1',status='building',counts_valid=False,
@@ -52,6 +56,8 @@ def run(candidate_report,dx2025,previous_report,output):
         history='Prior365-day lexical carvedilol/metoprolol family orders only, not all beta-blockers. Undated records may overlap. No history exclusion applied.',
         candidate_report=str(candidate_report),core_snapshot=str(core),additional_dx_snapshot=str(dx2025),previous_report=str(previous_report),
         scope='Same original medication anchors and echo sources; both diagnosis deliveries unioned for Boolean evidence only. Not a complete medication-source reassessment. Other inherited candidate fields retain original source semantics.')
+    report['candidate_cache']=str(candidate_cache) if candidate_cache is not None else None
+    report['candidate_cache_manifest_sha256']=digest(Path(candidate_cache)/'manifest.json') if candidate_cache is not None else None
     atomic_json(output/'summary.json',report)
     try:
         input_path=candidate_report/'restricted_candidates.parquet'
@@ -60,9 +66,13 @@ def run(candidate_report,dx2025,previous_report,output):
             original=pf.read()
         rows=original.to_pylist();anchors={r['patient_key']:r for r in rows}
         if len(anchors)!=len(rows):raise BuildError('duplicate_candidate_keys')
-        table=open_table(core,'echo_studies');stamps={p:(Path(p).stat().st_size,Path(p).stat().st_mtime_ns) for p in table.files}
+        def source_table(snapshot,name):
+            if candidate_cache is None:return open_table(snapshot,name)
+            from candidate_event_cache import open_cached
+            return open_cached(snapshot,name,candidate_cache,required_keys=anchors)
+        table=source_table(core,'echo_studies');stamps={p:(Path(p).stat().st_size,Path(p).stat().st_mtime_ns) for p in table.files}
         echoes={}
-        for r in records(table,['__patient_key','__day_EchoDate','EF']):
+        for r in records(table,['__patient_key','__day_EchoDate','EF'],patient_keys=anchors):
             key=r['__patient_key'];day=r['__day_EchoDate']
             if key not in anchors or day is None or day>=anchors[key]['candidate_order_day']:continue
             value=r['EF']
@@ -75,14 +85,15 @@ def run(candidate_report,dx2025,previous_report,output):
         excluded_flags={key:set() for key in anchors};hf=set()
         for snapshot,name in [(p,n) for p in (core,dx2025) for n in ('hospital_diagnoses','outpatient_diagnoses')]:
             print('Checking pre-index exclusions: '+name,flush=True)
-            diagnoses=open_table(snapshot,name)
+            diagnoses=source_table(snapshot,name)
             stamps.update({p:(Path(p).stat().st_size,Path(p).stat().st_mtime_ns) for p in diagnoses.files})
-            for r in records(diagnoses,['__patient_key','__day_DX_DATE','CURRENT_ICD10_LIST','DX_NAME']):
+            for r in records(diagnoses,['__patient_key','__day_DX_DATE','CURRENT_ICD10_LIST','DX_NAME'],patient_keys=anchors):
                 key=r['__patient_key'];day=r['__day_DX_DATE']
                 if key not in anchors or day is None or day>=anchors[key]['candidate_order_day']:continue
                 flags=dx_flags(r['CURRENT_ICD10_LIST'] or '',r['DX_NAME'] or '')
                 excluded_flags[key].update(flags & EXCLUSIONS)
                 if 'general' in flags:hf.add(key)
+        if candidate_cache is not None and digest(Path(candidate_cache)/'manifest.json')!=report['candidate_cache_manifest_sha256']:raise BuildError('cache_manifest_changed')
         kept=[];by_arm=Counter();history=Counter();calendar=Counter();evidence=Counter()
         before_exclusions=Counter();removed=Counter()
         transitions=Counter();transition_rows=[]
@@ -136,8 +147,9 @@ def main():
     p=argparse.ArgumentParser(description=__doc__);g=p.add_mutually_exclusive_group(required=True)
     g.add_argument('--candidate-report',type=Path);g.add_argument('--audit-root',type=Path)
     p.add_argument('--dx-2025-snapshot',type=Path,required=True);p.add_argument('--previous-report',type=Path,required=True)
+    p.add_argument('--candidate-cache',type=Path)
     p.add_argument('--output-dir',type=Path,required=True);a=p.parse_args()
-    try:r=run(a.candidate_report or discover(a.audit_root),a.dx_2025_snapshot,a.previous_report,a.output_dir)
+    try:r=run(a.candidate_report or discover(a.audit_root),a.dx_2025_snapshot,a.previous_report,a.output_dir,a.candidate_cache)
     except Exception as exc:
         print('Stopped: '+(str(exc) if isinstance(exc,BuildError) else type(exc).__name__));return 1
     print('Finished: '+r['status']+'. Review summary.json; patient table stays on H100.');return 0

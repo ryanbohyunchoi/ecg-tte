@@ -31,7 +31,7 @@ def run(cohort,dx,lab,clinical,output):
         def scan(snapshot,name,cols):
             t=open_table(snapshot,name)
             for f in t.files:stamps[str(f)]=(Path(f).stat().st_size,Path(f).stat().st_mtime_ns)
-            return records(t,cols)
+            return records(t,cols,patient_keys=anchors)
         def prior(k,d,w):return k in anchors and d is not None and 1<=(anchors[k]['candidate_order_day']-d).days<=w
         enc=defaultdict(set);owners=defaultdict(set)
         for r in scan(clinical,'Data_2025_04_03_hosp_enc',['__patient_key','PAT_ENC_CSN_ID','__day_HOSP_ADMSN_DATE','INP_YN','ED_YN']):

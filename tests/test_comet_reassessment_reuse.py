@@ -12,6 +12,7 @@ import test_build_comet_baseline_staging as T
 import reassess_comet_diagnoses as R
 import reuse_comet_hospital_labs as L
 import build_shared_tables as B
+import candidate_event_cache as C
 
 class ReassessmentTests(unittest.TestCase):
     def test_expanded_sources_enter_remove_and_keep_index_fixed(self):
@@ -32,6 +33,12 @@ class ReassessmentTests(unittest.TestCase):
             self.assertEqual({r['transition']:r['patient_keys'] for r in s['transitions']},{'entered':1,'removed':1,'not_selected':1})
             result=pq.read_table(p/'out'/'restricted_broad_candidates.parquet').to_pylist()
             self.assertEqual(result[0]['patient_key'],'B');self.assertEqual(result[0]['candidate_order_day'],date(2024,1,1))
+            with patch('audit_comet_beta_history.verify',return_value=({},dict(output_sha256=B.digest(oldpath)))),contextlib.redirect_stdout(io.StringIO()):
+                C.build_cache(report,[core,extra],p/'cache')
+                cached=R.run(report,extra,previous,p/'cached',candidate_cache=p/'cache')
+            self.assertEqual(cached['transitions'],s['transitions'])
+            self.assertEqual(cached['evidence_groups'],s['evidence_groups'])
+            self.assertEqual(pq.read_table(p/'cached'/'restricted_broad_candidates.parquet').to_pylist(),result)
 
     def test_limited_reuse_verifies_raw_and_preserves_parent(self):
         with tempfile.TemporaryDirectory() as tmp:

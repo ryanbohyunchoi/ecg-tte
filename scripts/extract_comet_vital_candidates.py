@@ -118,7 +118,7 @@ def run(report,snapshot,output):
         for source in sorted(x for x in IDS if x.endswith('_vitals')):
             print('Extracting candidate vitals: '+source,flush=True)
             t=open_table(snapshot,source);stamps.update({p:(Path(p).stat().st_size,Path(p).stat().st_mtime_ns) for p in t.files})
-            for r in records(t,['__patient_key','__source_row','__day_RECORDED_TIME','RECORDED_TIME','PAT_ENC_CSN_ID','FLO_MEAS_ID','FLO_MEAS_NAME','DISP_NAME','MEAS_VALUE','UNIT']):
+            for r in records(t,['__patient_key','__source_row','__day_RECORDED_TIME','RECORDED_TIME','PAT_ENC_CSN_ID','FLO_MEAS_ID','FLO_MEAS_NAME','DISP_NAME','MEAS_VALUE','UNIT'],patient_keys=anchors):
                 key=r['__patient_key'];component=(r['FLO_MEAS_ID'] or '').strip()
                 if key not in anchors or component not in MAP:continue
                 feature,window,name,display=MAP[component];day=r['__day_RECORDED_TIME'];index=anchors[key]['candidate_order_day']

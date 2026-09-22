@@ -39,11 +39,16 @@ def discover(root):
     return matches[0]
 
 
-def records(table, columns):
+def records(table, columns, patient_keys=None):
     if not set(columns) <= set(table.schema.names):
         raise BuildError('required_candidate_columns_absent')
     scanned = 0
-    for batch in table.scanner(columns=columns, batch_size=16384, use_threads=False).to_batches():
+    if patient_keys is None:
+        batches=table.scanner(columns=columns, batch_size=16384, use_threads=False).to_batches()
+    else:
+        from candidate_event_cache import filtered_batches
+        batches=filtered_batches(table,patient_keys,columns)
+    for batch in batches:
         data = batch.to_pydict()
         for values in zip(*(data[c] for c in columns)):
             yield dict(zip(columns, values))
