@@ -53,3 +53,10 @@ No final MI precision selection, causal effect, RCT agreement or readiness impli
 Caliper reference: https://pmc.ncbi.nlm.nih.gov/articles/PMC3120982/ . The precise
 matching order, reference arm and model specification above are project defaults
 for this exploratory experiment, not prescriptions from the reference.
+
+## Precision fix
+The first implementation rounded the JSON caliper to4decimalplaces, which could
+falsely fail cross-language pair validation. Summary now preserves JSON precision
+and scores use17significantdigits. Matching and tolerance are unchanged. After
+pulling the fix, rerun into a fresh directory from saved imputations; do not reuse
+or overwrite failed outputs.

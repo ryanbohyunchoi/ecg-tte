@@ -57,7 +57,7 @@ main <- function(report,out) {
     }
     if(nrow(pairs)<2) stop('insufficient_matches')
     write.csv(data.frame(carvedilol_key=keys[pairs[,1]],metoprolol_key=keys[pairs[,2]]),file.path(out,sprintf('restricted_pairs_%02d.csv',i)),row.names=FALSE)
-    write.csv(data.frame(patient_key=keys,propensity=fit$fitted.values,logit=logits),file.path(out,sprintf('restricted_scores_%02d.csv',i)),row.names=FALSE)
+    write.csv(data.frame(patient_key=keys,propensity=sprintf("%.17g",fit$fitted.values),logit=sprintf("%.17g",logits)),file.path(out,sprintf('restricted_scores_%02d.csv',i)),row.names=FALSE)
     balance <- list()
     for(f in colnames(eval)) {
       a <- eval[z==1,f]; b <- eval[z==0,f]; am <- eval[pairs[,1],f]; bm <- eval[pairs[,2],f]
@@ -84,6 +84,6 @@ main <- function(report,out) {
   all <- do.call(rbind,all_balance);write.csv(all,file.path(out,'balance_by_imputation.csv'),row.names=FALSE)
   aggregate <- lapply(split(all,all$feature),function(d) data.frame(feature=d$feature[1],median_abs_smd=if(all(is.na(d$smd_post))) NA_real_ else median(abs(d$smd_post),na.rm=TRUE),worst_abs_smd=if(all(is.na(d$smd_post))) NA_real_ else max(abs(d$smd_post),na.rm=TRUE),imputations_ge_0_1=sum(abs(d$smd_post)>=.1,na.rm=TRUE),undefined=sum(is.na(d$smd_post))))
   write.csv(do.call(rbind,aggregate),file.path(out,'balance_across_imputations.csv'),row.names=FALSE)
-  jsonlite::write_json(list(imputations=summaries,interpretation='Exploratory matching only. Trace review remains pending; no effects or convergence approval. Carvedilol is the treated/reference arm; matched subset targets may differ across imputations.'),file.path(out,'psm_summary.json'),auto_unbox=TRUE,pretty=TRUE)
+  jsonlite::write_json(list(imputations=summaries,interpretation='Exploratory matching only. Trace review remains pending; no effects or convergence approval. Carvedilol is the treated/reference arm; matched subset targets may differ across imputations.'),file.path(out,'psm_summary.json'),auto_unbox=TRUE,pretty=TRUE,digits=NA)
 }
 if(sys.nframe()==0L) tryCatch(main(args[1],args[2]),error=function(e){cat(conditionMessage(e),'\n');quit(status=1)})
