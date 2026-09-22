@@ -2,7 +2,7 @@
 """Extract latest prior raw-scale vital candidates; not unit-validated PSM input."""
 import argparse
 from collections import Counter
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 import json
 import math
@@ -56,6 +56,41 @@ def choose(state,pair):
     return 'candidate_numeric_units_unverified',next(iter(values))
 
 
+
+def choose_timed(state,feature):
+    if state.get('undated'):return 'unresolved_undated_record',None
+    obs=state.get('observations',[])
+    if not obs:return 'no_record_in_window',None
+    timed=[]
+    for o in obs:
+        raw=o.get('recorded_time','')
+        if not re.fullmatch(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}(?::\d{2})?',raw):return 'latest_day_time_unresolved',None
+        try:stamp=datetime.fromisoformat(raw)
+        except ValueError:return 'latest_day_time_unresolved',None
+        if stamp.date()!=state['day']:return 'latest_day_time_unresolved',None
+        timed.append((stamp,o))
+    latest=max(t for t,o in timed)
+    if feature=='bmi':selected=[o for t,o in timed if t==latest]
+    else:
+        keys={o.get('encounter_key') for t,o in timed if t==latest}
+        if len(keys)!=1 or None in keys:return 'latest_encounter_unresolved',None
+        key=next(iter(keys));selected=[o for t,o in timed if o.get('encounter_key')==key]
+    if any(not o['labels_match'] or o['unit'].strip().upper()!='NULL' for o in selected):return 'mapping_signature_changed',None
+    dedup={}
+    for o in selected:
+        status,value=parse_candidate(o['raw'],feature.startswith('bp'))
+        if status!='numeric_raw_scale':return 'selected_value_unusable',None
+        # Equal values at different times remain repeated readings; duplicate rows do not get extra weight.
+        stamp=datetime.fromisoformat(o['recorded_time'])
+        token=(stamp,o.get('encounter_key'),value)
+        dedup[token]=value
+    values=list(dedup.values())
+    if feature=='bmi':
+        if len(set(values))!=1:return 'latest_timestamp_disagreement',None
+        return 'candidate_numeric_units_unverified',values[0]
+    result=tuple(math.fsum(v[i]/len(values) for v in values) for i in range(len(values[0])))
+    return 'candidate_numeric_units_unverified',result
+
 def run(report,snapshot,output):
     import pyarrow as pa
     import pyarrow.parquet as pq
@@ -72,47 +107,61 @@ def run(report,snapshot,output):
     anchors={r['patient_key']:r for r in cohort}
     if len(anchors)!=len(cohort) or any(not r['patient_key'] or not isinstance(r['candidate_order_day'],date) for r in cohort):raise BuildError('invalid_anchors')
     os.umask(0o077);output.mkdir(parents=True,exist_ok=False,mode=0o700);start=time.monotonic()
-    s=dict(version='comet_vital_candidates_v1',status='building',counts_valid=False,restricted_until_reviewed=True,
+    s=dict(version='comet_vital_candidates_v2',status='building',counts_valid=False,restricted_until_reviewed=True,
         ready_for_mice=False,clinical_snapshot=str(snapshot),cohort_report=str(report),
         interpretation='One row per fixed candidate; raw-scale numeric candidates only. No canonical units, BP orientation approval, availability-time validation or clinical ranges. No cohort exclusions or MICE.',
-        timing='Latest strictly prior calendar day within90days for BP/pulse and365days for BMI; same-day value disagreement blocks selection. No older fallback. Any matched-component undated row blocks the feature.',
+        timing='Latest strictly prior day: average BP/pulse within latest timestamp-identified encounter on that day; latest timestamp BMI. Primary BP/pulse90days, BMI365days; older BP/pulse days91-365 are separate auxiliaries. No older fallback. Undated matched components block primary and auxiliary.',
         unit_policy='Reviewed observed signature has literal NULL units; any changed labels/units on selected day blocks selection.')
     atomic_json(output/'summary.json',s)
     try:
-        states={(k,f):{} for k in anchors for f in ('bp','pulse','bmi')};stamps={}
+        states={(k,f):{} for k in anchors for f in ('bp','pulse','bmi','bp_older','pulse_older')};stamps={}
         for source in sorted(x for x in IDS if x.endswith('_vitals')):
             print('Extracting candidate vitals: '+source,flush=True)
             t=open_table(snapshot,source);stamps.update({p:(Path(p).stat().st_size,Path(p).stat().st_mtime_ns) for p in t.files})
-            for r in records(t,['__patient_key','__source_row','__day_RECORDED_TIME','FLO_MEAS_ID','FLO_MEAS_NAME','DISP_NAME','MEAS_VALUE','UNIT']):
+            for r in records(t,['__patient_key','__source_row','__day_RECORDED_TIME','RECORDED_TIME','PAT_ENC_CSN_ID','FLO_MEAS_ID','FLO_MEAS_NAME','DISP_NAME','MEAS_VALUE','UNIT']):
                 key=r['__patient_key'];component=(r['FLO_MEAS_ID'] or '').strip()
                 if key not in anchors or component not in MAP:continue
                 feature,window,name,display=MAP[component];day=r['__day_RECORDED_TIME'];index=anchors[key]['candidate_order_day']
-                if day is not None and not 1<=(index-day).days<=window:continue
+                if day is not None and not 1<=(index-day).days<=365:continue
+                target=feature+'_older' if day is not None and feature!='bmi' and (index-day).days>90 else feature
                 raw=r['MEAS_VALUE'] or '';unit=r['UNIT'] or ''
                 if len(raw)>4096 or len(unit)>256:raise BuildError('oversized_vital_field')
-                add_latest(states[key,feature],day,dict(source=source,source_row=r['__source_row'],component=component,raw=raw,unit=unit,
-                    labels_match=r['FLO_MEAS_NAME']==name and r['DISP_NAME']==display))
-        qc=Counter();joint=Counter();rows=[];lineage=[]
+                observation=dict(source=source,source_row=r['__source_row'],component=component,raw=raw,unit=unit,
+                    labels_match=r['FLO_MEAS_NAME']==name and r['DISP_NAME']==display,recorded_time=r['RECORDED_TIME'] or '',
+                    encounter_key=None if missing_kind(r['PAT_ENC_CSN_ID'] or '') else r['PAT_ENC_CSN_ID'].strip())
+                if len(observation['recorded_time'])>128 or len(observation['encounter_key'] or '')>256:raise BuildError('oversized_time_or_encounter_key')
+                add_latest(states[key,target],day,observation)
+                if day is None and feature!='bmi':add_latest(states[key,feature+'_older'],day,observation)
+        qc=Counter();joint=Counter();yearqc=Counter();olderqc=Counter();rows=[];lineage=[]
         for r in cohort:
             key=r['patient_key'];out=dict(patient_key=key,arm=r['candidate_arm'],index_date=r['candidate_order_day']);statuses=[]
-            for feature in ('bp','pulse','bmi'):
-                state=states[key,feature];status,values=choose(state,feature=='bp');statuses.append(status)
+            for feature in ('bp','pulse','bmi','bp_older','pulse_older'):
+                state=states[key,feature];status,values=choose_timed(state,feature);statuses.append(status)
                 qc[r['candidate_arm'],feature,status]+=1;out[feature+'_status']=status
-                if feature=='bp':out.update(bp_first_candidate=None if values is None else values[0],bp_second_candidate=None if values is None else values[1])
+                if feature.startswith('bp'):
+                    out[feature+'_first_candidate']=None if values is None else values[0]
+                    out[feature+'_second_candidate']=None if values is None else values[1]
                 else:out[feature+'_candidate']=None if values is None else values[0]
                 out[feature+'_observation_day']=state.get('day')
                 for obs in state.get('observations',[]):lineage.append(dict(patient_key=key,feature=feature,observation_day=state['day'].isoformat(),**obs))
                 for obs in state.get('undated_observations',[]):lineage.append(dict(patient_key=key,feature=feature,observation_day=None,**obs))
-            joint[(r['candidate_arm'],*statuses)]+=1
+            joint[(r['candidate_arm'],*statuses[:3])]+=1
+            for feature in ('bp','pulse','bmi'):
+                yearqc[r['candidate_arm'],r['candidate_order_day'].year,feature,out[feature+'_status']]+=1
+            for feature in ('bp','pulse'):
+                olderqc[r['candidate_arm'],feature,out[feature+'_status'],out[feature+'_older_status']]+=1
             rows.append(out)
         if digest(cp)!=cm['output_sha256'] or digest(mp)!=mh or any((Path(p).stat().st_size,Path(p).stat().st_mtime_ns)!=stamp for p,stamp in stamps.items()):raise BuildError('input_changed')
         fields=[('patient_key',pa.string()),('arm',pa.string()),('index_date',pa.date32()),('bp_first_candidate',pa.float64()),('bp_second_candidate',pa.float64()),('pulse_candidate',pa.float64()),('bmi_candidate',pa.float64())]
-        for f in ('bp','pulse','bmi'):fields.extend([(f+'_status',pa.string()),(f+'_observation_day',pa.date32())])
+        fields.extend([('bp_older_first_candidate',pa.float64()),('bp_older_second_candidate',pa.float64()),('pulse_older_candidate',pa.float64())])
+        for f in ('bp','pulse','bmi','bp_older','pulse_older'):fields.extend([(f+'_status',pa.string()),(f+'_observation_day',pa.date32())])
         path=output/'restricted_vital_candidates.parquet';pq.write_table(pa.Table.from_pylist(rows,schema=pa.schema(fields)),path,compression='zstd')
         atomic_json(output/'restricted_lineage.json',dict(restricted_keep_on_cluster=True,contains_raw_values=True,records=lineage))
         den=Counter(r['candidate_arm'] for r in cohort)
         s.update(status='complete_candidate_extraction',counts_valid=True,denominators=dict(den),
             feature_status_counts=[dict(arm=a,feature=f,status=t,patient_keys=n) for (a,f,t),n in sorted(qc.items())],
+            arm_year_status_counts=[dict(arm=a,index_year=y,feature=f,status=t,patient_keys=n) for (a,y,f,t),n in sorted(yearqc.items())],
+            older_auxiliary_counts=[dict(arm=a,feature=f,primary_status=p,older_status=o,patient_keys=n) for (a,f,p,o),n in sorted(olderqc.items())],
             joint_status_counts=[dict(arm=a,bp_status=b,pulse_status=p,bmi_status=m,patient_keys=n) for (a,b,p,m),n in sorted(joint.items())])
         atomic_json(output/'manifest.json',dict(version=s['version'],ready_for_mice=False,cohort_sha256=cm['output_sha256'],clinical_manifest_sha256=mh,
             output_sha256=digest(path),lineage_sha256=digest(output/'restricted_lineage.json'),script_sha256=digest(Path(__file__)),mapping=MAP))
