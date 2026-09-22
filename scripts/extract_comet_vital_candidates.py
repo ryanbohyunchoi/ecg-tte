@@ -91,12 +91,12 @@ def choose_timed(state,feature):
     result=tuple(math.fsum(v[i]/len(values) for v in values) for i in range(len(values[0])))
     return 'candidate_numeric_units_unverified',result
 
-def run(report,snapshot,output):
+def run(report,snapshot,output,*,context=None):
     import pyarrow as pa
     import pyarrow.parquet as pq
     report,snapshot,output=map(Path,(report,snapshot,output))
     if not all(p.is_absolute() for p in (report,snapshot,output)) or any(p.is_symlink() for p in (snapshot,output)):raise BuildError('absolute_nonsymlink_paths_required')
-    _,cm=verify(report);mp=snapshot/'manifest.json';mh=digest(mp);m=json.loads(mp.read_text())
+    _,cm=(verify(report) if context is None else context.verify(report));mp=snapshot/'manifest.json';mh=digest(mp);m=json.loads(mp.read_text())
     if m.get('status')!='complete' or set(m.get('stages',{}))!=IDS:raise BuildError('complete_clinical_snapshot_required')
     for source in (snapshot.resolve(),report.resolve()):
         if output.resolve()==source or source in output.resolve().parents or output.resolve() in source.parents:raise BuildError('output_source_overlap')
@@ -112,12 +112,13 @@ def run(report,snapshot,output):
         interpretation='One row per fixed candidate; raw-scale numeric candidates only. No canonical units, BP orientation approval, availability-time validation or clinical ranges. No cohort exclusions or MICE.',
         timing='Latest strictly prior day: average BP/pulse within latest timestamp-identified encounter on that day; latest timestamp BMI. Primary BP/pulse90days, BMI365days; older BP/pulse days91-365 are separate auxiliaries. No older fallback. Undated matched components block primary and auxiliary.',
         unit_policy='Reviewed observed signature has literal NULL units; any changed labels/units on selected day blocks selection.')
+    if context is not None:s['version']='comet_vital_candidates_v3_expanded'
     atomic_json(output/'summary.json',s)
     try:
         states={(k,f):{} for k in anchors for f in ('bp','pulse','bmi','bp_older','pulse_older')};stamps={}
         for source in sorted(x for x in IDS if x.endswith('_vitals')):
             print('Extracting candidate vitals: '+source,flush=True)
-            t=open_table(snapshot,source);stamps.update({p:(Path(p).stat().st_size,Path(p).stat().st_mtime_ns) for p in t.files})
+            t=(open_table(snapshot,source) if context is None else context.open(snapshot,source));stamps.update({p:(Path(p).stat().st_size,Path(p).stat().st_mtime_ns) for p in t.files})
             for r in records(t,['__patient_key','__source_row','__day_RECORDED_TIME','RECORDED_TIME','PAT_ENC_CSN_ID','FLO_MEAS_ID','FLO_MEAS_NAME','DISP_NAME','MEAS_VALUE','UNIT'],patient_keys=anchors):
                 key=r['__patient_key'];component=(r['FLO_MEAS_ID'] or '').strip()
                 if key not in anchors or component not in MAP:continue
@@ -151,6 +152,7 @@ def run(report,snapshot,output):
             for feature in ('bp','pulse'):
                 olderqc[r['candidate_arm'],feature,out[feature+'_status'],out[feature+'_older_status']]+=1
             rows.append(out)
+        if context is not None:context.check_inputs()
         if digest(cp)!=cm['output_sha256'] or digest(mp)!=mh or any((Path(p).stat().st_size,Path(p).stat().st_mtime_ns)!=stamp for p,stamp in stamps.items()):raise BuildError('input_changed')
         fields=[('patient_key',pa.string()),('arm',pa.string()),('index_date',pa.date32()),('bp_first_candidate',pa.float64()),('bp_second_candidate',pa.float64()),('pulse_candidate',pa.float64()),('bmi_candidate',pa.float64())]
         fields.extend([('bp_older_first_candidate',pa.float64()),('bp_older_second_candidate',pa.float64()),('pulse_older_candidate',pa.float64())])
@@ -164,6 +166,7 @@ def run(report,snapshot,output):
             older_auxiliary_counts=[dict(arm=a,feature=f,primary_status=p,older_status=o,patient_keys=n) for (a,f,p,o),n in sorted(olderqc.items())],
             joint_status_counts=[dict(arm=a,bp_status=b,pulse_status=p,bmi_status=m,patient_keys=n) for (a,b,p,m),n in sorted(joint.items())])
         atomic_json(output/'manifest.json',dict(version=s['version'],ready_for_mice=False,cohort_sha256=cm['output_sha256'],clinical_manifest_sha256=mh,
+            source_context_checksums=None if context is None else {str(p):h for p,h in context.fingerprints.items()},
             output_sha256=digest(path),lineage_sha256=digest(output/'restricted_lineage.json'),script_sha256=digest(Path(__file__)),mapping=MAP))
     except Exception as exc:
         s.update(status='failed_counts_invalid',counts_valid=False,reason=str(exc) if isinstance(exc,BuildError) else 'extraction_failed_no_raw_error_export');raise
