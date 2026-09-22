@@ -16,8 +16,8 @@ from audit_comet_clinical_baseline import IDS, age_state
 from audit_comet_eligibility import ACE
 from build_comet_candidates import records
 from build_shared_tables import BuildError, open_table, digest, atomic_json
-from hf_joint_evidence import evidence
 from medication_quality import missing_kind
+from hf_joint_evidence import HF
 
 # Explicit discovery vocabulary, not validated clinical phenotypes or complete drug maps.
 DX={
@@ -54,6 +54,42 @@ def drug_flags(names):
     return found
 
 
+def recorded_binary(present, blocked):
+    """Positive evidence wins; technical uncertainty is distinct from no record."""
+    if present:return 1,'recorded_positive'
+    if blocked:return None,'recorded_evidence_unassessable'
+    return 0,'no_qualifying_record'
+
+
+def timing(day, index):
+    if day is None:return 'missing_date'
+    delta=(index-day).days
+    if 1<=delta<=365:return 'prior365'
+    if delta>365:return 'older'
+    return 'same_day' if delta==0 else 'future'
+
+
+def linkage_report(enc, key_patients, links, anchors):
+    """Counts per diagnosis source among unambiguous pre-index inpatient keys.
+
+    Non-prior diagnosis timing is diagnostic only, never baseline evidence.
+    Stages overlap; timing buckets can overlap across diagnoses on an encounter.
+    """
+    counts=Counter();patients=defaultdict(set)
+    for key,values in enc.items():
+        k,csn=key
+        if len(values)!=1 or len(key_patients[csn])!=1:continue
+        _,kind,ed,inp=next(iter(values))
+        if kind!='hospital_source' or ed not in ('0','1') or inp!='1':continue
+        for source in ('hospital_diagnoses','outpatient_diagnoses'):
+            flags=links.get((key,source),set())
+            for stage in {'inpatient_encounter_denominator'}|flags:
+                group=(anchors[k]['candidate_arm'],source,stage)
+                counts[group]+=1;patients[group].add(k)
+    return [dict(arm=a,diagnosis_source=s,stage=t,encounter_keys=n,
+                 patient_keys=len(patients[a,s,t])) for (a,s,t),n in sorted(counts.items())]
+
+
 def discover_vitals(root):
     candidates=[]
     for p in Path(root).glob('*/report/summary.json'):
@@ -86,13 +122,13 @@ def run(cohort_report,clinical,vital_report,output):
     definition=Path(__file__).resolve().parents[1]/'docs/COMET_PSM_TABLE_V1.json';spec=json.loads(definition.read_text());features=[r['name'] for r in spec['covariates']]
     if len(features)!=33 or len(set(features))!=33:raise BuildError('feature_contract_changed')
     os.umask(0o077);output.mkdir(parents=True,exist_ok=False,mode=0o700);start=time.monotonic()
-    summary=dict(version='comet_baseline_staging_v1',status='building',counts_valid=False,ready_for_mice=False,restricted_until_reviewed=True,
+    summary=dict(version='comet_baseline_staging_v2',status='building',counts_valid=False,ready_for_mice=False,restricted_until_reviewed=True,
         interpretation='33-column fixed-roster candidate staging, not validated clinical baseline. Code/name leads and encounter-flag counts are provisional. No cohort exclusions, imputation or PSM.',
         blocker='Lab source unavailable; units/availability/identity and clinical mappings unresolved; eligibility/index not frozen.',
         clinical_snapshot=str(clinical),cohort_report=str(cohort_report),vital_report=str(vital_report))
     atomic_json(output/'summary.json',summary)
     try:
-        stamps={};births=defaultdict(set);sexes=defaultdict(set);echoes={};dx=defaultdict(set);rx=defaultdict(set);bad_dx=Counter();undated=Counter();enc={};hfkeys=set();linked=set()
+        stamps={};births=defaultdict(set);sexes=defaultdict(set);echoes={};dx=defaultdict(set);rx=defaultdict(set);bad_dx=Counter();undated=Counter();enc={};hfkeys=set();linked=set();dx_block=defaultdict(set);rx_block=defaultdict(set);links=defaultdict(set);dx_coverage=Counter()
         def scan(snapshot,name,cols):
             t=open_table(snapshot,name);stamps.update({p:(Path(p).stat().st_size,Path(p).stat().st_mtime_ns) for p in t.files})
             return records(t,cols)
@@ -110,22 +146,16 @@ def run(cohort_report,clinical,vital_report,output):
             v=r['EF'];v=v if not isinstance(v,bool) and isinstance(v,(float,int)) and math.isfinite(v) and 1<v<=100 else None
             if k not in echoes or d>echoes[k][0]:echoes[k]=(d,{v})
             elif d==echoes[k][0]:echoes[k][1].add(v)
-        for name in ('hospital_diagnoses','outpatient_diagnoses'):
-            print('Extracting recorded diagnosis leads: '+name,flush=True)
-            for r in scan(core,name,['__patient_key','__day_DX_DATE','CURRENT_ICD10_LIST','PAT_ENC_CSN_ID']):
-                k=r['__patient_key'];d=r['__day_DX_DATE']
-                if not in_window(k,d,365):continue
-                codes=tokens(r['CURRENT_ICD10_LIST'] or '')
-                if codes is None:bad_dx[k]+=1;continue
-                dx[k].update(f for f,prefixes in DX.items() if any(c.startswith(prefixes) for c in codes))
-                csn=r['PAT_ENC_CSN_ID'] or ''
-                if not missing_kind(csn) and evidence(r['CURRENT_ICD10_LIST'] or '')[0]:hfkeys.add((k,csn.strip()))
         print('Extracting prior medication-name leads',flush=True)
         for r in scan(core,'medication_orders',['__patient_key','__day_ORDER_INST',*NAMES]):
             k=r['__patient_key'];d=r['__day_ORDER_INST']
             if k not in anchors:continue
-            if d is None:undated[k]+=1;continue
-            if in_window(k,d,90):rx[k].update(drug_flags(tuple(r[n] or '' for n in NAMES)))
+            names=tuple(r[n] or '' for n in NAMES);flags=drug_flags(names)
+            if d is None:
+                undated[k]+=1;rx_block[k].update(flags)
+            elif in_window(k,d,90):rx[k].update(flags)
+            if (d is None or in_window(k,d,90)) and all(missing_kind(n) for n in names):
+                rx_block[k].update((*DRUG,'arni_order'))
         bad_enc=Counter()
         for name in sorted(n for n in IDS if n.endswith('_hosp_enc') or n.endswith('_outpatient_enc')):
             hospital=name.endswith('_hosp_enc');field='__day_HOSP_ADMSN_DATE' if hospital else '__day_CONTACT_DATE'
@@ -138,6 +168,38 @@ def run(cohort_report,clinical,vital_report,output):
                 token=(k,csn.strip())
                 if len(enc)>=2000000 and token not in enc:raise BuildError('encounter_key_limit')
                 enc.setdefault(token,set()).add((d,'hospital_source' if hospital else 'outpatient_source',r.get('ED_YN'),r.get('INP_YN')))
+        for name in ('hospital_diagnoses','outpatient_diagnoses'):
+            print('Extracting recorded diagnoses and linkage diagnostics: '+name,flush=True)
+            for r in scan(core,name,['__patient_key','__day_DX_DATE','__day_CALC_DX_DATE',
+                                    'CURRENT_ICD10_LIST','CURRENT_ICD9_LIST','PAT_ENC_CSN_ID']):
+                k=r['__patient_key']
+                if k not in anchors:continue
+                index=anchors[k]['candidate_order_day'];d=r['__day_DX_DATE'];when=timing(d,index)
+                codes=tokens(r['CURRENT_ICD10_LIST'] or '')
+                flags={f for f,prefixes in DX.items() if codes and any(c.startswith(prefixes) for c in codes)}
+                hf=bool(codes and codes & HF)
+                arm=anchors[k]['candidate_arm']
+                dx_coverage[arm,index.year,name,when,'parseable_icd10' if codes else 'missing_or_unparsed_icd10']+=1
+                if not missing_kind(r['CURRENT_ICD9_LIST'] or ''):
+                    dx_coverage[arm,index.year,name,when,'icd9_present_not_mapped']+=1
+                if when=='prior365':
+                    if codes is None:bad_dx[k]+=1;dx_block[k].update(DX)
+                    else:dx[k].update(flags)
+                elif when=='missing_date':dx_block[k].update(DX if codes is None else flags)
+                csn=r['PAT_ENC_CSN_ID'] or ''
+                if missing_kind(csn):
+                    dx_coverage[arm,index.year,name,when,'missing_encounter_key']+=1
+                    continue
+                key=(k,csn.strip())
+                if when=='prior365' and hf:hfkeys.add(key)
+                # Bound linkage state to existing pre-index encounter keys.
+                if key not in enc:continue
+                stage=links[key,name];stage.add('any_diagnosis_same_key')
+                if codes is None:stage.add('missing_or_unparsed_icd10_same_key')
+                if hf:
+                    stage.add('hf_code_same_key_any_date')
+                    stage.add('hf_dx_date_'+when)
+                    stage.add('hf_calc_dx_date_'+timing(r['__day_CALC_DX_DATE'],index))
         utilization=defaultdict(Counter);key_patients=defaultdict(set)
         for (k,csn),values in enc.items():key_patients[csn].add(k)
         for (k,csn),values in enc.items():
@@ -163,8 +225,8 @@ def run(cohort_report,clinical,vital_report,output):
                 # Names are declared target slots; interpretation remains blocked in companion status.
                 put(field,vitals[k][valuefield],vitals[k][feature+'_status'])
             for f in LABS:put(f,None,'blocked_lab_source')
-            for f in DX:put(f,1 if f in dx[k] else None,'candidate_positive_code_lead' if f in dx[k] else 'negative_ascertainment_unvalidated')
-            for f in (*DRUG,'arni_order'):put(f,1 if f in rx[k] else None,'candidate_positive_name_lead' if f in rx[k] else 'negative_ascertainment_unvalidated')
+            for f in DX:put(f,*recorded_binary(f in dx[k],f in dx_block[k]))
+            for f in (*DRUG,'arni_order'):put(f,*recorded_binary(f in rx[k],f in rx_block[k]))
             for f in ('outpatient_visits','ed_encounters','hospital_admissions','hf_hospital_admissions'):
                 n=utilization[k][f];put(f,None if bad_enc[k] or n==0 else n,'encounter_key_conflict' if bad_enc[k] else 'candidate_setting_count' if n else 'zero_coverage_unvalidated')
             output_rows.append(dict(patient_key=k,treatment_arm=r['candidate_arm'],index_date=r['candidate_order_day'],**values))
@@ -175,14 +237,21 @@ def run(cohort_report,clinical,vital_report,output):
         schema=pa.schema([('patient_key',pa.string()),('treatment_arm',pa.string()),('index_date',pa.date32())]+[(f,pa.string() if f=='recorded_sex' else pa.float64()) for f in features])
         pq.write_table(pa.Table.from_pylist(output_rows,schema=schema),output/'restricted_baseline_staging.parquet',compression='zstd')
         pq.write_table(pa.Table.from_pylist(states),output/'restricted_feature_status.parquet',compression='zstd')
+        atomic_json(output/'hf_linkage_diagnostic.json',dict(
+            version='comet_hf_linkage_v1',restricted_until_reviewed=True,
+            interpretation='Baseline encounter linkage QC only. Non-prior diagnosis counts are diagnostics, never baseline features. Stages and sources overlap; do not sum patient counts.',
+            definition='INP_YN=1 with same exact trimmed patient/CSN and prior365 DX_DATE I50 evidence; no principal-diagnosis requirement.',
+            linkage_counts=linkage_report(enc,key_patients,links,anchors),
+            diagnosis_coverage=[dict(arm=a,index_year=y,source=s,date_bucket=d,flag=f,rows=n)
+                for (a,y,s,d,f),n in sorted(dx_coverage.items())]))
         atomic_json(output/'manifest.json',dict(version=summary['version'],ready_for_mice=False,cohort_sha256=cm['output_sha256'],core_manifest_sha256=cm['core_manifest_sha256'],clinical_manifest_sha256=clinical_hash,
             vital_output_sha256=vm['output_sha256'],feature_spec_sha256=digest(definition),script_sha256=digest(Path(__file__)),
-            candidate_dx_prefixes=DX,candidate_drug_names={k:sorted(v) for k,v in DRUG.items()},
-            outputs={n:digest(output/n) for n in ('restricted_baseline_staging.parquet','restricted_feature_status.parquet')}))
+            candidate_dx_prefixes=DX,hf_linkage_codes=sorted(HF),candidate_drug_names={k:sorted(v) for k,v in DRUG.items()},
+            outputs={n:digest(output/n) for n in ('restricted_baseline_staging.parquet','restricted_feature_status.parquet','hf_linkage_diagnostic.json')}))
         summary.update(status='complete_baseline_staging',counts_valid=True,rows=len(cohort),covariates=33,
             feature_status_counts=[dict(arm=a,feature=f,status=s,has_candidate_value=v,patient_keys=n) for (a,f,s,v),n in sorted(counts.items())],
             qc=dict(patients_with_unparsed_prior_dx=len(bad_dx),patients_with_undated_orders=len(undated),patients_with_encounter_key_problems=len(bad_enc)),
-            not_found_policy='Absent code/name leads and zero-utilization evidence remain null with blocking states; not ordinary MICE missingness. No assumption of complete observation.',
+            not_found_policy='Diagnosis/order binaries: 1 qualifying recorded lead; 0 no qualifying record under declared vocabulary/window; null technical uncertainty. Positive evidence overrides uncertainty. Zero is not disease absence and is not imputed. Utilization zero policy unchanged pending linkage review.',
             vital_policy='sbp/dbp are provisional first/second BP target slots, not a claim of verified orientation or units. All vital values remain blocked for MICE.')
     except Exception as exc:
         summary.update(status='failed_counts_invalid',counts_valid=False,reason=str(exc) if isinstance(exc,BuildError) else 'build_failed_no_raw_error_export');raise
