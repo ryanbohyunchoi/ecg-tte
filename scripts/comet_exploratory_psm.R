@@ -4,7 +4,7 @@ fixed_smd <- function(a,b,am,bm,binary=FALSE) {
   denom <- if(binary) sqrt((mean(a)*(1-mean(a))+mean(b)*(1-mean(b)))/2) else sqrt((var(a)+var(b))/2)
   c(pre=if(denom>0) (mean(a)-mean(b))/denom else NA_real_,post=if(denom>0) (mean(am)-mean(bm))/denom else NA_real_)
 }
-main <- function(report,out) {
+main <- function(report,out,refined=FALSE) {
   if(!requireNamespace('jsonlite',quietly=TRUE)) stop('jsonlite_required')
   spec <- jsonlite::read_json(file.path(report,'model_spec.json'),simplifyVector=TRUE)
   keys <- jsonlite::read_json(file.path(report,'restricted_row_keys.json'),simplifyVector=TRUE)
@@ -36,11 +36,28 @@ main <- function(report,out) {
     eval <- x
     for(f in predictors) eval <- cbind(eval,as.integer(mask[[f]]))
     colnames(eval) <- c(colnames(x),paste0('missing:',predictors))
+    aliases <- character()
+    if(refined) {
+      # Keep the common clinical/missingness evaluation set unchanged.
+      x <- eval
+      ef_basis <- splines::ns(d$lvef,knots=c(30,50),Boundary.knots=c(1,100))
+      colnames(ef_basis) <- paste0('lvef_spline_',1:3)
+      x <- cbind(x[,setdiff(colnames(x),'lvef'),drop=FALSE],ef_basis)
+    }
     # Reference category removed only from fitting, not evaluation.
     fitcols <- setdiff(colnames(x),paste0('recorded_sex=',sex_levels[1]))
     constant <- fitcols[vapply(fitcols,function(f) sd(x[,f])==0,logical(1))]
     fitcols <- setdiff(fitcols,constant)
     design <- scale(x[,fitcols,drop=FALSE])
+    if(refined) {
+      q <- qr(cbind(intercept=1,design),tol=1e-10)
+      if(q$rank<ncol(design)+1L) {
+        dropped <- q$pivot[seq.int(q$rank+1L,ncol(design)+1L)]
+        if(1L %in% dropped) stop('intercept_alias_unexpected')
+        aliases <- colnames(design)[dropped-1L]
+        design <- design[,setdiff(colnames(design),aliases),drop=FALSE]
+      }
+    }
     warnings <- character()
     fit <- withCallingHandlers(glm.fit(cbind(1,design),z,family=binomial()),warning=function(w){warnings<<-c(warnings,conditionMessage(w));invokeRestart('muffleWarning')})
     if(!fit$converged || any(!is.finite(fit$coefficients))) stop('ps_model_nonconvergence_or_rank_deficiency')
@@ -78,7 +95,7 @@ main <- function(report,out) {
     pdf(file.path(out,sprintf('propensity_overlap_%02d.pdf',i)))
     hist(fit$fitted.values[z==1],breaks=seq(0,1,length.out=21),col=rgb(1,0,0,.4),xlab='Propensity score',main='Pre-match overlap',xlim=c(0,1));hist(fit$fitted.values[z==0],breaks=seq(0,1,length.out=21),col=rgb(0,0,1,.4),add=TRUE);dev.off()
     summaries[[i]] <- list(imputation=i,pairs=nrow(pairs),carvedilol_retention=nrow(pairs)/sum(z==1),metoprolol_retention=nrow(pairs)/sum(z==0),caliper=caliper,
-      max_abs_smd=max(abs(tab$smd_post),na.rm=TRUE),mean_abs_smd=mean(abs(tab$smd_post),na.rm=TRUE),features_ge_0_1=sum(abs(tab$smd_post)>=.1,na.rm=TRUE),undefined_smd=sum(is.na(tab$smd_post)),constant_predictors=constant,
+      max_abs_smd=max(abs(tab$smd_post),na.rm=TRUE),mean_abs_smd=mean(abs(tab$smd_post),na.rm=TRUE),features_ge_0_1=sum(abs(tab$smd_post)>=.1,na.rm=TRUE),undefined_smd=sum(is.na(tab$smd_post)),constant_predictors=constant,aliased_predictors=aliases,
       warning_count=length(warnings),ps_range_carvedilol=range(fit$fitted.values[z==1]),ps_range_metoprolol=range(fit$fitted.values[z==0]))
   }
   all <- do.call(rbind,all_balance);write.csv(all,file.path(out,'balance_by_imputation.csv'),row.names=FALSE)
@@ -86,4 +103,4 @@ main <- function(report,out) {
   write.csv(do.call(rbind,aggregate),file.path(out,'balance_across_imputations.csv'),row.names=FALSE)
   jsonlite::write_json(list(imputations=summaries,interpretation='Exploratory matching only. Trace review remains pending; no effects or convergence approval. Carvedilol is the treated/reference arm; matched subset targets may differ across imputations.'),file.path(out,'psm_summary.json'),auto_unbox=TRUE,pretty=TRUE,digits=NA)
 }
-if(sys.nframe()==0L) tryCatch(main(args[1],args[2]),error=function(e){cat(conditionMessage(e),'\n');quit(status=1)})
+if(sys.nframe()==0L) tryCatch(main(args[1],args[2],length(args)>=3L && args[3]=='refined'),error=function(e){cat(conditionMessage(e),'\n');quit(status=1)})
