@@ -25,7 +25,7 @@ set -e
 cd "$HOME/github/ecg-tte"
 umask 077
 BCL_INPUT=$(mktemp -d /mnt/raid0/rbc58/ecg-tte/audits/comet-bcl-input-XXXXXXXX)
-/home/rbc58/miniconda3/envs/mosaic/bin/python scripts/prepare_comet_bcl_input.py \
+/home/rbc58/miniconda3/envs/mosaic/bin/python scripts/prepare_comet_bcl_input.py --relative-npy \
   --source-report /mnt/raid0/rbc58/ecg-tte/audits/comet-mice-prep-M9F28Lk2/report \
   --metadata /mnt/raid0/rbc58/mm_vhd/metadata/ecg_metadata.parquet \
   --waveform-root /mnt/raid0/bb2238/signals/preprocessed/all_ecgs \
@@ -42,3 +42,20 @@ artifacts remain on H100. This is not an inference launch or matching-ready
 population. Review exclusions/aliases, then inspect checkpoint configuration and
 perform a small frozen inference smoke test. No reconstruction of a training
 cohort or tuning of encoder weights is authorized.
+
+## Relative-path contract v2
+
+User confirmed metadata IDs contain subdirectories and a terminal .npy suffix.
+Use --relative-npy for comet_bcl_input_v2_relative_npy. This preserves all directory
+components and strips exactly one optional terminal .npy to produce the canonical
+stem. Lookup appends .npy once. Absolute paths, empty/dot/traversal components,
+backslashes, control characters, and symlinked files/directories below the root
+are rejected. Both aliases and sampling-catalog IDs use the same canonicalization;
+conflicting labels and global identity collisions remain exclusions. No basename
+fallback or date-derived directory is used. Original default v1 remains available.
+
+The private input contains relative stems, compatible with the upstream loader's
+suffix-appending lookup. Before GPU inference, the sampling catalog supplied to
+the encoder must use these same canonical stems; feeding the original catalog
+without checking this could silently misclassify 250Hz records. Selection still
+sets ready_for_inference=false. No raw filename example is needed in chat.

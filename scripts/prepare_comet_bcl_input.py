@@ -16,7 +16,26 @@ def safe_id(v):
     return v if v and v not in ('.','..') and not any(c in v for c in ('/','\\','\x00','\n','\r')) else None
 
 
-def select(roster,metadata,waveforms,formats):
+def relative_id(v):
+    """Canonical relative stem; accept one optional .npy suffix, never basename-strip."""
+    v=key(v)
+    if not v or v.startswith('/') or any(ord(c)<32 or ord(c)==127 for c in v) or '\\' in v:return None
+    if any(part in ('','.','..') for part in v.split('/')):return None
+    if v.endswith('.npy'):v=v[:-4]
+    if not v or v.split('/')[-1] in ('','.','..'):return None
+    return v
+
+
+def waveform_ok(root,fid):
+    path=root/(fid+'.npy')
+    # Reject symlinked directories as well as symlinked files.
+    if root.is_symlink() or any(p.is_symlink() for p in (path,*path.parents) if p==root or root in p.parents):return False
+    if root.resolve() not in path.resolve().parents:return False
+    return path.is_file() and path.stat().st_size>0
+
+
+def select(roster,metadata,waveforms,formats,relative_npy=False):
+    normalize=relative_id if relative_npy else safe_id
     people={};latest={};qc=Counter()
     for r in roster:
         k=key(r['patient_key']);d=day(r['index_date'])
@@ -30,26 +49,26 @@ def select(roster,metadata,waveforms,formats):
         lag=(people[p][1]-d).days
         if not 1<=lag<=365:continue
         qc['prior365_rows']+=1
-        ids=tuple(safe_id(r[a]) for a in ALIASES)
+        ids=tuple(normalize(r[a]) for a in ALIASES)
         if p not in latest or d>latest[p][0]:latest[p]=(d,{ids})
         elif d==latest[p][0]:latest[p][1].add(ids)
     relevant={fid for _,rows in latest.values() for ids in rows for fid in ids if fid}
     owners={};ambiguous=set()
     for r in records(metadata,['MRN','ECGDate',*ALIASES]):
-        for fid in {safe_id(r[a]) for a in ALIASES}&relevant:
+        for fid in {normalize(r[a]) for a in ALIASES}&relevant:
             identity=(key(r['MRN']),day(r['ECGDate']))
             if None in identity or fid in owners and owners[fid]!=identity:ambiguous.add(fid)
             owners[fid]=identity
     exists={}
     for fid in relevant:
         p=waveforms/(fid+'.npy')
-        exists[fid]=p.is_file() and not p.is_symlink() and p.stat().st_size>0
+        exists[fid]=waveform_ok(waveforms,fid)
     format_labels={};format_conflicts=set()
     with formats.open(encoding='utf-8-sig',newline='') as f:
         reader=csv.DictReader(f)
         if not {'fileID','format_new'}<=set(reader.fieldnames or []):raise BuildError('formats_columns_missing')
         for r in reader:
-            fid=key(r['fileID'])
+            fid=normalize(r['fileID']) if relative_npy else key(r['fileID'])
             if fid not in relevant:continue
             # Exact upstream rule; empty labels do not establish sampling semantics.
             label=key(r['format_new']);flag=None if label is None else ('5_0' in label)
@@ -83,17 +102,17 @@ def select(roster,metadata,waveforms,formats):
     return rows,dict(qc)
 
 
-def run(source,metadata,waveforms,formats,out):
+def run(source,metadata,waveforms,formats,out,relative_npy=False):
     paths=(source,metadata,waveforms,formats,out)
     if any(not p.is_absolute() or p.is_symlink() for p in paths):raise BuildError('absolute_nonsymlink_paths_required')
     if any(out.resolve()==p.resolve() or out.resolve() in p.resolve().parents or p.resolve() in out.resolve().parents for p in paths[:-1]):raise BuildError('output_overlap')
     os.umask(0o077);out.mkdir(parents=True,exist_ok=False)
-    summary=dict(version='comet_bcl_input_v1',status='running',counts_valid=False,restricted_until_reviewed=True,ready_for_inference=False)
+    summary=dict(version='comet_bcl_input_v2_relative_npy' if relative_npy else 'comet_bcl_input_v1',status='running',counts_valid=False,restricted_until_reviewed=True,ready_for_inference=False)
     try:
         before={str(p):stamp(p) for p in (metadata,formats,source/'restricted_cleaned_baseline.parquet')}
         roster,baseline_hash=load_roster(source)
         formats_hash=digest(formats)
-        rows,qc=select(roster,metadata,waveforms,formats)
+        rows,qc=select(roster,metadata,waveforms,formats,relative_npy)
         if any(stamp(Path(p))!=s for p,s in before.items()):raise BuildError('source_changed')
         if digest(source/'restricted_cleaned_baseline.parquet')!=baseline_hash:raise BuildError('baseline_changed')
         with (out/'restricted_ecg_linkage.csv').open('w',newline='') as f:
@@ -101,7 +120,7 @@ def run(source,metadata,waveforms,formats,out):
         selected=[r for r in rows if r['status']=='selected_for_smoke']
         with (out/'restricted_bcl_input.csv').open('w',newline='') as f:
             w=csv.writer(f);w.writerow(['fileID']);w.writerows([[r['fileID']] for r in selected])
-        summary.update(status='complete_ecg_selection_requires_review',counts_valid=True,rows=len(roster),selected=len(selected),qc=qc,
+        summary.update(path_contract='relative_stem_optional_npy_suffix_no_symlinks' if relative_npy else 'flat_id_append_npy',status='complete_ecg_selection_requires_review',counts_valid=True,rows=len(roster),selected=len(selected),qc=qc,
             status_by_arm={a:dict(Counter(r['status'] for r in rows if r['treatment_arm']==a)) for a in sorted({r['treatment_arm'] for r in rows})},
             alias_counts=dict(Counter(r['metadata_alias'] for r in selected)),format_250hz_selected=sum(r['format_250hz'] for r in selected),
             policy='Latest strictly prior calendar day1–365, then lexical resolved fileID; no older fallback. Both aliases matching different waveforms excluded. Global patient/date collisions excluded. Sampling label must be present and unambiguous. File presence is not waveform or checkpoint validation.')
@@ -114,7 +133,8 @@ def run(source,metadata,waveforms,formats,out):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for n in ('source-report','metadata','waveform-root','formats','output-dir'):p.add_argument('--'+n,type=Path,required=True)
+    p.add_argument('--relative-npy',action='store_true')
     a=p.parse_args()
-    try:run(a.source_report,a.metadata,a.waveform_root,a.formats,a.output_dir)
+    try:run(a.source_report,a.metadata,a.waveform_root,a.formats,a.output_dir,a.relative_npy)
     except Exception as e:print('Stopped:',str(e) if isinstance(e,BuildError) else type(e).__name__);raise SystemExit(1)
     print('Selection saved; review summary before inference.')
