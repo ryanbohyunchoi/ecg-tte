@@ -2210,3 +2210,15 @@ is now the primary workspace (master.md).
   claim needs the frozen protocol and the other trials.
 - Feasibility screen (OMOP gold, aggregate): see docs/TRIAL_FEASIBILITY_2026_09_23.md.
   Index-day ECG handling and the ECG coverage criterion need a decision.
+
+### 2026-09-23 — User decisions: ECG window and index-day ECG
+Ryan: relax the ECG availability window to 365 days before index. An index-day ECG counts
+as pre-treatment. Ryan also asked to hold off on scaling to more trials until the
+covariate-balance story is coherent ("not just an EF imputer").
+
+### 2026-09-23 — Long-tail balance result (exploratory)
+New evaluation: balance on 1,208 held-out pre-index OMOP features never in the PS, with a
+noise placebo and an exposure-only hdPS benchmark. Pool-B features with SMD>0.1:
+clinical 18.2%, placebo 18.0%, +ECG 14.7%, +CLMBR 4.2%, hdPS100 9.1%.
+Defined during this session after the earlier results, so exploratory. Replication on
+other trials is proposed before any freeze. See docs/STRATEGY.md.

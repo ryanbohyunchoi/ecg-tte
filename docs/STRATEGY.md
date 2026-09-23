@@ -62,6 +62,57 @@ Findings:
    (see `docs/ECG_MODEL.md`).
    → Every embedding must pass `scripts/embedding_utils.py::probe_gate` before use.
 
+## Core result: long-tail balance (2026-09-23; answers "is it more than an EF imputer?")
+Question: a PS balances what it is given. Does adding representations improve balance on the
+**rest of the pre-treatment record** that the PS leaves out?
+
+Design:
+- Evaluation panel: 1,208 pre-index OMOP features (365 d to 1 d before index): 232 dx,
+  187 drugs, 722 procedures, 61 labs (value + measured flag) and visit counts
+  (`scripts/build_preindex_panel.py`).
+- The panel is split per domain into pool A (hdPS may select from it) and pool B
+  (evaluation only; never in any PS).
+- hdPS uses exposure-only prioritisation (no outcome).
+- Placebo arm: the same number of pure-noise features, to control for caliper
+  trimming/retention.
+- 5 imputations × 3 random splits (`scripts/eval_longtail_balance.py`). Output:
+  `audits/claude-longtail-balance/summary_pooled.csv`.
+
+| PS | Pairs | Pool-B features SMD > 0.1 (range over 15 runs) | Mean abs SMD | PS covariates max SMD |
+|---|---|---|---|---|
+| Unmatched | 2542 | 37.5% (36.5–39.5) | 0.094 | 0.61 |
+| Clinical (32 covs) | 1871 | 18.2% (16.8–20.9) | 0.060 | 0.05 |
+| Clinical + noise (placebo, 101 dims) | 1821 | 18.0% (15.1–21.1) | 0.060 | 0.05 |
+| **Clinical + ECG** (5 phenotype + 32 PCs) | 1712 | **14.7%** (13.5–16.2) | 0.055 | 0.05 |
+| **Clinical + CLMBR** (64 PCs) | 1661 | **4.2%** (3.5–5.0) | 0.039 | 0.05 |
+| Clinical + ECG + CLMBR | 1585 | 4.1% (2.5–5.3) | 0.038 | 0.04 |
+| Clinical + hdPS (100 codes from pool A) | 1402 | 9.1% (4.1–12.9) | 0.047 | 0.05 |
+| Clinical + hdPS + ECG + CLMBR | 1210 | 4.1% (1.6–7.2) | 0.038 | 0.06 |
+
+Reading (exploratory, COMET only):
+1. A rich structured PS still leaves ~18% of the broader pre-treatment record imbalanced.
+   The noise placebo changes nothing, so the gains below are not a trimming artefact.
+2. **CLMBR works like a learned hdPS.** It cuts residual long-tail imbalance ~77%. It beats
+   empirical hdPS on balance (4.2% vs 9.1%) and on retention (1661 vs 1402 pairs), with no
+   code selection. It is also far more stable across splits.
+3. **ECG adds information orthogonal to codes.** It never sees codes yet cuts long-tail
+   imbalance ~20%, with non-overlapping ranges vs clinical-only. It also specifically
+   recovers physiologic confounders that codes miss (held-out observed LVEF, section below).
+   On a code-heavy panel it adds little beyond CLMBR.
+4. Caveats:
+   - CLMBR's input includes coded history (a superset of the panel window), so its gain on
+     coded features is partly by construction. hdPS has the same property, and CLMBR still
+     beats it.
+   - Balance is not bias. The link to effect accuracy must be shown with negative-control
+     outcomes and RCT agreement.
+
+**Proposed story.** Structured PSM balances what it is given but not the rest of the record.
+- EHR foundation-model embeddings balance the coded record better than hdPS.
+- ECG embeddings add physiologic information that no code set contains.
+- Across trials, does this better balance translate into estimates closer to the RCT?
+- Before scaling: replicate this long-tail test on 2–3 more trials (PLATO, PARADIGM-HF,
+  ARISTOTLE) and add negative-control outcomes.
+
 ## Update: phenotype heads, MUSE text, native CLMBR, observed-only LVEF (2026-09-23, later)
 Held-out design, means over 5 imputations. The PS withholds EF/labs/vitals. "Observed" LVEF SMD
 uses only measured (non-imputed) LVEF; imputation dilutes the signal. Source:
@@ -151,7 +202,8 @@ candidates have ≥ 300 per arm. Only the ACS and HF trials approach 70% ECG cov
 9. EMPA-REG
 10. DECLARE or TECOS
 
-Open decisions:
+Decided by Ryan (2026-09-23): relax the ECG window to 365 d; index-day ECG counts as pre-treatment.
+Previously open:
 - **ECG criterion.** Either relax it to 365 d, or analyse the ECG-available subpopulation
   with all methods on the same denominator.
 - **Index-day ECGs.** Is an index-day ECG pre-treatment? Excluding the index day drops

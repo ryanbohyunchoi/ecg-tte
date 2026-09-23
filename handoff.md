@@ -39,7 +39,16 @@ Observed facts (COMET n=6,103; details in `docs/ECG_MODEL.md`, `docs/STRATEGY.md
 - Unstructured features cut observed-LVEF SMD under a claims-only PS from 0.52 to 0.22.
 - Trial screen done: PLATO, TRITON, COMET and PARADIGM-HF lead.
 
-**Next action (proposed, not frozen):** see `docs/STRATEGY.md`.
+**Core result so far (long-tail balance, `docs/STRATEGY.md`):**
+- The clinical PS leaves 18% of 636 held-out pre-index features imbalanced; the noise
+  placebo gives 18%.
+- +ECG gives 14.7% (orthogonal to codes); +CLMBR gives 4.2%; hdPS gives 9.1%.
+- Ryan's decisions: ECG window 365 d; index-day ECG counts as pre-treatment.
+- Ryan wants a coherent balance story before scaling.
+
+**Next action (proposed, not frozen):**
+1. Replicate the long-tail test on PLATO, PARADIGM-HF and ARISTOTLE.
+2. Add negative-control outcomes.
 1. Freeze the evaluation protocol: method ladder, held-out covariate set, PCA k.
 2. Re-embed any further cohorts only through the fixed wrapper, and gate them with
    `scripts/embedding_utils.py`.
