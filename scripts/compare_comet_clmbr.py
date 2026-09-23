@@ -27,7 +27,7 @@ CONTRACT = dict(version=VERSION, primary_comparator='original_psm',
     evaluation='Same common population and original missingness; fixed pre-match SMD denominator per saved imputation; no outcome use or MICE refitting')
 
 
-def cosine_pairs(keys, arms, vectors, metoprolol_anchor=False):
+def cosine_pairs(keys, arms, vectors, metoprolol_anchor=False, optimal=False):
     x = np.asarray(vectors, dtype=np.float64)
     if x.ndim != 2 or len(x) != len(keys) or len(arms) != len(keys) or len(set(keys)) != len(keys):
         raise BuildError('invalid_embedding_roster')
@@ -37,6 +37,16 @@ def cosine_pairs(keys, arms, vectors, metoprolol_anchor=False):
     if set(arms) != {'carvedilol_candidate', 'metoprolol_tartrate_candidate'}:
         raise BuildError('invalid_embedding_arms')
     x = x / norms[:, None]
+    if optimal:
+        from scipy.optimize import linear_sum_assignment
+        anchors=sorted((i for i,a in enumerate(arms) if a=='metoprolol_tartrate_candidate'),key=lambda i:keys[i])
+        pool=sorted((i for i,a in enumerate(arms) if a=='carvedilol_candidate'),key=lambda i:keys[i])
+        if len(anchors)>len(pool): raise BuildError('metoprolol_anchor_exceeds_carvedilol_pool')
+        if len(anchors)<2: raise BuildError('insufficient_matches')
+        cost=1-np.clip(x[anchors]@x[pool].T,-1,1)
+        ri,ci=linear_sum_assignment(cost)
+        if len(ri)!=len(anchors) or len(set(ci))!=len(ci): raise BuildError('invalid_optimal_assignment')
+        return [dict(carvedilol_key=keys[pool[c]],metoprolol_key=keys[anchors[r]],cosine_distance=float(cost[r,c])) for r,c in zip(ri,ci)]
     anchor_arm = 'metoprolol_tartrate_candidate' if metoprolol_anchor else 'carvedilol_candidate'
     pool_arm = 'carvedilol_candidate' if metoprolol_anchor else 'metoprolol_tartrate_candidate'
     anchors = sorted((i for i,a in enumerate(arms) if a==anchor_arm),
@@ -96,13 +106,19 @@ def verified(root):
     return m,checks
 
 
-def run(embeddings,mice,output,rscript,metoprolol_anchor=False):
+def run(embeddings,mice,output,rscript,metoprolol_anchor=False,optimal=False):
     contract=dict(CONTRACT)
     if metoprolol_anchor:
         contract.update(version="comet_cosine_comparison_v2_metoprolol_anchor",
             cosine="L2 normalization; 1-dot; greedy metoprolol order SHA256(comet_cosine_v1|patient_key), lexical key ties; closest unused carvedilol, lexical pool ties",
             selection="All metoprolol retained; carvedilol selected by embedding distance. Stop if metoprolol exceeds carvedilol pool. Direction is explicit, never automatically reversed.",
             revision="User-approved correction after v1 review; v1 retained sets were embedding-independent. Preserve v1; no claim of prospectively unseen v1 results.")
+    if optimal:
+        contract.update(version='comet_cosine_comparison_v3_global_optimal',
+            cosine='Minimize total 1-dot distance of L2 vectors; rectangular scipy linear_sum_assignment; all metoprolol assigned to distinct carvedilol',
+            selection='All metoprolol retained; subset of carvedilol selected jointly. Stop if metoprolol exceeds carvedilol pool.',
+            ties='Lexical patient ordering of both cost-matrix axes; solver chooses among equal-cost optima. No cost perturbation. SciPy version recorded; ties not guaranteed identical across versions.',
+            revision='User-approved global assignment after v2 review; preserve v1/v2. No new caliper, covariates or outcome tuning.')
     version=contract["version"]
     if any(not p.is_absolute() or p.is_symlink() for p in (embeddings,mice,output)): raise BuildError('absolute_nonsymlink_paths_required')
     for root in (embeddings,mice):
@@ -144,7 +160,14 @@ def run(embeddings,mice,output,rscript,metoprolol_anchor=False):
         selected=[j for j,k in enumerate(keys) if k in bykey]; common=[keys[j] for j in selected]
         arms=[lookup[k]['treatment_arm'] for k in common]
         summary['execution_stage']='cosine_matching'
-        pairs=cosine_pairs(common,arms,[bykey[k]['embedding'] for k in common],metoprolol_anchor=metoprolol_anchor)
+        pairs=cosine_pairs(common,arms,[bykey[k]['embedding'] for k in common],metoprolol_anchor=metoprolol_anchor,optimal=optimal)
+        if optimal:
+            import scipy
+            greedy=cosine_pairs(common,arms,[bykey[k]["embedding"] for k in common],metoprolol_anchor=True)
+            global_total=sum(r["cosine_distance"] for r in pairs);greedy_total=sum(r["cosine_distance"] for r in greedy)
+            if len(pairs)!=len(greedy) or global_total>greedy_total+1e-9*max(1,abs(greedy_total)): raise BuildError("optimal_objective_exceeds_greedy")
+            write_csv(output/"restricted_greedy_reference_pairs.csv",greedy)
+            summary["assignment_objective"]=dict(scipy_version=scipy.__version__,numpy_version=np.__version__,optimal_total_cosine_distance=global_total,greedy_v2_total_cosine_distance=greedy_total,pairs=len(pairs),interpretation="Distance objective only; not clinical balance or effect accuracy.")
         pair_path=output/'restricted_cosine_pairs.csv';write_csv(pair_path,pairs)
         summary['execution_stage']='subset_saved_imputations'
         subset=output/'restricted_common_inputs';subset.mkdir()
@@ -194,7 +217,7 @@ def run(embeddings,mice,output,rscript,metoprolol_anchor=False):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for n in ('embeddings','mice','output-dir'): p.add_argument('--'+n,required=True,type=Path)
-    p.add_argument('--rscript',required=True);p.add_argument('--metoprolol-anchor',action='store_true',help='Explicit v2: select carvedilol matches for all metoprolol patients');a=p.parse_args()
-    try: run(a.embeddings,a.mice,a.output_dir,a.rscript,metoprolol_anchor=a.metoprolol_anchor)
+    p.add_argument('--rscript',required=True);p.add_argument('--metoprolol-anchor',action='store_true',help='Explicit v2: select carvedilol matches for all metoprolol patients');p.add_argument('--global-optimal',action='store_true',help='Explicit v3: minimize total cosine distance jointly');a=p.parse_args()
+    try: run(a.embeddings,a.mice,a.output_dir,a.rscript,metoprolol_anchor=a.metoprolol_anchor,optimal=a.global_optimal)
     except Exception as e: print('Stopped:',str(e) if isinstance(e,BuildError) else type(e).__name__);raise SystemExit(1)
     print('Comparison complete; review balance and retention. No effects estimated.')

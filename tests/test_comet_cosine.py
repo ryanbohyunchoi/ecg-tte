@@ -45,6 +45,26 @@ class CosineTests(unittest.TestCase):
         with self.assertRaisesRegex(BuildError,'metoprolol_anchor_exceeds'):
             cosine_pairs(['c','m1','m2'],['carvedilol_candidate']+['metoprolol_tartrate_candidate']*2,np.ones((3,2)),metoprolol_anchor=True)
 
+    def test_global_optimum_against_exhaustive_assignments(self):
+        from itertools import permutations
+        keys=['c0','c1','c2','m0','m1'];arms=['carvedilol_candidate']*3+['metoprolol_tartrate_candidate']*2
+        rng=np.random.default_rng(44)
+        strict_improvements=0
+        for _ in range(20):
+            x=rng.normal(size=(5,4));x/=np.linalg.norm(x,axis=1)[:,None]
+            result=cosine_pairs(keys,arms,x,optimal=True)
+            optimum=min(sum(1-np.clip(x[3+i]@x[j],-1,1) for i,j in enumerate(p)) for p in permutations(range(3),2))
+            total=sum(r['cosine_distance'] for r in result)
+            self.assertAlmostEqual(total,optimum,places=12)
+            greedy=sum(r['cosine_distance'] for r in cosine_pairs(keys,arms,x,metoprolol_anchor=True))
+            self.assertLessEqual(total,greedy+1e-12)
+            strict_improvements+=total<greedy-1e-8
+            self.assertEqual(len({r['carvedilol_key'] for r in result}),2)
+            self.assertEqual({r['metoprolol_key'] for r in result},{'m0','m1'})
+            order=[4,2,0,3,1]
+            self.assertEqual(result,cosine_pairs([keys[i] for i in order],[arms[i] for i in order],x[order],optimal=True))
+        self.assertGreater(strict_improvements,0)
+
 
 class ComparisonIntegration(unittest.TestCase):
     def test_synthetic_pipeline_and_input_tamper(self):
@@ -78,10 +98,10 @@ class ComparisonIntegration(unittest.TestCase):
             dump(emb/'summary.json',dict(status='complete_embeddings_requires_review',counts_valid=True,limit=0,numeric_mode='code-only',max_tokens=4096,totals={'encoded':n}))
             dump(emb/'manifest.json',dict(model_sha256={'model.safetensors':CONTRACT['checkpoint_weights_sha256']},outputs={p.name:digest(p) for p in emb.iterdir() if p.name!='summary.json'}))
             with patch('compare_comet_clmbr.review',return_value=dict(startup_abi_warning_detected=False,bp_inconsistent_patient_imputation_rows=0)):
-                result=run(emb,mice,root/'out',rscript,metoprolol_anchor=True)
+                result=run(emb,mice,root/'out',rscript,optimal=True)
             self.assertTrue(result['counts_valid']);self.assertEqual(result['common_rows'],n)
             self.assertEqual(result['methods']['cosine'][0]['pairs'],80)
-            self.assertEqual(result['version'],'comet_cosine_comparison_v2_metoprolol_anchor')
+            self.assertEqual(result['version'],'comet_cosine_comparison_v3_global_optimal')
             self.assertTrue((root/'out/comparison_love_plots.pdf').is_file())
             (emb/'restricted_embeddings_part-000.parquet').write_bytes(b'changed')
             with self.assertRaises(BuildError):verified(emb)
