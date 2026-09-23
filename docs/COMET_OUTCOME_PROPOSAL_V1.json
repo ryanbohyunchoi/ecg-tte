@@ -1,0 +1,40 @@
+{
+  "version": "comet_outcome_proposal_v1",
+  "status": "proposed_not_frozen",
+  "decision_date": "2026-09-22",
+  "population": "final adapted COMET prescribing cohort from Track 1; provisional feasibility uses prior 6530-person roster",
+  "primary_candidate": {
+    "endpoint": "all_cause_mortality",
+    "time_zero": "qualifying treatment index day",
+    "event_rule": "first validated death date strictly after index and on or before horizon/admin end",
+    "horizon_days": 365,
+    "administrative_end": "2024-12-31",
+    "latest_index": "2023-12-31",
+    "estimand": "initiation-based treatment-policy analogue; exact effect scale pending final analysis contract",
+    "provisional_pooled_eligible_indices": 6253
+  },
+  "why_this_calendar_rule": "Death counts are stable by month through 2024; 2025 becomes visibly incomplete in March and nearly absent in April. Full-year 2024 is a conservative observed boundary, conditional on source provenance.",
+  "mandatory_gates": [
+    "Confirm DEATH_DATE provenance, linkage, update lag, and completeness through 2024-12-31.",
+    "Resolve or exclude with structured reason the one provisional patient/index whose death precedes index.",
+    "Rerun pooled and arm-level calendar attrition on Track 1 final patient/index manifest.",
+    "Do not classify missing DEATH_DATE as survival unless completeness through the administrative end is validated.",
+    "Freeze estimand, effect scale, same-day policy, and analysis-stage imputation interface before outcome estimation."
+  ],
+  "separate_candidate": {
+    "endpoint": "time_to_first_all_cause_death_or_all_cause_inpatient_admission",
+    "status": "blocked_on_episode_contract",
+    "requirements": [
+      "Define inpatient setting semantics.",
+      "Collapse transfers/contiguous stays.",
+      "Resolve death/admission same-day ordering.",
+      "Apply the mortality coverage gate above."
+    ]
+  },
+  "not_authorized": [
+    "outcome-based cohort tuning",
+    "future-encounter eligibility",
+    "treatment-stratified outcome comparison",
+    "effect estimation"
+  ]
+}
