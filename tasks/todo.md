@@ -1063,4 +1063,6 @@ PDF regeneration not confirmed. Preserve all original runs and restrictions.
 - [ ] Review `bio-embed-lvsd` for merge.
 - [x] Feasibility screen and proposed ten (docs/TRIAL_FEASIBILITY_2026_09_23.md).
 - [ ] Ryan: decide the ECG coverage criterion and index-day ECG handling.
-- [ ] Build the multi-trial cohort contract (start with PLATO, PARADIGM-HF, ARISTOTLE).
+- [x] Long-tail balance + low-dim vs hdPS analysis (COMET).
+- [ ] Replicate long-tail analysis on PLATO, PARADIGM-HF, ARISTOTLE.
+- [ ] Stronger hdPS comparator; negative-control outcomes; prognostic-score balance.

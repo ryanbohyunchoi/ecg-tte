@@ -5,59 +5,66 @@ claims in the chronological history below. Cluster results here are from Ryan's
 supplied aggregate reports; the assistant did not access H100. No patient records
 or embeddings belong in this repository.
 
-## Current result and next action
+## Current result and next action (updated end of 2026-09-23 session)
 
-**The BCL geometry/preprocessing audit requested below has run (2026-09-23, direct
-cluster access, aggregate outputs only). The near-zero BCL cosine distances came from
-an input-unit bug, not from the model.** The BCL checkpoints were trained on µV input,
-but `all_ecgs` stores mV. The eval-mode network therefore saw ~1000x-too-small inputs,
-and every ECG mapped to nearly the same vector. The earlier ECG BCL cosine and BCL
-comparison results below are **invalid as evidence about ECG information**. Preserve
-them as history.
+Read `docs/STRATEGY.md` first; it holds every result table. Everything below is
+**exploratory, COMET only**: designs were chosen during the session after earlier results.
+No outcomes have been used.
 
-Observed facts (COMET n=6,103; details in `docs/ECG_MODEL.md`, `docs/STRATEGY.md`):
-- As-run vectors: ||mean unit vector|| = 0.999995. Random-pair cosine distance median
-  1.9e-6. First-BatchNorm stored input variance ~1.5e4 vs ~0.013 observed at input.
-- Re-embedded with the same checkpoint, input x1000 and no 250 Hz stretching
-  (`scripts/bcl_embed_uv.py`; output `audits/claude-bcl-uv-fix/`): ||mean unit|| 0.35.
-  5-fold linear-probe AUC sex 0.69→0.81, age≥65 0.64→0.80, AF 0.62→0.75,
-  LVEF≤40 0.59→0.69.
-- Second bug: catalog `5_0` (250 Hz) files are already 500 Hz in `all_ecgs`, so
-  `process_ecg` stretched 5 s to 10 s for 583/6,103 COMET ECGs.
-- Exploratory strategy comparison (`scripts/diag_matching_strategies.py`, 5 imputations,
-  outputs `audits/claude-matching-diagnostic{,-uvfix}/`):
-  - Cosine matching on any embedding, with any preprocessing, leaves max SMD 0.54–0.59
-    (LVEF, AF).
-  - Adding centred embedding PCs to a PS that withholds EF/labs/vitals reduces held-out
-    LVEF SMD: 0.56 (claims-only) → 0.42 (+ECG) / 0.45 (+CLMBR) / 0.37 (+both).
-  - This held-out design and the PCA settings were chosen after seeing data. They are
-    **exploratory, not frozen**. No outcomes were used.
+### What was established
+1. **The BCL ECG collapse was an input bug.** Checkpoints expect µV, but `all_ecgs` is mV,
+   and 250 Hz-flagged files were stretched. Fixed with `scripts/bcl_embed_uv.py` and
+   re-embedded (`audits/claude-bcl-uv-fix`). Earlier BCL comparison results are invalid;
+   they are preserved as history.
+2. **The fixed BCL is clinically informative.** Out-of-cohort linear heads on 40K ECG–echo
+   pairs (COMET excluded) give held-out LVEF≤40 AUC 0.90, AF 0.95. No retraining is needed
+   for now (`docs/ECG_MODEL.md`).
+3. **Cosine matching on any embedding does not balance confounders.** It has been dropped as
+   a primary method.
+4. **Native-numeric CLMBR is no better than code-only.**
+5. **Core result: long-tail balance.** Evaluated on 1,208 held-out pre-index OMOP features
+   (`scripts/build_preindex_panel.py`, `scripts/eval_longtail_balance.py`), with a noise
+   placebo and an exposure-only hdPS benchmark.
+   - The rich clinical PS leaves 18% of features at SMD > 0.1; the placebo also gives 18%.
+   - +ECG gives 14.7% (information orthogonal to codes).
+   - +CLMBR gives 4.2%; hdPS100 gives 9.1%.
+   - At every base (demo / claims / clinical), ECG+CLMBR beats hdPS on long-tail balance,
+     LVEF balance and retention.
+   - Embeddings do NOT replace the core clinical confounders: a demographics-only base
+     leaves LVEF/AF imbalanced.
+6. **Held-out LVEF:** under a claims-only PS, unstructured features reduce observed LVEF SMD
+   0.52 → 0.22.
+7. **Trial feasibility screen** (`docs/TRIAL_FEASIBILITY_2026_09_23.md`): PLATO, TRITON,
+   COMET and PARADIGM-HF lead.
 
-**Later on 2026-09-23 (details in `docs/STRATEGY.md` "Update" section):**
-- Out-of-cohort ECG phenotype heads work: LVEF≤40 AUC 0.90, AF 0.95.
-- Native CLMBR is encoded; it is no better than code-only.
-- Unstructured features cut observed-LVEF SMD under a claims-only PS from 0.52 to 0.22.
-- Trial screen done: PLATO, TRITON, COMET and PARADIGM-HF lead.
+### Ryan's decisions (2026-09-23)
+- ECG window: 365 d before index. An index-day ECG counts as pre-treatment.
+- Container is the primary workspace (`master.md`); `main` is the trunk; push regularly.
+- Don't scale to 10 trials until the covariate-balance story is coherent. It must be more
+  than "an EF imputer".
 
-**Core result so far (long-tail balance, `docs/STRATEGY.md`):**
-- The clinical PS leaves 18% of 636 held-out pre-index features imbalanced; the noise
-  placebo gives 18%.
-- +ECG gives 14.7% (orthogonal to codes); +CLMBR gives 4.2%; hdPS gives 9.1%.
-- Ryan's decisions: ECG window 365 d; index-day ECG counts as pre-treatment.
-- Ryan wants a coherent balance story before scaling.
+### Proposed story (not frozen)
+Structured PSM balances what it is given but leaves the rest of the record imbalanced.
+- EHR foundation-model embeddings are a better high-dimensional complement than hdPS.
+- ECG embeddings add physiologic information that no code set contains.
+- The question for the multi-trial study: does this better balance bring estimates closer to
+  the RCT?
 
-**Next action (proposed, not frozen):**
-1. Replicate the long-tail test on PLATO, PARADIGM-HF and ARISTOTLE.
-2. Add negative-control outcomes.
-1. Freeze the evaluation protocol: method ladder, held-out covariate set, PCA k.
-2. Re-embed any further cohorts only through the fixed wrapper, and gate them with
-   `scripts/embedding_utils.py`.
-3. Decide whether to add supervised ECG phenotype probabilities, or to train a supervised
-   multi-task ECG model (`docs/ECG_MODEL.md`).
-4. Rerun CLMBR with numeric values.
-
-The Love-plot relabel item from the previous brief is moot for BCL: the BCL
-vectors themselves are superseded.
+### Next actions
+1. **Replicate the long-tail analysis in 2–3 other trials** (PLATO, PARADIGM-HF, ARISTOTLE).
+   This needs:
+   - a cohort + clinical baseline for each, under the new contract;
+   - the fixed BCL embedding with a 365 d window;
+   - CLMBR code-only encoding (MEDS build per cohort, see `docs/RUN_COMET_MEDS_AND_CLMBR.md`);
+   - the pre-index panel.
+2. **Strengthen hdPS as a comparator:** add frequency levels (once/sporadic/frequent) and
+   k = 200/500. An outcome-ranked hdPS waits until outcome use is allowed by protocol.
+3. **Negative-control outcomes** (balance ≠ bias): pre-specify a set, then check whether
+   embedding-augmented PS moves NCO HRs toward 1.
+4. **Stronger balance diagnostics:** prognostic-score balance, and
+   C-statistic-of-treatment-after-matching.
+5. **Freeze the protocol** (base covariates, embedding k, hdPS spec, evaluation panel)
+   before any trial outcome.
 
 ## Cohort and adjustment state
 

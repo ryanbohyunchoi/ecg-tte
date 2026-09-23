@@ -86,6 +86,11 @@ hd = (np.log(p1 / p0)).abs().sort_values(ascending=False).index[: args.hdps_k]
 hd_f = panel[hd].gt(0).astype(float).to_numpy()
 
 X_clin = cov.to_numpy()
+# Low-dimensional bases: demographics only; claims-like (no EF/labs/vitals)
+DEMO = ["age_at_index", "male", "index_year"]
+CLAIMS = [c for c in cov.columns if c not in
+          ["lvef", "sbp", "dbp", "heart_rate", "bmi", "creatinine", "potassium", "sodium", "hemoglobin"]]
+X_demo, X_claims = cov[DEMO].to_numpy(), cov[CLAIMS].to_numpy()
 
 
 def smd_table(mt, mc, cols, frame):
@@ -141,6 +146,16 @@ methods = {
     f"clinical+hdPS{args.hdps_k}": np.hstack([X_clin, hd_f]),
     f"clinical+hdPS{args.hdps_k}+ECG": np.hstack([X_clin, hd_f, ecg_f]),
     f"clinical+hdPS{args.hdps_k}+ECG+CLMBR": np.hstack([X_clin, hd_f, ecg_f, clm_f]),
+    "demo": X_demo,
+    "demo+ECG": np.hstack([X_demo, ecg_f]),
+    "demo+CLMBR": np.hstack([X_demo, clm_f]),
+    "demo+ECG+CLMBR": np.hstack([X_demo, ecg_f, clm_f]),
+    f"demo+hdPS{args.hdps_k}": np.hstack([X_demo, hd_f]),
+    f"demo+hdPS{args.hdps_k}+ECG+CLMBR": np.hstack([X_demo, hd_f, ecg_f, clm_f]),
+    "claims": X_claims,
+    "claims+ECG+CLMBR": np.hstack([X_claims, ecg_f, clm_f]),
+    f"claims+hdPS{args.hdps_k}": np.hstack([X_claims, hd_f]),
+    f"claims+hdPS{args.hdps_k}+ECG+CLMBR": np.hstack([X_claims, hd_f, ecg_f, clm_f]),
 }
 rows = []
 idx = np.arange(len(t))
@@ -150,7 +165,9 @@ for name, X in methods.items():
     rows.append(dict(method=name, pairs=len(mt), noise_sd=round(float(np.sqrt(2 / max(len(mt), 1))), 3),
                      B_n=len(sB), B_frac_gt_0_1=(sB > 0.1).mean(), B_mean=sB.mean(), B_p95=np.quantile(sB, 0.95),
                      A_frac_gt_0_1=(sA > 0.1).mean(), A_mean=sA.mean(),
-                     ps_covs_max=sC.max(), imputation=args.imputation, split_seed=args.split_seed))
+                     ps_covs_max=sC.max(), clin32_n_gt_0_1=int((sC > 0.1).sum()),
+                     lvef=float(smd_table(mt, mc, ["lvef"], cov)[0]),
+                     afib=float(smd_table(mt, mc, ["atrial_fibrillation"], cov)[0]), imputation=args.imputation, split_seed=args.split_seed))
 out = pd.DataFrame(rows).set_index("method")
 out.to_csv(f"{args.output_dir}/longtail_imp{args.imputation}_seed{args.split_seed}.csv")
 pd.set_option("display.width", 250)

@@ -113,6 +113,32 @@ Reading (exploratory, COMET only):
 - Before scaling: replicate this long-tail test on 2–3 more trials (PLATO, PARADIGM-HF,
   ARISTOTLE) and add negative-control outcomes.
 
+## Low-dimensional PS + embeddings vs hdPS (2026-09-23)
+Same long-tail design, 5 imputations × 3 splits (`audits/claude-longtail-lowdim/summary_pooled.csv`).
+- demo = age, sex, index year.
+- claims = the clinical set minus EF/labs/vitals.
+- "Clin32 >0.1" = how many of the 32 hand-picked clinical covariates stay imbalanced.
+
+| PS | Pairs | Pool-B SMD > 0.1 | Clin32 > 0.1 (of 32) | LVEF SMD | AF SMD |
+|---|---|---|---|---|---|
+| demo | 2448 | 37.4% | 14.4 | 0.58 | 0.47 |
+| demo + hdPS100 | 1635 | 11.3% | 10.1 | 0.47 | 0.29 |
+| demo + CLMBR | 1883 | 5.4% | 6.4 | 0.48 | 0.37 |
+| **demo + ECG + CLMBR** | 1721 | **5.5%** | 8.0 | **0.39** | **0.28** |
+| claims + hdPS100 | 1514 | 8.9% | 3.5 | 0.48 | 0.04 |
+| **claims + ECG + CLMBR** | 1652 | **4.3%** | 3.0 | **0.36** | 0.02 |
+| clinical + hdPS100 | 1402 | 9.1% | 0 | 0.03 | 0.03 |
+| **clinical + ECG + CLMBR** | 1585 | **4.1%** | 0 | 0.04 | 0.02 |
+
+Reading:
+- **At every base level, ECG+CLMBR beats hdPS.** It gives better long-tail balance (about half the
+  residual), better LVEF balance and higher retention.
+- **With a demographics-only base, CLMBR matches the long-tail balance of a rich base.** But
+  6–8 of the 32 key confounders stay imbalanced, and LVEF/AF don't reach < 0.1.
+- Embeddings are therefore **a better high-dimensional complement than hdPS, not a substitute
+  for investigator-specified core confounders.** Proposed design: core clinical confounders +
+  embeddings (in place of, or on top of, hdPS).
+
 ## Update: phenotype heads, MUSE text, native CLMBR, observed-only LVEF (2026-09-23, later)
 Held-out design, means over 5 imputations. The PS withholds EF/labs/vitals. "Observed" LVEF SMD
 uses only measured (non-imputed) LVEF; imputation dilutes the signal. Source:

@@ -2222,3 +2222,9 @@ noise placebo and an exposure-only hdPS benchmark. Pool-B features with SMD>0.1:
 clinical 18.2%, placebo 18.0%, +ECG 14.7%, +CLMBR 4.2%, hdPS100 9.1%.
 Defined during this session after the earlier results, so exploratory. Replication on
 other trials is proposed before any freeze. See docs/STRATEGY.md.
+
+### 2026-09-23 — Low-dimensional PS + embeddings vs hdPS (exploratory)
+At every base (demo/claims/clinical), ECG+CLMBR beats exposure-ranked hdPS100 on long-tail
+balance (~half the residual), LVEF balance and retention. A demographics-only base plus
+embeddings does not balance the core confounders (LVEF 0.39, AF 0.28). Proposed framing:
+embeddings complement or replace hdPS; they do not replace investigator-specified confounders.
