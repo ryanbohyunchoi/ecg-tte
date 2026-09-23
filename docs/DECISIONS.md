@@ -2198,3 +2198,15 @@ archived, and merging it would breach the archive boundary. The branch stays on 
 remote as reference. Its `bio_embed.py` loads all_ecgs without µV scaling, so
 treat any outputs from it as affected by the same input-unit bug. The container
 is now the primary workspace (master.md).
+
+### 2026-09-23 — Phenotype heads, native CLMBR, observed-LVEF evaluation (exploratory)
+- Out-of-cohort ECG phenotype heads: 40K ECG–echo pairs, COMET patients excluded,
+  seeded patient split. Held-out LVEF≤40 AUC 0.90, AF 0.95.
+- Native-numeric CLMBR full run: 7,498 encoded, 81% of numeric measurements accepted.
+  Env is an Aug-9 mosaic snapshot with transformers 4.44.2; the code-only run used 5.15.0.
+- COMET held-out design, observed-only LVEF SMD: claims 0.52 → +ECG+CLMBR+MUSE+phenotypes
+  0.22. Native CLMBR is not better than code-only (0.38 vs 0.36).
+- Still exploratory. Feature families were chosen after seeing COMET balance, so any
+  claim needs the frozen protocol and the other trials.
+- Feasibility screen (OMOP gold, aggregate): see docs/TRIAL_FEASIBILITY_2026_09_23.md.
+  Index-day ECG handling and the ECG coverage criterion need a decision.

@@ -30,6 +30,26 @@
 LVSD model score, not echo.
 COMET is harder: an older HF population, AF as a *history* diagnosis, and LVEF partly imputed.
 
+## Out-of-cohort phenotype heads (done 2026-09-23)
+- Training data: 40,000 ECG–echo pairs within ±30 d, from patients outside COMET
+  (`scripts/build_ecg_phenotype_set.py`). Embedded with the fixed BCL model.
+- Heads: linear, on standardised embeddings (`scripts/train_ecg_phenotype_heads.py`).
+- Held-out (8,127 patients) performance:
+
+  | Head | Metric | Result |
+  |---|---|---|
+  | LVEF ≤ 40 | AUC | 0.90 |
+  | AF | AUC | 0.95 |
+  | Male sex | AUC | 0.85 |
+  | LVEF | R² | 0.32 |
+  | Age | R² | 0.52 |
+
+- The fixed BCL embedding therefore meets the LVEF and AF gates on echo-linked labels.
+- The five scores are available as PS covariates:
+  `audits/claude-ecg-phenotype-heads/restricted_cohort_phenotypes.parquet`.
+- **Retraining is not needed for now.** A fine-tuned multi-task model could raise
+  LVEF R² above 0.32. In COMET, phenotype scores already match the 32-PC result.
+
 ## Candidate checkpoints
 1. **`CNN0_lead_time_transformer_…_08_26_2026/trained_12lead_30.pt`**: 256-D, 12-lead 10 s 500 Hz.
    Best probes after the fix. **Current default.**
@@ -42,7 +62,8 @@ COMET is harder: an older HF population, AF as a *history* diagnosis, and LVEF p
      precomputed in `mosaic/allcomers_ecg.parquet`.
 
 ## Plan
-1. **Now:** re-embed each trial pool with the fixed wrapper, then gate
+1. **Done for COMET:** re-embedded with the fixed wrapper; heads gated on echo LVEF. Next:
+   re-embed each trial pool the same way and gate it
    (`embedding_utils.probe_gate`, echo-linked LVEF on observed values only).
 2. **Cheap add-on:** a supervised "ECG phenotype" vector as PS covariates:
    - P(LVEF<40) from the EchoElig/LVSD model

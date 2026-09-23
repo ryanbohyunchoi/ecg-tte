@@ -62,6 +62,39 @@ Findings:
    (see `docs/ECG_MODEL.md`).
    → Every embedding must pass `scripts/embedding_utils.py::probe_gate` before use.
 
+## Update: phenotype heads, MUSE text, native CLMBR, observed-only LVEF (2026-09-23, later)
+Held-out design, means over 5 imputations. The PS withholds EF/labs/vitals. "Observed" LVEF SMD
+uses only measured (non-imputed) LVEF; imputation dilutes the signal. Source:
+`audits/claude-matching-diagnostic-v3-{codeonly,native}/summary_pooled_5imp.csv`.
+
+| PS covariates (claims-like base) | Pairs | LVEF SMD (MICE) | **LVEF SMD (observed)** | AF SMD |
+|---|---|---|---|---|
+| Unmatched | 2542 | 0.61 | 0.57 | 0.53 |
+| Claims only | 2117 | 0.56 | 0.52 | 0.05 |
+| + MUSE intervals/text (24) | 1921 | 0.51 | 0.43 | 0.03 |
+| + ECG phenotype scores (5; out-of-cohort heads) | 1877 | 0.42 | 0.30 | 0.03 |
+| + ECG PCs (32) | 1825 | 0.42 | 0.31 | 0.02 |
+| + CLMBR code-only PCs (64) | 1791 | 0.45 | 0.36 | 0.02 |
+| + CLMBR native-numeric PCs (64) | 1820 | 0.46 | 0.38 | 0.03 |
+| + ECG PCs + CLMBR code-only | 1668 | 0.37 | 0.25 | 0.01 |
+| **+ ECG + CLMBR code-only + MUSE + phenotypes** | 1610 | 0.35 | **0.22** | 0.01 |
+| Reference: full clinical PS (EF/labs/vitals included) | 1861 | 0.05 | 0.02 | 0.02 |
+
+Reading:
+- Unstructured features recover about 60% of the observed-LVEF imbalance that claims
+  covariates miss (0.52 → 0.22). They don't reach < 0.1. Measured EF remains the
+  gold-standard adjuster where it's available.
+- Five supervised ECG phenotype scores (out-of-cohort heads: LVEF≤40 AUC 0.90, AF 0.95) do as
+  well as 32 PCs, so they're a compact, interpretable PS input.
+- Native-numeric CLMBR is **not** better than code-only here (0.38 vs 0.36). There's no
+  evidence that numeric tokens help this model.
+- More PS dimensions lower retention (2117 → 1610 pairs). Report retention alongside
+  balance.
+- Implication for the multi-trial study: the value of unstructured data should be largest
+  in trials where key confounders are poorly measured. For example, echo EF within 365 d is
+  available for only 11–42% in AF and T2D trials, vs ~50% in HF/ACS trials
+  (`docs/TRIAL_FEASIBILITY_2026_09_23.md`). That is a testable, pre-specifiable prediction.
+
 ## Final method ladder (identical for every trial)
 | # | Arm | Covariates in PS | Role |
 |---|---|---|---|
@@ -104,13 +137,27 @@ Criteria:
 - An active-comparator design feasible in Yale data.
 - A published HR exists.
 
-Rank by these using per-trial feasibility counts under the new contract. Candidates:
-- COMET
-- PARADIGM-HF
-- ARISTOTLE, RE-LY, ROCKET-AF
-- EMPA-REG, DECLARE, CANVAS
-- CAROLINA, TECOS/SAVOR, LEADER
-- PLATO / TRITON
+Screen run 2026-09-23 on OMOP gold (`docs/TRIAL_FEASIBILITY_2026_09_23.md`). All 15
+candidates have ≥ 300 per arm. Only the ACS and HF trials approach 70% ECG coverage within
+90 d. Proposed ten (active-comparator RCTs first):
+1. PLATO
+2. TRITON
+3. COMET
+4. PARADIGM-HF
+5. ARISTOTLE
+6. ROCKET-AF
+7. RE-LY
+8. CAROLINA
+9. EMPA-REG
+10. DECLARE or TECOS
+
+Open decisions:
+- **ECG criterion.** Either relax it to 365 d, or analyse the ECG-available subpopulation
+  with all methods on the same denominator.
+- **Index-day ECGs.** Is an index-day ECG pre-treatment? Excluding the index day drops
+  PLATO's coverage from 0.83 to 0.54.
+- **Placebo-controlled trials** need an active comparator, so their published HRs are
+  only an indirect benchmark.
 
 ## Workstreams
 1. **ECG representation.** Scale fix done. Next, add supervised disease-probability

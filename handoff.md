@@ -33,6 +33,12 @@ Observed facts (COMET n=6,103; details in `docs/ECG_MODEL.md`, `docs/STRATEGY.md
   - This held-out design and the PCA settings were chosen after seeing data. They are
     **exploratory, not frozen**. No outcomes were used.
 
+**Later on 2026-09-23 (details in `docs/STRATEGY.md` "Update" section):**
+- Out-of-cohort ECG phenotype heads work: LVEF≤40 AUC 0.90, AF 0.95.
+- Native CLMBR is encoded; it is no better than code-only.
+- Unstructured features cut observed-LVEF SMD under a claims-only PS from 0.52 to 0.22.
+- Trial screen done: PLATO, TRITON, COMET and PARADIGM-HF lead.
+
 **Next action (proposed, not frozen):** see `docs/STRATEGY.md`.
 1. Freeze the evaluation protocol: method ladder, held-out covariate set, PCA k.
 2. Re-embed any further cohorts only through the fixed wrapper, and gate them with

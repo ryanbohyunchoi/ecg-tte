@@ -1057,8 +1057,10 @@ PDF regeneration not confirmed. Preserve all original runs and restrictions.
 - [x] OMOP gold / notes / echo / ECG-text inventory (`docs/DATA_SOURCES.md`).
 - [x] Split handoff: current brief in `handoff.md`, history in `docs/HANDOFF_HISTORY.md`.
 - [ ] Ryan: review and freeze the evaluation protocol in `docs/STRATEGY.md` (method ladder, held-out set, PCA k).
-- [ ] Gate the fixed BCL on echo-linked *observed* LVEF (not MICE-imputed).
+- [x] Gate the fixed BCL on echo-linked LVEF: out-of-cohort heads, AUC 0.90.
 - [ ] Decide: supervised ECG phenotype probabilities vs. multi-task ECG training (`docs/ECG_MODEL.md`).
-- [ ] Rerun CLMBR with numeric values.
+- [x] Rerun CLMBR with numeric values: done, no better than code-only.
 - [ ] Review `bio-embed-lvsd` for merge.
-- [ ] Shortlist ~10 trials by feasibility criteria.
+- [x] Feasibility screen and proposed ten (docs/TRIAL_FEASIBILITY_2026_09_23.md).
+- [ ] Ryan: decide the ECG coverage criterion and index-day ECG handling.
+- [ ] Build the multi-trial cohort contract (start with PLATO, PARADIGM-HF, ARISTOTLE).
