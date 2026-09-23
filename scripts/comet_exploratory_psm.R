@@ -4,7 +4,7 @@ fixed_smd <- function(a,b,am,bm,binary=FALSE) {
   denom <- if(binary) sqrt((mean(a)*(1-mean(a))+mean(b)*(1-mean(b)))/2) else sqrt((var(a)+var(b))/2)
   c(pre=if(denom>0) (mean(a)-mean(b))/denom else NA_real_,post=if(denom>0) (mean(am)-mean(bm))/denom else NA_real_)
 }
-main <- function(report,out,refined=FALSE) {
+main <- function(report,out,refined=FALSE,external_pairs=NULL) {
   if(!requireNamespace('jsonlite',quietly=TRUE)) stop('jsonlite_required')
   spec <- jsonlite::read_json(file.path(report,'model_spec.json'),simplifyVector=TRUE)
   keys <- jsonlite::read_json(file.path(report,'restricted_row_keys.json'),simplifyVector=TRUE)
@@ -21,7 +21,7 @@ main <- function(report,out,refined=FALSE) {
     }
   }
   write.csv(do.call(rbind,trace_rows),file.path(out,'trace_drift_summary.csv'),row.names=FALSE)
-  all_balance <- list(); summaries <- list()
+  all_balance <- list(); all_observed <- list(); summaries <- list()
   for(i in seq_len(spec$m)) {
     d <- read.csv(file.path(report,sprintf('restricted_completed_%02d.csv',i)),check.names=FALSE)
     d$recorded_sex <- factor(d$recorded_sex)
@@ -72,6 +72,11 @@ main <- function(report,out,refined=FALSE) {
       distances <- abs(logits[available]-logits[t]); k <- which.min(distances)
       if(distances[k]<=caliper) {pairs<-rbind(pairs,c(t,available[k])); available<-available[-k]}
     }
+    if(!is.null(external_pairs)) {
+      supplied <- read.csv(external_pairs,colClasses='character')
+      pairs <- cbind(match(supplied$carvedilol_key,keys),match(supplied$metoprolol_key,keys))
+      if(anyNA(pairs)||anyDuplicated(as.vector(pairs))||any(z[pairs[,1]]!=1)||any(z[pairs[,2]]!=0)) stop('invalid_external_pairs')
+    }
     if(nrow(pairs)<2) stop('insufficient_matches')
     write.csv(data.frame(carvedilol_key=keys[pairs[,1]],metoprolol_key=keys[pairs[,2]]),file.path(out,sprintf('restricted_pairs_%02d.csv',i)),row.names=FALSE)
     write.csv(data.frame(patient_key=keys,propensity=sprintf("%.17g",fit$fitted.values),logit=sprintf("%.17g",logits)),file.path(out,sprintf('restricted_scores_%02d.csv',i)),row.names=FALSE)
@@ -86,6 +91,17 @@ main <- function(report,out,refined=FALSE) {
         zero_denominator=denom==0,variance_ratio_post=if(!binary&&var(bm)>0) var(am)/var(bm) else NA_real_,
         ecdf_distance_post=max(abs(ecdf(am)(sort(unique(c(am,bm))))-ecdf(bm)(sort(unique(c(am,bm)))))))
     }
+    observed <- list()
+    for(f in colnames(eval)[!startsWith(colnames(eval),'missing:')]) {
+      field <- if(startsWith(f,'recorded_sex=')) 'recorded_sex' else f
+      v <- eval[,f]; v[as.logical(mask[[field]])] <- NA_real_
+      a<-v[z==1];a<-a[is.finite(a)];b<-v[z==0];b<-b[is.finite(b)]
+      am<-v[pairs[,1]];am<-am[is.finite(am)];bm<-v[pairs[,2]];bm<-bm[is.finite(bm)]
+      sm<-c(pre=NA_real_,post=NA_real_)
+      if(min(length(a),length(b),length(am),length(bm))>=2) sm<-fixed_smd(a,b,am,bm,all(eval[,f] %in% c(0,1)))
+      observed[[length(observed)+1L]]<-data.frame(imputation=i,feature=f,pre_observed_carvedilol=length(a),pre_observed_metoprolol=length(b),post_observed_carvedilol=length(am),post_observed_metoprolol=length(bm),smd_pre=unname(sm['pre']),smd_post=unname(sm['post']))
+    }
+    all_observed[[i]]<-do.call(rbind,observed)
     tab <- do.call(rbind,balance); all_balance[[i]] <- tab
     writeLines(warnings,file.path(out,sprintf('restricted_ps_warnings_%02d.txt',i)))
     pdf(file.path(out,sprintf('balance_%02d.pdf',i)),width=9,height=12)
@@ -94,10 +110,11 @@ main <- function(report,out,refined=FALSE) {
     points(abs(tab$smd_post[ord]),seq_len(nrow(tab)),pch=16,col='blue');axis(2,at=seq_len(nrow(tab)),labels=tab$feature[ord],las=2,cex.axis=.5);abline(v=.1,lty=2);dev.off()
     pdf(file.path(out,sprintf('propensity_overlap_%02d.pdf',i)))
     hist(fit$fitted.values[z==1],breaks=seq(0,1,length.out=21),col=rgb(1,0,0,.4),xlab='Propensity score',main='Pre-match overlap',xlim=c(0,1));hist(fit$fitted.values[z==0],breaks=seq(0,1,length.out=21),col=rgb(0,0,1,.4),add=TRUE);dev.off()
-    summaries[[i]] <- list(imputation=i,pairs=nrow(pairs),carvedilol_retention=nrow(pairs)/sum(z==1),metoprolol_retention=nrow(pairs)/sum(z==0),caliper=caliper,
+    summaries[[i]] <- list(imputation=i,pairs=nrow(pairs),carvedilol_retention=nrow(pairs)/sum(z==1),metoprolol_retention=nrow(pairs)/sum(z==0),caliper=if(is.null(external_pairs)) caliper else NULL,
       max_abs_smd=max(abs(tab$smd_post),na.rm=TRUE),mean_abs_smd=mean(abs(tab$smd_post),na.rm=TRUE),features_ge_0_1=sum(abs(tab$smd_post)>=.1,na.rm=TRUE),undefined_smd=sum(is.na(tab$smd_post)),constant_predictors=constant,aliased_predictors=aliases,
       warning_count=length(warnings),ps_range_carvedilol=range(fit$fitted.values[z==1]),ps_range_metoprolol=range(fit$fitted.values[z==0]))
   }
+  write.csv(do.call(rbind,all_observed),file.path(out,'observed_balance_by_imputation.csv'),row.names=FALSE)
   all <- do.call(rbind,all_balance);write.csv(all,file.path(out,'balance_by_imputation.csv'),row.names=FALSE)
   aggregate <- lapply(split(all,all$feature),function(d) data.frame(feature=d$feature[1],median_abs_smd=if(all(is.na(d$smd_post))) NA_real_ else median(abs(d$smd_post),na.rm=TRUE),worst_abs_smd=if(all(is.na(d$smd_post))) NA_real_ else max(abs(d$smd_post),na.rm=TRUE),imputations_ge_0_1=sum(abs(d$smd_post)>=.1,na.rm=TRUE),undefined=sum(is.na(d$smd_post))))
   write.csv(do.call(rbind,aggregate),file.path(out,'balance_across_imputations.csv'),row.names=FALSE)

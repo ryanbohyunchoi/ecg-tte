@@ -5,8 +5,9 @@ methodological benchmark objective. Superiority of proposed methods is a hypothe
 to test, not an expected result to engineer. RCT effect agreement remains a separate
 evaluation objective; measured balance alone cannot establish causal accuracy.
 Clinical PSM and balance reporting are implemented, with original and refined
-exploratory results saved. Embedding matching has not yet been implemented or
-evaluated. Final comparison settings remain to be specified.
+exploratory results saved. Direct CLMBR cosine matching is now implemented behind the explicit
+[comparison contract](RUN_COMET_COSINE_COMPARISON.md); H100 results are pending.
+Original PSM is the primary comparator; previously refined PSM is also reported.
 
 ## Deliverables before effect estimation
 
