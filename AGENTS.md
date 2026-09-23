@@ -33,12 +33,20 @@ The current work is a bottom-up investigation and rebuild using raw JDAT sources
 
 ## Workflow
 
-- Never SSH into or directly access the cluster, even for file listings. Ryan
-  pulls locally written code onto the H100 and runs it himself; see `master.md`.
+- Execution mode depends on the session:
+  - **HIPAA-compliant Claude Code on the cluster** (authorized by Ryan 2026-09-23):
+    may read all mounted data and run analyses/GPU jobs directly. **Write only under
+    `/mnt/raid0/rbc58` and `/home/rbc58/github`.** Outputs go to new
+    `/mnt/raid0/rbc58/ecg-tte/audits/<name>` directories; never overwrite old runs.
+    Chat, logs and the repository still get aggregates only.
+  - **Any other session:** never SSH into or directly access the cluster, even for
+    file listings. Ryan pulls locally written code onto the H100 and runs it
+    himself; see `master.md`.
 - Update `tasks/todo.md` and the decision register as evidence arrives.
 - Implement in small phases with the evidence gates in the restart plan.
 - Validate important invariants and failure behavior; do not rely on syntax/config
   checks as proof of clinical or statistical correctness.
 - Patient-data processing and GPU inference run in the approved research
-  environment. Local work is code, documentation, and synthetic verification.
+  environment. Outside the HIPAA cluster session, local work is code,
+  documentation, and synthetic verification.
 - Report what was actually checked and what remains unavailable.

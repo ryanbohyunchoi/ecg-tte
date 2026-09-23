@@ -44,6 +44,9 @@ Current user-selected starting population: [broad COMET-inspired HF OR EF<40 coh
 
 ## Start here
 
+- [Current handoff](handoff.md) (history: [docs/HANDOFF_HISTORY.md](docs/HANDOFF_HISTORY.md)).
+- [Proposed study strategy](docs/STRATEGY.md), [ECG model status](docs/ECG_MODEL.md),
+  [OMOP/multimodal source survey](docs/DATA_SOURCES.md).
 - [Detailed restart plan](docs/RESTART_PLAN.md): questions, experimental design,
   statistical comparison, implementation sequence, and completion gates.
 - [Raw JDAT investigation](docs/RAW_JDAT_INVESTIGATION.md): source inventory,
@@ -85,6 +88,11 @@ contains code, protocols, synthetic test fixtures, and reviewed aggregate report
 
 ## Change log
 
+- **2026-09-23:** Consolidated `psm-mice-imputation` and `codex/comet-outcomes`. Ran the BCL
+  geometry audit and found an mV/µV input bug plus 250 Hz stretching. Added the fixed embedding
+  wrapper (`scripts/bcl_embed_uv.py`), embedding gate utilities with tests, and the exploratory
+  matching-strategy diagnostic. Added strategy, ECG-model and data-source docs, and split the
+  handoff history out. AGENTS.md records the HIPAA direct-access execution mode.
 - **2026-09-09:** Added explicit T2DM header inspection, per-file progress, conservative
   header validation, and H100 commands. All 15 synthetic tests pass; no real headers
   have been inspected by the assistant. Recorded the user-provided inventory findings.

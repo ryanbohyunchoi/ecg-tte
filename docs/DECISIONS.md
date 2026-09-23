@@ -2162,3 +2162,39 @@ are complete per supplied H100 reports. No effects or encoder fine-tuning.
 BCL geometry/preprocessing audit is next; combined CLMBR/BCL common-population
 comparison remains pending. Plot legend fix45bde0e is published; corrected H100
 PDF regeneration not confirmed. Preserve all original runs and restrictions.
+
+
+### 2026-09-23 — Execution mode: HIPAA Claude Code with direct cluster access
+User authorized a HIPAA-compliant Claude Code session to read all mounted data and
+run analyses directly, writing only under /mnt/raid0/rbc58 and /home/rbc58/github.
+AGENTS.md updated. Aggregates-only rule for chat/logs/repo unchanged.
+
+### 2026-09-23 — BCL geometry audit: mV/µV input bug (observed)
+Audit requested by the consolidated handoff. As-run BCL vectors are near-identical
+in direction (||mean unit|| 0.999995). Root cause: checkpoint BatchNorm running
+variance ~1.5e4 implies µV training input; all_ecgs is mV. Same checkpoint with
+input x1000 is non-degenerate (||mean unit|| 0.35). COMET linear probes: sex 0.81,
+age>=65 0.80, AF 0.75, LVEF<=40 0.69 (as-run: 0.69/0.64/0.62/0.59). Also observed:
+`5_0`-flagged files are already 500 Hz in all_ecgs, so they were stretched 5 s→10 s.
+Fixing units and sampling to match training preprocessing is a correction, not
+tuning to balance. The checkpoint and representation layer are unchanged. As-run BCL
+comparison results are invalid as ECG evidence and are preserved as history.
+Script: scripts/bcl_embed_uv.py. Output: audits/claude-bcl-uv-fix.
+
+### 2026-09-23 — Exploratory strategy diagnostic (proposed, not frozen)
+scripts/diag_matching_strategies.py over five saved imputations. Findings:
+- Cosine NN on any embedding leaves max SMD 0.54–0.59.
+- Embedding PCs in PS: with the full clinical PS, balance is already <0.1. With a PS
+  that withholds EF/labs/vitals, held-out LVEF SMD falls 0.56→0.37 (ECG fixed + CLMBR).
+The held-out design, PCA k (32/64) and whitening were chosen during this session after
+viewing balance, so these results are exploratory. The proposed protocol is in
+docs/STRATEGY.md and must be frozen before any outcome analysis.
+
+### 2026-09-23 — Branch consolidation
+`consolidate-2026-09-23` = `psm-mice-imputation` + `codex/comet-outcomes` + this
+session's audit. `main` fast-forwarded to it. **`bio-embed-lvsd` is not merged:** it
+modifies legacy v1 scripts (stage3/stage4, PARADIGM config) that the restart
+archived, and merging it would breach the archive boundary. The branch stays on the
+remote as reference. Its `bio_embed.py` loads all_ecgs without µV scaling, so
+treat any outputs from it as affected by the same input-unit bug. The container
+is now the primary workspace (master.md).

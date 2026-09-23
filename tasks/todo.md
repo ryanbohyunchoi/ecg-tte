@@ -1046,3 +1046,19 @@ are complete per supplied H100 reports. No effects or encoder fine-tuning.
 BCL geometry/preprocessing audit is next; combined CLMBR/BCL common-population
 comparison remains pending. Plot legend fix45bde0e is published; corrected H100
 PDF regeneration not confirmed. Preserve all original runs and restrictions.
+
+## 2026-09-23 — BCL audit, strategy, consolidation (HIPAA Claude Code session)
+
+- [x] Consolidate `psm-mice-imputation` + `codex/comet-outcomes` on `consolidate-2026-09-23`.
+- [x] BCL geometry/preprocessing audit: mV/µV input bug and 250 Hz stretching found (DECISIONS.md).
+- [x] Re-embed COMET 6,103 ECGs with the fix (`scripts/bcl_embed_uv.py`, `audits/claude-bcl-uv-fix`).
+- [x] Embedding gate + preprocessing utilities; 5 synthetic tests (`tests/test_embedding_utils.py`).
+- [x] Exploratory strategy diagnostic over 5 imputations (`scripts/diag_matching_strategies.py`).
+- [x] OMOP gold / notes / echo / ECG-text inventory (`docs/DATA_SOURCES.md`).
+- [x] Split handoff: current brief in `handoff.md`, history in `docs/HANDOFF_HISTORY.md`.
+- [ ] Ryan: review and freeze the evaluation protocol in `docs/STRATEGY.md` (method ladder, held-out set, PCA k).
+- [ ] Gate the fixed BCL on echo-linked *observed* LVEF (not MICE-imputed).
+- [ ] Decide: supervised ECG phenotype probabilities vs. multi-task ECG training (`docs/ECG_MODEL.md`).
+- [ ] Rerun CLMBR with numeric values.
+- [ ] Review `bio-embed-lvsd` for merge.
+- [ ] Shortlist ~10 trials by feasibility criteria.

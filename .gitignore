@@ -40,3 +40,8 @@ configs/local/
 *.safetensors
 .pytest_cache/
 .ruff_cache/
+
+# Restricted audit artifacts (patient-level) and experiment tracking — never commit
+restricted_*
+*.rds
+wandb/

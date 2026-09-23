@@ -1,5 +1,25 @@
 # Project operating instructions
 
+## Primary workspace: HIPAA Claude Code container — user instruction, 2026-09-23
+
+**Supersedes the 2026-09-09 access rule below for sessions in the HIPAA-compliant
+Claude Code container.** Ryan: "we will mainly be working on this container".
+- The assistant may read all mounted data and run analyses and GPU jobs directly.
+- Writes go only under `/mnt/raid0/rbc58` and `/home/rbc58/github`. Run outputs go to
+  fresh `/mnt/raid0/rbc58/ecg-tte/audits/<name>/` directories (`umask 077`), and
+  never overwrite existing runs.
+- Chat, logs and Git still get aggregates only. No identifiers, note text, record
+  examples or patient-specific dates.
+- Repository: `/home/rbc58/github/ecg-tte`. The remote uses SSH
+  (`git@github.com:ryanbohyunchoi/ecg-tte.git`); the Cursor HTTPS askpass socket is
+  not available in the container. **Push working branches regularly.** Treat the
+  container home as potentially non-persistent; `/mnt/raid0` is persistent.
+- Python envs: analysis `/mnt/raid0/rbc58/ecg-tte/software/tte-analysis/bin/python`;
+  BCL/torch `/mnt/raid0/rbc58/ecg-tte/software/bcl-smoke-runtime-zZ5FVVsd/env/bin/python`;
+  R `/mnt/raid0/rbc58/ecg-tte/software/mice-r-v2-tyXlJyw1/env`. micromamba is at
+  `/mnt/raid0/rbc58/ecg-tte/software/mm/bin/micromamba`.
+- Check `nvidia-smi` before GPU jobs and use only idle devices.
+
 ## Cluster access and PHI boundary — user instruction, 2026-09-09
 
 - The assistant works on code, documentation, and synthetic tests locally.
