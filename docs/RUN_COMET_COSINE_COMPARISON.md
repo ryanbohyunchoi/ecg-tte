@@ -1,4 +1,10 @@
-# CLMBR cosine versus clinical PSM: first exploratory comparison
+# CLMBR cosine versus clinical PSM: historical v1 comparison
+
+**Use [v2](RUN_COMET_COSINE_V2.md) for the corrected selection experiment.**
+V1 is preserved for reproducibility. With no cutoff and majority-arm iteration,
+its retained sets do not depend on embeddings; marginal balance cannot assess
+the representation’s selection performance. Do not use v1 as evidence of CLMBR
+inferiority. The following documents the historical specification.
 
 Run this after the full codes-only embeddings. No GPU inference or MICE rerun.
 The original clinical PSM is the primary comparator; the previously refined PSM

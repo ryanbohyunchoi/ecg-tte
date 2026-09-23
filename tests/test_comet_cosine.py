@@ -22,6 +22,29 @@ class CosineTests(unittest.TestCase):
         self.assertEqual([p['metoprolol_key'] for p in r],['c','e'])
         self.assertEqual(len({p['carvedilol_key'] for p in r}),2)
 
+    def test_v2_embedding_dependent_selection_and_orientation(self):
+        keys=['c1','c2','c3','c4','m1','m2']
+        arms=['carvedilol_candidate']*4+['metoprolol_tartrate_candidate']*2
+        x=np.array([[1,0],[0,1],[-1,0],[0,-1],[1,0],[0,1]])
+        before=cosine_pairs(keys,arms,x,metoprolol_anchor=True)
+        self.assertEqual({r['carvedilol_key'] for r in before},{'c1','c2'})
+        self.assertEqual({r['metoprolol_key'] for r in before},{'m1','m2'})
+        changed=x.copy();changed[4:]*=-1
+        after=cosine_pairs(keys,arms,changed,metoprolol_anchor=True)
+        self.assertEqual({r['carvedilol_key'] for r in after},{'c3','c4'})
+        # Original contract remains reproducible and embedding-independent in membership.
+        old=lambda v:{r['carvedilol_key'] for r in cosine_pairs(keys,arms,v)}
+        self.assertEqual(old(x),old(changed))
+        order=[5,3,0,2,4,1]
+        self.assertEqual(before,cosine_pairs([keys[j] for j in order],[arms[j] for j in order],x[order],metoprolol_anchor=True))
+        tied=cosine_pairs(keys,arms,np.ones((6,2)),metoprolol_anchor=True)
+        self.assertEqual([r['carvedilol_key'] for r in tied],['c1','c2'])
+        self.assertTrue(all(r['cosine_distance']==0 for r in before))
+
+    def test_v2_refuses_inverted_arm_sizes(self):
+        with self.assertRaisesRegex(BuildError,'metoprolol_anchor_exceeds'):
+            cosine_pairs(['c','m1','m2'],['carvedilol_candidate']+['metoprolol_tartrate_candidate']*2,np.ones((3,2)),metoprolol_anchor=True)
+
 
 class ComparisonIntegration(unittest.TestCase):
     def test_synthetic_pipeline_and_input_tamper(self):
@@ -38,7 +61,7 @@ class ComparisonIntegration(unittest.TestCase):
             def dump(p,x):p.write_text(json.dumps(x))
             rng=np.random.default_rng(831);n=200;rows=[];vectors=[]
             for i in range(n):
-                arm='carvedilol_candidate' if i<n//2 else 'metoprolol_tartrate_candidate'
+                arm='carvedilol_candidate' if i<120 else 'metoprolol_tartrate_candidate'
                 r=dict(patient_key=f'synthetic_{i}',treatment_arm=arm,index_date='2020-01-01',age_at_index=float(rng.normal(60,10)),recorded_sex='Female' if i%2 else 'Male',lvef=float(rng.uniform(15,65)))
                 rows.append(r);vectors.append(dict(patient_key=r['patient_key'],treatment_arm=arm,index_date=r['index_date'],embedding=rng.normal(size=768).tolist()))
             columns=['treatment_arm','age_at_index','recorded_sex','lvef']
@@ -55,9 +78,10 @@ class ComparisonIntegration(unittest.TestCase):
             dump(emb/'summary.json',dict(status='complete_embeddings_requires_review',counts_valid=True,limit=0,numeric_mode='code-only',max_tokens=4096,totals={'encoded':n}))
             dump(emb/'manifest.json',dict(model_sha256={'model.safetensors':CONTRACT['checkpoint_weights_sha256']},outputs={p.name:digest(p) for p in emb.iterdir() if p.name!='summary.json'}))
             with patch('compare_comet_clmbr.review',return_value=dict(startup_abi_warning_detected=False,bp_inconsistent_patient_imputation_rows=0)):
-                result=run(emb,mice,root/'out',rscript)
+                result=run(emb,mice,root/'out',rscript,metoprolol_anchor=True)
             self.assertTrue(result['counts_valid']);self.assertEqual(result['common_rows'],n)
-            self.assertEqual(result['methods']['cosine'][0]['pairs'],100)
+            self.assertEqual(result['methods']['cosine'][0]['pairs'],80)
+            self.assertEqual(result['version'],'comet_cosine_comparison_v2_metoprolol_anchor')
             self.assertTrue((root/'out/comparison_love_plots.pdf').is_file())
             (emb/'restricted_embeddings_part-000.parquet').write_bytes(b'changed')
             with self.assertRaises(BuildError):verified(emb)

@@ -27,7 +27,7 @@ CONTRACT = dict(version=VERSION, primary_comparator='original_psm',
     evaluation='Same common population and original missingness; fixed pre-match SMD denominator per saved imputation; no outcome use or MICE refitting')
 
 
-def cosine_pairs(keys, arms, vectors):
+def cosine_pairs(keys, arms, vectors, metoprolol_anchor=False):
     x = np.asarray(vectors, dtype=np.float64)
     if x.ndim != 2 or len(x) != len(keys) or len(arms) != len(keys) or len(set(keys)) != len(keys):
         raise BuildError('invalid_embedding_roster')
@@ -37,14 +37,19 @@ def cosine_pairs(keys, arms, vectors):
     if set(arms) != {'carvedilol_candidate', 'metoprolol_tartrate_candidate'}:
         raise BuildError('invalid_embedding_arms')
     x = x / norms[:, None]
-    treated = sorted((i for i,a in enumerate(arms) if a=='carvedilol_candidate'),
+    anchor_arm = 'metoprolol_tartrate_candidate' if metoprolol_anchor else 'carvedilol_candidate'
+    pool_arm = 'carvedilol_candidate' if metoprolol_anchor else 'metoprolol_tartrate_candidate'
+    anchors = sorted((i for i,a in enumerate(arms) if a==anchor_arm),
         key=lambda i:(hashlib.sha256(('comet_cosine_v1|'+keys[i]).encode()).digest(),keys[i]))
-    controls = sorted((i for i,a in enumerate(arms) if a=='metoprolol_tartrate_candidate'),key=lambda i:keys[i])
+    available = sorted((i for i,a in enumerate(arms) if a==pool_arm),key=lambda i:keys[i])
+    if metoprolol_anchor and len(anchors)>len(available):
+        raise BuildError('metoprolol_anchor_exceeds_carvedilol_pool')
     result=[]
-    for t in treated:
-        if not controls: break
-        distances=1-np.clip(x[controls]@x[t],-1,1)
-        k=int(np.argmin(distances)); c=controls.pop(k)
+    for anchor in anchors:
+        if not available: break
+        distances=1-np.clip(x[available]@x[anchor],-1,1)
+        k=int(np.argmin(distances)); chosen=available.pop(k)
+        t,c=(chosen,anchor) if metoprolol_anchor else (anchor,chosen)
         result.append(dict(carvedilol_key=keys[t],metoprolol_key=keys[c],cosine_distance=float(distances[k])))
     if len(result)<2: raise BuildError('insufficient_matches')
     return result
@@ -91,13 +96,20 @@ def verified(root):
     return m,checks
 
 
-def run(embeddings,mice,output,rscript):
+def run(embeddings,mice,output,rscript,metoprolol_anchor=False):
+    contract=dict(CONTRACT)
+    if metoprolol_anchor:
+        contract.update(version="comet_cosine_comparison_v2_metoprolol_anchor",
+            cosine="L2 normalization; 1-dot; greedy metoprolol order SHA256(comet_cosine_v1|patient_key), lexical key ties; closest unused carvedilol, lexical pool ties",
+            selection="All metoprolol retained; carvedilol selected by embedding distance. Stop if metoprolol exceeds carvedilol pool. Direction is explicit, never automatically reversed.",
+            revision="User-approved correction after v1 review; v1 retained sets were embedding-independent. Preserve v1; no claim of prospectively unseen v1 results.")
+    version=contract["version"]
     if any(not p.is_absolute() or p.is_symlink() for p in (embeddings,mice,output)): raise BuildError('absolute_nonsymlink_paths_required')
     for root in (embeddings,mice):
         if root.resolve()==output.resolve() or root.resolve() in output.resolve().parents or output.resolve() in root.resolve().parents: raise BuildError('output_overlap')
     os.umask(0o077);output.mkdir(parents=True,exist_ok=False)
-    summary=dict(version=VERSION,status='running',counts_valid=False,ready_for_effects=False,restricted_until_reviewed=True)
-    atomic_json(output/'summary.json',summary);atomic_json(output/'contract.json',CONTRACT);start=time.monotonic()
+    summary=dict(version=version,status='running',counts_valid=False,ready_for_effects=False,restricted_until_reviewed=True)
+    atomic_json(output/'summary.json',summary);atomic_json(output/'contract.json',contract);start=time.monotonic()
     try:
         summary['execution_stage']='verify_input_manifests'
         em,checks=verified(embeddings); mm,mc=verified(mice);checks.update(mc)
@@ -132,7 +144,7 @@ def run(embeddings,mice,output,rscript):
         selected=[j for j,k in enumerate(keys) if k in bykey]; common=[keys[j] for j in selected]
         arms=[lookup[k]['treatment_arm'] for k in common]
         summary['execution_stage']='cosine_matching'
-        pairs=cosine_pairs(common,arms,[bykey[k]['embedding'] for k in common])
+        pairs=cosine_pairs(common,arms,[bykey[k]['embedding'] for k in common],metoprolol_anchor=metoprolol_anchor)
         pair_path=output/'restricted_cosine_pairs.csv';write_csv(pair_path,pairs)
         summary['execution_stage']='subset_saved_imputations'
         subset=output/'restricted_common_inputs';subset.mkdir()
@@ -171,8 +183,8 @@ def run(embeddings,mice,output,rscript):
         if plotted.returncode: raise BuildError('comparison_plot_failed')
         for p,h in checks.items():
             if digest(p)!=h: raise BuildError('input_changed_during_comparison')
-        summary.update(execution_stage='complete',status='complete_exploratory_comparison',counts_valid=True,common_rows=len(common),denominators=dict(Counter(arms)),excluded_without_embedding=len(keys)-len(common),excluded_by_arm=dict(Counter(lookup[k]['treatment_arm'] for k in keys if k not in bykey)),cosine_distance_quantiles={str(q):float(np.quantile([r['cosine_distance'] for r in pairs],q)) for q in (0,.25,.5,.75,.95,1)},methods=method_summaries,contract=CONTRACT,trace_review='pending_not_auto_approved')
-        atomic_json(output/'manifest.json',dict(version=VERSION,input_checksums={str(p):h for p,h in checks.items()},code_checksums={str(p):digest(p) for p in (Path(__file__).resolve(),engine,plot_script)},outputs={str(p.relative_to(output)):digest(p) for p in output.rglob('*') if p.is_file() and p.name!='summary.json'}))
+        summary.update(execution_stage='complete',status='complete_exploratory_comparison',counts_valid=True,common_rows=len(common),denominators=dict(Counter(arms)),excluded_without_embedding=len(keys)-len(common),excluded_by_arm=dict(Counter(lookup[k]['treatment_arm'] for k in keys if k not in bykey)),cosine_distance_quantiles={str(q):float(np.quantile([r['cosine_distance'] for r in pairs],q)) for q in (0,.25,.5,.75,.95,1)},methods=method_summaries,contract=contract,trace_review='pending_not_auto_approved')
+        atomic_json(output/'manifest.json',dict(version=version,input_checksums={str(p):h for p,h in checks.items()},code_checksums={str(p):digest(p) for p in (Path(__file__).resolve(),engine,plot_script)},outputs={str(p.relative_to(output)):digest(p) for p in output.rglob('*') if p.is_file() and p.name!='summary.json'}))
     except Exception as e:
         summary.update(status='failed_comparison',diagnostic_frames=safe_error_frames(e),reason=str(e) if isinstance(e,BuildError) else type(e).__name__);raise
     finally:
@@ -182,7 +194,7 @@ def run(embeddings,mice,output,rscript):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for n in ('embeddings','mice','output-dir'): p.add_argument('--'+n,required=True,type=Path)
-    p.add_argument('--rscript',required=True);a=p.parse_args()
-    try: run(a.embeddings,a.mice,a.output_dir,a.rscript)
+    p.add_argument('--rscript',required=True);p.add_argument('--metoprolol-anchor',action='store_true',help='Explicit v2: select carvedilol matches for all metoprolol patients');a=p.parse_args()
+    try: run(a.embeddings,a.mice,a.output_dir,a.rscript,metoprolol_anchor=a.metoprolol_anchor)
     except Exception as e: print('Stopped:',str(e) if isinstance(e,BuildError) else type(e).__name__);raise SystemExit(1)
     print('Comparison complete; review balance and retention. No effects estimated.')
