@@ -21,7 +21,7 @@ class CosineTests(unittest.TestCase):
         r=cosine_pairs(['b','a','d','c','e'],['carvedilol_candidate']*3+['metoprolol_tartrate_candidate']*2,np.ones((5,2)))
         self.assertEqual([p['metoprolol_key'] for p in r],['c','e'])
         self.assertEqual(len({p['carvedilol_key'] for p in r}),2)
-if __name__=='__main__':unittest.main()
+
 
 class ComparisonIntegration(unittest.TestCase):
     def test_synthetic_pipeline_and_input_tamper(self):
@@ -44,7 +44,7 @@ class ComparisonIntegration(unittest.TestCase):
             columns=['treatment_arm','age_at_index','recorded_sex','lvef']
             dump(mice/'model_spec.json',dict(m=1,columns=columns,numeric=['age_at_index','lvef'],binary=[]))
             dump(mice/'restricted_row_keys.json',[r['patient_key'] for r in rows])
-            dump(mice/'restricted_missingness_mask.json',{f:[False]*n for f in columns[1:]})
+            dump(mice/'restricted_missingness_mask.json',[{f:False for f in columns} for _ in rows])
             pq.write_table(pa.Table.from_pylist(rows),base/'restricted_cleaned_baseline.parquet')
             pq.write_table(pa.Table.from_pylist(rows),mice/'restricted_completed_01.parquet')
             subprocess.run([rscript,'--vanilla','-e','a<-commandArgs(TRUE);saveRDS(list(mean=array(rep(1,100),c(1,50,2),dimnames=list("lvef",NULL,NULL))),a[1])',str(mice/'chain_traces.rds')],check=True,capture_output=True)
@@ -61,3 +61,25 @@ class ComparisonIntegration(unittest.TestCase):
             self.assertTrue((root/'out/comparison_love_plots.pdf').is_file())
             (emb/'restricted_embeddings_part-000.parquet').write_bytes(b'changed')
             with self.assertRaises(BuildError):verified(emb)
+
+class MaskContractTests(unittest.TestCase):
+    def test_row_mask_validation_and_subset(self):
+        from compare_comet_clmbr import validate_mask
+        rows=[dict(treatment_arm='a',bp=None),dict(treatment_arm='b',bp=120)]
+        mask=[dict(treatment_arm=False,bp=True),dict(treatment_arm=False,bp=False)]
+        validate_mask(mask,rows,['treatment_arm','bp'])
+        validate_mask([mask[1]],[rows[1]],['treatment_arm','bp'])
+        for bad in ({'bp':[True,False]},mask[:1],[dict(treatment_arm=False,bp=1),mask[1]],
+                    [dict(treatment_arm=False,bp=False),mask[1]]):
+            with self.assertRaises(BuildError):validate_mask(bad,rows,['treatment_arm','bp'])
+
+    def test_safe_frames_exclude_exception_contents(self):
+        from compare_comet_clmbr import validate_mask,safe_error_frames
+        try:validate_mask('synthetic_private_value',[],[])
+        except BuildError as e:
+            frames=safe_error_frames(e)
+        self.assertTrue(frames)
+        self.assertNotIn('synthetic_private_value',str(frames))
+        self.assertEqual(set(frames[0]),{'module','function','line'})
+
+if __name__=='__main__':unittest.main()

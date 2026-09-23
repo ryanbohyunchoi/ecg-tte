@@ -71,3 +71,11 @@ the shared evaluation engine; they do not determine cosine matching.
 
 Computational success does not remove source limitations, high missingness,
 uncertainty in the imputation model or unresolved outcome/estimand definitions.
+
+## Missingness-mask compatibility fix
+
+The first H100 comparison stopped with AttributeError. The MICE producer saves
+missingness as an array of per-patient objects; the comparison now validates and
+subsets that exact row format. Pull the fix and rerun the block above to create a
+fresh report. Existing embeddings and imputations remain unchanged. Failures now
+report execution stage and allowlisted code locations without patient values.

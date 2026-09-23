@@ -57,6 +57,31 @@ def write_csv(p,rows):
     with p.open('w',newline='') as f:
         w=csv.DictWriter(f,fieldnames=list(rows[0]));w.writeheader();w.writerows(rows)
 
+def validate_mask(mask, original, columns):
+    """Pilot contract is a JSON array of per-patient boolean objects."""
+    if not isinstance(mask,list) or len(mask)!=len(original):
+        raise BuildError('missingness_mask_schema_mismatch')
+    for flags,row in zip(mask,original):
+        if not isinstance(flags,dict) or set(flags)!=set(columns):
+            raise BuildError('missingness_mask_schema_mismatch')
+        if any(type(flags[f]) is not bool for f in columns):
+            raise BuildError('missingness_mask_schema_mismatch')
+        if any(flags[f] != (row[f] is None) for f in columns):
+            raise BuildError('missingness_mask_mismatch')
+
+
+def safe_error_frames(exc):
+    frames=[];tb=exc.__traceback__
+    allowed={'compare_comet_clmbr.py','review_comet_mice_pilot.py',
+             'run_comet_mice_pilot.py','build_shared_tables.py'}
+    while tb:
+        code=tb.tb_frame.f_code; name=Path(code.co_filename).name
+        if name in allowed:
+            frames.append(dict(module=name,function=code.co_name,line=tb.tb_lineno))
+        tb=tb.tb_next
+    return frames
+
+
 def verified(root):
     m=read_json(root/'manifest.json'); checks={root/n:digest(root/n) for n in ('summary.json','manifest.json')}
     for name,h in m['outputs'].items():
@@ -74,13 +99,16 @@ def run(embeddings,mice,output,rscript):
     summary=dict(version=VERSION,status='running',counts_valid=False,ready_for_effects=False,restricted_until_reviewed=True)
     atomic_json(output/'summary.json',summary);atomic_json(output/'contract.json',CONTRACT);start=time.monotonic()
     try:
+        summary['execution_stage']='verify_input_manifests'
         em,checks=verified(embeddings); mm,mc=verified(mice);checks.update(mc)
         es=read_json(embeddings/'summary.json');ms=read_json(mice/'summary.json')
         if es.get('status')!='complete_embeddings_requires_review' or es.get('counts_valid') is not True or es.get('limit')!=0 or es.get('numeric_mode')!='code-only' or es.get('max_tokens')!=4096: raise BuildError('full_codes_only_embeddings_required')
         if em.get('model_sha256',{}).get('model.safetensors')!=CONTRACT['checkpoint_weights_sha256']: raise BuildError('checkpoint_changed')
         if ms.get('version')!='comet_mice_pilot_v2_ordered_bp': raise BuildError('ordered_bp_required')
+        summary['execution_stage']='review_saved_mice'
         checked=review(mice,output/'input_review')
         if checked['startup_abi_warning_detected'] or checked['bp_inconsistent_patient_imputation_rows']: raise BuildError('unresolved_input_warning_or_bp')
+        summary['execution_stage']='load_and_link_common_cohort'
         spec=read_json(mice/'model_spec.json'); keys=read_json(mice/'restricted_row_keys.json');mask=read_json(mice/'restricted_missingness_mask.json')
         required={'model_spec.json','restricted_row_keys.json','restricted_missingness_mask.json','chain_traces.rds'}|{f'restricted_completed_{i:02d}.parquet' for i in range(1,spec['m']+1)}
         if not required<=set(mm['outputs']): raise BuildError('unmanifested_mice_inputs')
@@ -99,15 +127,17 @@ def run(embeddings,mice,output,rscript):
         status=pq.read_table(embeddings/'restricted_patient_status.parquet').to_pylist()
         if len(status)!=len(keys) or {r['patient_key'] for r in status}!=set(keys): raise BuildError('embedding_status_roster_mismatch')
         if {r['patient_key'] for r in status if r['status']=='encoded'}!=set(bykey): raise BuildError('embedding_status_mismatch')
-        for f in set(spec['columns'])-{'treatment_arm'}:
-            if mask.get(f)!=[r[f] is None for r in original]: raise BuildError('missingness_mask_mismatch')
+        summary['execution_stage']='validate_missingness_mask'
+        validate_mask(mask,original,spec['columns'])
         selected=[j for j,k in enumerate(keys) if k in bykey]; common=[keys[j] for j in selected]
         arms=[lookup[k]['treatment_arm'] for k in common]
+        summary['execution_stage']='cosine_matching'
         pairs=cosine_pairs(common,arms,[bykey[k]['embedding'] for k in common])
         pair_path=output/'restricted_cosine_pairs.csv';write_csv(pair_path,pairs)
+        summary['execution_stage']='subset_saved_imputations'
         subset=output/'restricted_common_inputs';subset.mkdir()
         atomic_json(subset/'model_spec.json',spec);atomic_json(subset/'restricted_row_keys.json',common)
-        atomic_json(subset/'restricted_missingness_mask.json',{f:[v[j] for j in selected] for f,v in mask.items()})
+        atomic_json(subset/'restricted_missingness_mask.json',[mask[j] for j in selected])
         shutil.copyfile(mice/'chain_traces.rds',subset/'chain_traces.rds')
         for i in range(1,spec['m']+1):
             completed=pq.read_table(mice/f'restricted_completed_{i:02d}.parquet').to_pylist()
@@ -117,6 +147,7 @@ def run(embeddings,mice,output,rscript):
         runner.write_text('a<-commandArgs(trailingOnly=TRUE)\nsource(a[1])\nmain(a[2],a[3],a[4]=="refined",if(a[4]=="cosine") a[5] else NULL)\n')
         all_balance=[];all_observed=[];method_summaries={}
         for method in ('original','refined','cosine'):
+            summary['execution_stage']='evaluate_'+method
             dest=output/method;dest.mkdir()
             with (dest/'restricted_engine.log').open('w') as log:
                 proc=subprocess.run([rscript,'--vanilla',str(runner),str(engine),str(subset),str(dest),method,str(pair_path)],stdout=log,stderr=log)
@@ -133,16 +164,17 @@ def run(embeddings,mice,output,rscript):
             all_balance.extend(dict(method=method,**r) for r in read_csv(dest/'balance_by_imputation.csv'))
         write_csv(output/'comparison_balance.csv',all_balance)
         write_csv(output/'comparison_observed_balance.csv',all_observed)
+        summary['execution_stage']='plot_comparison'
         plot_script=Path(__file__).with_name('plot_comet_method_comparison.R').resolve()
         with (output/'restricted_plot.log').open('w') as log:
             plotted=subprocess.run([rscript,'--vanilla',str(plot_script),str(output)],stdout=log,stderr=log)
         if plotted.returncode: raise BuildError('comparison_plot_failed')
         for p,h in checks.items():
             if digest(p)!=h: raise BuildError('input_changed_during_comparison')
-        summary.update(status='complete_exploratory_comparison',counts_valid=True,common_rows=len(common),denominators=dict(Counter(arms)),excluded_without_embedding=len(keys)-len(common),excluded_by_arm=dict(Counter(lookup[k]['treatment_arm'] for k in keys if k not in bykey)),cosine_distance_quantiles={str(q):float(np.quantile([r['cosine_distance'] for r in pairs],q)) for q in (0,.25,.5,.75,.95,1)},methods=method_summaries,contract=CONTRACT,trace_review='pending_not_auto_approved')
+        summary.update(execution_stage='complete',status='complete_exploratory_comparison',counts_valid=True,common_rows=len(common),denominators=dict(Counter(arms)),excluded_without_embedding=len(keys)-len(common),excluded_by_arm=dict(Counter(lookup[k]['treatment_arm'] for k in keys if k not in bykey)),cosine_distance_quantiles={str(q):float(np.quantile([r['cosine_distance'] for r in pairs],q)) for q in (0,.25,.5,.75,.95,1)},methods=method_summaries,contract=CONTRACT,trace_review='pending_not_auto_approved')
         atomic_json(output/'manifest.json',dict(version=VERSION,input_checksums={str(p):h for p,h in checks.items()},code_checksums={str(p):digest(p) for p in (Path(__file__).resolve(),engine,plot_script)},outputs={str(p.relative_to(output)):digest(p) for p in output.rglob('*') if p.is_file() and p.name!='summary.json'}))
     except Exception as e:
-        summary.update(status='failed_comparison',reason=str(e) if isinstance(e,BuildError) else type(e).__name__);raise
+        summary.update(status='failed_comparison',diagnostic_frames=safe_error_frames(e),reason=str(e) if isinstance(e,BuildError) else type(e).__name__);raise
     finally:
         summary['elapsed_seconds']=round(time.monotonic()-start,3);atomic_json(output/'summary.json',summary)
     return summary
