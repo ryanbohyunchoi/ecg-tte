@@ -14,6 +14,17 @@ class RunnerTests(unittest.TestCase):
             self.assertEqual(validate_vectors(p,['synthetic/a','synthetic/b'])['rows'],2)
             with self.assertRaises(BuildError):validate_vectors(p,['synthetic/b','synthetic/a'])
             a=np.ones((2,3),dtype=np.float32);a[0,0]=np.nan;np.save(p/'shard_00000.npy',a)
-            with self.assertRaises(BuildError):validate_vectors(p,['synthetic/a','synthetic/b'])
+            self.assertEqual(validate_vectors(p,['synthetic/a','synthetic/b'])['nonfinite_rows'],1)
             a[0]=0;np.save(p/'shard_00000.npy',a)
-            with self.assertRaises(BuildError):validate_vectors(p,['synthetic/a','synthetic/b'])
+            self.assertEqual(validate_vectors(p,['synthetic/a','synthetic/b'])['zero_vector_rows'],1)
+
+    def test_multiple_shards(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p=Path(tmp)
+            (p/'embedding_config.json').write_text(json.dumps(dict(embed_dim=3,num_rows=3)))
+            for i,ids in enumerate((['a','b'],['c'])):
+                np.save(p/f'shard_{i:05d}.npy',np.ones((len(ids),3),dtype=np.float32))
+                (p/f'shard_{i:05d}_index.csv').write_text('row,fileID,error\n'+''.join(f'{i*2+j},{v},\n' for j,v in enumerate(ids)))
+            self.assertEqual(validate_vectors(p,['a','b','c'],2)['rows'],3)
+            (p/'shard_00001.npy').unlink()
+            with self.assertRaises(BuildError):validate_vectors(p,['a','b','c'],2)
