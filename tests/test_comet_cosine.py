@@ -65,6 +65,37 @@ class CosineTests(unittest.TestCase):
             self.assertEqual(result,cosine_pairs([keys[i] for i in order],[arms[i] for i in order],x[order],optimal=True))
         self.assertGreater(strict_improvements,0)
 
+    def test_caliper_exhaustive_cardinality_then_cost(self):
+        from itertools import product
+        from compare_comet_clmbr import caliper_assignment
+        rng=np.random.default_rng(311)
+        for cutoff in (0,.2,.4,1,2):
+            for _ in range(8):
+                cost=rng.uniform(0,2,(3,4));ri,ci,qc=caliper_assignment(cost,cutoff)
+                possibilities=[]
+                for choices in product(range(-1,4),repeat=3):
+                    assigned=[c for c in choices if c>=0]
+                    if len(assigned)!=len(set(assigned)):continue
+                    if any(c>=0 and cost[r,c]>cutoff for r,c in enumerate(choices)):continue
+                    possibilities.append((-len(assigned),sum(cost[r,c] for r,c in enumerate(choices) if c>=0)))
+                expected=min(possibilities)
+                self.assertEqual(-len(ri),expected[0]);self.assertAlmostEqual(float(cost[ri,ci].sum()),expected[1],places=12)
+                self.assertEqual(qc['matched_pairs'],len(ri))
+                self.assertTrue(np.all(cost[ri,ci]<=cutoff))
+
+    def test_caliper_rematches_instead_of_pruning(self):
+        from compare_comet_clmbr import caliper_assignment
+        from scipy.optimize import linear_sum_assignment
+        cost=np.array([[0,.2],[.2,.3]])
+        ri,ci=linear_sum_assignment(cost)
+        self.assertEqual(sum(cost[ri,ci]<=.2),1)
+        ri,ci,qc=caliper_assignment(cost,.2)
+        self.assertEqual(len(ri),2);self.assertAlmostEqual(qc['total_cosine_distance'],.4)
+        ri,ci,qc=caliper_assignment(np.ones((2,3)),.2)
+        self.assertEqual(len(ri),0);self.assertEqual(qc['metoprolol_without_any_eligible_edge'],2)
+        for bad in (float('nan'),float('inf'),-.1,2.1):
+            with self.assertRaises(BuildError):caliper_assignment(cost,bad)
+
 
 class ComparisonIntegration(unittest.TestCase):
     def test_synthetic_pipeline_and_input_tamper(self):
@@ -98,11 +129,19 @@ class ComparisonIntegration(unittest.TestCase):
             dump(emb/'summary.json',dict(status='complete_embeddings_requires_review',counts_valid=True,limit=0,numeric_mode='code-only',max_tokens=4096,totals={'encoded':n}))
             dump(emb/'manifest.json',dict(model_sha256={'model.safetensors':CONTRACT['checkpoint_weights_sha256']},outputs={p.name:digest(p) for p in emb.iterdir() if p.name!='summary.json'}))
             with patch('compare_comet_clmbr.review',return_value=dict(startup_abi_warning_detected=False,bp_inconsistent_patient_imputation_rows=0)):
-                result=run(emb,mice,root/'out',rscript,optimal=True)
+                result=run(emb,mice,root/'out',rscript,optimal=True,caliper=1.0)
             self.assertTrue(result['counts_valid']);self.assertEqual(result['common_rows'],n)
             self.assertEqual(result['methods']['cosine'][0]['pairs'],80)
-            self.assertEqual(result['version'],'comet_cosine_comparison_v3_global_optimal')
+            self.assertEqual(result['version'],'comet_cosine_comparison_v4_caliper')
             self.assertTrue((root/'out/comparison_love_plots.pdf').is_file())
+            with patch('compare_comet_clmbr.review',return_value=dict(startup_abi_warning_detected=False,bp_inconsistent_patient_imputation_rows=0)):
+                tighter=run(emb,mice,root/'tight',rscript,optimal=True,caliper=.90)
+            retained=tighter['assignment_objective']['matched_pairs']
+            self.assertGreaterEqual(retained,2);self.assertLess(retained,80)
+            self.assertEqual(tighter['common_rows'],n)
+            self.assertEqual(tighter['methods']['cosine'][0]['pairs'],retained)
+            self.assertLessEqual(tighter['cosine_distance_quantiles']['1'],.90)
+
             (emb/'restricted_embeddings_part-000.parquet').write_bytes(b'changed')
             with self.assertRaises(BuildError):verified(emb)
 

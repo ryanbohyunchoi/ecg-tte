@@ -27,7 +27,37 @@ CONTRACT = dict(version=VERSION, primary_comparator='original_psm',
     evaluation='Same common population and original missingness; fixed pre-match SMD denominator per saved imputation; no outcome use or MICE refitting')
 
 
-def cosine_pairs(keys, arms, vectors, metoprolol_anchor=False, optimal=False):
+def caliper_assignment(cost, caliper):
+    """Maximize feasible pair count, then minimize their unpenalized total cost."""
+    from scipy.optimize import linear_sum_assignment
+    cost=np.asarray(cost,dtype=np.float64)
+    if not np.isfinite(caliper) or not 0<=caliper<=2:
+        raise BuildError('cosine_caliper_must_be_finite_between_0_and_2')
+    if cost.ndim!=2 or not np.isfinite(cost).all() or np.any(cost<0) or np.any(cost>2):
+        raise BuildError('invalid_cosine_cost_matrix')
+    n,m=cost.shape
+    if n==0 or m==0: raise BuildError('empty_assignment_matrix')
+    feasible=cost<=caliper
+    # Each row can instead use one of n dummy columns. P>2n makes one fewer
+    # unmatched patient preferable to ANY possible change in real cosine cost.
+    penalty=2*n+1
+    augmented=np.full((n,m+n),float(penalty))
+    augmented[:,:m]=np.where(feasible,cost,np.inf)
+    ri,ci=linear_sum_assignment(augmented)
+    real=ci<m;ri,ci=ri[real],ci[real]
+    if len(set(ri))!=len(ri) or len(set(ci))!=len(ci) or np.any(cost[ri,ci]>caliper):
+        raise BuildError('invalid_caliper_assignment')
+    qc=dict(caliper=caliper,eligible_edges=int(feasible.sum()),
+        metoprolol_without_any_eligible_edge=int((~feasible.any(axis=1)).sum()),
+        carvedilol_without_any_eligible_edge=int((~feasible.any(axis=0)).sum()),
+        matched_pairs=len(ri),unmatched_metoprolol=n-len(ri),unmatched_carvedilol=m-len(ri),
+        total_cosine_distance=float(cost[ri,ci].sum()),
+        dummy_penalty=penalty,objective='maximum feasible cardinality, then minimum total cosine distance')
+    return ri,ci,qc
+
+
+def cosine_pairs(keys, arms, vectors, metoprolol_anchor=False, optimal=False, caliper=None, diagnostics=None):
+    if caliper is not None and not optimal: raise BuildError('cosine_caliper_requires_global_optimal')
     x = np.asarray(vectors, dtype=np.float64)
     if x.ndim != 2 or len(x) != len(keys) or len(arms) != len(keys) or len(set(keys)) != len(keys):
         raise BuildError('invalid_embedding_roster')
@@ -44,8 +74,12 @@ def cosine_pairs(keys, arms, vectors, metoprolol_anchor=False, optimal=False):
         if len(anchors)>len(pool): raise BuildError('metoprolol_anchor_exceeds_carvedilol_pool')
         if len(anchors)<2: raise BuildError('insufficient_matches')
         cost=1-np.clip(x[anchors]@x[pool].T,-1,1)
-        ri,ci=linear_sum_assignment(cost)
-        if len(ri)!=len(anchors) or len(set(ci))!=len(ci): raise BuildError('invalid_optimal_assignment')
+        if caliper is None:
+            ri,ci=linear_sum_assignment(cost)
+            if len(ri)!=len(anchors) or len(set(ci))!=len(ci): raise BuildError('invalid_optimal_assignment')
+        else:
+            ri,ci,qc=caliper_assignment(cost,caliper)
+            if diagnostics is not None: diagnostics.update(qc)
         return [dict(carvedilol_key=keys[pool[c]],metoprolol_key=keys[anchors[r]],cosine_distance=float(cost[r,c])) for r,c in zip(ri,ci)]
     anchor_arm = 'metoprolol_tartrate_candidate' if metoprolol_anchor else 'carvedilol_candidate'
     pool_arm = 'carvedilol_candidate' if metoprolol_anchor else 'metoprolol_tartrate_candidate'
@@ -106,7 +140,7 @@ def verified(root):
     return m,checks
 
 
-def run(embeddings,mice,output,rscript,metoprolol_anchor=False,optimal=False):
+def run(embeddings,mice,output,rscript,metoprolol_anchor=False,optimal=False,caliper=None):
     contract=dict(CONTRACT)
     if metoprolol_anchor:
         contract.update(version="comet_cosine_comparison_v2_metoprolol_anchor",
@@ -119,6 +153,13 @@ def run(embeddings,mice,output,rscript,metoprolol_anchor=False,optimal=False):
             selection='All metoprolol retained; subset of carvedilol selected jointly. Stop if metoprolol exceeds carvedilol pool.',
             ties='Lexical patient ordering of both cost-matrix axes; solver chooses among equal-cost optima. No cost perturbation. SciPy version recorded; ties not guaranteed identical across versions.',
             revision='User-approved global assignment after v2 review; preserve v1/v2. No new caliper, covariates or outcome tuning.')
+    if caliper is not None:
+        if not optimal: raise BuildError('cosine_caliper_requires_global_optimal')
+        if not np.isfinite(caliper) or not 0<=caliper<=2: raise BuildError('cosine_caliper_must_be_finite_between_0_and_2')
+        contract.update(version='comet_cosine_comparison_v4_caliper',cosine_caliper=caliper,
+            selection='Only edges with cosine distance <= caliper permitted; maximize matched count, then minimize total distance. Both arms can be unmatched.',
+            cosine='L2 1-dot; maximum-cardinality minimum-cost partial assignment with dummy unmatched columns, penalty 2*n_metoprolol+1; forbidden edges infinite',
+            revision='Exploratory caliper sensitivity requested after v3 balance review; no calibrated cosine threshold or independent validation. Report all attempted cutoffs, not just best balance.')
     version=contract["version"]
     if any(not p.is_absolute() or p.is_symlink() for p in (embeddings,mice,output)): raise BuildError('absolute_nonsymlink_paths_required')
     for root in (embeddings,mice):
@@ -160,8 +201,13 @@ def run(embeddings,mice,output,rscript,metoprolol_anchor=False,optimal=False):
         selected=[j for j,k in enumerate(keys) if k in bykey]; common=[keys[j] for j in selected]
         arms=[lookup[k]['treatment_arm'] for k in common]
         summary['execution_stage']='cosine_matching'
-        pairs=cosine_pairs(common,arms,[bykey[k]['embedding'] for k in common],metoprolol_anchor=metoprolol_anchor,optimal=optimal)
-        if optimal:
+        matching_qc={}
+        pairs=cosine_pairs(common,arms,[bykey[k]['embedding'] for k in common],metoprolol_anchor=metoprolol_anchor,optimal=optimal,caliper=caliper,diagnostics=matching_qc)
+        if caliper is not None:
+            import scipy
+            summary['assignment_objective']=dict(scipy_version=scipy.__version__,numpy_version=np.__version__,**matching_qc)
+            if len(pairs)<2: raise BuildError('insufficient_caliper_matches_for_balance')
+        if optimal and caliper is None:
             import scipy
             greedy=cosine_pairs(common,arms,[bykey[k]["embedding"] for k in common],metoprolol_anchor=True)
             global_total=sum(r["cosine_distance"] for r in pairs);greedy_total=sum(r["cosine_distance"] for r in greedy)
@@ -217,7 +263,7 @@ def run(embeddings,mice,output,rscript,metoprolol_anchor=False,optimal=False):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for n in ('embeddings','mice','output-dir'): p.add_argument('--'+n,required=True,type=Path)
-    p.add_argument('--rscript',required=True);p.add_argument('--metoprolol-anchor',action='store_true',help='Explicit v2: select carvedilol matches for all metoprolol patients');p.add_argument('--global-optimal',action='store_true',help='Explicit v3: minimize total cosine distance jointly');a=p.parse_args()
-    try: run(a.embeddings,a.mice,a.output_dir,a.rscript,metoprolol_anchor=a.metoprolol_anchor,optimal=a.global_optimal)
+    p.add_argument('--rscript',required=True);p.add_argument('--metoprolol-anchor',action='store_true',help='Explicit v2: select carvedilol matches for all metoprolol patients');p.add_argument('--global-optimal',action='store_true',help='Explicit v3: minimize total cosine distance jointly');p.add_argument('--cosine-caliper',type=float,help='Explicit v4: inclusive maximum cosine distance; requires --global-optimal');a=p.parse_args()
+    try: run(a.embeddings,a.mice,a.output_dir,a.rscript,metoprolol_anchor=a.metoprolol_anchor,optimal=a.global_optimal,caliper=a.cosine_caliper)
     except Exception as e: print('Stopped:',str(e) if isinstance(e,BuildError) else type(e).__name__);raise SystemExit(1)
     print('Comparison complete; review balance and retention. No effects estimated.')
