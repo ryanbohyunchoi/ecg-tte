@@ -153,3 +153,16 @@ resolved values and identifies defaulted fields. Explicit incompatible dimension
 are not overridden. The identical resolved config is used for strict weight loading;
 returned representation shape must still be768. This fixes the raw-JSON rejection
 seen in comet-clmbr-smoke-dS7xNUcE, not a verified H100 inference success.
+
+
+## Transformers 5 loader compatibility
+
+FEMR0.2.3 lacks the post_init lifecycle hook that initializes tied-weight metadata
+expected by Transformers5.15 checkpoint finalization. Loader revision
+direct_safetensors_v1 constructs the same FEMR model from its resolved config and
+loads the local safetensors state directly. Keys, shapes and dtypes must match
+exactly before strict load_state_dict; no missing/random substitutes or dtype
+conversion are accepted. It does not alter the model or upgrade/downgrade packages.
+Future failures report execution_stage and allowlisted traceback frame metadata,
+never raw exception text, locals or patient records. Synthetic exact-output tests
+pass, but actual H100 checkpoint/forward validation still requires the smoke run.

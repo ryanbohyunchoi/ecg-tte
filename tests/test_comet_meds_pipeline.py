@@ -85,3 +85,37 @@ class ConfigResolutionTests(unittest.TestCase):
             report=resolved_config_report({'transformer_config':{'hidden_size':value}},resolved)
             self.assertEqual(report['model_config']['hidden_size'],value)
             self.assertNotIn('hidden_size',report['model_config_defaulted_fields'])
+
+
+class ExactCheckpointTests(unittest.TestCase):
+    def test_exact_load_restores_weights_and_outputs(self):
+        import torch
+        from safetensors.torch import save_file
+        from encode_comet_clmbr import load_exact_safetensors
+        with tempfile.TemporaryDirectory() as tmp:
+            src=torch.nn.Sequential(torch.nn.Linear(3,4),torch.nn.Linear(4,2))
+            dst=torch.nn.Sequential(torch.nn.Linear(3,4),torch.nn.Linear(4,2))
+            p=Path(tmp)/'model.safetensors';save_file(src.state_dict(),str(p))
+            load_exact_safetensors(dst,p)
+            x=torch.tensor([[1.,2.,3.]])
+            self.assertTrue(torch.equal(src(x),dst(x)))
+    def test_missing_extra_shape_and_dtype_are_rejected(self):
+        import torch
+        from safetensors.torch import save_file
+        from encode_comet_clmbr import load_exact_safetensors
+        model=torch.nn.Linear(3,2)
+        state=model.state_dict()
+        variants=[{'weight':state['weight']},dict(state,extra=torch.zeros(1)),dict(state,weight=torch.zeros(4,3)),{k:v.double() for k,v in state.items()}]
+        with tempfile.TemporaryDirectory() as tmp:
+            for n,value in enumerate(variants):
+                p=Path(tmp)/str(n);save_file(value,str(p))
+                with self.assertRaises(InputError):load_exact_safetensors(model,p)
+    def test_error_frames_do_not_include_message_or_locals(self):
+        from encode_comet_clmbr import safe_error_frames
+        namespace={'__name__':'femr.synthetic'}
+        exec("def fail():\n    patient='private_patient_marker'\n    raise AttributeError(patient)",namespace)
+        try:namespace['fail']()
+        except AttributeError as exc:
+            frames=safe_error_frames(exc)
+            self.assertEqual(frames[-1]['module'],'femr.synthetic')
+            self.assertNotIn('private_patient_marker',str(frames))

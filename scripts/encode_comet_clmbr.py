@@ -33,6 +33,31 @@ def resolved_config_report(raw,config):
                 model_config_defaulted_fields=[k for k in CONFIG_FIELDS if k not in raw_transformer])
 
 
+def load_exact_safetensors(model,path):
+    """Strict PyTorch loading, avoiding Transformers lifecycle initialization."""
+    from safetensors.torch import load_file
+    state=load_file(str(path),device='cpu')
+    expected=model.state_dict()
+    if set(state)!=set(expected):raise InputError('checkpoint_parameter_keys_mismatch')
+    for name,target in expected.items():
+        if state[name].shape!=target.shape:raise InputError('checkpoint_parameter_shape_mismatch')
+        if state[name].dtype!=target.dtype:raise InputError('checkpoint_parameter_dtype_mismatch')
+    model.load_state_dict(state,strict=True)
+    return dict(tensors=len(state),policy='direct_safetensors_exact_keys_shapes_dtypes_strict_state_dict')
+
+
+def safe_error_frames(exc):
+    """Only known module/function/line metadata; no messages, locals or source text."""
+    frames=[];tb=exc.__traceback__
+    allowed=('femr','transformers','torch','xformers','datasets','numpy','pyarrow','safetensors','encode_comet_clmbr','__main__')
+    while tb:
+        module=tb.tb_frame.f_globals.get('__name__','')
+        if any(module==p or module.startswith(p+'.') for p in allowed):
+            frames.append(dict(module=module,function=tb.tb_frame.f_code.co_name,line=tb.tb_lineno))
+        tb=tb.tb_next
+    return frames[-8:]
+
+
 def verify_inputs(root):
     s=json.loads((root/'summary.json').read_text());m=json.loads((root/'manifest.json').read_text())
     if s.get('version')!=MEDS_VERSION or s.get('status')!='complete_cohort_meds' or s.get('counts_valid') is not True or m.get('version')!=MEDS_VERSION:raise InputError('complete_meds_required')
@@ -89,6 +114,7 @@ def encode(root,model_root,output,numeric_mode,max_tokens=4096,limit=32):
     os.umask(0o077);output.mkdir(parents=True,exist_ok=False,mode=0o700)
     start=time.monotonic();s=dict(version=VERSION,status='running',counts_valid=False,ready_for_matching=False,restricted_until_reviewed=True,
         numeric_mode=numeric_mode,max_tokens=max_tokens,limit=limit,
+        loader_revision='direct_safetensors_v1',execution_stage='verify_meds',
         policy='Frozen local model; latest retained token representation; last max_tokens after FEMR tokenization; no ECG restriction or outcome tuning. Same-day/future events forbidden. Raw vectors, no matching normalization.',
         numeric_interpretation='native passes observed values/raw units to pinned tokenizer without conversion; code-only omits numeric values only at model input. Neither validates clinical units.')
     atomic_json(output/'summary.json',s)
@@ -107,6 +133,7 @@ def encode(root,model_root,output,numeric_mode,max_tokens=4096,limit=32):
                     if pid is not None and len(selected)<limit:selected.append(pid)
             targets=set(selected)
         else:targets=set(by_id)
+        s['execution_stage']='runtime_imports'
         versions={p:importlib.metadata.version(p) for p in ('femr','meds','torch','transformers','xformers','numpy','pyarrow')}
         s['runtime']=versions
         atomic_json(output/'summary.json',s)
@@ -122,17 +149,22 @@ def encode(root,model_root,output,numeric_mode,max_tokens=4096,limit=32):
         model_files=[model_root/n for n in ('config.json','dictionary.msgpack','model.safetensors')]
         if any(not p.is_file() for p in model_files):raise InputError('required_model_files_missing')
         hashes={p.name:digest(p) for p in model_files}
+        s['execution_stage']='resolve_model_config'
         config=json.loads((model_root/'config.json').read_text())
         resolved=FEMRModelConfig.from_pretrained(str(model_root),local_files_only=True)
         s.update(resolved_config_report(config,resolved))
         expected_dim=s['model_config']['hidden_size']
         if expected_dim!=768:raise InputError('expected_clmbr_t_768_dimensions')
+        s['execution_stage']='load_tokenizer'
         tokenizer=FEMRTokenizer.from_pretrained(str(model_root))
         if tokenizer.is_hierarchical:raise InputError('hierarchical_tokenizer_requires_explicit_ontology_contract')
         processor=FEMRBatchProcessor(tokenizer)
         torch.manual_seed(20260923)
-        model,loading=FEMRModel.from_pretrained(str(model_root),config=resolved,local_files_only=True,use_safetensors=True,output_loading_info=True)
-        if any(loading.get(k) for k in ('missing_keys','unexpected_keys','mismatched_keys','error_msgs')):raise InputError('checkpoint_state_incompatible')
+        s['execution_stage']='construct_model'
+        model=FEMRModel(resolved)
+        s['execution_stage']='load_checkpoint_state'
+        s['checkpoint_loading']=load_exact_safetensors(model,model_root/'model.safetensors')
+        s['execution_stage']='move_model_to_cuda'
         model=model.eval().to('cuda')
         for parameter in model.parameters():parameter.requires_grad_(False)
         def move(x):
@@ -151,8 +183,10 @@ def encode(root,model_root,output,numeric_mode,max_tokens=4096,limit=32):
                     statuses.append(dict(record,status='missing_exact_birth'));continue
                 if r['clinical_meds_rows']==0:
                     statuses.append(dict(record,status='no_clinical_events'));continue
+                s['execution_stage']='prepare_patient_events'
                 events=patient_events(rows,r['index_date'],meds.birth_code,numeric_mode)
                 if sum(m['code']==meds.birth_code for e in events for m in e['measurements'])<1:raise InputError('birth_event_missing')
+                s['execution_stage']='tokenizer_coverage'
                 clinical_hits=0;accepted=0;attempted=0;tokenizer.start_patient()
                 for e in events:
                     for m in e['measurements']:
@@ -163,17 +197,21 @@ def encode(root,model_root,output,numeric_mode,max_tokens=4096,limit=32):
                 if not clinical_hits:
                     statuses.append(dict(record,status='no_tokenizer_supported_clinical_events',attempted=attempted,accepted=accepted));continue
                 patient={'patient_id':pid,'events':events}
+                s['execution_stage']='tokenize_patient'
                 preliminary=processor.convert_patient(patient)
                 n=int(preliminary['transformer']['valid_tokens'].sum())
                 if n<1:raise InputError('no_tokens_despite_accepted_codes')
                 raw=processor.convert_patient(patient,offset=max(0,n-max_tokens),max_length=max_tokens,tensor_type='pt')
+                s['execution_stage']='model_forward'
                 with torch.inference_mode():_,result=model(**move(processor.collate([raw])))
+                s['execution_stage']='validate_representation'
                 v=select_vector(result['representations'].detach().cpu().numpy(),result['timestamps'].detach().cpu().numpy(),result['patient_ids'].detach().cpu().numpy(),pid,r['index_date'],expected_dim)
                 vectors.append(dict(record,embedding=v.tolist()))
                 statuses.append(dict(record,status='encoded',tokens_available=n,tokens_retained=min(n,max_tokens),attempted=attempted,accepted=accepted))
                 totals['encoded']+=1;totals['truncated_patients']+=int(n>max_tokens)
                 if totals['encoded']%100==0:print('Encoded patients:',totals['encoded'],flush=True)
             if vectors:
+                s['execution_stage']='write_embeddings'
                 dest=output/('restricted_embeddings_'+path.stem+'.parquet')
                 pq.write_table(pa.Table.from_pylist(vectors),dest,compression='zstd');outputs[dest.name]=digest(dest)
             # Progress is recoverable as an auditable partial run, not automatically reusable cache.
@@ -186,11 +224,12 @@ def encode(root,model_root,output,numeric_mode,max_tokens=4096,limit=32):
         if digest(root/'manifest.json')!=meds_manifest_hash or any(signature(root/n)!=stamp for n,stamp in source_stamps.items()):raise InputError('meds_changed')
         atomic_json(output/'manifest.json',dict(version=VERSION,meds_manifest_sha256=digest(root/'manifest.json'),model_sha256=hashes,runtime=versions,outputs=outputs,numeric_mode=numeric_mode,max_tokens=max_tokens))
         s['tokenizer_coverage_by_arm']={a:dict(attempted=sum(r.get('attempted',0) for r in statuses if r['treatment_arm']==a),accepted=sum(r.get('accepted',0) for r in statuses if r['treatment_arm']==a)) for a in sorted({r['treatment_arm'] for r in roster})}
+        s['execution_stage']='complete'
         s.update(status='complete_smoke_requires_review' if limit else 'complete_embeddings_requires_review',counts_valid=True,target_patients=len(targets),embedding_dimension=expected_dim,totals=dict(totals),status_by_arm={a:dict(Counter(r['status'] for r in statuses if r['treatment_arm']==a)) for a in sorted({r['treatment_arm'] for r in roster})},model_sha256=hashes)
     except importlib.metadata.PackageNotFoundError as exc:
         s.update(status='failed_encoding',counts_valid=False,error_type=type(exc).__name__,reason='required_runtime_package_missing',package=exc.name)
     except Exception as exc:
-        s.update(status='failed_encoding',counts_valid=False,error_type=type(exc).__name__,reason=str(exc) if isinstance(exc,InputError) else 'runtime_failure_no_raw_error_emitted')
+        s.update(status='failed_encoding',counts_valid=False,error_type=type(exc).__name__,reason=str(exc) if isinstance(exc,InputError) else 'runtime_failure_no_raw_error_emitted',diagnostic_frames=safe_error_frames(exc))
     s['elapsed_seconds']=round(time.monotonic()-start,3);atomic_json(output/'summary.json',s)
     return s
 
