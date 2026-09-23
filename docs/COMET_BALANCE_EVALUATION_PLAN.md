@@ -4,8 +4,9 @@ User requirement, 2026-09-22: improvement in covariate balance is a primary
 methodological benchmark objective. Superiority of proposed methods is a hypothesis
 to test, not an expected result to engineer. RCT effect agreement remains a separate
 evaluation objective; measured balance alone cannot establish causal accuracy.
-This document records a required analysis stage. The balance implementation and
-matched results do not yet exist; matching/imputation details remain to be frozen.
+Clinical PSM and balance reporting are implemented, with original and refined
+exploratory results saved. Embedding matching has not yet been implemented or
+evaluated. Final comparison settings remain to be specified.
 
 ## Deliverables before effect estimation
 
@@ -43,9 +44,11 @@ trial-effect agreement or a desired effect. Preserve all attempted specification
 and report unresolved balance limitations. Outcome estimation follows the balance
 review; passing it cannot rule out unmeasured confounding.
 
-The same reporting interface should later compare clinical PSM, CLMBR-T-assisted
-PSM, ECG-assisted PSM and combinations. Where populations differ, report both their
-own-population diagnostics and feasible paired common-population comparisons.
+The primary next comparison is clinical PSM versus direct matching on ECG or
+CLMBR-T embedding cosine similarity or a prespecified distance. Adding embeddings
+to a propensity model is a distinct optional method, not a substitute for this
+comparison. Where populations differ, report both their own-population diagnostics
+and feasible paired common-population comparisons.
 
 ## Methodological references
 
@@ -73,3 +76,24 @@ secondary representation evaluation. Do not remove essential confounders from th
 primary clinical comparator just to create a held-out test. Assess original observed
 values and missingness alongside completed-data balance: imputation must not create
 an appearance of balance that depends entirely on modeled values.
+
+
+## User clarification — 2026-09-23
+
+The goal is to measure whether embedding similarity/distance matching balances
+clinical covariates better than PSM, not to force every method below an SMD
+threshold. Stop further clinical PSM refinement in response to EF or AF imbalance.
+Preserve both original and already-refined PSM specifications and results; disclose
+that the refinement followed observed balance diagnostics. Do not silently select
+whichever comparator makes embeddings look best. Residual imbalance is a benchmark
+result, not a reason to repeatedly modify a method or suppress its result.
+
+Before embedding results are examined, specify the primary PSM comparator, distance
+metric, normalization, matching ratio/replacement/ties and support rules. Preserve
+all attempted methods. Do not tune embedding distances or combinations against the
+same evaluation balance table and then present that table as independent evidence.
+If tuning becomes necessary, use a declared separate development evaluation.
+Compare on common eligible patients, fixed clinical evaluation variables and fixed
+pre-match denominators, and report retention alongside balance. Similarity alone
+is not proof of clinical balance; let the observed comparison determine the result.
+Pre-index provenance and patient linkage remain required for valid inputs.
