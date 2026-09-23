@@ -140,7 +140,8 @@ def verified(root):
     return m,checks
 
 
-def run(embeddings,mice,output,rscript,metoprolol_anchor=False,optimal=False,caliper=None):
+def run(embeddings,mice,output,rscript,metoprolol_anchor=False,optimal=False,caliper=None,bcl=False):
+    r_env=dict(os.environ);r_env.pop('LD_PRELOAD',None)
     contract=dict(CONTRACT)
     if metoprolol_anchor:
         contract.update(version="comet_cosine_comparison_v2_metoprolol_anchor",
@@ -160,6 +161,9 @@ def run(embeddings,mice,output,rscript,metoprolol_anchor=False,optimal=False,cal
             selection='Only edges with cosine distance <= caliper permitted; maximize matched count, then minimize total distance. Both arms can be unmatched.',
             cosine='L2 1-dot; maximum-cardinality minimum-cost partial assignment with dummy unmatched columns, penalty 2*n_metoprolol+1; forbidden edges infinite',
             revision='Exploratory caliper sensitivity requested after v3 balance review; no calibrated cosine threshold or independent validation. Report all attempted cutoffs, not just best balance.')
+    if bcl:
+        contract.update(version='comet_bcl_'+contract['version'],representation='BCL_backbone_before_projection_256D',checkpoint_weights_sha256=None,
+            revision='Apply existing global-optimal assignment and unchanged clinical PSM to BCL-available patients; no embedding fine-tuning or new covariates.')
     version=contract["version"]
     if any(not p.is_absolute() or p.is_symlink() for p in (embeddings,mice,output)): raise BuildError('absolute_nonsymlink_paths_required')
     for root in (embeddings,mice):
@@ -171,8 +175,12 @@ def run(embeddings,mice,output,rscript,metoprolol_anchor=False,optimal=False,cal
         summary['execution_stage']='verify_input_manifests'
         em,checks=verified(embeddings); mm,mc=verified(mice);checks.update(mc)
         es=read_json(embeddings/'summary.json');ms=read_json(mice/'summary.json')
-        if es.get('status')!='complete_embeddings_requires_review' or es.get('counts_valid') is not True or es.get('limit')!=0 or es.get('numeric_mode')!='code-only' or es.get('max_tokens')!=4096: raise BuildError('full_codes_only_embeddings_required')
-        if em.get('model_sha256',{}).get('model.safetensors')!=CONTRACT['checkpoint_weights_sha256']: raise BuildError('checkpoint_changed')
+        if not bcl and (es.get('status')!='complete_embeddings_requires_review' or es.get('counts_valid') is not True or es.get('limit')!=0 or es.get('numeric_mode')!='code-only' or es.get('max_tokens')!=4096): raise BuildError('full_codes_only_embeddings_required')
+        if bcl:
+            if es.get('version')!='comet_bcl_linked_embeddings_v1' or es.get('status')!='complete_bcl_linkage_requires_review' or not es.get('counts_valid') or es.get('dimensions')!=256 or em.get('representation')!='BCL_backbone_before_projection':raise BuildError('linked_bcl_required')
+            contract['checkpoint_weights_sha256']=em['checkpoint_sha256']
+            atomic_json(output/'contract.json',contract)
+        elif em.get('model_sha256',{}).get('model.safetensors')!=CONTRACT['checkpoint_weights_sha256']: raise BuildError('checkpoint_changed')
         if ms.get('version')!='comet_mice_pilot_v2_ordered_bp': raise BuildError('ordered_bp_required')
         summary['execution_stage']='review_saved_mice'
         checked=review(mice,output/'input_review')
@@ -183,6 +191,8 @@ def run(embeddings,mice,output,rscript,metoprolol_anchor=False,optimal=False,cal
         if not required<=set(mm['outputs']): raise BuildError('unmanifested_mice_inputs')
         baseline=Path(ms['source_report'])/'restricted_cleaned_baseline.parquet'
         original=pq.read_table(baseline).to_pylist(); checks[baseline]=digest(baseline)
+        if bcl and checks[baseline]!=em['baseline_sha256']:raise BuildError('bcl_mice_baseline_mismatch')
+        if [r['patient_key'] for r in original]!=keys:raise BuildError('baseline_mice_order_mismatch')
         lookup={r['patient_key']:r for r in original}
         files=sorted(embeddings.glob('restricted_embeddings_part-*.parquet'))
         if not files or any(p.name not in em['outputs'] for p in files): raise BuildError('unmanifested_embeddings')
@@ -191,7 +201,7 @@ def run(embeddings,mice,output,rscript,metoprolol_anchor=False,optimal=False,cal
         bykey={r['patient_key']:r for r in rows}
         if len(bykey)!=len(rows) or len(rows)!=es.get('totals',{}).get('encoded'): raise BuildError('embedding_count_mismatch')
         for k,r in bykey.items():
-            if k not in lookup or any(r[f]!=lookup[k][f] for f in ('treatment_arm','index_date')) or len(r['embedding'])!=768: raise BuildError('embedding_identity_mismatch')
+            if k not in lookup or any(r[f]!=lookup[k][f] for f in ('treatment_arm','index_date')) or len(r['embedding'])!=(256 if bcl else 768): raise BuildError('embedding_identity_mismatch')
         if 'restricted_patient_status.parquet' not in em['outputs']: raise BuildError('unmanifested_embedding_status')
         status=pq.read_table(embeddings/'restricted_patient_status.parquet').to_pylist()
         if len(status)!=len(keys) or {r['patient_key'] for r in status}!=set(keys): raise BuildError('embedding_status_roster_mismatch')
@@ -231,7 +241,7 @@ def run(embeddings,mice,output,rscript,metoprolol_anchor=False,optimal=False,cal
             summary['execution_stage']='evaluate_'+method
             dest=output/method;dest.mkdir()
             with (dest/'restricted_engine.log').open('w') as log:
-                proc=subprocess.run([rscript,'--vanilla',str(runner),str(engine),str(subset),str(dest),method,str(pair_path)],stdout=log,stderr=log)
+                proc=subprocess.run([rscript,'--vanilla',str(runner),str(engine),str(subset),str(dest),method,str(pair_path)],stdout=log,stderr=log,env=r_env)
             if proc.returncode: raise BuildError('comparison_engine_failed_review_private_log')
             result=read_json(dest/'psm_summary.json')
             for info in result['imputations']:
@@ -248,7 +258,7 @@ def run(embeddings,mice,output,rscript,metoprolol_anchor=False,optimal=False,cal
         summary['execution_stage']='plot_comparison'
         plot_script=Path(__file__).with_name('plot_comet_method_comparison.R').resolve()
         with (output/'restricted_plot.log').open('w') as log:
-            plotted=subprocess.run([rscript,'--vanilla',str(plot_script),str(output)],stdout=log,stderr=log)
+            plotted=subprocess.run([rscript,'--vanilla',str(plot_script),str(output)],stdout=log,stderr=log,env=r_env)
         if plotted.returncode: raise BuildError('comparison_plot_failed')
         for p,h in checks.items():
             if digest(p)!=h: raise BuildError('input_changed_during_comparison')
@@ -263,7 +273,7 @@ def run(embeddings,mice,output,rscript,metoprolol_anchor=False,optimal=False,cal
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for n in ('embeddings','mice','output-dir'): p.add_argument('--'+n,required=True,type=Path)
-    p.add_argument('--rscript',required=True);p.add_argument('--metoprolol-anchor',action='store_true',help='Explicit v2: select carvedilol matches for all metoprolol patients');p.add_argument('--global-optimal',action='store_true',help='Explicit v3: minimize total cosine distance jointly');p.add_argument('--cosine-caliper',type=float,help='Explicit v4: inclusive maximum cosine distance; requires --global-optimal');a=p.parse_args()
-    try: run(a.embeddings,a.mice,a.output_dir,a.rscript,metoprolol_anchor=a.metoprolol_anchor,optimal=a.global_optimal,caliper=a.cosine_caliper)
+    p.add_argument('--rscript',required=True);p.add_argument('--metoprolol-anchor',action='store_true',help='Explicit v2: select carvedilol matches for all metoprolol patients');p.add_argument('--global-optimal',action='store_true',help='Explicit v3: minimize total cosine distance jointly');p.add_argument('--cosine-caliper',type=float,help='Explicit v4: inclusive maximum cosine distance; requires --global-optimal');p.add_argument('--bcl',action='store_true',help='Explicit linked BCL 256D contract');a=p.parse_args()
+    try: run(a.embeddings,a.mice,a.output_dir,a.rscript,metoprolol_anchor=a.metoprolol_anchor,optimal=a.global_optimal,caliper=a.cosine_caliper,bcl=a.bcl)
     except Exception as e: print('Stopped:',str(e) if isinstance(e,BuildError) else type(e).__name__);raise SystemExit(1)
     print('Comparison complete; review balance and retention. No effects estimated.')
