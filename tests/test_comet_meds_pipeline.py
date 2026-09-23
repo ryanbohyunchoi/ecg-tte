@@ -4,13 +4,14 @@ from datetime import datetime, date, timezone
 import json
 import tempfile
 import unittest
+from types import SimpleNamespace
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
 from build_shared_tables import digest
 from build_comet_meds import build, DOMAINS, BIRTH, event_time
-from encode_comet_clmbr import verify_inputs,patient_events,select_vector
+from encode_comet_clmbr import verify_inputs,patient_events,select_vector,resolved_config_report
 from audit_comet_clmbr_inputs import InputError
 
 class MedsPipelineTests(unittest.TestCase):
@@ -68,3 +69,19 @@ class MedsPipelineTests(unittest.TestCase):
         self.assertEqual(select_vector([[1,2],[3,4]],[t,t],[1,1],1,date(2020,1,2),2).tolist(),[3,4])
         for ids,times in [([2,2],[t,t]),([1,1],[t,t+86400])]:
             with self.assertRaises(InputError):select_vector([[1,2],[3,4]],times,ids,1,date(2020,1,2),2)
+
+
+class ConfigResolutionTests(unittest.TestCase):
+    def test_missing_serialized_default_not_missing_dimension(self):
+        resolved=SimpleNamespace(transformer_config=SimpleNamespace(hidden_size=768,n_layers=12,n_heads=12,vocab_size=65536,attention_width=496,is_hierarchical=False))
+        report=resolved_config_report({'transformer_config':{'n_layers':12,'vocab_size':65536}},resolved)
+        self.assertIsNone(report['raw_model_config']['hidden_size'])
+        self.assertEqual(report['model_config']['hidden_size'],768)
+        self.assertIn('hidden_size',report['model_config_defaulted_fields'])
+        self.assertNotIn('n_layers',report['model_config_defaulted_fields'])
+    def test_explicit_dimensions_are_not_overridden(self):
+        for value in (512,None):
+            resolved=SimpleNamespace(transformer_config=SimpleNamespace(hidden_size=value))
+            report=resolved_config_report({'transformer_config':{'hidden_size':value}},resolved)
+            self.assertEqual(report['model_config']['hidden_size'],value)
+            self.assertNotIn('hidden_size',report['model_config_defaulted_fields'])

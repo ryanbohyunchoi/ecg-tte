@@ -130,3 +130,26 @@ approved caches. No assertion of better balance is made.
 
 Before direct-distance matching, freeze normalization/matching settings and use
 identical clinical evaluation variables and common-population denominators.
+
+
+## Observed Mosaic runtime issue (2026-09-23)
+
+The first import test found FEMR0.2.3/MEDS0.1.3 but SciPy HiGHS loaded the system
+libstdc++.so.6 without CXXABI_1.3.15. The sibling Mosaic handoff records success
+using the C++ runtime from Python's sys.prefix; CONDA_PREFIX had pointed elsewhere.
+For this specific error, run a fresh process using the explicit mosaic interpreter
+and LD_PRELOAD set to Path(sys.prefix)/lib/libstdc++.so.6. Scope that override to
+the launch subshell, never a permanent shell startup change. Verify scipy.optimize,
+FEMR imports and CUDA before smoke. Do not claim this current environment repaired
+until that preflight succeeds; newer torch/transformers compatibility remains a
+separate runtime question. No package reinstall or MEDS rebuild is indicated yet.
+
+
+## Model configuration defaults
+
+The loader resolves config.json using FEMRModelConfig before checking hidden_size.
+Default values may be omitted from serialized JSON; the summary records raw and
+resolved values and identifies defaulted fields. Explicit incompatible dimensions
+are not overridden. The identical resolved config is used for strict weight loading;
+returned representation shape must still be768. This fixes the raw-JSON rejection
+seen in comet-clmbr-smoke-dS7xNUcE, not a verified H100 inference success.

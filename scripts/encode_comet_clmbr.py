@@ -19,6 +19,20 @@ from audit_comet_clmbr_inputs import InputError, signature
 VERSION='comet_clmbr_embeddings_v1'
 
 
+CONFIG_FIELDS=('hidden_size','n_layers','n_heads','vocab_size','attention_width','is_hierarchical')
+
+
+def resolved_config_report(raw,config):
+    """Use the pinned loader's defaults, never invent dimensions from absent JSON."""
+    raw_transformer=raw.get('transformer_config',{})
+    if raw_transformer is None:raw_transformer={}
+    if not isinstance(raw_transformer,dict):raise InputError('invalid_transformer_config')
+    resolved={k:getattr(config.transformer_config,k,None) for k in CONFIG_FIELDS}
+    return dict(raw_model_config={k:raw_transformer.get(k) for k in CONFIG_FIELDS},
+                model_config=resolved,
+                model_config_defaulted_fields=[k for k in CONFIG_FIELDS if k not in raw_transformer])
+
+
 def verify_inputs(root):
     s=json.loads((root/'summary.json').read_text());m=json.loads((root/'manifest.json').read_text())
     if s.get('version')!=MEDS_VERSION or s.get('status')!='complete_cohort_meds' or s.get('counts_valid') is not True or m.get('version')!=MEDS_VERSION:raise InputError('complete_meds_required')
@@ -102,20 +116,22 @@ def encode(root,model_root,output,numeric_mode,max_tokens=4096,limit=32):
         from femr.models.tokenizer import FEMRTokenizer
         from femr.models.processor import FEMRBatchProcessor
         from femr.models.transformer import FEMRModel
+        from femr.models.config import FEMRModelConfig
         if not torch.cuda.is_available():raise InputError('cuda_required')
         os.environ['HF_HUB_OFFLINE']='1';os.environ['TRANSFORMERS_OFFLINE']='1'
         model_files=[model_root/n for n in ('config.json','dictionary.msgpack','model.safetensors')]
         if any(not p.is_file() for p in model_files):raise InputError('required_model_files_missing')
         hashes={p.name:digest(p) for p in model_files}
         config=json.loads((model_root/'config.json').read_text())
-        s['model_config']={k:config.get('transformer_config',{}).get(k) for k in ('hidden_size','n_layers','n_heads','vocab_size','attention_width','is_hierarchical')}
-        expected_dim=config.get('transformer_config',{}).get('hidden_size')
+        resolved=FEMRModelConfig.from_pretrained(str(model_root),local_files_only=True)
+        s.update(resolved_config_report(config,resolved))
+        expected_dim=s['model_config']['hidden_size']
         if expected_dim!=768:raise InputError('expected_clmbr_t_768_dimensions')
         tokenizer=FEMRTokenizer.from_pretrained(str(model_root))
         if tokenizer.is_hierarchical:raise InputError('hierarchical_tokenizer_requires_explicit_ontology_contract')
         processor=FEMRBatchProcessor(tokenizer)
         torch.manual_seed(20260923)
-        model,loading=FEMRModel.from_pretrained(str(model_root),local_files_only=True,use_safetensors=True,output_loading_info=True)
+        model,loading=FEMRModel.from_pretrained(str(model_root),config=resolved,local_files_only=True,use_safetensors=True,output_loading_info=True)
         if any(loading.get(k) for k in ('missing_keys','unexpected_keys','mismatched_keys','error_msgs')):raise InputError('checkpoint_state_incompatible')
         model=model.eval().to('cuda')
         for parameter in model.parameters():parameter.requires_grad_(False)
