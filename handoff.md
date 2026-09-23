@@ -1,8 +1,208 @@
-# Handoff: adapted COMET cohort, adjustment, and outcomes
+# Handoff: adapted COMET cohort, adjustment, and representation benchmark
 
-Last updated: **2026-09-22**. Read this current-session brief first. The older
-roadmap and chronological evidence below are retained for history; their pending
-items and population counts may be superseded by this brief.
+Last updated: **2026-09-23**. This current-state brief supersedes pending-state
+claims in the chronological history below. Cluster results here are from Ryan's
+supplied aggregate reports; the assistant did not access H100. No patient records
+or embeddings belong in this repository.
+
+## Current result and next action
+
+**Both frozen encoders have run. Clinical PSM, CLMBR cosine matching, and ECG BCL
+cosine matching have completed, but on different representation-available starting
+populations. No treatment effects have been estimated or cleared by this work.**
+
+Latest user question concerned the Love plot. The BCL plot initially mislabeled
+its cosine series as “CLMBR cosine.” This was a plotting-label bug, not the wrong
+embeddings. Commit `45bde0e` reads the representation from contract.json and labels
+it **ECG BCL cosine**. Whether Ryan regenerated the corrected PDF is not confirmed.
+The saved original PDF remains mislabeled. Do not rerun encoding or matching just
+to relabel it; use the optional fresh destination in the plotting script.
+
+**Next substantive work:** audit BCL embedding geometry and preprocessing before
+caliper tuning or fine-tuning. Its matched median cosine distance is unusually
+small (3.1064855893214727e-7). Compare matched versus random-pair distances,
+per-dimension variation, duplicate vectors, centered spectrum/effective rank,
+and numerical stability; verify inference preprocessing against training and the
+intended backbone versus projection-head output. These diagnostics are proposed,
+not implemented or run. Near-zero matched distances alone do not establish
+collapse, an incorrect checkpoint, or a bad model. Do not silently center,
+whiten, replace the projection, or tune a threshold to improve observed balance.
+
+## Cohort and adjustment state
+
+- Adapted COMET exploratory baseline: **7,499** people, **4,539 carvedilol** and
+  **2,960 metoprolol tartrate**, after the adopted calendar/quality restrictions.
+  The medication anchor is an outpatient order proxy, not verified dispensing or
+  ingestion; this is not a strict replication of COMET trial eligibility.
+- Saved 32-variable baseline and five completed MICE datasets are reused.
+  Ordered-BP pilot: five imputations, 50 iterations; recorded invalid completed
+  BP pairs zero. Computational checks do not prove MAR or convergence sufficiency.
+- Original clinical PSM is the primary comparator; the previously refined PSM is
+  explicitly secondary and was developed after observing diagnostics. Preserve
+  original results. PSM uses 1:1 greedy matching without replacement and a
+  0.2 pooled within-arm SD caliper on propensity-score logits.
+- Representation comparisons subset existing imputations to their common input
+  population and rerun both PSM versions. They do not refit MICE or change the
+  evaluated clinical feature set. Balance includes missingness indicators;
+  undefined SMDs are not zero. Observed-only balance is also saved.
+- The earlier source snapshots and candidate event cache are complete. Do not
+  rescan huge raw files for each analysis. Damaged hospital lab file 3 was not
+  silently repaired or included; verified limited lab sources remain documented.
+
+## CLMBR findings to preserve
+
+Frozen CLMBR-T, 768 dimensions, code-only, last 4,096 retained tokens, latest
+retained-token representation. **7,498 encoded: C 4,538 / T 2,960**; one carvedilol
+patient had no clinical events. 102 histories truncated. Numeric values were
+omitted and explicit sex/race tokens were not included. Mapping/token acceptance
+is not a clinical validity test. These input limitations may matter but have not
+been shown to explain the balance results.
+
+The first greedy matching version consumed the entire smaller arm from a fixed
+majority-arm prefix: retained-set comparisons were embedding-independent. Preserve
+that flawed result as history, not evidence of encoder inferiority. Corrected
+smaller-arm greedy and global-optimal versions followed explicitly.
+
+| On the 7,498-person CLMBR population | Pairs | Mean absolute SMD across imputations |
+|---|---:|---:|
+| Original PSM | 2,382–2,426 | 0.03055–0.03476 |
+| Previously refined PSM | 2,368–2,400 | 0.01820–0.02322 |
+| Global optimal CLMBR cosine, no caliper | 2,960 | 0.09465–0.10076 |
+| CLMBR cosine caliper 0.20 | 1,430 | 0.07672–0.08151 |
+| CLMBR cosine caliper 0.30 | 2,352 | 0.08656–0.09256 |
+| CLMBR cosine caliper 0.40 | 2,874 | 0.09473–0.10040 |
+
+All three cutoffs were user-selected exploratory sensitivities and are retained;
+none is a validated optimal threshold. Global assignment reduced total cosine
+distance by about 6.4% versus greedy but did not improve average clinical balance.
+Observed-only EF/AF imbalance persisted; the gap was not confined to imputed
+values. This supports a conclusion about these method/input combinations, not
+general encoder quality or treatment-effect accuracy.
+
+## ECG BCL: completed and confirmed
+
+Upstream: `CarDS-Yale/ECG-signal-pipeline`, pinned commit
+`d359c04d1f5e6c810f76751777535918870704b7`.
+Checkpoint SHA256:
+`3a5df9efa95bab0db99f419cfb85ad7a8d4b63f6bb765e10021d636ae8b64d4a`.
+Saved configuration: BCL, 12 leads, 10 seconds, 500 Hz, lead_time_transformer.
+**Output is the 256-dimensional backbone BEFORE the projection head**, not the
+legacy archived Net1D representation. No weights were trained or fine-tuned.
+
+Metadata is `/mnt/raid0/rbc58/mm_vhd/metadata/ecg_metadata.parquet`.
+Waveforms are under `/mnt/raid0/bb2238/signals/preprocessed/all_ecgs`.
+The lowercase `fileID` contains subdirectories and an optional `.npy` suffix.
+Initial flat-path/ID checks rejected these paths and misleadingly selected zero.
+Fixed v2 preserves relative paths, canonicalizes the suffix and sampling IDs,
+rejects traversal/symlinks, and retains global identity/timing collision checks.
+No basename guessing or older-date fallback was introduced.
+
+Selection: latest strictly prior calendar day 1–365 before the existing index;
+lexical canonical ID on that day; required unambiguous sampling label.
+
+| Selection status | Carvedilol | Metoprolol tartrate |
+|---|---:|---:|
+| Selected and subsequently encoded | 3,561 | 2,542 |
+| No prior-365-day ECG | 868 | 359 |
+| Sampling label unresolved | 110 | 59 |
+
+Selected **6,103 / 7,499 (81.4%)**; 583 have the catalog's 250 Hz flag. Private
+normalized catalogs reproduce the upstream `5_0` test; they do not independently
+validate sampling frequency or lead order. Smoke included 8 per arm/sampling
+stratum. All 32 passed in 16.299 seconds. Full run passed all 6,103 in
+660.588 seconds, with zero load errors, nonfinite rows or zero vectors.
+Inference used one H100, fp32, batch 8, workers 2, no augmentation/filtering;
+full shards contain up to 512 rows. Finite/nonzero checks do not establish useful
+representation geometry. Full-run v1 did not save vector-content checksums;
+the subsequent linkage adapter recorded current hashes and repeated output QC,
+which cannot retrospectively prove original vector byte identity.
+
+## ECG BCL comparison result
+
+Report: `/mnt/raid0/rbc58/ecg-tte/audits/comet-bcl-comparison-FZIo043w/report`.
+Starting population: **6,103 (C 3,561 / T 2,542)** for all methods below.
+
+| Method | Pairs retained | Mean absolute SMD | Features with absolute SMD >= 0.1 |
+|---|---:|---:|---:|
+| Original PSM | 1,980–2,050 | 0.02735–0.03948 | 2–4 |
+| Previously refined PSM | 1,977–2,036 | 0.01852–0.02388 | 0–2 |
+| ECG BCL global optimal cosine | 2,542 | 0.10360–0.10856 | 19–24 |
+
+Ranges are across the five saved imputations. BCL pairs are fixed; clinical
+measurements differ across imputations. Cosine matches all 2,542 metoprolol
+patients to 2,542 distinct carvedilol patients (71.38% of carvedilol), without a
+cosine caliper. Clinical PSM retains its caliper. BCL had worse measured balance
+and higher retention. Do not claim isolated metric superiority or inferior
+causal accuracy from these results. BCL maximum SMD is 0.542–0.596.
+Matched cosine median 3.106e-7, p95 1.232e-6, maximum 0.000389883;
+these warrant the geometry investigation above.
+
+Original PDF: `comparison_love_plots.pdf` inside that report. Its old CLMBR
+legend refers to ECG BCL. Correct it with the representation-aware plotting
+script into a fresh directory, preserving the original report manifest.
+A combined CLMBR-versus-BCL analysis has **not** run; a verified shared population
+is needed before comparing them directly.
+
+## Exact reusable H100 artifacts
+
+All paths below are under `/mnt/raid0/rbc58/ecg-tte/` unless shown otherwise.
+
+| Artifact | Relative path |
+|---|---|
+| Clean MICE input | `audits/comet-mice-prep-M9F28Lk2/report` |
+| Five ordered-BP imputations | `audits/comet-mice-pilot-v2-w5ZRCHzh/report` |
+| CLMBR MEDS | `shared/comet-meds-v1-3hgAkgoB/meds` |
+| CLMBR full embeddings | `audits/comet-clmbr-full-NAyb4G2x/report` |
+| CLMBR optimal no-caliper comparison | `audits/comet-cosine-comparison-v3-HKXiJR7g/report` |
+| CLMBR caliper grid | `audits/comet-cosine-caliper-grid-XhRUMLhu` |
+| CLMBR observed-only review | `audits/comet-observed-review-CLXuw3X7/report` |
+| BCL v2 selection | `audits/comet-bcl-input-v2-C9ftzPbQ/report` |
+| BCL smoke inputs | `audits/comet-bcl-smoke-prep-SWznZWZE/report` |
+| BCL smoke outputs | `audits/comet-bcl-smoke-Ik5VklyT/report` |
+| BCL full run | `audits/comet-bcl-full-lMQtaSyg` (input/ and report/) |
+| BCL linked vectors | `audits/comet-bcl-comparison-FZIo043w/linked` |
+| BCL comparison | `audits/comet-bcl-comparison-FZIo043w/report` |
+| BCL working environment | `software/bcl-smoke-runtime-zZ5FVVsd/env` |
+| Pinned BCL source checkout | `software/bcl-smoke-runtime-zZ5FVVsd/upstream` |
+| R environment | `software/mice-r-v2-tyXlJyw1/env` |
+
+Python for cohort/matching: `/home/rbc58/miniconda3/envs/mosaic/bin/python`.
+Use existing launchers for its SciPy C++ runtime workaround and R isolation.
+BCL working versions: torch 2.5.0, numpy 2.4.6, scipy 1.17.1, pandas 3.0.6.
+No need to reinstall or repeat successful inference.
+
+## Proposed research direction, not implemented
+
+Ryan asked whether to develop a TTE-specific encoder. Discussed frozen embeddings
+in regularized propensity models, clinical-plus-embedding propensity models,
+small learned projections, and eventual encoder fine-tuning. No training objective,
+loss weights, training cohort, checkpoint, or evaluation split has been frozen.
+Do not present any as implemented. Preserve unsupervised/frozen results as baseline.
+Any new learned method needs separate development patients/trials, patient-overlap
+control across trials, and held-out evaluation. Keep evaluation outcomes and
+published RCT effects out of design tuning; keep post-index events out of inputs.
+Balance, overlap/retention and effect recovery are distinct evaluation dimensions.
+User specifically rejects gaming balance or selecting a method to recover the
+published effect. A constant representation would appear balanced in embedding
+space without preserving clinical confounding information.
+
+## Validation and handoff boundaries
+
+Implemented code through `45bde0e` is on `psm-mice-imputation`. Local verification
+included 12 BCL tests, 11 cosine tests, R original/refined/external-pair and
+observed-balance integration, and synthetic corrected-PDF generation. These are
+synthetic checks; H100 results above came from user reports. No raw patient data,
+cluster SSH, local patient inference, or endpoint estimation was performed.
+
+Next session should read this brief, `master.md`, `docs/DECISIONS.md`,
+`docs/COMET_BALANCE_EVALUATION_PLAN.md`, `docs/COMET_BCL_COMPARISON_PLAN.md`, and
+`docs/RUN_COMET_BCL_COMPARISON.md`. Continue from saved artifacts. Do not rerun old
+launchers blindly or overwrite old outputs. Outcomes/follow-up remain a separate
+track; verify its current branch/handoff rather than inferring completion here.
+
+---
+
+## Historical brief and chronological evidence (superseded where noted above)
 
 ## Two concurrent sessions — current ownership
 
@@ -1309,3 +1509,937 @@ User approves reassessing original medication candidates with both diagnosis del
 
 
 2026-09-22: Latest attachment repeats prior comet_2025_source_audit_v1 output with identical cohort/source hashes and counts; no expanded-diagnosis reassessment or limited-hospital-lab reuse result present. Do not infer those jobs ran or repeat source builds. Next inspect saved comet-expanded-dx/hospital-labs-limited run summaries.
+
+
+2026-09-22 latest execution update: expanded DX reassessment COMPLETE/counts_valid,793.135s. Selected9735=5867carvedilol+3868tartrate; retained4911,entered4824,removed1619 versus prior6530. Arm/history/calendar/evidence totals reconcile. Still exploratory, not final eligibility. Lab reuse log has started shard1verification; completion and current live process status not established. This supersedes earlier statement that reassessment had no saved result.
+
+
+### 2026-09-22 — Efficiency audit and hospital lab reuse completion
+
+Reviewed limited lab snapshot COMPLETE:232259195rows,411parts,5658061845compressed bytes,engine verification elapsed1441.904s(not full copy+verification walltime). No need repeat recovery. Added PIPELINE_EFFICIENCY_AUDIT_2026_09_22.md based on code, aggregate evidence and JAMA RCT-DUPLICATE. Priorities: source/delivery registry; shared cohort interface; Arrow-filtered reusable broader-candidate extracts; consolidated mapping/QC/features; persistent runner/status and dependency-aware caches; outcome work in parallel. Preservechecksums/clinicaldecisions. Multi-trial/method registry fixes cohort/estimand/outcome for representation comparisons; cohort-construction methods separateaxis. No performance gains measured or methods implemented by audit; no new clinical rule frozen.
+
+
+### 2026-09-22 — Benchmark direction and candidate-cache implementation
+
+User confirms the goal is consistency of agreement with published randomized trial effects across unadjusted, clinical PSM, EHR representations, ECG representations and combinations. Population differences across frameworks are permitted but must be reported; retain paired common-population comparisons where feasible to distinguish population from adjustment effects. Agreement does not establish unbiasedness; no tuning to published treatment effects. PSM is the first working analysis. CLMBR-T is the selected EHR model direction; checkpoint/input contract remain unselected. ECG model and fusion specification remain open. No statistical analysis plan or endpoint is frozen by this choice.
+
+Implemented native Arrow patient filtering in diagnosis reassessment, vital extraction, baseline staging and the 2025 source audit. Added all-date/all-column broader-candidate event cache with explicit source identities, population coverage checks and verified cached parts; diagnosis reassessment accepts it. Preserves source engine and clinical cutoffs. Synthetic direct/cache cohort parity and integrity tests added. H100 cache build/performance unmeasured. Next: refreshed expanded-cohort baseline consuming cache and both diagnosis deliveries plus limited labs; old baseline readers remain version-restricted. See docs/RUN_CANDIDATE_EVENT_CACHE.md. No MICE/PSM run yet.
+
+
+### 2026-09-22 — Candidate event cache completed on H100
+
+Reviewed user-provided candidate_event_cache_v1 summary: status complete, 71,814 broader candidate keys, 17 tables from five source snapshots, 327.723 seconds. Source rows 702,126,702; retained rows 144,424,880; 79.43% fewer rows; compressed output 4,665,534,348 bytes. This is reduction in input rows, not a measured downstream runtime speedup. All dates/columns retained; downstream pre-index filters remain mandatory. Current exploratory COMET roster remains 9,735, not 71,814. Cache destination path was not included in supplied summary; do not invent it. Limited lab source contains only verified shards 1 and 2; damaged shard 3 remains excluded. No MICE or PSM result. Next: consolidated refreshed baseline using this cache and both diagnosis deliveries; do not rebuild the completed cache.
+
+
+### 2026-09-22 — Expanded cohort cache-backed baseline runner prepared
+
+Added build_comet_cached_baseline.py with strict expanded-cohort/cache/source/anchor lineage checks. One command discovers exactly one completed compatible cohort/cache (or accepts explicit paths), verifies cached parts once per run, regenerates vital candidates, and stages 32 columns using both diagnosis deliveries. Previously accepted recorded utilization zeros preserved; no cohort/index/endpoint changes. Old-version entry points remain restricted. Saves projected RESULT_DATE days1-90 lab rows from outpatient and verified hospital1/2 to smaller restricted Parquet plus component/specimen/unit catalog. Four clinical lab slots remain null/pending mapping rather than assigning unverified analytes or units. Vital unit uncertainty remains visible. Saved lab extracts support subsequent mapping without large-source rescans. No MICE or effect estimation. 213 synthetic tests passed, including end-to-end cohort/diagnosis/vital/zero-policy checks, individual date boundaries and altered-source rejection. H100 execution pending; see docs/RUN_COMET_CACHED_BASELINE.md.
+
+
+### 2026-09-22 — Cached expanded baseline completed on H100
+
+Reviewed comet_cached_baseline_v1 complete_cached_baseline_staging/counts_valid; ready_for_mice false. Runtime150.837s; unchanged9735=5867C+3868T,32features; all64arm-feature status totals reconcile. Actual cohortpath audits/comet-expanded-dx-OBLjqscQ/report and cachepath shared/comet-event-cache-k8bicpaM/cache under RAIDprojectroot now confirmed. Baseline output destination not supplied. Candidate availability: EF4624(52.5%null),BP2936(69.8%null),pulse2903(70.2%null),BMI3813(60.8%null). Sex/indexyear complete; one age_out_of_review_range, not ordinary missingage. Diagnosis technical nulls substantial: AF3466,CKD4239,diabetes3544; inspect parsing/date/missing-ICD10 and unmapped ICD9 causes before treating as imputation targets. No zero-policy change.
+
+Lab extracts1307588rows,35593944bytes (~35.6MB) across outpatient17339/590patients,hospital1 629793/2561patients,hospital2 660456/2603patients. Patient counts overlap; union and analyte coverage not yet known. Allthreeunit_fields empty;5261catalogcombinations. Four lab target slots are pending mapping, not established100%clinical missingness. Next use only small saved extracts/catalog for component/specimen mapping and coverage, while tracing diagnosis technical-null reasons. Existing unit/availability and analysis-contract gates remain. No new source builds, MICE or PSM effects.
+
+
+### 2026-09-22 — Mapping-gap audit prepared from completed cached baseline
+
+User authorizes lab mapping review and diagnosis technical-null investigation. Added audit_comet_mapping_gaps.py: verifies completed parent artifacts and parser contract, computes unique any-lab and broad target-name patient unions from 35.6MB saved extracts, and writes a restricted narrowed component/specimen/unit/format catalog. Lexical leads explicitly include possible non-target assays; no clinical map or units inferred. Diagnosis scan reconstructs current values exactly and explains final nulls by prior365/undated, missing/unparsed ICD10 and ICD9 presence; positive evidence overrides blockers. A single bad/missing ICD10 row can block multiple otherwise-negative features under current policy. Added aggregate age sanity categories. No table mutations, imputation or source rebuild. 216 synthetic tests pass, including source tamper rejection, positive override, future-code exclusion, saved-value mismatch rejection and cross-source patient union. H100 execution pending; docs/RUN_COMET_MAPPING_GAPS.md provides one command.
+
+
+### 2026-09-22 — Mapping-gap results reviewed
+
+User report complete_mapping_gap_audit/counts_valid,70.909s; diagnosis reconstruction matches saved values; baseline unchanged and not MICE-ready. All18arm/diagnosis-feature totals reconcile. Any prior90 lab union5412/9735(55.6%):3074C/2338T; target name leads creatinine3437,potassium3434,sodium3434,hemoglobin5197. Name leads are not usable analyte counts; potential urine/ratios/HbA1c remain unreviewed. Narrowed catalog374groups not supplied yet, so no approved lab mapping/unit assumptions.
+
+Diagnosis reasons show4,095,430undated rows vs1,075,699prior365rows;3,493,173undated rows have parseableICD10 withoutICD9 and594,672withICD9. Missing/unparsed/datelost rows overlap across patient-feature reasons; do not sum patient causes. Current policy uses undated records as technical blockers on otherwise-negative features; this is substantial constructed missingness, not proof of absent clinical information. Need date-field/encounter-date provenance and malformed-list analysis before policy change or MICE; no automatic undated positive or zero conversion.
+
+Age review5865adult-rangeC plus2under18;3867adult-rangeT plus1over120. Cohort unchanged9735; adult requirement and anomalous-age handling must be explicit before eligibility freeze. No age values/dates/identifiers shared. Baseline report path now confirmed audits/comet-cached-baseline-PYwwyapr/report under RAIDroot. Next review restricted_target_lab_catalog locally and investigate diagnosis time/parsing with existing cache.
+
+
+### 2026-09-22 — Explicit age/dated-diagnosis resolution candidate prepared
+
+User requests resolution and mapping. Actual374-group lab catalog absent from attachments; asked for reviewed labels, user asked location, supplied RAID find/less instructions. Lab clinical mapping remains unresolved; no canonical units inferred. New resolve_comet_baseline_gaps.py writes separate resolution candidate: adult18-120, under18 excluded, invalid/null age quarantined; expected9732from reviewed counts. Dated DX_DATEprior365 recorded-evidence policy; undated diagnoses retained as separate auxiliaries rather than technical blockers. This is an explicit missingness-policy change, not proof of disease absence or full eligibility freeze. Complete-token whitespace ICD10 lists accepted; remaining dated parse failures/missingICD10 remain technical null, positive evidence wins; no future/index-day evidence, ICD9 translation or date fallback. Preserves oldtable/index/otherfeatures. Writes unapproved lab identity draft from cluster catalog; no labs inserted.220tests pass including revised undated policy, future exclusion, complete-token parsing, age quarantine and immutable parent. H100 run pending; docs/RUN_COMET_BASELINE_RESOLUTION.md. No MICE/effect run.
+
+
+### 2026-09-22 — Actual lab catalog reviewed; explicit identity extraction implemented
+
+Received374-group restricted target catalog with no unit fields. Encoded exact reviewed2025source component/name/base-name candidates: creatinine795/1526296;potassium894/1534081;sodium893/1534098;routine-namehemoglobin1256/17187/1534435/812/24868. Reject ratios,eGFR,urine,HbA1c,fractions/electrophoresis,freeHb,bloodgas/POC from primary identity map. Some routine IDs carry contradictory urine/catheter or unrelated specimen labels; primary requires exactBlood and no explicit contradictory source signal, flagsothers. Not metadata gold-standard validation.
+
+Added comet_reviewed_lab_map.py and --map-reviewed-labs to resolve_comet_baseline_gaps.py, newoutputversioncomet_baseline_resolution_v2_mapped_labs. Uses smallsavedpreindexextracts, latestday/time, exactsignatures, rawORD_VALUE numericparser, tiesagreeorNULL,noolderfallback. ORD_NUM_VALUE discrepancies QC-only/no fallback. Populates four baseline slots as mapped_numeric_units_unverified; no canonicalunits/conversion,ready_for_micefalse. Preserves restricted lineage, previous tables, explicitadult/datedDXcandidatepolicy.224tests pass incl integrated lab insertion, timestampconflicts,specimengates,sourceboundaries,futureresultexclusion,sentinelcompanionnotused. H100pending;docs/RUN_COMET_MAPPED_LABS.md singlecombinedrun. Unit/sentinel/clinicalvalidity and finalanalysiscontract remain unresolved; no MICE/PSM.
+
+
+### 2026-09-22 — Mapped resolution candidate completed on H100
+
+Reviewed comet_baseline_resolution_v2_mapped_labs complete_resolution_candidate/counts_valid,56.15s;ready_for_micefalse. Adult-range roster9732=5865C+3867T after2under18excluded/1agequarantined. All64feature-arm totals and18diagnosis-transition totals reconcile. Lab numeric raw-scale candidates:creatinine3366(65.4%null),potassium3331(65.8%),sodium3366(65.4%),hemoglobin5069(47.9%). Mostly no mapped component in prior90 window (6298chemistry,4595hemoglobin); specimenblocks67eachchemistry/68hemoglobin, latestnonnumeric1creatinine/36potassium/1sodium. No timestamp/signature disagreement status reported. Units/clinical ranges remain unvalidated; no effect/MICE.
+
+Diagnosis policy transitions across patient-feature cells:25912null->recorded0,7003nullremain,31394zeroand23279positiveunchanged. This is explicit dated-record policy change, not recovered disease-negative labels; no positive diagnoses added by whitespace parser (no recovery counter present). Remainingdiagnosisnull rates3.5–10.9% (AF791/8.1%,CKD829/8.5%,diabetes664/6.8%).3713datedmissing/unparsedrows persist, previously includingICD9leads. Vital missingness unchanged:BP69.8%,pulse70.2%,BMI60.8%,EF52.5%. Mapping reportactualpath audits/comet-mapping-gaps-LHK8x3Sn/report now confirmed; mappedoutputpathnotprovided. Next numeric range/sentinel/scaleQC from saved candidate/lineage data, unit/measurement contract and PSM feature/missingness decisions, in parallel outcome contract. No rebuild needed.
+
+
+### 2026-09-22 — Numeric candidate QC and required balance evaluation
+
+User requests continuing preparation and later covariate-balance evaluation. Added audit_comet_numeric_candidates.py to read only small mapped baseline/selected lab lineage with hash/roster/value/date checks. Reports raw-scale quantiles by arm and source/component, magnitude/possible-sentinel flags, joint/calendar missingness and paired-BP ordering. No automatic cleaning, unit inference, imputation or clinical-range approval;226synthetic tests pass. H100 pending;docs/RUN_COMET_NUMERIC_QC.md.
+
+Recorded required future balance stage in docs/COMET_BALANCE_EVALUATION_PLAN.md: pre/postmatching Table1,SMDs/Loveplot,variance/distribution diagnostics,PSoverlap,retention and weightedESS whereapplicable. Proposed absSMD<0.10reviewthreshold,notcausalvalidityproof;no pvalue-only balance decision. Evaluate each imputation separately;reportmedian/worstSMDandfailurefraction,notpooledSMDoraveragealone. Prespecify denominator/coding/matching details; do not use outcomes orRCTeffectagreement for design tuning. Required userdirection;balanceimplementation/matchedresults notyetexist.
+
+
+### 2026-09-22 — Numeric QC completed; missingness requires calendar-aware planning
+
+Supplied comet_numeric_qc_v1 report: complete_numeric_candidate_qc, counts_valid
+true, ready_for_mice false; 9,732 candidates (5,865 carvedilol, 3,867 metoprolol
+tartrate), 0.184 seconds. Source mapped report confirmed at
+/mnt/raid0/rbc58/ecg-tte/audits/comet-mapped-baseline-sK5bQzbm/report.
+Two carvedilol BMI candidates occupy 0.1–<1 and 1000–<10000 magnitude bins; seven
+carvedilol DBP candidates are zero. No automatic correction or removal performed.
+Only 473 have all nine non-age numeric candidates (279/194); 1,378 have all nine
+missing (854/524). These are numeric completeness counts, not completeness of all
+32 PSM covariates. EF availability is zero in every pre-2015 arm/year stratum
+(2,233 candidates combined). This demonstrates calendar-associated absence, not
+its cause; do not silently extrapolate EF with routine MICE across these years.
+Next: explicit candidate cleaning and measurement assumptions, separate sporadic
+from calendar/source absence, then freeze primary vs sensitivity feature/imputation
+contracts. Preserve cohort and raw values; no eligibility/date restriction adopted
+from this QC alone. No MICE, matching, balance results or treatment effects yet.
+User clarified covariate-balance improvement as a primary benchmark objective;
+updated COMET_BALANCE_EVALUATION_PLAN.md with common clinical evaluation set,
+retention tradeoffs and controlled comparisons, without presuming superiority.
+
+
+### 2026-09-22 — Approved 2015-onward primary candidate population
+User approved index >=2015-01-01; retain full-period sensitivity roster. Implemented restrict_comet_calendar.py with immutable parent verification and synchronized baseline/status/lineage filtering. Expected7499=4539C+2960T pending H100 run. No observed-EF requirement, value cleaning or other eligibility change. Three synthetic tests pass including boundary, duplicate/date failures, tamper rejection, no overwrite and artifact consistency. Run docs/RUN_COMET_CALENDAR.md; next review within-cohort missingness then measurement/MICE contract.
+
+
+### 2026-09-22 — 2015-onward candidate cohort confirmed on H100
+Reviewed comet_calendar_candidates_v1 complete_calendar_candidates, counts_valid
+true, ready_for_mice false. 7,499 candidates: 4,539 carvedilol and 2,960 metoprolol
+tartrate; excluded before2015:1,326/907. All20 numeric profile totals reconcile.
+Combined missingness: EF2875(38.3%), SBP/DBP5322(71.0%), pulse5348(71.3%),
+BMI4605(61.4%), creatinine4789(63.9%), potassium4819(64.3%), sodium4789(63.9%),
+hemoglobin3577(47.7%); age complete. EF coverage improves from52.5% missing;
+vital missingness does not improve. Three zero DBP values and two extreme-scale
+BMI values remain, all in carvedilol. No cleaning performed. Proposed next step:
+explicit measurement/cleaning contract, preserving people and raw measurements;
+then cohort-specific imputation plan with original-missingness diagnostics and
+sensitivity analyses. No additional complete-case exclusion, no PSM or effects.
+Outcome-follow-up upper index date remains unfrozen; avoid labeling7499 the final
+analysis denominator. New run output path not supplied; source_report identifies
+the parent mapped report, not the calendar output.
+
+
+### 2026-09-22 — Approved minimal cleaning before MICE pilot
+Implemented prepare_comet_mice.py: verified calendar parent, preserve roster/raw data, set DBP==0 and BMI<1 or>1000 missing with private reason log, report all32-feature missingness. Expected5 changed cells,7499 retained. Two synthetic cleaning tests passed. H100 pending; docs/RUN_COMET_MICE_PREPARATION.md. Diagnostic MICE pilot proposed, not implemented/run; types/predictor design, source measurement assumptions and final follow-up eligibility remain unresolved. No final effect inference authorized by pilot status.
+
+
+### 2026-09-22 — MICE preparation completed on H100
+Reviewed comet_mice_preparation_v1 complete_mice_preparation/counts_valid true;
+ready_for_mice false. Roster unchanged7499=4539C+2960T. Exactly2 BMI and3 DBP
+cells set missing as authorized. All64 feature-arm missingness counts reconcile
+across32 covariates:6 complete(age,sex,indexyear,3utilization);26 incomplete
+(9continuous,9diagnosis,8medication indicators). Complete numeric coverage does
+not establish recorded-sex coding or clinical utilization semantics. Missing
+diagnosis indicators remain unknown recorded evidence, not confirmed absence.
+Confirmed calendar path audits/comet-calendar-g6NLpUzH/report; preparation output
+path not supplied. Next implement explicit cohort-specific diagnostic MICE with
+PMM continuous and binary categorical models, fixed treatment predictor, no IDs or
+endpoints; runtime validation must check category domains, unsupported/constant
+targets, source integrity and logged predictor changes. Pilot5 datasets/20
+iterations remains proposed, not implemented/run. Measurement units and final
+outcome eligibility remain unresolved; no effect-ready declaration.
+
+
+### 2026-09-22 — Diagnostic MICE pilot implemented
+Added run_comet_mice_pilot.py and comet_mice_engine.R, explicit32-feature+fixedtreatment model, PMM continuous/logreg binary,5datasets20iterationsseed20260922. Verified preparation manifests, immutable observations/roster, no ID/endpoints as predictors, private missingness mask and row keys, actual/requested models, warnings/events, chain traces/plots, lag1 autocorrelation and arm-specific distributions/BP-order diagnostics. No automatic PSM/effect readiness; package/model changes flagged. Synthetic actual R4.4.3/mice3.19.0 run160rows completed11seconds with no warnings/events/model changes and convergence output; no H100 pilot yet. Minimal1e-14 CSV roundtrip tolerance restores exact source/donor values in final Parquet. docs/RUN_COMET_MICE_PILOT.md contains cluster commands and limitations.
+
+
+### 2026-09-22 — First H100 MICE pilot failed at engine startup
+User supplied failed_pilot,7499rows,0.301s,mice_engine_failed_check_restricted_log. Prepared source confirmed audits/comet-mice-prep-M9F28Lk2/report. Specific cause unknown; duration suggests early engine/runtime failure, not proof of missing package. Added read-only diagnose_comet_mice_failure.py with allowlisted fixed log categories and no raw text exposure;2synthetic tests pass. Next Ryan runs diagnostic on failed output; no cohort/imputation method changes and no successful H100 imputation claimed.
+
+
+### 2026-09-22 — H100 diagnostic MICE pilot completed
+Reviewed comet_mice_pilot_v1 complete_pilot_requires_review/counts_valid true at
+/mnt/raid0/rbc58/ecg-tte/audits/comet-mice-pilot-ss4GJlP5/report.
+7499patients(4539C/2960T),5imputations20iterations,214.749seconds; R4.4.3,mice3.19.0.
+No warnings captured inside mice(), no logged events or method/predictor changes;
+convergence output exists but has not been reviewed. External package-load warning
+reports lme4 built Matrix ABI1 vs runtimeABI2. Engine warning_count0 does NOT cover
+requireNamespace startup warnings, so do not describe the entire run as warning-free.
+Current pilot uses pmm/logreg, not multilevel lme4 imputers; warning does not by
+itself prove pilot failure, but environment compatibility needs repair/verification.
+SBP<DBP counts:carvedilol imputation1=1,imputation5=2,allothers0. Three completed
+patient-imputation rows, not necessarily3uniquepeople. No automatic swapping,
+clipping,removal or rerun. Next review chain traces/AC and observed-vs-imputed
+distributions, inspect private BP provenance, and resolve library mismatch before
+final reproducible run. No PSM/effect readiness or convergence claim.
+
+
+### 2026-09-22 — Saved MICE review implementation
+Added review_comet_mice_pilot.py: verifies pilot output and original baseline
+checksums/row order, rechecks observed preservation/PMM donor support; produces
+26target lag1 autocorrelation summaries, per-arm numeric observed/imputed median
+differences/tails and BP provenance with unique-person vs person-imputation counts.
+Startup ABI warning checked separately from engine warning_count. No automatic
+convergence/MAR approval, value changes,matching or MICE rerun. Two synthetic unit
+tests and end-to-end review of actual synthetic R pilot passed. H100pending.
+
+
+### 2026-09-22 — Saved MICE diagnostic review received
+complete_diagnostic_review/counts_valid true for7499patients5imputations.26targets
+have19finite AC iterations. Largest last5mean|AC|:DBP0.613,SBP0.530,valve0.381,
+CKD0.310. These indicate persistence warranting trace review/longer pilot, not
+a formal convergence failure. Numeric observed/imputed median differences modest
+on reported raw scales; metoprolol EF imputed median42.05–47.40 vs observed44.05.
+Marginal agreement does not validate MAR,units,joint relationships or causal use.
+All3inconsistent BP rows are3unique carvedilol patients with both BP components
+imputed (1inimputation1,2inimputation5); no observed pair changed. No automatic
+swap/clipping/exclusion approved. Startup ABI warning remains. Next proposed:
+trace review; compatible R environment; explicitly versioned BP-constrained
+imputation specification and longer diagnostic pilot before final MICE/PSM.
+No cohort change and no matching/effect results.
+
+
+### 2026-09-22 — Ordered BP/50iteration diagnostic pilot v2 implemented
+User approved next pilot and environment repair. Added --ordered-bp versioncomet_mice_pilot_v2_ordered_bp,50iterations5imputations. New custom PMM retains ordered ordinary draws; invalid draws refit on eligible observed donors for recipient current counterpart (>=5required), no clipping/swapping/observed changes. Reject invalid observed/finalpairs. ABIstartup warning nowstops engine; freshisolated Conda repair instructions include warning-as-error preflight, exactenvironment export. Review supports bothversions. Actual160row synthetic50iteration run completed; dedicatedRtests preserveobservations andstop when eligible donors unavailable. H100pending; docs/RUN_COMET_ORDERED_BP_PILOT.md. No readiness claim.
+
+
+### 2026-09-22 — Ordered-BP H100 pilot v2 completed
+User supplied comet_mice_pilot_v2_ordered_bp complete_pilot_requires_review,
+counts_valid true,7499patients(4539C/2960T),5imputations50iterations,533.645seconds.
+Run:/mnt/raid0/rbc58/ecg-tte/audits/comet-mice-pilot-v2-w5ZRCHzh/report.
+R environment:/mnt/raid0/rbc58/ecg-tte/software/mice-r-v2-tyXlJyw1/env;
+R4.4.3,mice3.19.0. Startup warnings0,imputation warnings0,logged events0,
+no predictor/method changes. All10arm/imputation BP-order counts zero; ordering
+is now enforced by construction, not independent evidence of imputation validity.
+Convergence output exists but its traces/AC/distributions have not been reviewed.
+Next run existing review_comet_mice_pilot.py against this saved output and compare
+with v1 diagnostics. Both BP model and iteration count changed, so any difference
+cannot be attributed solely to longer chains. No additional MICE rerun required
+for this review. No PSM/effect readiness claimed.
+
+
+### 2026-09-22 — Ordered-BP pilot v2 review received
+Reviewed complete_diagnostic_review/counts_valid true,7499patients5imputations;
+ABI warning absent,zero BPviolations,zero engine/startup warnings/modelchanges.
+Last5mean|AC|SBP0.409vs0.530v1,DBP0.412vs0.613;CKD0.127vs0.310,
+valve0.033vs0.381. All26targets49finiteiteration diagnostics. Numeric marginal
+distributions broadly similar to previous report; metoprolol EF imputed medians
+45–46 vs44.05observed. No claim of convergence/MAR validation from aggregates.
+Both iterations and BP model changed, so improvement attribution is unresolved.
+Review report remaining_review list is static/stale: ABI repair and constraint
+implementation already completed; actual remaining step is trace drift/mixing
+review before exploratory PSM design. No additional automatic imputation run
+recommended solely to reduce AC. Five datasets still diagnostic, not final MI
+precision selection;32covariate PSM specification/estimand/follow-up remain tofreeze.
+
+
+### 2026-09-22 — Exploratory PSM and trace summaries implemented
+User asked to continue. Added run_comet_exploratory_psm.py + Rengine: verified orderedBPpilot,32clinical covariate main-effects logistic PS,carvediloltreated,1:1greedy descendinglogit no replacement,0.2pooledwithin-armSDlogitcaliper. Explicit design experiment, not final estimand freeze or imputation convergence approval. Perimputation balanceclinical+originalmissingness,SMDfixedpreSD,binaryBernoulliSD,undefinedzeros,varratios,ECDF,retention,Love/overlapplots. Trace midpoint10vsfinal10 summaries; manualreviewremains. Actualsynthetic5imputation matching ran; unitcaliper/reuse andRbalanceinvariants pass. No H100matching/effects yet. docs/RUN_COMET_EXPLORATORY_PSM.md.
+
+
+### 2026-09-22 — PSM caliper serialization precision fix
+H100 exploratory run audits/comet-exploratory-psm-xulOVF3T/report stopped at
+caliper_violation. Found reproducible code defect: jsonlite default digits4 rounds
+reported caliper, while Rmatching uses full precision and Python compares saved
+scores against rounded threshold. Synthetic0.23454321 becomes0.2345, falsely
+rejecting0.23453. Fixed summary digits=NA and score CSV17significantdigits.
+Caliper/matching/model unchanged; no increased validation tolerance. Regression
+test confirms original falsefailure and continued rejection beyond truecaliper;
+full synthetic5imputation matching passed. H100cause likely this defect but raw
+pairs not inspected remotely; newrunmuststillvalidate. Preserve failedrun; rerun
+matching only from savedv2imputations, no MICE/source rebuild.
+
+
+### 2026-09-22 — First successful H100 exploratory PSM
+Precision-fixed run audits/comet-exploratory-psm-BMy8F09e/report completed in3.924s,
+counts_valid true,ready_for_effects false. Five imputation paircounts2382,2384,
+2402,2387,2427 (4764–4854matched people per dataset; not summable acrossdatasets).
+Carvedilolretention52.5–53.5%,metoprolol80.5–82.0%; roughly64–65%total.
+MeanpostabsSMD0.0296–0.0345,max0.1232–0.1605;3,3,3,5,3evaluatedfeatures
+>=0.1. SixundefinedSMDs eachdataset, no constantpredictors orPSwarnings. Likely
+constant missingness flags given6completefeatures, but feature-levelreport needed
+to confirm. Summarydoesnotcontain pre-matchSMDs or failingfeaturenames, so no
+quantifiedimprovement orclinicalbalanceapproval yet. Need saved
+balance_across_imputations.csv and trace_drift_summary.csv/chainplots review.
+No rerun or effectestimate. Current shellvariableCOMET_PSM_RUN assignedinsubshell
+willnotpersist; use explicit successfulrunpath in subsequentcommands.
+
+
+### 2026-09-22 — Feature-level first PSM balance reviewed
+User supplied balance_across_imputations.csv for successful exploratory run
+BMy8F09e. EF medianabsSMD0.11483,worst0.13859,>=0.1in5/5;AFmedian0.08280,
+worst0.10031,1/5. Other clinicalfeature/sexlevelSMDs<0.1inall5.
+Missingness residuals:Hbmedian0.13320,worst0.16051,5/5;MRAmedian0.11440,
+worst0.12867,4/5;ARNImedian0.09640,worst0.13609,2/5. Sixundefinedfeatures
+are missingness indicators for fully observed age,sex,indexyear,3utilization
+variables; expected zero variance,notfailedimputation.
+Do not interpret imputed meanbalance as confirmedbalance of true unobserved values.
+CurrentPSmodelexcludedmissingnessindicators. Proposedexplicit exploratoryv2:keep
+samecohort/imputations/matchingcaliper;add original nonconstantmissingnessflags
+andflexibleEFterm,compare fullperimputationbalance+retentionagainstpreservedv1.
+Notimplemented/frozenyet;outcome-blinddesignrefinement only,norefitMICEneeded.
+Trace review remainspending;noeffectreadinessclaim.
+
+
+### 2026-09-23 — Clinical v2 and embedding archive discovery
+User approved refinedclinical+embeddingpreparation, directed ECGarchive and
+../mosaic/archive search. Readonlysearchfound ECGmetadata/signals,biometric and
+ecg_sim checkpoints,legacyCOMETvectors undercardiomap; CLMBRweightslead
+/mnt/raid0/eo287/clmbr and mosaicprog_clmbr caches/MEDSlead. No H100existence
+orpreindexcoverageverified; archivesuntouched/unimported.
+Implemented --refined explicitcomet_exploratory_psm_v2_refined: EF natural spline
+knots30,50 boundaries1,100; original nonconstantmissingnessflags; QRdependent
+columns explicitlyreported, all originalclinical/missingnessvariables evaluated.
+Sameimputations/cohort/matchingrule asv1. ActualRsynthetic5imputationrunpassed;
+common evaluationfeatures and preSMDs identical tov1. No clinicalsuperiorityclaim.
+Added inspect_embedding_assets.py exactleadexistence/footerchecks, no patientrows
+or directorylisting/modelunpickling; syntheticprivacytestpasses. Next Ryan runs
+refinedPSM and assetscheck; schemaevidence neededfor cohort-specific temporal
+coverage. docs/EMBEDDING_ARCHIVE_LEADS.md. No GPUinference or embeddings adopted.
+
+
+### 2026-09-23 — Refined PSM H100 results received
+Reviewed complete_exploratory_design_requires_review/counts_valid true7499inputs,
+4.292s at audits/comet-refined-psm-0COf8sBN/report. Pairs2368,2375,2400,2383,2401
+vs2382,2384,2402,2387,2427v1 (loss14,9,2,4,26pairs). MeanabsSMD0.0176–0.0241
+vs0.0296–0.0345;max0.1110–0.1272vs0.1232–0.1605. Features>=0.1:1,1,1,2,1.
+Sixconstantmissingnessflags explicitlyomittedfromfitting;noaliases or warnings.
+Remainingfeaturenamesneeded; near0/1propensities warrant overlapreview, not
+automaticpositivityapproval. No final model freeze or effects.
+Assetreport at audits/embedding-assets-DPrRshKo/report but pastedtextstarts at
+emb_553; onlytailthrough emb_767 andlegacyMEDSdirectoryexistence visible. Cannot
+confirm ECGmetadata/checkpointstatus orwholeembedding dimension from truncated
+paste. Next compact fullassetsummaryexcludingindividualembcolumns and refined
+balancefeaturetable, without rerunning scans/models.
+
+
+### 2026-09-23 — Compact embedding assets and refined balance confirmed
+User supplied compact output for embedding-assets-DPrRshKo and refined PSM
+comet-refined-psm-0COf8sBN. All nonconstant missingness indicators have absolute
+SMD <0.1 in every imputation. Hemoglobin missingness median/worst 0.04442/0.06883,
+MRA 0.01341/0.02153, ARNI 0.01608/0.02915. EF remains >=0.1 in all five:
+median 0.12269, worst 0.12722 (original median 0.11483, worst 0.13859).
+Thus EF median worsened slightly despite improved worst imbalance. AF exceeds
+0.1 in one imputation (worst 0.10766); all other clinical features stay below
+0.1 in all five. Preserve both comparators; no final balance/effect approval.
+
+ECG metadata footer confirms 5,078,917 rows with MRN, ECGDate and BOTH FileID
+and fileID; these aliases require explicit reconciliation. Signal and legacy
+COMET biometric vector directories exist, but both historical ECG checkpoint
+paths are missing. CLMBR checkpoint directory exists; contents not inspected.
+CLMBR allcomers cache has 5,744 rows and v2_train cache 64,535 rows. Each has
+768 emb_ columns and only file_id besides embeddings: no explicit patient or
+history cutoff. These are vector-row counts, not COMET patient coverage.
+No patient rows or vectors were read locally; archive remains unchanged.
+
+Next: outcome-blind coverage audit across all 7,499 candidates, exact-key
+file_id-to-ECG-to-patient linkage with ambiguity checks and strict pre-index
+timing, then independent CLMBR history-cutoff/checkpoint provenance verification.
+Do not select only the previously matched patients. Compare methods on common
+available patients with the same clinical evaluation set; rerun clinical PSM
+on that common population. Existing cache existence is not leakage clearance.
+No new MICE or source-table rebuild is needed for this coverage step.
+
+
+### 2026-09-23 — User corrects benchmark objective
+User explicitly clarified: do not keep adjusting methods to make every covariate
+balanced. Test whether direct ECG/CLMBR-T embedding cosine-similarity or distance
+matching improves clinical balance compared with PSM. Stop further EF/AF-driven
+PSM refinement; residual imbalance is an evaluation result. Preserve original and
+already-refined PSM and disclose their development history. Embedding-augmented
+PSM is a separate optional method, not the primary requested comparison. Freeze
+comparison settings before examining embedding results; no selective reporting or
+tuning to desired balance/RCT effects. Common population, fixed evaluation features
+and denominators, retention and pre-index provenance remain required.
+
+
+### 2026-09-23 — Embedding linkage feasibility audit implemented
+Added audit_comet_embedding_coverage.py and RUN_COMET_EMBEDDING_COVERAGE.md.
+Verifies cleaned roster hash and denominators; two projected ECG metadata passes
+check strictly prior days 1–365 and global cross-alias patient/date collisions.
+Aliases stay separate. CLMBR duplicate IDs excluded; ECG .npy presence only, no
+vectors or notes read. Aggregate output, private fresh destination, no matching.
+Synthetic timing/collision/duplicate/alias/privacy and date tests pass (2 tests).
+H100 coverage and representation history/model provenance remain unverified.
+Archive CLMBR cache builder supports configurable index-date column, so cache
+file_id linkage alone cannot establish the historical run's actual cutoff.
+
+
+### 2026-09-23 — H100 embedding coverage received
+Run comet-embedding-coverage-l5h8nn2Y/report completed in 24.562 seconds,
+counts_valid true, ready_for_matching false. Of 4,539 carvedilol and 2,960
+metoprolol candidates, 3,671 and 2,601 respectively have ECG metadata strictly
+1–365 days before index: 6,272/7,499 total. These are metadata coverage counts,
+not verified waveform or embedding availability. No ambiguous candidate file IDs.
+All 30,424 prior-window metadata rows had differing FileID/fileID values.
+Only fileID matched CLMBR cache keys: allcomers 7/7 patients by arm; v2_train
+190/178. Cache overlap across the two files was not measured: do not sum them.
+No nonempty nonsymlink {fileID}.npy vectors matched either alias in the inspected
+legacy ECG embedding directory. This does not establish absence in other paths,
+formats or nested layouts. Zero same-record ECG-vector/CLMBR intersections.
+
+Next investigate ECG directory layout/manifest and raw waveform coverage, locate
+encoder provenance, and verify CLMBR model plus historical event input/cutoff.
+Do not shrink the primary benchmark to the 368 cache-covered patients merely
+because those vectors already exist. Cohort-specific generation may be needed
+for broader coverage; not yet implemented or executed. No PSM tuning or matching.
+
+
+### 2026-09-23 — Original ECG checkpoint search
+Read-only searches of ecg-tte and mosaic archives found only the same biometric
+checkpoint path, /mnt/raid0/rbc58/cardiomap/experiments/ecg_biometric/best.pt.
+Local sibling ecgbio text search found no alternate path. Archived stage2_embed.py
+explicitly warns that ecg_sim_from_biometric is an echo-sim fine-tune and directs
+COMET use to the biometric checkpoint; mosaic4/M0_5_EMBEDDINGS.md agrees.
+No checkpoint located or loaded, no archive changes, no cluster access. Next Ryan
+runs a depth-limited checkpoint filename search in H100 project directories;
+results stay in a private RAID audit folder pending review. Negative results from
+a depth-limited search do not establish that weights are absent from the cluster.
+
+
+### 2026-09-23 — Checkpoint search did not locate COMET encoder
+User supplied ecg-checkpoint-search-7TmOCbNj output; no original biometric or
+ecg_sim checkpoint was listed. Search errors were empty, but the search skipped
+missing roots, did not follow symbolic links and was depth-limited. It is not
+proof of deletion. Found variant biocontrastive checkpoints are a different
+model family: local variant documentation describes an EfficientNet-B3 ECG-image
+encoder (300x300x3, 1536 output), not the archived Net1D waveform/projector
+COMET encoder. Do not substitute by similar filename. Environment .pth files
+are not model checkpoints. Next inspect cardiomap/experiment root links and
+archive layout before deciding original weights cannot be recovered.
+
+
+### 2026-09-23 — BCL old experiments directory absent
+User confirmed cardiomap exists as a real directory with cohort, dcm_cache,
+embeddings, eval and trialemulation subdirectories; experiments and its
+ecg_biometric child are absent, not symlinks.
+The pasted GitHub checkout result was truncated and is not interpretable.
+Further local searches in mosaic and cardioaging yielded no alternative Net1D
+BCL checkpoint path. ecgbio references a separate TensorFlow B3 image model;
+this does not identify the requested archived waveform BCL weights. Broaden
+H100 search to moved experiments/checkpoints and backup locations; no model
+substitution or inference authorized by missing-path evidence alone.
+
+
+### 2026-09-23 — User prioritizes CLMBR on newly mapped OMOP gold
+User will locate BCL weights independently. Proceed with frozen CLMBR first on
+newly mapped gold, not the limited old ECG-keyed caches. Candidate gold root is
+/mnt/raid0/rbc58/omop/gold; asynchronous question asks whether the new snapshot
+is at this path. Existing root/model references found in local mosaic config
+and archive; no current source or checkpoint contents read on H100.
+Added docs/COMET_CLMBR_INPUT_PLAN.md: all 7,499 candidates, no ECG requirement;
+exact person linkage; strictly pre-index EHR history; verified vocabulary/tokenizer
+acceptance; cohort cache then frozen inference then direct distance comparison.
+No imported archived modules, full OMOP rebuild, further PSM tuning, or new
+embeddings yet. Gold mapping labels alone do not prove model vocabulary coverage.
+
+
+### 2026-09-23 — MEDS bridge explicitly required
+User correctly identified MEDS conversion before CLMBR. Confirmed historical
+OMOP-to-flat-MEDS builder and model input examples; no archived code imported.
+Potential reusable extract: mosaic/meds_extract_rbc_v2, cohort-scoped and not
+verified for COMET. Plan now explicitly includes MEDS version/schema/metadata,
+lineage/coverage checks, numeric handling and strict time cutoff. Imputed PSM
+values must not be fabricated as observed MEDS events. No conversion/inference
+run yet; next verify existing extract versus new gold before reuse or cohort build.
+
+
+### 2026-09-23 — CLMBR MEDS input coverage implemented
+Added audit_comet_clmbr_inputs.py and RUN_COMET_CLMBR_INPUTS.md. Uses explicit
+source-report/gold/MEDS/model/output paths. Verifies roster hash/denominators,
+checks global person identity collisions, projects three MEDS columns in bounded
+Arrow batches and filters cohort IDs before Python conversion. Reports dated-code
+coverage strictly before index midnight; undated and future rows separate. Saves
+restricted linkage on cluster. Fixed model-file metadata only, no model loading.
+Three synthetic tests pass: identity collisions/cutoff/privacy, no history and
+symlink refusal. Numeric processing, clinical-code eligibility, model identity,
+tokenizer compatibility and MEDS-to-gold lineage remain unverified; no inference.
+User has approved proceeding with MEDS/CLMBR, historical paths explicit in runbook;
+no proof yet that those paths contain the newly referenced mapping snapshot.
+
+
+### 2026-09-23 — MEDS coverage results require cohort-specific extract
+H100 comet-clmbr-inputs-AwA2BnNg/report completed in 23.421s. All 7,499
+candidates link uniquely to current OMOP person: 4,539 carvedilol and 2,960
+metoprolol. Existing meds_extract_rbc_v2 has 188,908,961 rows but contains
+only 780 carvedilol and 606 metoprolol cohort members (1,386 total, 18.48%).
+All 1,386 have dated pre-index codes; 6,113 linked candidates have no rows in
+this MEDS extract. Absence from this cohort-scoped cache is not evidence of
+absence of EHR history in OMOP. Pre-index rows total 1,963,206; same-day/future
+rows 2,893,968 were not counted as prior history. Clinical-code sufficiency per
+patient and tokenizer acceptance not yet assessed.
+Model directory has config.json (2,002 bytes), dictionary.msgpack (6,839,410)
+and model.safetensors (566,608,776). This is promising local model availability,
+not verified model identity; missing alternate filenames do not imply a broken
+model. MEDS uses timestamp[ms], large_string and double values with a saved pandas
+index; explicit versioned schema conversion is required for a new MEDS contract.
+Next build cohort-specific pre-index MEDS from gold, preserving all 7,499 in
+coverage denominators rather than restricting to old cache membership. Need
+current event table schemas and vocabulary/model configuration for the adapter.
+No source rebuilt, no MICE rerun, no model inference yet.
+
+
+### 2026-09-23 — Cohort MEDS builder and frozen CLMBR adapter implemented
+User explicitly requested new cohort-specific MEDS and encoder pipeline. Added
+build_comet_meds.py: verified roster; exact person linkage; five mandatory gold
+domains; projected Arrow filtering; private SQLite staging; relevant concept
+mapping; subject-disjoint sorted MEDS Parquet; exact-birth handling and numeric
+values/units retained. No MICE features manufactured as events. Only pre-index
+events retained, no same-day/future rows. New outputs and source inventories.
+Added encode_comet_clmbr.py: verify output hashes, local checkpoint SHA256 and
+strict state loading; frozen 768D model, latest4096 token positions, explicit
+native vs code-only numerical policy, per-patient statuses and arm-level acceptance.
+Uses pinned FEMR0.2.3/MEDS0.1.3 APIs verified by inspecting downloaded official
+package wheels, not importing archive code. Flat MEDS_BIRTH maps explicitly to
+pinned nested MEDS birth code SNOMED/184099003. Native mode passes numerical
+values; old archived runner had omitted them. No unit-conversion claim.
+Initial contract omits static sex/race tokens, observation domain and drug doses;
+these are explicit in the runbook. Missing exact birth remains in denominator but
+cannot be encoded. Model layout/state or unexpected inference failure stops.
+Four new synthetic tests pass (complete staged build, temporal/identity/finiteness
+checks, required-domain failure, cache mutation); three prior input tests also
+pass. No GPU inference or real H100 MEDS build tested locally. Runbook:
+docs/RUN_COMET_MEDS_AND_CLMBR.md. Ryan builds MEDS, then runs 32-subject smoke
+in compatible GPU environment, then full fresh encoder output after review.
+Partial outputs are not automatically resumable; completed MEDS cache is reusable.
+
+
+### 2026-09-23 — Fresh COMET MEDS completed on H100
+User report for shared/comet-meds-v1-3hgAkgoB/meds: complete_cohort_meds,
+counts_valid true, 6,829,970 rows across 32 shards in 227.151s. Exact birth
+for all 7,499 candidates; clinical MEDS coverage 4,538/4,539 carvedilol and
+2,960/2,960 metoprolol (7,498 total). One birth-only carvedilol patient remains
+in cohort denominator and must receive an explicit no-clinical-events status.
+The old MEDS cache covered only 1,386 candidates.
+Two source limitations: 3,580,966 measurement rows have numerical values but
+no raw unit label, among 3,592,432 pre-index measurement candidates; unit concept
+fields were not inspected by this builder, so do not infer units absent in gold.
+Procedure candidates 565,410, of which 520,701 fail vocabulary resolution;
+44,709 survive. Another 3,694,738 pre-index procedure rows have no standard
+concept. Drug rows without standard concept:116,490. These are not tokenizer
+coverage results. Counts cannot be called full clinical domain coverage.
+Next:32-patient explicitly code-only runtime smoke to validate actual CUDA/FEMR
+execution without assuming numerical unit compatibility. This is a technical
+test, not the final benchmark representation and not a substitute for resolving
+unit concept metadata/procedure vocabulary coverage. Native inference remains
+pending numerical input validation. No MEDS rebuild needed for runtime smoke.
+
+
+### 2026-09-23 — CLMBR smoke stopped on missing FEMR in base
+User smoke comet-clmbr-smoke-QgGy4qEK/report failed after0.169s with
+PackageNotFoundError/femr. No inference occurred; MEDS remains complete.
+Archive run_prognostic_hfref_v2.sh and mosaic1/mosaic1.md explicitly use the
+mosaic conda environment; prior handoff records FEMR0.2.3 and xformers there.
+Next activate mosaic and verify exact FEMR/MEDS versions, imports and CUDA
+before rerunning the same32-patient code-only smoke in a fresh output directory.
+Do not install into base or rebuild MEDS based on this environment failure.
+Current mosaic environment compatibility is not yet verified on H100.
+
+
+### 2026-09-23 — Mosaic CLMBR runtime CXXABI failure
+User environment has FEMR0.2.3, MEDS0.1.3, torch2.13.0, xformers0.0.35,
+transformers5.15.0. Imports stop when scipy.optimize HiGHS resolves system
+/lib/x86_64-linux-gnu/libstdc++.so.6 lacking CXXABI_1.3.15. No CLMBR run
+launched. Do not downgrade/reinstall packages based on this evidence.
+Read local mosaic/paper.md current runtime investigation: identical failure
+resolved there by deriving libstdc++.so.6 from sys.prefix and preloading it for
+a new process. CONDA_PREFIX had differed from interpreter prefix, so relying
+on CONDA_PREFIX was specifically unreliable. This is related-project evidence,
+not proof the current run is repaired. Next explicit mosaic interpreter plus
+process-scoped LD_PRELOAD, then scipy.optimize/FEMR/CUDA preflight and fresh
+32-patient code-only smoke. No model, MEDS, scientific contract or package changes.
+
+
+### 2026-09-23 — CLMBR config default handling fixed
+Interpreter-derived libstdc++ preload passed runtime imports and detected H100.
+Smoke comet-clmbr-smoke-dS7xNUcE stopped at expected_clmbr_t_768_dimensions:
+raw config report hidden_size null, n_layers12, vocab_size65536. This does not
+prove wrong checkpoint width: raw lookup conflated omitted defaults with null.
+Adapter now resolves through pinned FEMRModelConfig.from_pretrained, records raw
+versus resolved fields and omitted/defaulted fields, and passes the same resolved
+config to strict model loading. No hardcoded override of explicit wrong/null
+dimensions; 768 output and strict checkpoint state checks retained.
+Six focused synthetic tests passed. Independently loaded the official downloaded
+FEMR0.2.3 config module locally and verified omitted hidden_size resolves to768
+while explicit n_layers12 is preserved. No local weights or GPU execution.
+Next pull patch, reuse exact MEDS/model, fresh32-person code-only smoke with the
+same successful interpreter-derived runtime preload. Full checkpoint compatibility
+and inference remain unverified; source unit/procedure limitations unchanged.
+
+
+### 2026-09-23 — Strict safetensors loader replaces incompatible HF lifecycle
+H100 smoke comet-clmbr-smoke-3YE3VjSg resolved768D/12layers and read65weight
+tensors, then AttributeError; original report lacked stage/trace details, so
+precise H100 failing line is not confirmed. Inspected official Transformers5.15
+wheel and FEMR0.2.3: HF finalize loader uses all_tied_weights_keys set by post_init,
+which FEMR constructor does not call. This establishes a relevant loader API
+incompatibility, not complete diagnosis of all possible inference errors.
+Adapter now constructs the same FEMR model from resolved config, loads local
+safetensors via strict PyTorch state dict with exact key/shape/dtype validation.
+No renaming, missing/random replacement, dtype casting, architecture/weight
+changes, or package downgrade. Loader revision recorded. Execution stages and
+allowlisted traceback module/function/line metadata added, without exception
+messages, locals, source text or patient values. Nine focused tests pass,
+including actual synthetic tensor/output equality and mismatch rejection.
+No H100 model run verified yet. Reuse MEDS/checkpoint/runtime preload; rerun
+fresh32patient smoke. Broader torch/xformers/FEMR compatibility still unverified.
+
+
+### 2026-09-23 — CLMBR H100 smoke succeeded
+User supplied comet-clmbr-smoke-LyvcBwss/report: complete_smoke_requires_review,
+counts_valid true, ready_for_matching false, 24.483s. All32 targets encoded
+(16 per arm), 768D; direct strict loader matched65 tensors. Code-only mode,
+latest4096 token positions, one truncated history. Tokenizer accepts15,836/19,299
+carvedilol and25,284/30,055 metoprolol measurements (41,120/49,354 total).
+These are deterministic smoke-sample event acceptance counts, not full-cohort
+clinical coverage or balance. No inference failures in this sample.
+Model hashes: config9c8b9835ed5628a9b6d9498577a93ac4d9e6e269beecfbd69ca3b5dcab915e2a;
+dictionary481ddac70a37e79bbfadde1411ad674544a161e3c1948149989cd159a34203ee;
+weightsf56e2ece082b9daf87767c7de93419db1b6c0eaf21311e06c8f329b7ab4b81a2.
+Next full cohort codes-only extraction (--limit0), same MEDS/model/runtime/4096
+policy in fresh output. This is the first exploratory codes-only representation,
+not approval of native numeric handling or final benchmark specification.
+At most7,498 have mapped clinical events; tokenizer/no-history checks may further
+reduce availability. Numeric unit/procedure mapping and static sex/race omissions
+remain disclosed; no MICE rebuild or PSM refinement. Match only after full
+coverage/truncation review and outcome-blind matching specification.
+
+
+### 2026-09-23 — Full codes-only CLMBR embeddings completed
+User report comet-clmbr-full-NAyb4G2x/report: complete_embeddings_requires_review,
+counts_valid true, ready_for_matching false,114.545s. Targets7,499; encoded7,498
+(4,538 carvedilol,2,960 metoprolol). One carvedilol patient no_clinical_events;
+no other recorded exclusions/failures. Output768D; strict65tensor load; same
+config/dictionary/weight hashes as successful smoke. Latest4096 tokens;102
+patients truncated (1.36% of encoded cohort). Acceptance2,909,561/3,640,359
+carvedilol and2,527,474/3,182,112 metoprolol, overall5,437,035/6,822,471
+(79.69%). These are event-token acceptance counts, not independent patient or
+clinical phenotype accuracy. Representation is codes-only, not numeric-inclusive.
+
+No additional inference or MEDS/MICE rebuild is needed for this representation.
+Next compare unchanged clinical PSM specifications and direct CLMBR cosine
+matching on the same7,498 candidates. Clinical PSM needs rerunning on that
+common population, using saved imputations with no refitting MICE. Preserve
+full7,499 original/refined results. Freeze direct matching assignment, ratio,
+replacement/support/tie rules before inspecting embedding balance; no tuning
+to remove residual imbalance or reproduce RCT effects. Report retention jointly
+with fixed clinical/missingness SMD and distribution metrics. Numeric unit and
+procedure mapping limitations, static demographics omission remain unchanged.
+Full embeddings remain restricted on H100; no matching or effect results yet.
+
+
+### 2026-09-23 — Common-population CLMBR cosine comparison implemented
+User authorized continuing from full 7,498 embeddings. New outcome-blind
+`compare_comet_clmbr.py` preserves saved MICE and reruns unchanged original and
+previously refined PSM on exactly the embedding-available cohort. Original PSM
+is primary; refinement history disclosed. Cosine: L2 vectors, 1-dot, 1:1 greedy
+without replacement, SHA256(comet_cosine_v1|key) treated order, lexical control
+ties, no cutoff. No clinical/outcome tuning. Assignment/support rules differ
+from PSM, so this is a method-bundle comparison, not isolated metric superiority.
+Retentions, distance quantiles, common-denominator clinical/missingness balance,
+observed-only SMD/counts, distribution metrics and comparative Love plots emitted.
+Source manifests, cohort/arm/index identity and fixed checkpoint hash checked.
+Local synthetic tests cover cosine direction/ties/row-order invariance, invalid
+vectors, original/refined/external-pair R evaluation, observed-only denominators,
+full orchestration (input MICE review mocked there), and manifest tamper rejection.
+Existing PSM pair/caliper and fixed-SMD tests pass. No H100 comparison executed.
+Next Ryan runs docs/RUN_COMET_COSINE_COMPARISON.md; review summary and plots.
+Trace/source limitations and effect readiness unchanged. No MICE or GPU rerun.
+
+
+### 2026-09-23 — Comparison missingness-mask contract repair
+H100 comet-cosine-comparison-eJEnmZKn failed with AttributeError at3.231s;
+no balance results valid. Inspected MICE writer: mask is an array of row objects,
+whereas comparison incorrectly called mask.get/items as if column-oriented.
+This reproduces an AttributeError path; original H100 report has no traceback
+to independently confirm the exact line. Fixed consumer to validate boolean
+row masks against original measurements and subset rows unchanged. Added safe
+stage/module/function/line diagnostics (no exception text, locals or records).
+Previous synthetic integration used a column-shaped mask and missed this defect;
+updated to the actual producer format. Six Python tests and synthetic R
+original/refined/external-pair balance integration pass. Matching contract,
+cohort, checkpoint and imputations unchanged. Fresh H100 rerun pending.
+
+
+### 2026-09-23 — First cosine result complete; selection flaw identified
+User supplied comet-cosine-comparison-wOVBLUxm/report: complete, counts_valid
+true, 13.095 seconds; common7498 (4538 carvedilol,2960 metoprolol). Original
+PSM2382–2426 pairs, meanabsSMD.03055–.03476, max.12319–.16051,3–4 features
+>=.1. Previously refined2368–2400 pairs, mean.01820–.02322, max.11494–.13257,
+1 feature>=.1. Cosine2960 pairs, mean.10684–.11102, max.60178–.64184,25–27
+features>=.1. All include original missingness and six undefined constant flags.
+
+Code review identified structural benchmark limitation: v1 iterates majority
+carvedilol in fixed hash order without caliper until all2960 controls are used.
+Retained treated patients are therefore the first2960 hash-ordered keys and all
+controls are retained, independently of embeddings. Cosine affects pair identity
+but cannot affect marginal SMD/ECDF/variance balance. Synthetic check with ten
+different embedding matrices confirmed identical retained sets. Computational
+completion is valid but this is not a meaningful representation-dependent
+selection comparison; do not infer CLMBR inferiority from this result. Preserve
+v1 and disclose flaw. Proposed explicit v2: iterate smaller metoprolol arm in
+fixed order, select nearest unused carvedilol using cosine; keep all other input
+and evaluation rules. No new v2 implementation/run yet; no outcome use or tuning
+of clinical variables/checkpoint. Effect readiness remains false.
+
+
+### 2026-09-23 — User-approved metoprolol-anchor cosine v2 implemented
+Explicit --metoprolol-anchor selects comet_cosine_comparison_v2_metoprolol_anchor.
+All metoprolol patients queried in fixed hash order; closest unused carvedilol
+selected with lexical exact-distance ties. Same normalization, cutoff-none,
+checkpoint, common cohort, saved MICE and original/refined PSM formulas. Stop if
+metoprolol exceeds carvedilol pool. Pair arm labels/SMD direction unchanged.
+V1 code path and saved output preserved; historical doc now cautions against
+interpreting v1 as representation-dependent marginal-balance evaluation.
+New synthetic test changes vectors and verifies selected carvedilol membership
+changes in v2 but not v1; verifies distance, labels, row-order invariance, ties,
+no replacement and arm-size failure. Orchestration test uses unequal120/80 arms
+and explicit v2 metadata. H100 execution pending; use
+docs/RUN_COMET_COSINE_V2.md or scripts/run_comet_cosine_v2_h100.sh.
+No result-driven changes of clinical features/checkpoint or new effects approval.
+
+
+### 2026-09-23 — Corrected CLMBR cosine v2 H100 result
+User supplied comet-cosine-comparison-v2-wiph2eZH/report: complete exploratory
+comparison, counts_valid true,15.298s, common7498 (4538 carvedilol,2960
+metoprolol); one carvedilol unavailable. Explicit metoprolol-anchor v2.
+Cosine2960 pairs in all5 imputations (65.23% carvedilol,100% metoprolol),
+meanabsSMD.09289–.09918, maxabsSMD.60957–.65820,19–21 evaluated features>=.1.
+Original PSM2382–2426 pairs, mean.03055–.03476, max.12319–.16051,3–4>=.1;
+refined2368–2400 pairs, mean.01820–.02322, max.11494–.13257,1>=.1.
+PSM results unchanged from v1 common-population rerun. Metrics include clinical
+features and original missingness; six constant/undefined indicators excluded
+from means. Cosine median distance.22959,p95.43088,max.57923.
+Interpretation: this codes-only direct-cosine/no-caliper method retains more
+patients but has worse measured marginal balance than both clinical PSM methods.
+Do not generalize to all CLMBR methods or causal effect accuracy: support, ordering
+and retention differ; representation lacks numeric input and has source limits.
+Freeze/report this result without tuning to force improvement. Next inspect
+feature-level completed/observed balance and Love plots; feature responsible for
+max SMD is not identifiable from this summary alone. Effects readiness remains
+false; trace review pending. No new methods or changes authorized by this result.
+
+
+### 2026-09-23 — Global optimal cosine v3 implemented; no cosine caliper
+User authorized global minimization and asked about calipers. Explicit
+--global-optimal selects v3: scipy rectangular linear_sum_assignment minimizing
+total float64 L2 cosine distance, all metoprolol assigned without replacement
+to selected carvedilol. No cosine cutoff; PSM still0.2 pooled within-arm SD(logit).
+No validated cosine threshold chosen; adding a cutoff would require separate
+explicit support/cardinality rules and rationale, not tuning this balance table.
+Lexical axes, solver tie choice without perturbation, numpy/scipy versions logged.
+Recompute v2 greedy reference objective and require optimal total <= greedy with
+same cardinality. Original/refined PSM, MICE, checkpoint and cohort unchanged.
+Tests compare with exhaustive assignments on20 synthetic rectangular examples,
+confirm strict improvement examples, no reuse, arm labels and order invariance.
+Full synthetic pipeline exercised v3. H100 run pending via
+scripts/run_comet_cosine_v3_h100.sh; runtime preload addresses prior SciPy C++ ABI
+issue. Keep v1/v2 results; lower total distance does not guarantee lower SMD or
+smaller worst individual distance. No effects readiness or convergence approval.
+
+
+### 2026-09-23 — Global cosine v3 H100 result completed
+User report comet-cosine-comparison-v3-HKXiJR7g/report: complete, counts_valid
+true,16.411s. scipy1.17.1,numpy1.26.4. Same7498 common patients,2960 pairs.
+Global total cosine distance681.60320 versus greedy728.24589:6.40479% lower.
+Global median distance.21237,p95.41141,max.57819. No cosine caliper.
+Clinical/missingness meanabsSMD.09465–.10076 versus v2.09289–.09918; higher
+in every imputation. Global maxabsSMD.61086–.65602;19–22 features>=.1.
+Original PSM mean.03055–.03476,2382–2426 pairs,3–4>=.1; refined
+mean.01820–.02322,2368–2400 pairs,1>=.1; PSM results unchanged.
+Interpretation: optimizer improves its distance objective but not average
+clinical balance in this experiment. Preserve all results; do not tune cosine
+cutoff against these same balance outputs. This does not establish causal
+effect superiority or general CLMBR inferiority. Next inspect saved feature-level
+and observed-only balance to locate residual differences; no new inference or
+imputation needed. Outcome readiness false; trace review remains pending.
+
+
+### 2026-09-23 — User-approved cosine caliper grid v4
+User supplied v3 feature table: medianabsSMD LVEF.62285, AF.47444, age.25747,
+ARNI.24926, hemoglobin.21741, sex.18037; notable missingness imbalances include
+BP/pulse/BMI/MRA. These are absolute SMDs, not directions or observed-only
+values. Cursor IPC socket failure affects editor launch, not completed analysis.
+User explicitly chose exploratory calipers0.20,0.30,0.40 after prior result review.
+Implemented --global-optimal --cosine-caliper as distinct v4. Inclusive distance
+threshold, maximum feasible cardinality first then minimum total distance.
+Dummy columns with penalty2*n_metoprolol+1 exceed all possible real cosine cost
+differences; forbidden edges infinite. Both groups can lose patients. Not
+post-hoc pruning. Same original common cohort/SMD denominator/MICE/checkpoint/PSM.
+Diagnostics include no-eligible-partner counts, edge count, unmatched counts,
+matched cardinality and total distance. Fewer than2 matches stops balance with
+structured diagnostics. All three cutoffs preserved/reported, not winner-selected.
+Launcher creates fresh RAID grid, continues after individual failures and emits
+combined summary.11 cosine tests plus2 grid tests pass, including exhaustive
+partial assignment enumeration over40 matrices, threshold-boundary/rematching
+example, no-feasible-edge case, invalid cutoff checks, actual synthetic partial
+cohort/R balance integration and all-cutoff failure reporting. Existing R checks
+pass. H100 run pending: scripts/run_comet_caliper_grid_h100.sh. No automatic
+clinical, convergence or effects approval; no validated cosine cutoff claimed.
+
+
+### 2026-09-23 — Cosine caliper grid H100 result complete
+User supplied comet-cosine-caliper-grid-XhRUMLhu/grid_summary.json: all three
+cutoffs completed, original/refined PSM unchanged, same7498 pre-match cohort.
+0.20:1430 pairs,31.51% carvedilol/48.31% metoprolol retained; meanabsSMD
+.07672–.08151,max.55540–.59089,16–18 features>=.1.
+0.30:2352 pairs,51.83%/79.46%; mean.08656–.09256,max.57716–.61665,16–20>=.1.
+0.40:2874 pairs,63.33%/97.09%; mean.09473–.10040,max.61432–.65928,20–23>=.1.
+Original PSM2382–2426 pairs,mean.03055–.03476,3–4>=.1; refined2368–2400
+pairs,mean.01820–.02322,1>=.1. Clinical and original missingness evaluated,
+six constant/undefined flags. All three cosine calipers retain poorer measured
+balance than PSM here. At0.30 retention is close to PSM, though selected people
+can differ; retention count alone does not explain the gap.0.20 improves mean
+balance versus no-caliper but loses1530/2960 metoprolol and3108/4538 carvedilol.
+No cutoff chosen as winner; retain/report grid as exploratory sensitivity.
+Do not generalize to all representations or treatment-effect validity. Next
+review observed-only diagnostics and input/source limitations, preserve current
+method results before any explicitly defined new representation or hybrid test.
+No further threshold search or clinical/effect readiness inferred.
+
+
+### 2026-09-23 — Observed-only/representation review prepared
+User authorized review after caliper grid. Inspected MEDS/encoder and R balance
+implementation: codes-only drops numeric values at inference, no explicit sex/race
+tokens, exact birth/time retained; accepted event proportions are not diagnosis-
+specific coverage. These differences plausibly limit balance but are not causal
+explanations proved by current outputs. Observed-only evaluator masks imputed
+values, uses available-case pre-SD; this differs from completed-data denominator.
+New aggregate-only review verifies saved CSV hashes and summarizes all methods/
+features across calipers, observed counts/fractions and signed SMDs, without
+patient reads or rematching. Printed focus reflects already-reviewed variables;
+all-feature artifact preserved. Undefined SMDs not zero. Synthetic tests cover
+signed/absolute distinction, available counts and invalid count rejection. H100
+review pending: scripts/run_comet_observed_review_h100.sh. No new representation,
+caliper tuning, clinical unit approval or effects readiness inferred.
+
+
+### 2026-09-23 — Observed review received; BCL encoder lead supplied
+User supplied comet-observed-review-CLXuw3X7: original PSM observed EFabsSMD.058,
+AF.086 versus cosine0.20 EF.519/AF.384;0.30 EF.555/AF.423;0.40 EF.603/AF.464.
+Thus major differences persist among observed values; imputation alone does not
+explain them. Observed-only denominators/available populations differ from
+completed-data measures; no missingness assumption is validated.
+User supplied filenames torch_env.yml and bcl_embed_torch.py with two-GPU torchrun
+and placeholder cohort/output paths. Requested BCL comparison. Exact scripts
+not located in local filename search. Asked for actual H100 directory/repository.
+A separate local variant BCL training script is not confirmed as this encoder;
+do not substitute. Added COMET_BCL_COMPARISON_PLAN.md with required source/weights/
+input review and proposed pre-index ECG/common-population comparison. No training,
+new environment, inference or BCL matching launched; no cluster direct access.
+
+
+### 2026-09-23 — Exact BCL upstream located and inspected
+User identified CarDS-Yale/ECG-signal-pipeline. Read-only local clone commit
+d359c04d1f5e6c810f76751777535918870704b7 contains bcl_embed_torch.py/torch_env.yml.
+Confirmed fileID-only input, backbone-before-projector output, default CNN0
+lead_time_transformer12lead epoch30 checkpoint under /mnt/nfs_model_saves; not
+the old archived Net1D projection. Actual checkpoint contents unavailable locally.
+Preprocessing depends on formats_rerun.csv250Hz labels,10s first12canonical
+channels,median baseline filter. Whole-shard rank distribution means50K default
+uses only one GPU for cohort; proposed512 full-run shards. New read-only asset
+checker reports fixed H100 paths/header only; no file rows/weights/waveforms or
+directory listings. Synthetic header/missing-path checks passed. Docs
+COMET_BCL_UPSTREAM_REVIEW.md pins review and next H100 commands. Need cluster
+asset evidence before environment/input build/smoke. No training/inference run.
+
+
+### 2026-09-23 — BCL asset presence confirmed; ECG input builder prepared locally
+User confirmed metadata/checkpoint/formats files exist and historical waveform
+root is a directory. Contents/weights/shape/lead semantics remain unverified.
+Prepared prepare_comet_bcl_input.py with hash-checked existing cohort,latest prior
+calendar day1–365,explicit alias resolution,global identity collision checks,
+lexical same-day tie rule,no older fallback,and required unambiguous sampling
+label. Output fileID-only CSV plus private selected/excluded dated linkage.
+No waveform contents/model or cluster access. Synthetic tests cover temporal
+cutoff,no older fallback,both-alias conflict,global identity conflict,format
+conflict and unsafe paths. H100 input run pending. Earlier auto-review blocked
+publishing internal-path BCL docs/code; user has not explicitly approved push
+since that block. Prepared changes remain local, not claimed remotely available.
+
+
+### 2026-09-23 — BCL publication explicitly authorized
+User explicitly approved pushing BCL scripts/docs including internal cluster paths.
+Committed d4b23d6; focused selection tests passed. H100 next step is the private
+input builder in docs/RUN_COMET_BCL_INPUT.md. No patient processing or GPU run
+performed locally. Existing unrelated documentation edits preserved.
+
+
+### 2026-09-23 — BCL zero-selection path diagnosis
+H100 comet-bcl-input-0aseLinb completed: 7,499 candidates; 6,272 with prior365
+metadata (C 3,671; T 2,601), zero matching waveform selections. The remaining
+1,227 had no prior365 ECG. This is an unresolved path/filename availability gate,
+not evidence that all ECGs are absent. Added bounded aggregate-only diagnostic
+for four known roots, both aliases, suffixes and symlinks; no waveform reads or
+selection changes. Synthetic probe tests pass. Await H100 diagnostic output;
+GPU inference and BCL matching remain pending. Run instructions:
+docs/RUN_COMET_BCL_PATH_DIAGNOSTIC.md. Embedding-augmented PSM remains deferred.
+
+
+### 2026-09-23 — Nested ECG root confirmed by user
+User listing shows month and other subdirectories under the RAID waveform root.
+Extended BCL path diagnostic with explicit bounded nested-root walk, exact
+basename matching and duplicate/limit/error counts. No date-derived paths,
+symlink traversal, waveform reads, or automatic inference approval. Five focused
+synthetic tests pass. Await aggregate nested diagnostic; production input builder
+and upstream encoder still require nested-path integration before inference.
+
+
+### 2026-09-23 — BCL metadata IDs are relative .npy paths
+H100 nested diagnostic tested zero IDs: both aliases rejected in all 156 sampled
+rows. User confirms IDs contain subdirectories and .npy. Prior result did not test
+waveform absence. Added explicit v2 --relative-npy selection contract preserving
+subdirectories, canonicalizing suffix in aliases/catalog, rejecting traversal and
+symlinks, and retaining existing timing/identity checks. Six tests pass. Await
+new full selection summary. Encoder sampling catalog normalization must be checked
+before GPU launch. No raw examples requested or patient data accessed locally.
+
+
+### 2026-09-23 — BCL v2 selection recovered 6,103 patients
+H100 comet-bcl-input-v2-C9ftzPbQ selected C3,561/T2,542; no prior365 ECG
+C868/T359; sampling unresolved C110/T59. Lowercase fileID resolved all selected
+records; 583 selected sampling flags indicate250Hz. Total6,103/7,499=81.4%.
+Added smoke-input preparation: up to8 per arm/sampling stratum, canonical derived
+sampling catalog, linkage digest and waveform size/mtime checks. No waveform
+contents/checkpoint read locally; eight focused tests pass. Checkpoint/runtime
+inspection and GPU smoke execution remain pending; no matching approval.
+
+
+### 2026-09-23 — BCL 32-record smoke inputs completed
+User report comet-bcl-smoke-prep-SWznZWZE confirms32: eight per arm/sampling
+stratum. Added pinned-source isolated-RAID launcher and frozen checkpoint/GPU
+runner with private logs, digest checks and finite/nonzero exact-output coverage
+validation. Nine synthetic tests pass; actual checkpoint/runtime/GPU execution
+remains on H100 and unverified locally. Run docs/RUN_COMET_BCL_SMOKE.md.
+No full-cohort embeddings, matching or effects claimed.
+
+
+### 2026-09-23 — BCL smoke succeeded; full runner prepared
+User report comet-bcl-smoke-Ik5VklyT:32/32,256D,zero load/nonfinite/zero-vector
+errors;16.299seconds; saved BCL12lead10s500Hz lead_time_transformer verified.
+Environment bcl-smoke-runtime-zZ5FVVsd is reusable. Added explicit --full input
+contract and reference-smoke-bound full inference using same checkpoint hash,
+pinned source and runtime versions;512-record shards with unchanged batch8.
+Ten synthetic tests pass. H100 full6,103 run remains pending; no matching yet.
+Instructions docs/RUN_COMET_BCL_FULL.md. All existing outputs preserved.
+
+
+### 2026-09-23 — Full BCL complete; comparison authorized
+User full report comet-bcl-full-lMQtaSyg:6,103x256,zero load/nonfinite/zero-vector
+errors,660.588seconds. User authorized trying comparison. Implemented private
+fileID-to-baseline adapter with pre-index checks and explicit BCL input branch
+in existing comparator; no CLMBR impersonation. Same-cohort original/refined PSM
+versus no-caliper global optimal cosine, unchanged five saved imputations. New
+RAID launcher reuses existing Python/R environments. Twelve BCL tests, eleven
+cosine tests and R original/refined/external-pair observed-balance integration
+passed synthetically. Actual H100 matching remains pending. Prior full vectors
+lacked saved content hashes: adapter records current hashes after repeated QC,
+not retrospective byte-integrity proof. See docs/RUN_COMET_BCL_COMPARISON.md.
+
+
+### 2026-09-23 — BCL comparison complete; plot legend bug
+H100 comet-bcl-comparison-FZIo043w confirms BCL256D on6,103 patients.
+Cosine2,542pairs; originalPSM1,980–2,050; refined1,977–2,036. BCL meanabsSMD
+0.1036–0.1086 vs original0.0274–0.0395 and refined0.0185–0.0239. Existing
+plot legend incorrectly hard-coded CLMBR; fixed to read representation from
+contract.json. Optional fresh plot destination avoids modifying manifested old
+outputs. No matching/data changes. Matched cosine median3.106e-7 needs geometry
+and preprocessing investigation; no collapse diagnosis from matched pairs alone.
