@@ -17,7 +17,9 @@ Claude Code container.** Ryan: "we will mainly be working on this container".
 - Python envs: analysis `/mnt/raid0/rbc58/ecg-tte/software/tte-analysis/bin/python`;
   BCL/torch `/mnt/raid0/rbc58/ecg-tte/software/bcl-smoke-runtime-zZ5FVVsd/env/bin/python`;
   R `/mnt/raid0/rbc58/ecg-tte/software/mice-r-v2-tyXlJyw1/env`. micromamba is at
-  `/mnt/raid0/rbc58/ecg-tte/software/mm/bin/micromamba`.
+  `/mnt/raid0/rbc58/ecg-tte/software/mm/bin/micromamba`. CLMBR/FEMR: `software/mosaic-env`
+  (unpacked from `/mnt/raid0/rbc58/mosaic_env.tar.gz`, Aug-9 snapshot: femr 0.2.3, meds 0.1.3,
+  torch 2.13.0, transformers 4.44.2); launch with `LD_PRELOAD=software/mosaic-env/lib/libstdc++.so.6`.
 - Check `nvidia-smi` before GPU jobs and use only idle devices.
 
 ## Cluster access and PHI boundary — user instruction, 2026-09-09

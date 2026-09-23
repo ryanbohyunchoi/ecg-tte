@@ -24,6 +24,10 @@ ap.add_argument("--ecg-emb-glob", required=True)
 ap.add_argument("--ehr-emb-glob", required=True)
 ap.add_argument("--imputation", type=int, default=1)
 ap.add_argument("--output-dir", required=True)
+ap.add_argument("--mask-json", default=None,
+                help="restricted_missingness_mask.json (True = missing); adds observed-only LVEF SMD")
+ap.add_argument("--extra-features", nargs="*", default=[],
+                help="NAME=parquet with patient_key column + numeric features; added to claims PS")
 args = ap.parse_args()
 CIN, IMP = args.common_inputs, args.imputation
 rng = np.random.default_rng(0)
@@ -34,6 +38,14 @@ cov.index = keys
 cov["male"] = (cov.pop("recorded_sex").astype(str).str.lower().str.startswith("m")).astype(float)
 t = (cov.pop("treatment_arm").astype(str).str.contains("metoprolol")).astype(int)  # 1 = metoprolol (smaller arm)
 cov = cov.astype(float)
+obs_lvef = None
+if args.mask_json:
+    obs_lvef = ~pd.DataFrame(json.load(open(args.mask_json)), index=keys)["lvef"].astype(bool)
+extras = {}
+for spec in args.extra_features:
+    name, path = spec.split("=", 1)
+    d = pd.read_parquet(path).set_index("patient_key")
+    extras[name] = d.select_dtypes("number")
 
 def load_emb(pattern):
     d = pd.concat([pd.read_parquet(f) for f in sorted(glob.glob(pattern))])
@@ -42,7 +54,12 @@ def load_emb(pattern):
 ecg = load_emb(args.ecg_emb_glob)
 clm = load_emb(args.ehr_emb_glob)
 common = cov.index.intersection(ecg.index).intersection(clm.index)
+for d in extras.values():
+    common = common.intersection(d.index)
 cov, t, ecg, clm = cov.loc[common], t.loc[common].to_numpy(), ecg.loc[common].to_numpy(float), clm.loc[common].to_numpy(float)
+extras = {k: v.loc[common].fillna(v.median()).to_numpy(float) for k, v in extras.items()}
+if obs_lvef is not None:
+    obs_lvef = obs_lvef.loc[common].to_numpy()
 print(f"imputation {IMP}: common n={len(common)} metoprolol={t.sum()} carvedilol={(1-t).sum()}")
 
 CLAIMS = [c for c in cov.columns if c not in
@@ -53,6 +70,15 @@ pre_sd = np.sqrt((cov[t == 1].var() + cov[t == 0].var()) / 2)
 def smd(idx_t, idx_c, cols):
     d = (cov.iloc[idx_t][cols].mean() - cov.iloc[idx_c][cols].mean()) / pre_sd[cols]
     return d.abs()
+
+def smd_observed_lvef(idx_t, idx_c):
+    """LVEF SMD using only measured (non-imputed) values; pooled SD from observed pre-match."""
+    if obs_lvef is None:
+        return np.nan
+    v = cov["lvef"].to_numpy()
+    sd = np.sqrt((v[(t == 1) & obs_lvef].var(ddof=1) + v[(t == 0) & obs_lvef].var(ddof=1)) / 2)
+    ot, oc = idx_t[obs_lvef[idx_t]], idx_c[obs_lvef[idx_c]]
+    return abs(v[ot].mean() - v[oc].mean()) / sd
 
 def prep(E, k, whiten):
     E = E - E.mean(0)
@@ -109,7 +135,8 @@ def report(name, mt, mc):
     rows.append(dict(method=name, pairs=len(mt), met_ret=round(len(mt) / t.sum(), 3),
                      max_smd_all=a.max(), mean_smd_all=a.mean(), n_ge_0_1=int((a >= .1).sum()),
                      lvef=a["lvef"], afib=a["atrial_fibrillation"], age=a["age_at_index"],
-                     max_smd_heldout=h.max(), mean_smd_heldout=h.mean()))
+                     max_smd_heldout=h.max(), mean_smd_heldout=h.mean(),
+                     lvef_observed=smd_observed_lvef(mt, mc)))
 
 allidx = np.arange(len(t))
 report("0 unmatched", allidx[t == 1], allidx[t == 0])
@@ -131,6 +158,13 @@ report("13 PS: claims + ECG PCs", *ps_greedy(logit_ps(np.hstack([X_claims, ecg_p
 report("14 PS: claims + CLMBR PCs", *ps_greedy(logit_ps(np.hstack([X_claims, clm_pcs]))))
 report("15 PS: claims + ECG + CLMBR PCs", *ps_greedy(logit_ps(np.hstack([X_claims, ecg_pcs, clm_pcs]))))
 report("16 Hybrid: claims-PS caliper -> ECG cosine", *assign(cos_cost(ecg_z), ps_caliper_mask(lg_cl)))
+for i, (name, F) in enumerate(extras.items()):
+    report(f"17.{i} PS: claims + {name}", *ps_greedy(logit_ps(np.hstack([X_claims, F]))))
+    report(f"18.{i} PS: claims + ECG + CLMBR PCs + {name}",
+           *ps_greedy(logit_ps(np.hstack([X_claims, ecg_pcs, clm_pcs, F]))))
+if len(extras) > 1:
+    allx = np.hstack(list(extras.values()))
+    report("19 PS: claims + ECG + CLMBR PCs + all extras", *ps_greedy(logit_ps(np.hstack([X_claims, ecg_pcs, clm_pcs, allx]))))
 
 # How much do embeddings "know" the key confounders? (5-fold CV AUC / R2)
 from sklearn.model_selection import cross_val_score
