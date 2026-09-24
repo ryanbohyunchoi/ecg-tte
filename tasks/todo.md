@@ -1077,3 +1077,5 @@ PDF regeneration not confirmed. Preserve all original runs and restrictions.
 - [x] PLATO adapted cohort and grid.
 - [x] ARISTOTLE adapted cohort and grid.
 - [ ] Negative-control outcomes; protocol freeze before any trial outcome.
+- [x] Overnight 13-trial expansion (12 analysed; TRITON failed feasibility); report.md.
+- [ ] Ryan decisions from report.md §7; verify published HRs; protocol v1 freeze.

@@ -132,3 +132,23 @@ if sp:
     if big:
         print(f"\nTrials where the sparse (demo + dx) PS leaves measured-LVEF SMD >= 0.1: {len(big)}; "
               f"ECG PCs reduce it by a median of {-np.median(big):.0%} (range {-max(big):.0%} to {-min(big):.0%}).")
+
+print("\n## Sensitivity: outpatient initiators only (index order not during an inpatient stay)\n")
+print("| Trial | Role | Cohort n before ECG/CLMBR restriction (arm 1 / arm 2) | Measured LVEF: demo + dx → + ECGpc | Phys mean: demo + dx → + ECGpc | Pool-B: demo + dx → + ECGpc |")
+print("|---|---|---|---|---|---|")
+big = []
+for key, n in ORDER:
+    base = "comet" if n == "comet" else n
+    s_ = load(A / f"claude-sparse-dx-outpt-{base}" / "summary_pooled.csv")
+    if s_ is None:
+        continue
+    m = json.load(open(A / f"claude-{base}-baseline-outpt" / "summary.json"))["remaining_by_treated"]
+    L = s_.smd_obs_lvef if "smd_obs_lvef" in s_ else None
+    print(f"| {TRIALS[key]['name']} | {TRIALS[key]['role']} | {m.get('1')} / {m.get('0')} | "
+          f"{L['dx']:.2f} → {L['dx+ECGpc']:.2f} | {s_.loc['dx', 'mean_phys_obs']:.3f} → {s_.loc['dx+ECGpc', 'mean_phys_obs']:.3f} | "
+          f"{pct(s_.loc['dx', 'B_frac_gt_0_1'])} → {pct(s_.loc['dx+ECGpc', 'B_frac_gt_0_1'])} |")
+    if L["dx"] >= 0.1:
+        big.append((L["dx+ECGpc"] - L["dx"]) / L["dx"])
+if big:
+    print(f"\nOutpatient initiators, trials with demo + dx measured-LVEF SMD >= 0.1: {len(big)}; ECG PCs reduce it by a median of "
+          f"{-np.median(big):.0%} (range {-max(big):.0%} to {-min(big):.0%}).")

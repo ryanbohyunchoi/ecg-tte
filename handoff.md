@@ -11,6 +11,14 @@ Read `docs/STRATEGY.md` first; it holds every result table. Everything below is
 **exploratory, COMET only**: designs were chosen during the session after earlier results.
 No outcomes have been used.
 
+### Overnight 2026-09-24: 13-trial expansion — read `report.md` first
+12 adapted trials analysed (TRITON failed feasibility).
+- Headline: with a demographics + diagnoses PS, raw ECG PCs cut the residual measured-LVEF
+  imbalance by a median of 62% in the 5 trials that had any; all 5 are physiology trials.
+- hdPS stays the high-dimensional workhorse.
+- Open decisions (report §7): care setting at initiation, HR verification, overlap/weighting,
+  primary hdPS k, protocol freeze.
+
 ### Replication update (later 2026-09-23; see `docs/STRATEGY.md` "Replication")
 - **PARADIGM-HF (adapted) is built** under the new multi-trial contract.
   - Cohort: 2,885 ARNI / 2,746 ACEi; 4,203 have ECG + CLMBR.
