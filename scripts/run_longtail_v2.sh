@@ -12,7 +12,7 @@ export OMP_NUM_THREADS=8 OPENBLAS_NUM_THREADS=8 MKL_NUM_THREADS=8
 for imp in 1 2 3 4 5; do for seed in 0 1 2 3 4; do
   "$PY" "$HERE/eval_longtail_balance.py" --baseline-dir "$BASE" --imputation $imp --split-seed $seed \
     --panel "$PANEL" --panel-dictionary "$DICT" --ecg-emb-glob "$ECG" --ehr-emb-glob "$EHR" \
-    --ecg-phenotypes "$PH" --prognostic-scores "$PROG" --label "$LABEL" --method-set "$MSET" --output-dir "$OUT" \
+    --ecg-phenotypes "$PH" --prognostic-scores "$PROG" --label "$LABEL" --method-set "$MSET" ${PHYS:+--physiology-panel "$PHYS"} --output-dir "$OUT" \
     > "$OUT/log_imp${imp}_seed${seed}.txt" 2>&1 &
   while [ "$(jobs -rp | wc -l)" -ge 12 ]; do sleep 2; done
 done; done

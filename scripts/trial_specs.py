@@ -79,7 +79,7 @@ TRIALS = {
     # to build OMOP-side core features for the external prognostic score (same code as other trials).
     "comet": dict(
         name="COMET (adapted)", spec_version="comet_prognostic_features_v1", published_hr=0.83,
-        arms=[("metoprolol_tartrate", ["metoprolol"]), ("carvedilol", ["carvedilol"])],
+        arms=[("metoprolol_tartrate", ["metoprolol", "lopressor", "toprol"]), ("carvedilol", ["carvedilol", "coreg"])],
         index_start="2013-01-01", index_end="2024-06-30",
         gate={"any_before_or_on_index": ["I50"]}, exclusions={},
         drugs_90d={"ace_inhibitor_order": ACEI, "arb_order": ARB,
@@ -258,3 +258,39 @@ TRIALS["life"] = dict(TRIALS["life"], spec_version="life_adapted_v2",
     drugs_90d={k: v for k, v in TRIALS["life"]["drugs_90d"].items() if k not in ("other_arb_order", "other_beta_blocker_order")}
               | {"other_beta_blocker_order": ["carvedilol", "propranolol", "labetalol", "nadolol", "coreg"]},
     note="v2 class adaptation after v1 feasibility failure (trial: losartan vs atenolol)")
+
+# ---- Published primary results, verified 2026-09-24 against the source papers (web search of
+# NEJM/Lancet/JAMA/JCE abstracts). `hr` is in the RCT's own orientation (first arm vs second);
+# `our_orientation` gives the estimate with our arm order (arms[0] vs arms[1]).
+PUBLISHED = {
+    "comet": dict(hr=0.83, ci=(0.74, 0.93), measure="HR", endpoint="all-cause mortality",
+                  rct_arms="carvedilol vs metoprolol tartrate", our_orientation=round(1 / 0.83, 3),
+                  source="Poole-Wilson et al. Lancet 2003"),
+    "paradigm_hf": dict(hr=0.80, ci=(0.73, 0.87), measure="HR", endpoint="CV death or first HF hospitalisation",
+                        rct_arms="sacubitril/valsartan vs enalapril", our_orientation=0.80, source="McMurray et al. NEJM 2014"),
+    "paragon_hf": dict(hr=0.87, ci=(0.75, 1.01), measure="rate ratio", endpoint="total HF hospitalisations and CV death",
+                       rct_arms="sacubitril/valsartan vs valsartan", our_orientation=0.87, source="Solomon et al. NEJM 2019"),
+    "transform_hf": dict(hr=1.02, ci=(0.89, 1.18), measure="HR", endpoint="all-cause mortality",
+                         rct_arms="torsemide vs furosemide", our_orientation=1.02, source="Mentz et al. JAMA 2023"),
+    "elite_ii": dict(hr=1.13, ci=(0.95, 1.35), measure="HR (95.7% CI)", endpoint="all-cause mortality",
+                     rct_arms="losartan vs captopril", our_orientation=1.13, source="Pitt et al. Lancet 2000"),
+    "life": dict(hr=0.87, ci=(0.77, 0.98), measure="HR (adjusted for Framingham score and ECG-LVH)",
+                 endpoint="CV death, MI or stroke", rct_arms="losartan vs atenolol", our_orientation=0.87,
+                 source="Dahlöf et al. Lancet 2002"),
+    "dionysos": dict(hr=1.59, ci=(1.28, 1.98), measure="HR", endpoint="AF recurrence or premature study-drug discontinuation",
+                     rct_arms="dronedarone vs amiodarone", our_orientation=1.59, source="Le Heuzey et al. J Cardiovasc Electrophysiol 2010"),
+    "plato": dict(hr=0.84, ci=(0.77, 0.92), measure="HR", endpoint="vascular death, MI or stroke",
+                  rct_arms="ticagrelor vs clopidogrel", our_orientation=0.84, source="Wallentin et al. NEJM 2009"),
+    "triton": dict(hr=0.81, ci=(0.73, 0.90), measure="HR", endpoint="CV death, MI or stroke",
+                   rct_arms="prasugrel vs clopidogrel", our_orientation=0.81, source="Wiviott et al. NEJM 2007"),
+    "aristotle": dict(hr=0.79, ci=(0.66, 0.95), measure="HR", endpoint="stroke or systemic embolism",
+                      rct_arms="apixaban vs warfarin", our_orientation=0.79, source="Granger et al. NEJM 2011"),
+    "rocket_af": dict(hr=0.88, ci=(0.74, 1.03), measure="HR, intention-to-treat (per-protocol 0.79, 0.66-0.96)",
+                      endpoint="stroke or systemic embolism", rct_arms="rivaroxaban vs warfarin", our_orientation=0.88,
+                      source="Patel et al. NEJM 2011"),
+    "rely": dict(hr=0.66, ci=(0.53, 0.82), measure="RR (dabigatran 150 mg)", endpoint="stroke or systemic embolism",
+                 rct_arms="dabigatran 150 mg vs warfarin", our_orientation=0.66, source="Connolly et al. NEJM 2009"),
+    "allhat": dict(hr=0.98, ci=(0.90, 1.07), measure="RR", endpoint="fatal CHD or nonfatal MI",
+                   rct_arms="amlodipine vs chlorthalidone", our_orientation=0.98, source="ALLHAT Officers, JAMA 2002"),
+}
+TRIALS["rocket_af"]["published_hr"] = 0.88  # ITT benchmark for an initiator (ITT-like) emulation

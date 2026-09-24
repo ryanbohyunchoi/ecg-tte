@@ -65,6 +65,17 @@ class LongtailV2Tests(unittest.TestCase):
         auc2 = E.cstat_after_matching(X, t, np.where(t == 1)[0], np.where(t == 0)[0], C=1.0)
         assert auc2 > 0.75
 
+    def test_chance_smd_matches_null(self):
+        rng = np.random.default_rng(0)
+        n = 4000
+        t = rng.integers(0, 2, n)
+        v = rng.normal(size=(n, 200))
+        v[rng.random((n, 200)) < 0.7] = np.nan
+        mt, mc = np.where(t == 1)[0], np.where(t == 0)[0]
+        obs = np.nanmean(E.smd_vector(v, t, mt, mc))
+        exp = np.nanmean(E.chance_smd(v, mt, mc))
+        assert abs(obs - exp) < 0.006
+
     def test_trial_common_sql_fragments(self):
         assert code_like("c", ["I50", "I21"]) == "(c LIKE 'I50%' OR c LIKE 'I21%')"
         assert "regexp_replace" in mrn_key("MRN")

@@ -2384,3 +2384,29 @@ discretion for basic decisions. Full rationale and open questions are in `report
 - **Observed, not acted on:** the share of index orders written during an inpatient stay differs
   strongly between arms in several trials (e.g. DIONYSOS 17% vs 70%). Setting and route are not
   in any PS; whether to restrict or adjust is an open decision for Ryan.
+
+### 2026-09-24 — Ryan's decisions on report.md §7 and resulting v3 contract
+- **Primary population: outpatient initiators** (index order not during an inpatient stay),
+  "when possible". Exception, by trial design: PLATO (ACS) and TRANSFORM-HF (HF discharge)
+  started treatment in hospital, so all initiators are primary there. The other population is the
+  secondary analysis in every trial. `scripts/make_outpatient_cohort.py`.
+- **One imputation method for all trials:** sklearn chained equations (IterativeImputer,
+  sample_posterior, 5 datasets), re-fitted within each analysis population. COMET now uses the
+  same OMOP core-baseline builder as the others (`claude-comet-baseline-omop`, `-op`); the
+  earlier R-MICE COMET inputs are kept as history.
+- **COMET ECG re-selected under the common rule** (365 d, index day allowed; previously 1–365 d):
+  `claude-comet-bcl-v2`, 6,381 ECGs.
+- **Published HRs verified** against the source papers and stored in `trial_specs.PUBLISHED`,
+  with endpoint and orientation. ROCKET-AF's benchmark is changed to the ITT HR 0.88: our
+  initiator emulation is ITT-like, and the per-protocol 0.79 was entered before.
+- **Emulation-quality rating** (RCT-DUPLICATE style) instead of dropping low-overlap trials.
+  Rubric in report.md, proposed before any outcome.
+- **Balance first, then pre-register.** No outcomes until the balance story and protocol are frozen.
+- **New evaluation (assistant):**
+  - Held-out physiology panel: 10 labs from OMOP gold, plus 26 PanEcho echo-report measurements
+    (curated 2015–2022 subset; 1–5% of patients). `scripts/build_physiology_panel.py`.
+  - Chance-level SMD per variable, given the measured counts in each matched arm; results are
+    reported as excess over chance (validated on a simulated null).
+  - A `dxall` sparse base (demographics + every 3-char ICD-10 code with ≥ 2% prevalence).
+  - hdPS comparators inside the sparse set.
+  - Methods with < 20 matched pairs record retention only (PARAGON-HF outpatient).

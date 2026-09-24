@@ -63,6 +63,17 @@ def smd_vector(v: np.ndarray, t: np.ndarray, mt: np.ndarray, mc: np.ndarray) -> 
     return d
 
 
+def chance_smd(v: np.ndarray, mt: np.ndarray, mc: np.ndarray) -> np.ndarray:
+    """Expected |SMD| from chance alone given the measured counts in each matched arm:
+    SMD ~ N(0, 1/n1 + 1/n0) in pre-match SD units, E|SMD| = sqrt(2/pi) * sqrt(1/n1 + 1/n0)."""
+    n1 = np.sum(~np.isnan(v[mt]), axis=0).astype(float)
+    n0 = np.sum(~np.isnan(v[mc]), axis=0).astype(float)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        c = np.sqrt(2 / np.pi) * np.sqrt(1 / n1 + 1 / n0)
+    c[(n1 < 2) | (n0 < 2)] = np.nan
+    return c
+
+
 def hdps_levels(counts: pd.DataFrame, binary_only: bool = False) -> pd.DataFrame:
     """Once / sporadic / frequent binary levels per code (Schneeweiss 2009)."""
     out = {}
@@ -156,6 +167,8 @@ def main():
     ap.add_argument("--ehr-emb-glob", required=True)
     ap.add_argument("--ecg-phenotypes", required=True)
     ap.add_argument("--prognostic-scores", default=None)
+    ap.add_argument("--physiology-panel", default=None,
+                    help="restricted_physiology_panel.parquet (build_physiology_panel.py); evaluation only")
     ap.add_argument("--hdps-k", type=int, nargs="+", default=[100, 200, 500])
     ap.add_argument("--split-seed", type=int, default=0)
     ap.add_argument("--no-cstat", action="store_true")
@@ -187,6 +200,9 @@ def main():
     ecg_f = np.hstack([ph.loc[common].to_numpy(float), pcs(ecg.loc[common].to_numpy(float), 32)])
     clm_f = pcs(clm.loc[common].to_numpy(float), 64)
     panel = panel.loc[common]
+    PP = None
+    if args.physiology_panel:
+        PP = pd.read_parquet(args.physiology_panel).set_index("patient_key").reindex(common)
     prog = None
     if args.prognostic_scores:
         prog = pd.read_parquet(args.prognostic_scores).set_index("patient_key").reindex(common)
@@ -247,6 +263,10 @@ def main():
                f"clinical+noise{noise.shape[1]} (placebo)": np.hstack([X_core, noise]),
                f"clinical+noise{noise_k.shape[1]} (placebo)": np.hstack([X_core, noise_k]),
                "clinical+hdPS100bin (v1)": np.hstack([X_core, hd_bin100])}
+    # "dxall": demographics + every diagnosis code of the panel (3-char ICD-10, any use in 365 d,
+    # prevalence >= 2%), not only the investigator-chosen comorbidities.
+    dx_panel = [c for c in panel.columns if c.startswith("dx_")]
+    X_dxall = np.hstack([X_demo, panel[dx_panel].gt(0).astype(float).to_numpy()])
     if args.method_set == "sparse":
         noise_e = np.random.default_rng(3000 + args.split_seed).normal(size=(len(t), ecg_pc.shape[1]))
         methods = {"unmatched": None, "clinical": X_core, "claims": X_claims, "claims+ECGpc": np.hstack([X_claims, ecg_pc]),
@@ -254,7 +274,11 @@ def main():
                    "dx": X_dx, f"dx+noise{ecg_pc.shape[1]} (placebo)": np.hstack([X_dx, noise_e]),
                    "dx+ECGpc": np.hstack([X_dx, ecg_pc]), "dx+ECG(pc+phenotypes)": np.hstack([X_dx, ecg_f]),
                    "dx+CLMBR": np.hstack([X_dx, clm_f]), "dx+ECGpc+CLMBR": np.hstack([X_dx, ecg_pc, clm_f]),
-                   "dx+hdPS200": np.hstack([X_dx, hd[200]]), "dx+hdPS200+ECGpc": np.hstack([X_dx, hd[200], ecg_pc])}
+                   "dx+hdPS200": np.hstack([X_dx, hd[200]]), "dx+hdPS200+ECGpc": np.hstack([X_dx, hd[200], ecg_pc]),
+                   "dxall": X_dxall, "dxall+ECGpc": np.hstack([X_dxall, ecg_pc]),
+                   "dxall+hdPS200": np.hstack([X_dxall, hd[200]]), "dxall+hdPS200+ECGpc": np.hstack([X_dxall, hd[200], ecg_pc]),
+                   "claims+hdPS200": np.hstack([X_claims, hd[200]]), "claims+hdPS200+ECGpc": np.hstack([X_claims, hd[200], ecg_pc]),
+                   "clinical+hdPS200": np.hstack([X_core, hd[200]])}
         bases = {}
     for bn, Xb in bases.items():
         methods[bn] = Xb
@@ -280,14 +304,31 @@ def main():
     idx = np.arange(len(t))
     for name, X in methods.items():
         mt, mc = (idx[t == 1], idx[t == 0]) if X is None else ps_greedy(logit_ps(X, t), t)
+        if len(mt) < 20:  # near-complete separation: record retention, no balance metrics
+            rows.append(dict(method=name, pairs=len(mt), imputation=args.imputation, split_seed=args.split_seed))
+            continue
         sB, sA = smd_vector(EB, t, mt, mc), smd_vector(EA, t, mt, mc)
         sC = smd_vector(C_core, t, mt, mc)
         sO = smd_vector(O, t, mt, mc)
+        nondx = np.array([not f.startswith("dx_") for f in Bf])
+        sBn = sB[nondx & ~np.isnan(sB)]
         sB, sA = sB[~np.isnan(sB)], sA[~np.isnan(sA)]
         r = dict(method=name, pairs=len(mt), anchor_retention=round(len(mt) / min((t == 1).sum(), (t == 0).sum()), 3),
                  B_n=len(sB), B_frac_gt_0_1=(sB > 0.1).mean(), B_mean=sB.mean(), B_p95=np.quantile(sB, 0.95),
                  A_frac_gt_0_1=(sA > 0.1).mean(), A_mean=sA.mean(),
-                 core_max=np.nanmax(sC), core_n_gt_0_1=int(np.nansum(sC > 0.1)))
+                 core_max=np.nanmax(sC), core_n_gt_0_1=int(np.nansum(sC > 0.1)),
+                 B_nondx_frac_gt_0_1=(sBn > 0.1).mean())
+        if PP is not None:
+            sP = pd.Series(smd_vector(PP.to_numpy(float), t, mt, mc), index=PP.columns)
+            cP = pd.Series(chance_smd(PP.to_numpy(float), mt, mc), index=PP.columns)
+            for grp, pre in (("labs", "lab_"), ("echo", "echo_")):
+                cols_g = [c for c in sP.index if c.startswith(pre)]
+                g = sP[cols_g].dropna()
+                r[f"n_{grp}_gt_0_1"], r[f"mean_{grp}"], r[f"k_{grp}"] = int((g > 0.1).sum()), float(g.mean()), int(len(g))
+                r[f"chance_{grp}"] = float(cP[g.index].mean())
+                r[f"excess_{grp}"] = float((g - cP[g.index]).mean())
+            for c, v in sP.items():
+                r[f"pp_{c}"] = float(v)
         gi = lambda cols: [core.index(c) for c in cols]
         for gname, cols in (("dx", dxc), ("meds", meds), ("util", util)):
             if cols:
@@ -297,6 +338,9 @@ def main():
         if ph_obs:  # physiology balance on measured (non-imputed) values
             r["n_phys_obs_gt_0_1"] = int(np.nansum(sO[ph_obs] > 0.1))
             r["mean_phys_obs"] = float(np.nanmean(sO[ph_obs]))
+            cO = chance_smd(O[:, ph_obs], mt, mc)
+            r["chance_phys_obs"] = float(np.nanmean(cO))
+            r["excess_phys_obs"] = float(np.nanmean(sO[ph_obs] - cO))
         for c in rep:
             r[f"smd_{c}"] = float(sC[core.index(c)])
         for j, c in enumerate(obs_cols):
