@@ -2462,3 +2462,35 @@ discretion for basic decisions. Full rationale and open questions are in `report
   signal CNNs exist. 35–42% of each cohort is in PRESENT-SHD's training MRNs, which would leak echo
   labels into the echo-based evaluation. Proposed: add it as a sensitivity arm, with balance
   assessed only in patients outside its training set.
+
+### 2026-09-24 — Cause of death located; primary set applied; SHD arm built and evaluated
+- **Cause of death (Ryan: look in cards-misc).** cards-misc (`github.com/brunombatinica/cards-misc`,
+  cloned read-only into the session scratchpad) builds OMOP death from Epic `DEATH_DATE` only. Its
+  `ehr_omop/n2_CTVitals.ipynb` links Connecticut Vital Statistics records (COD1/COD2,
+  ICD10_LISTED). The outputs are on RAID:
+  - `/mnt/raid0/bb2238/ecg_ascvd/omop_database/death/death_ctvitals.parquet` (32,242)
+  - `/mnt/raid0/bb2238/ecg_ascvd/omop_database/condition_occurrence/condition_occurrence_ct_vitals.parquet`
+    (151,405 listed causes; 92,425 persons; 2013-01 to 2024-06; no underlying-cause flag).
+
+  They link to our gold persons by MRN (ecg_ascvd `person.PAT_MRN_ID`; 92,152 linked). 80–84% of
+  post-index cohort deaths have a cause record, and dates agree with gold 97% of the time.
+  **CV death** = any listed I00–I99; no cause record = CV (sensitivity: non-CV).
+- **Primary analysis set (Ryan: yes):** trials with ≥ 400 clinical-PS pairs (all initiators).
+  - Included (12): COMET, PARADIGM-HF, PARADIGM-HF switcher, ELITE II, LIFE, DIONYSOS,
+    TRANSFORM-HF, PLATO, ARISTOTLE, ROCKET-AF, RE-LY, ALLHAT.
+  - Supplement: PARAGON-HF, DAPA-HF, PARTNER.
+  - The four-arm capture map is unchanged in the primary set (LV structure: sparse 16% → + ECG 84% →
+    hdPS200 + ECG 90%; clinical PS 68%).
+- **SHD ECG arm (Ryan: yes).**
+  - Models: PRESENT-SHD 12-lead signal CNNs (TF checkpoints, `cnn_0`). Targets: LVEF < 40, moderate/
+    severe AS/AR/MR, any valve disease, HCM/LVDD. Epochs are those with the developers' saved test
+    predictions.
+  - Run with legacy Keras on CPU; this TF build's cuDNN fails on the GPUs.
+  - **Input in mV**, unlike torch BCL. Chosen by comparing three unit scalings on an 800-patient
+    COMET subsample (LVEF < 40 AUC 0.79 / 0.63 / 0.36); disclosed as a choice made with cohort labels.
+  - Validation outside the training set: LVEF < 40 AUC 0.62–0.94; valve disease 0.60–0.75.
+  - Echo balance for all arms was scored on a panel masked to patients outside PRESENT-SHD training
+    (~50% of each cohort).
+  - **Result:** SHD scores improve diastolic, RV and LV-function capture but **not valve balance**,
+    and are worse than BCL for LV structure. The valve hypothesis is not supported. Keep SHD as a
+    reported secondary arm.

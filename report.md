@@ -113,6 +113,40 @@ What this shows (exploratory, balance only):
   estimation plan, and a disclosure of every post-hoc choice. The **[OPEN]** items need your
   decision before freezing.
 
+## 0c. Update: CV death source, primary analysis set, SHD encoder result
+
+- **Cause of death was found via cards-misc.** Its notebook `ehr_omop/n2_CTVitals.ipynb` links
+  Connecticut Vital Statistics death records. The outputs are at
+  `/mnt/raid0/bb2238/ecg_ascvd/omop_database/death/death_ctvitals.parquet` and
+  `.../condition_occurrence/condition_occurrence_ct_vitals.parquet`.
+  - 151K listed-cause ICD-10 codes, 2013-01 to 2024-06, linked to our persons by MRN.
+  - 80–84% of cohort deaths have a cause record.
+  - Limitation: the listed causes are not flagged as underlying vs contributing.
+  - **CV death** = any listed I00–I99; deaths with no cause record count as CV (the trial
+    convention); sensitivity: non-CV. CV death is used wherever the RCT used it.
+- **Primary analysis set** (≥ 400 clinical-PS pairs; independent of ECG results): 12 trials.
+  PARAGON-HF, DAPA-HF and PARTNER go to the supplement. The four-arm result is unchanged there: LV
+  structure capture is sparse 16% → + ECG 84% → hdPS200 + ECG 90% (clinical PS 68%), and core
+  physiology improves with the ECG in 7/7 physiology trials.
+  - Tables: `docs/CAPTURE_MAP_PRIMARY_SET_2026_09_24.md`.
+- **SHD encoder (PRESENT-SHD signal CNNs) was built and evaluated.**
+  - Models: LVEF < 40, moderate/severe AS/AR/MR, any valve disease, HCM/LVDD.
+  - Inputs are in mV. Validation AUCs outside the training set: LVEF < 40 0.62–0.94; valve
+    disease 0.60–0.75.
+  - Echo balance for every arm was scored only in patients outside PRESENT-SHD's training set
+    (about half of each cohort).
+  - **Result:** the SHD scores do **not** fix valve imbalance (valve capture: sparse + ECG 65%, +
+    SHD 49%, + ECG + SHD 25%; noisy with half the echo sample).
+  - They do help diastolic function (84% vs 39%), RV/pulmonary pressure (73% vs −4%) and LV
+    function (70% vs 51%).
+  - They are worse than BCL for LV structure (56% vs 79%).
+  - **Recommendation:** keep BCL as the primary ECG arm and report SHD as a pre-specified secondary
+    arm. The paper can state honestly that valve disease remains the one physiologic domain no ECG
+    representation balances. hdPS (valve codes) is the better tool there.
+  - Tables: `docs/CAPTURE_MAP_SHD_PRIMARY_SET_2026_09_24.md`.
+- **Protocol updated:** PICOT table, trial-matched horizons (12/60-month sensitivity), CV-death
+  mapping, the data-sufficiency rule, and the SHD arm (`docs/PROTOCOL_V1_DRAFT.md`).
+
 ## A. Answers to your questions
 
 **1. What is in the sparse PS, and how does the ECG enter it?**

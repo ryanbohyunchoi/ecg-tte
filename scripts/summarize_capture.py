@@ -17,7 +17,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from trial_specs import TRIALS  # noqa: E402
 
 A = Path("/mnt/raid0/rbc58/ecg-tte/audits")
-POP = sys.argv[1] if len(sys.argv) > 1 else "all"
+POP = sys.argv[1] if len(sys.argv) > 1 else "all"   # all | op | shd (SHD grids, leakage-safe echo panel)
+PRIMARY_ONLY = "--primary-set" in sys.argv          # data-sufficiency rule: >= 400 clinical-PS pairs
+MIN_PAIRS = 400
 MIN_EXCESS = 0.02
 TRIALS_ORDER = [("comet", "comet"), ("paradigm_hf", "paradigm"), ("paradigm_hf_switch", "paradigm-hf-switch"),
                 ("paragon_hf", "paragon-hf"), ("transform_hf", "transform-hf"), ("elite_ii", "elite-ii"),
@@ -31,13 +33,16 @@ DOMAINS = [("meds", "Medications (orders)"), ("util", "Healthcare use"), ("poolB
            ("BNP", "NT-proBNP"), ("LAB", "Other labs (9)"), ("ACCESS", "Echo performed (yes/no)"),
            ("prog_full", "Prognostic risk score")]
 ARMS = ["sparse", "sparse+ECG", "hdPS200", "hdPS200+ECG", "clinical (reference)"]
+if POP == "shd":
+    ARMS = ["sparse", "sparse+ECG", "sparse+SHD", "sparse+ECG+SHD", "hdPS200", "hdPS200+ECG", "hdPS200+ECG+SHD",
+            "clinical (reference)"]
 EXTRA = ["sparse+noise32 (placebo)", "sparse+CLMBR", "hdPS200+ECG+CLMBR", "hdPS100+ECG", "hdPS500+ECG",
          "dxall", "dxall+ECG", "claims", "claims+ECG", "clinical+ECG"]
 SHORT = {"phys_obs": "core-9 physiology"}
 
 
 def load(n):
-    p = A / f"claude-cap-{POP}-{n}" / "summary_pooled.csv"
+    p = A / (f"claude-capshd-all-{n}" if POP == "shd" else f"claude-cap-{POP}-{n}") / "summary_pooled.csv"
     return pd.read_csv(p, index_col=0) if p.exists() else None
 
 
@@ -46,6 +51,8 @@ def main():
     for key, n in TRIALS_ORDER:
         d = load(n)
         if d is None:
+            continue
+        if PRIMARY_ONLY and d.loc["clinical (reference)", "pairs"] < MIN_PAIRS:
             continue
         role = TRIALS[key]["role"]
         for dom, _ in DOMAINS:
@@ -62,7 +69,9 @@ def main():
                                  pairs=d.loc[arm, "pairs"]))
     R = pd.DataFrame(rows)
     ntr = R.groupby("role").trial.nunique().to_dict()
-    print(f"# Capture map — population: {'all initiators' if POP == 'all' else 'outpatient initiators'}\n")
+    label = {"all": "all initiators", "op": "outpatient initiators", "shd": "all initiators, with SHD arms (echo scored outside PRESENT-SHD training)"}[POP]
+    print(f"# Capture map — population: {label}{' — PRIMARY ANALYSIS SET (>= 400 clinical-PS pairs)' if PRIMARY_ONLY else ''}\n")
+    print("Trials included: " + ", ".join(sorted(R.trial.unique())) + "\n")
     print(f"Trials: physiology n = {ntr.get('physiology', 0)}, control n = {ntr.get('control', 0)}. Cells: median % of the "
           f"unmatched excess imbalance removed (trials with unmatched excess >= {MIN_EXCESS} only; count in brackets). "
           "100% = balanced to the level of a randomised sample; negative = worse than before matching.\n")
@@ -121,7 +130,7 @@ def main():
         for _, x in X.iterrows():
             print(f"| {x.trial} | {x.role} | " + " | ".join(f"{x.get(a, np.nan):.3f}" for a in
                   ["unmatched", "sparse", "sparse+ECG", "hdPS200", "hdPS200+ECG", "clinical (reference)"]) + " |")
-    R.to_csv(A / f"claude-capture-long-{POP}.csv", index=False)
+    R.to_csv(A / f"claude-capture-long-{POP}{'-primary' if PRIMARY_ONLY else ''}.csv", index=False)
 
 
 if __name__ == "__main__":

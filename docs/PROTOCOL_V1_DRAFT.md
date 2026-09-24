@@ -257,6 +257,8 @@ the result.
 - The primary population was changed from outpatient back to all initiators (Ryan: broader
   inclusion).
 - The echo evaluation source was changed from PanEcho labels to the full echo report.
-- **Supervised SHD encoder (proposed after seeing the valve result).** 35–42% of each cohort
+- **Supervised SHD encoder (proposed after seeing the valve result; built 2026-09-24).** The input
+  unit (mV) was chosen with cohort EF labels (three candidate scalings). The result did not
+  improve valve balance. 35–42% of each cohort
   (23% in ALLHAT) is in the PRESENT-SHD training set. Its echo-based balance must therefore be
   assessed only in patients not in that training set, or heads must be retrained out-of-cohort.
