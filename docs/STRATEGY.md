@@ -185,6 +185,31 @@ Reading (exploratory):
    only 0.08. The ECG-for-physiology finding rests on COMET alone: claims + ECG takes held-out
    LVEF from 0.56 to 0.41, while hdPS does not recover it (claims + hdPS200: 0.48).
 
+PLATO (adapted): ticagrelor vs clopidogrel, n = 6,759 with ECG + CLMBR (4,011 / 2,748).
+Source: `audits/claude-longtail-v2-plato/summary_pooled.csv`.
+
+| PS (PLATO) | Pairs | Pool-B > 0.1 (range) | Excess over chance | Prog | C |
+|---|---|---|---|---|---|
+| Unmatched | 2748 | 58.0% | 58.0% | 0.127 | 0.79 |
+| Clinical + noise101 (placebo) | 1851 | 14.2% | 14.0% | 0.032 | 0.61 |
+| Clinical | 1883 | 14.9% (11.8–17.9) | 14.7% | 0.021 | 0.61 |
+| Clinical + ECG | 1896 | 14.3% (12.1–16.5) | 14.1% | 0.028 | 0.61 |
+| Clinical + CLMBR | 1809 | 10.1% (7.4–12.1) | 9.8% | 0.019 | 0.59 |
+| Clinical + ECG + CLMBR | 1813 | 10.0% (8.4–11.1) | 9.8% | 0.015 | 0.59 |
+| Clinical + hdPS100 | 1779 | 3.8% (2.3–5.1) | 3.5% | 0.032 | 0.56 |
+| Clinical + hdPS200 | 1728 | 2.5% (1.4–4.2) | 2.2% | 0.029 | 0.55 |
+| Clinical + hdPS500 | 1556 | 1.4% (0.5–2.6) | 0.9% | 0.028 | 0.52 |
+| Clinical + hdPS200 + ECG + CLMBR | 1660 | 2.1% (1.2–3.0) | 1.7% | 0.017 | 0.53 |
+| Demo + CLMBR / Demo + hdPS200 | 2130 / 1941 | 15.7% / 3.0% | 15.6% / 2.8% | 0.133 / 0.131 | 0.70 / 0.69 |
+
+In PLATO the result reverses:
+- hdPS beats CLMBR clearly at the same retention.
+- ECG adds nothing to long-tail balance.
+- The residual imbalance after clinical + CLMBR is dominated by index-admission CABG markers:
+  CABG CPT/PCS codes, cardiopulmonary bypass, anesthesia for CABG, protamine, blood crossmatch.
+  Clopidogrel is preferred around CABG. Recent, procedure-driven confounding is what the
+  last-token CLMBR representation does not capture and exposure-ranked hdPS does.
+
 Implication: the story "embeddings are a better high-dimensional complement than hdPS" is not
 supported against a properly specified hdPS. What survives: the representations are a
 code-selection-free alternative that is about as good as a tuned hdPS. ECG adds physiologic

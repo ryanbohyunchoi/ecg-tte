@@ -2324,3 +2324,35 @@ All thresholds, k values, PCA dimensions and the method ladder were carried over
 exploratory analysis before PARADIGM results were seen. The exposure-feature removal was found
 by inspecting the COMET C-statistic, and was applied to both trials before any pooled results
 were read. Still exploratory; nothing is frozen.
+
+### 2026-09-23 — PLATO and ARISTOTLE adapted specs (proposed, not frozen)
+Same contract and evaluator as PARADIGM-HF, with specs in `scripts/trial_specs.py`.
+
+**PLATO (`plato_adapted_v1`): ticagrelor vs clopidogrel.**
+- Index window 2011-07-20 (US approval) to 2024-06-30. New-user and washout rules as for PARADIGM.
+- Gate: I21, I24 or I20.0 in [index-30, index] (unstable angina added to the screen's MI gate;
+  PLATO enrolled UA).
+- Exclusions: any oral anticoagulant order in [index-30, index]; ICH history (I61/I62) before index.
+- Index-event characteristics, an **exception to the index-day exclusion**, because ACS
+  management happens on the index day:
+  - `stemi_30d`: I21.0–I21.3 in [index-30, index];
+  - `pci_index_30d`: PCI CPT/HCPCS/ICD-10-PCS in [index-30, index].
+- Extra history: HF, prior PCI/CABG status Z-codes, GI bleeding.
+- Medications (90 d): aspirin, statin, beta-blocker, ACEi/ARB, PPI, insulin.
+- Prognostic outcome: 1-year death, or an inpatient stay with I21/I22/I63/I64. The reference set
+  is ACS patients never in the cohort, with a pseudo-index visit within 30 d after an ACS code.
+- CABG is not in the core set (not pre-declared). It turned out to be the dominant residual
+  confounder; see STRATEGY.
+- Result: 4,503 ticagrelor / 3,477 clopidogrel; 6,759 with ECG + CLMBR (62% index-day ECGs).
+
+**ARISTOTLE (`aristotle_adapted_v1`): apixaban vs warfarin.**
+- Index window 2013-01-01 to 2024-06-30. Gate: I48 on or before index.
+- Exclusions: mitral stenosis (I05.0, I05.2, I34.2) or mechanical valve (Z95.2) before index;
+  any other DOAC order in [index-365, index].
+- Extra history: HF, prior bleeding, TIA, liver disease.
+- Medications (90 d): aspirin, P2Y12, statin, beta-blocker, ACEi/ARB, antiarrhythmic,
+  rate-control CCB, NSAID.
+- Prognostic outcome: 1-year death, or an inpatient stay with I63/I64/I61.
+- Result: 20,579 apixaban / 5,283 warfarin; 18,771 with ECG + CLMBR.
+- ECG AF probe AUC is 0.58, because AF is near-universal in an AF cohort; it is not a gate failure
+  in the clinical sense.
