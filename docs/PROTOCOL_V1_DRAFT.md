@@ -87,10 +87,55 @@ Specs are in `scripts/trial_specs.py`; decisions are in `docs/DECISIONS.md`.
 | Treatment strategies | Initiation of arm drug A vs arm drug B (first-ever order; no order of the other arm in [index−365, index]). Switch design and procedure designs as specified |
 | Assignment | Observational; adjustment by PS matching (§6) |
 | Time zero | First qualifying order/procedure date |
-| Follow-up (phase 2) | From the day after index until the earliest of: outcome, death, end of data (2024-12-31 for death), 365 d/730 d (trial-matched horizon **[OPEN]**) |
+| Follow-up (phase 2) | From the day after index until the earliest of: outcome, death, end of data, or the trial-matched horizon (§4b). Sensitivity horizons: 12 and 60 months |
 | Outcome (phase 2) | Trial primary endpoint mapped to EHR events (§9) |
 | Estimand | Initiator (ITT-like) effect; per-protocol as sensitivity **[OPEN]** |
 | Population | **Primary: all initiators. Sensitivity: outpatient initiators** (index order not during an inpatient stay) |
+
+## 4b. PICOT per trial (Population, Intervention, Comparator, Outcome, Time)
+
+Outcomes follow the RCT primary endpoint.
+- **CV death:** a death with any listed cause I00–I99 in the linked CT Vital Statistics records.
+  Deaths without a cause record (about 16–20% of cohort deaths) are counted as CV, following the
+  trial convention for undetermined deaths. Sensitivity: count them as non-CV.
+- **Hospitalisations:** inpatient visit with a qualifying ICD-10 code dated within the stay.
+- **Time:** the trial's primary-analysis follow-up, administratively censored at the end of data
+  (deaths to 2024-06 for cause, 2024-12 for all-cause). Sensitivity: 12 and 60 months for every
+  trial.
+- Horizons marked * are the published median, mean or planned follow-up and are to be verified
+  before freeze.
+
+| Trial | P (adapted eligibility) | I | C | O (EHR mapping) | T (months) |
+|---|---|---|---|---|---|
+| COMET | HF (I50 or EF < 40), no HFpEF-only evidence | metoprolol tartrate | carvedilol | all-cause death | 58* (mean) |
+| PARADIGM-HF | HF, EF ≤ 40 if measured, eGFR ≥ 30, K ≤ 5.2, SBP ≥ 100 | sacubitril/valsartan (new users) | ACEi | CV death or first HF hospitalisation | 27* |
+| PARADIGM-HF switcher | as above | ARNI switchers from ACEi/ARB | ACEi continuers | same | 27* |
+| PARAGON-HF | HF, age ≥ 50, EF ≥ 45 if measured (else HFpEF code), eGFR ≥ 30, SBP ≥ 110 | sacubitril/valsartan | valsartan | CV death or HF hospitalisation (first event; total events as sensitivity) | 35* |
+| TRANSFORM-HF | I50 within 30 d (discharge proxy) | torsemide | furosemide | all-cause death | 12 (primary horizon; median follow-up 17.4) |
+| ELITE II | HF, age ≥ 60, EF ≤ 40 if measured | ARB | ACEi | all-cause death | 18* (median 555 d) |
+| LIFE | HTN + ECG-LVH, age 55–80, no HF, no MI/stroke 180 d | ARB | cardioselective β-blocker | CV death, MI or stroke | 58* (mean 4.8 y) |
+| DIONYSOS | AF | dronedarone | amiodarone | AF hospitalisation/recurrence proxy or discontinuation **[OPEN; limited emulability]** | 12 |
+| DAPA-HF/EMPEROR-R | HF + T2D, EF ≤ 40 if measured, eGFR ≥ 30 | SGLT2i | DPP-4i (placebo proxy) | CV death or HF hospitalisation | 18* |
+| PARTNER 2A/3 | aortic stenosis; no concomitant CABG/mitral surgery | TAVR | surgical AVR | death or stroke (disabling not identifiable) | 24 |
+| PLATO | ACS (I21/I24/I20.0) in 30 d, no OAC, no ICH | ticagrelor | clopidogrel | CV death, MI or stroke | 12 |
+| ARISTOTLE | AF, no MS/mechanical valve, no other DOAC | apixaban | warfarin | stroke or systemic embolism | 22* (median 1.8 y) |
+| ROCKET-AF | as ARISTOTLE | rivaroxaban | warfarin | stroke or systemic embolism | 23* (median 707 d) |
+| RE-LY | as ARISTOTLE | dabigatran | warfarin | stroke or systemic embolism | 24* (median 2.0 y) |
+| ALLHAT | HTN, age ≥ 55, no HF | amlodipine | thiazide | CHD death or non-fatal MI | 59* (mean 4.9 y) |
+
+Reporting follows the TARGET guideline for target trial emulations.
+
+## 4c. Primary analysis set (data-sufficiency rule; independent of the ECG results)
+
+A trial enters the **primary analysis set** if it has **≥ 400 matched pairs under the clinical
+(reference) PS in the primary population**. All other trials are analysed identically and
+reported in the supplement.
+- The rule was adopted 2026-09-24 at Ryan's request.
+- It deliberately does **not** depend on whether the ECG arms improve balance, which would be
+  selection on the result.
+- Current status: DAPA-HF (375 pairs), PARTNER (342) and PARAGON-HF (~300) fall into the
+  supplement. The rest are in the primary set. RE-LY is close to the threshold in some
+  populations. Final status is recomputed at freeze.
 
 ## 5. Covariates and representations
 
@@ -126,8 +171,10 @@ Sensitivity arms:
 - CLMBR code-only 64 PCs;
 - clinical + ECG;
 - noise placebo (M1 + 32 N(0,1) columns);
-- **[OPEN]** a supervised structural-heart-disease ECG encoder (PRESENT-SHD or out-of-cohort
-  heads), with its leakage handling in §12.
+- **Secondary ECG arm "ECG-SHD":** supervised structural-heart-disease ECG scores (EF < 40,
+  moderate/severe AS/AR/MR, any valve disease, HCM/LVDD), from the 12-lead signal CNNs behind
+  PRESENT-SHD. The scores are added to M2/M4. Echo-domain balance for this arm is assessed only in
+  patients outside the models' training split (§12).
 
 **Matching:** 1:1 greedy nearest-neighbour on the PS logit (L2 logistic, standardised
 covariates), caliper 0.2 × pooled SD, anchored on the smaller arm, without replacement.
@@ -172,9 +219,8 @@ Pre-specified tests (medians across trials, with counts of trials improved):
 
 - For each trial, arm and imputation: Cox model of the trial-mapped outcome in the matched cohort
   (robust SE clustered on pair), pooled by Rubin's rules.
-- Outcome definitions per trial: `trial_specs.PUBLISHED` endpoint. The EHR mapping is
-  **[OPEN]**, because there is no cause of death, so CV death is replaced by all-cause death as a
-  documented deviation.
+- Outcome definitions per trial: §4b. CV death uses the CT Vital Statistics cause-of-death
+  linkage.
 - **Agreement metrics:**
   - (a) versus the full-data reference estimate R: difference in log-HR and CI overlap;
   - (b) versus the RCT, per RCT-DUPLICATE: estimate agreement (point estimate in the RCT CI),

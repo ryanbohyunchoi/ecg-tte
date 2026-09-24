@@ -350,3 +350,15 @@ PUBLISHED["dapa_hf"] = dict(hr=0.74, ci=(0.65, 0.85), measure="HR vs placebo (EM
 PUBLISHED["partner"] = dict(hr=0.89, ci=(0.73, 1.09), measure="HR, ITT (PARTNER 2A, intermediate risk); PARTNER 3 low-risk 0.54 (0.37-0.79) for death/stroke/rehospitalisation at 1 y",
                             endpoint="death or disabling stroke at 2 years", rct_arms="TAVR vs surgical AVR", our_orientation=0.89,
                             source="Leon et al. NEJM 2016; Mack et al. NEJM 2019")
+
+# ---- Outcome contract (protocol v1 draft, 2026-09-24) ----
+# CV death: death (Epic/OMOP date) with any listed cause I00-I99 in the CT Vital Statistics
+# cause-of-death records (/mnt/raid0/bb2238/ecg_ascvd/omop_database/condition_occurrence/
+# condition_occurrence_ct_vitals.parquet; listed causes, no underlying-cause flag; linked by MRN;
+# records end 2024-06). Deaths without a cause record count as CV (trial convention: undetermined
+# = CV); sensitivity: count them as non-CV. Horizon = the trial's primary-analysis follow-up
+# (months; median/mean/planned as published; verify before freeze); sensitivity 12 and 60 months.
+CV_DEATH_ICD = ["I"]  # ICD-10 chapter IX
+HORIZON_MONTHS = {"comet": 58, "paradigm_hf": 27, "paradigm_hf_switch": 27, "paragon_hf": 35, "transform_hf": 12,
+                  "elite_ii": 18, "life": 58, "dionysos": 12, "plato": 12, "aristotle": 22, "rocket_af": 23,
+                  "rely": 24, "allhat": 59, "dapa_hf": 18, "partner": 24}
