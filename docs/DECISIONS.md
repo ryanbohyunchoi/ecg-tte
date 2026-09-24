@@ -2437,3 +2437,28 @@ discretion for basic decisions. Full rationale and open questions are in `report
   - Metric: per-domain mean excess |SMD| over chance; capture % = 1 − excess(arm)/excess(unmatched)
     where the unmatched excess is ≥ 0.02.
 - **Rating rubric** kept (Ryan).
+
+### 2026-09-24 — Two candidate additions screened and run; protocol draft
+- **DAPA-HF / EMPEROR-Reduced (adapted):** SGLT2i vs DPP-4i in HF with T2D.
+  - Eligibility: EF ≤ 40 if measured; eGFR ≥ 30; SBP ≥ 95; type 1 DM excluded.
+  - 3,039 / 1,107 patients; 724 in the smaller arm with ECG. Only 375–407 matched pairs (calendar-time
+    separation).
+  - Benchmark: HR 0.74 (0.65–0.85) vs placebo (verified). Rated limited (4).
+- **PARTNER 2A/3 (adapted):** TAVR vs surgical AVR.
+  - Procedure exposure by ICD-10-PCS (02RF3*/X2RF3* vs 02RF0*/02RF4*/X2RF0*). The CPT TAVR family
+    is co-coded for nearly every TAVR (3,018/3,039), so ICD-PCS defines the arm.
+  - Gate: aortic stenosis. Exclusions: concomitant CABG or mitral surgery within 1 day; prior
+    prosthetic valve.
+  - 2,028 / 741 patients; 668 with ECG. Only 342–386 pairs (strong risk-based selection).
+  - Benchmark: PARTNER 2A HR 0.89 (0.73–1.09), death/disabling stroke at 2 y; PARTNER 3
+    (0.54, 0.37–0.79) secondary. Rated moderate (7).
+  - Caveat: pre-procedure work-up codes (e.g. TAVR-protocol CT) may enter hdPS as near-instruments.
+- **PARADIGM-HF switcher:** rated moderate (7).
+- **Capture map with 15 trials** (10 physiology, 5 controls). The two new trials have poor overlap
+  and no consistent ECG gain; the 8-trial physiology results are unchanged without them.
+- **Protocol v1 draft:** `docs/PROTOCOL_V1_DRAFT.md` (not frozen; [OPEN] items listed).
+- **Supervised SHD ECG encoder** (Ryan's question). PRESENT-SHD deployment models (Keras SavedModel:
+  EF < 40, moderate/severe AS/AR/MR/any valve disease, HCM/LVDD) and the corresponding 12-lead
+  signal CNNs exist. 35–42% of each cohort is in PRESENT-SHD's training MRNs, which would leak echo
+  labels into the echo-based evaluation. Proposed: add it as a sensitivity arm, with balance
+  assessed only in patients outside its training set.

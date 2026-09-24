@@ -46,11 +46,19 @@ def main() -> None:
 
     con.execute(f"""CREATE TEMP TABLE person AS SELECT person_id, person_source_value patient_key,
         CAST(birth_datetime AS DATE) dob, {mrn_key('person_source_value')} k FROM {rp(G, 'person')}""")
-    rows = [(i, arm, kw.lower()) for i, (arm, kws) in enumerate(spec["arms"]) for kw in kws]
-    con.register("kw_df", pd.DataFrame(rows, columns=["arm_idx", "arm", "kw"]))
-    create_drug_tokens(con, G, [r[2] for r in rows])
-    con.execute("""CREATE TEMP TABLE armexp AS SELECT DISTINCT k.arm_idx, d.person_id, d.d
-                   FROM dtok d JOIN kw_df k ON d.tok = k.kw""")
+    if spec.get("design") == "procedure":
+        # Procedure exposure: arm codes are procedure_source_value prefixes (ICD-10-PCS/CPT).
+        conds = " UNION ALL ".join(
+            f"SELECT {i} arm_idx, person_id, procedure_date d FROM {rp(G, 'procedure_occurrence')} "
+            f"WHERE procedure_date IS NOT NULL AND {code_like('upper(procedure_source_value)', codes)}"
+            for i, (_, codes) in enumerate(spec["arms"]))
+        con.execute(f"CREATE TEMP TABLE armexp AS SELECT DISTINCT * FROM ({conds})")
+    else:
+        rows = [(i, arm, kw.lower()) for i, (arm, kws) in enumerate(spec["arms"]) for kw in kws]
+        con.register("kw_df", pd.DataFrame(rows, columns=["arm_idx", "arm", "kw"]))
+        create_drug_tokens(con, G, [r[2] for r in rows])
+        con.execute("""CREATE TEMP TABLE armexp AS SELECT DISTINCT k.arm_idx, d.person_id, d.d
+                       FROM dtok d JOIN kw_df k ON d.tok = k.kw""")
     if spec.get("design") == "switch":
         # Prevalent new-user ("switcher") design: arm 0 = first-ever order of arm-0 drug with a
         # prior-class order in [index-365, index-1]; arm 1 = established arm-1 users (an arm-1
@@ -188,6 +196,12 @@ def main() -> None:
         apply("history_codes_" + "_".join(ex["ever_codes"]),
               f"EXISTS (SELECT 1 FROM cond x WHERE x.person_id = c.person_id AND x.d < c.idx AND "
               f"{code_like('x.code', ex['ever_codes'])})")
+    if ex.get("concomitant_procedure_codes"):
+        cc = ex["concomitant_procedure_codes"]
+        con.execute(f"""CREATE TEMP TABLE conproc AS SELECT DISTINCT person_id, procedure_date d FROM {rp(G, 'procedure_occurrence')}
+            WHERE person_id IN (SELECT person_id FROM {cur}) AND {code_like('upper(procedure_source_value)', cc)}""")
+        apply("concomitant_procedure_within_1d", """EXISTS (SELECT 1 FROM conproc x WHERE x.person_id = c.person_id
+              AND x.d BETWEEN c.idx - INTERVAL 1 DAY AND c.idx + INTERVAL 1 DAY)""")
     for days, codes in ex.get("codes_window", []):
         apply(f"codes_{days}d_" + "_".join(codes),
               f"EXISTS (SELECT 1 FROM cond x WHERE x.person_id = c.person_id AND x.d >= c.idx - INTERVAL {days} DAY AND "

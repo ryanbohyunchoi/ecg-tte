@@ -22,7 +22,8 @@ MIN_EXCESS = 0.02
 TRIALS_ORDER = [("comet", "comet"), ("paradigm_hf", "paradigm"), ("paradigm_hf_switch", "paradigm-hf-switch"),
                 ("paragon_hf", "paragon-hf"), ("transform_hf", "transform-hf"), ("elite_ii", "elite-ii"),
                 ("life", "life"), ("dionysos", "dionysos"), ("plato", "plato"), ("aristotle", "aristotle"),
-                ("rocket_af", "rocket-af"), ("rely", "rely"), ("allhat", "allhat")]
+                ("rocket_af", "rocket-af"), ("rely", "rely"), ("allhat", "allhat"),
+                ("dapa_hf", "dapa-hf"), ("partner", "partner")]
 DOMAINS = [("meds", "Medications (orders)"), ("util", "Healthcare use"), ("poolB", "Rest of coded record (pool B)"),
            ("phys_obs", "Vitals + basic labs + EF (core 9, measured)"), ("LVFUNC", "Echo: LV function"),
            ("LVSTRUCT", "Echo: LV structure / wall thickness"), ("DIAST", "Echo: diastolic function, LA"),

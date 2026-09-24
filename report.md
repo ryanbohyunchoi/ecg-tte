@@ -82,6 +82,37 @@ What this shows (exploratory, balance only):
     structure and function and core physiology, but is noisier.
   - Balance only: no estimates yet.
 
+## 0b. Update: two added trials, supervised SHD encoder, protocol draft
+
+- **Screened and run:**
+  - **DAPA-HF / EMPEROR-Reduced**: SGLT2i vs DPP-4i in HFrEF with T2D; benchmark HR 0.74
+    (0.65–0.85) vs placebo. 724 in the smaller arm with ECG, but only about 400 matched pairs.
+    Rated **limited (4)**.
+  - **PARTNER 2A/3**: TAVR vs surgical AVR (ICD-10-PCS); benchmark PARTNER 2A HR 0.89
+    (0.73–1.09). 668 with ECG, but only about 350 pairs because risk-based selection separates
+    the arms. Rated **moderate (7)**.
+  - Both have poor overlap, and the ECG shows no consistent gain there.
+  - With them included, the physiology-trial medians are diluted (LV structure capture with ECG
+    82% → 66%). Without them the 8-trial result above is unchanged.
+- **PARADIGM-HF switcher:** rated moderate (7); 1,408 clinical-PS pairs.
+- **Valve disease: a supervised SHD encoder.** Yes, as an added sensitivity arm, because the BCL
+  embedding does not carry valve information.
+  - Available: the PRESENT-SHD deployment models (EF < 40; moderate/severe AS, AR, MR; any valve
+    disease; HCM/LVDD), in `/mnt/nfs_model_saves/ynhh_deployments/present_shd_models/models/`,
+    and the matching 12-lead signal CNNs in `signal_model_saves/12Lead_Signal_training/`.
+  - **Caveat: 35–42% of each cohort (23% in ALLHAT) is in PRESENT-SHD's training set.** Their
+    echo labels would leak into the echo-based evaluation. Options:
+    - (a) run PRESENT-SHD and evaluate echo balance only in cohort patients outside its training
+      set;
+    - (b) train valve/SHD heads out-of-cohort on the BCL embedding with the new echo file, as for
+      the EF heads.
+
+    I recommend (a) as the primary SHD arm and (b) as a check.
+- **Protocol v1 draft:** `docs/PROTOCOL_V1_DRAFT.md`. It lists hypotheses H1–H5, the trials with
+  verified benchmarks and ratings, the frozen PS arms, the balance metrics and tests, the phase-2
+  estimation plan, and a disclosure of every post-hoc choice. The **[OPEN]** items need your
+  decision before freezing.
+
 ## A. Answers to your questions
 
 **1. What is in the sparse PS, and how does the ECG enter it?**

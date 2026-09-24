@@ -308,3 +308,45 @@ TRIALS["paragon_hf_switch"] = dict(TRIALS["paragon_hf"], name="PARAGON-HF switch
     note="prevalent new-user design; comparator = valsartan continuers")
 PUBLISHED["paradigm_hf_switch"] = PUBLISHED["paradigm_hf"]
 PUBLISHED["paragon_hf_switch"] = PUBLISHED["paragon_hf"]
+
+# ---- Candidate additions screened 2026-09-24 ----
+DPP4I = ["sitagliptin", "januvia", "janumet", "saxagliptin", "onglyza", "kombiglyze", "linagliptin",
+         "tradjenta", "jentadueto", "alogliptin", "nesina", "kazano"]
+TRIALS["dapa_hf"] = dict(
+    name="DAPA-HF / EMPEROR-Reduced (adapted, DPP-4i active-comparator proxy)", spec_version="dapa_hf_adapted_v1",
+    published_hr=0.74, role="physiology",
+    arms=[("sglt2i", SGLT2 + ["synjardy", "xigduo", "invokamet", "glyxambi", "qtern", "trijardy", "segluromet"]),
+          ("dpp4i", DPP4I)],
+    index_start="2014-01-08", index_end="2024-06-30",
+    gate={"any_before_or_on_index": ["I50"]},
+    exclusions=dict(lvef_gt=40, hfpef_code_only=True, egfr_lt=30, sbp_lt=95, ever_codes=["E10"]),
+    drugs_90d={"acei_arb_arni_order": ACEI + ARB + ["sacubitril", "entresto"],
+               **{k: v for k, v in HF_DRUGS.items() if k != "sglt2_inhibitor_order"},
+               "metformin_order": ["metformin"], "insulin_order": INSULIN,
+               "sulfonylurea_order": ["glipizide", "glimepiride", "glyburide"],
+               "glp1ra_order": ["liraglutide", "semaglutide", "dulaglutide", "exenatide", "victoza", "ozempic", "trulicity"]},
+    extra_dx={}, report_covariates=["lvef", "creatinine", "atrial_fibrillation", "diabetes"],
+    prognostic=HF_PROG, note="RCTs were placebo-controlled; restricted to T2D via DPP-4i comparator (type 1 excluded)")
+TAVR_PCS = ["02RF3", "X2RF3"]
+SAVR_PCS = ["02RF0", "02RF4", "X2RF0"]
+CABG_CODES = ["0210", "0211", "0212", "0213", "3351", "3352", "3353"]
+MITRAL_SURG = ["02RG", "02QG", "02UG", "0338T"]
+TRIALS["partner"] = dict(
+    name="PARTNER 2A/3 (adapted): TAVR vs surgical AVR", spec_version="partner_adapted_v1",
+    published_hr=0.89, role="physiology", design="procedure",
+    arms=[("tavr", TAVR_PCS), ("savr", SAVR_PCS)],
+    index_start="2015-10-01", index_end="2024-06-30",
+    gate={"any_before_or_on_index": ["I350", "I352", "I060", "I062"]},
+    exclusions=dict(concomitant_procedure_codes=CABG_CODES + MITRAL_SURG, ever_codes=["Z952"]),
+    drugs_90d={"beta_blocker_order": BETA_BLOCKER, "acei_arb_order": ACEI + ARB, "loop_diuretic_order": LOOP,
+               "statin_order": STATIN, "anticoag_order": ANTICOAG, "antiplatelet_order": ANTIPLATELET_ASA + P2Y12},
+    extra_dx={"heart_failure": ["I50"], "prior_cabg_pci_z": ["Z951", "Z955", "Z9861"], "liver_disease": ["K70", "K72", "K74"]},
+    report_covariates=["lvef", "age_at_index", "creatinine", "copd_or_asthma"],
+    prognostic=dict(outcome="death_stroke_365", hosp_codes=["I63", "I64", "I61"]),
+    note="procedure exposure by ICD-10-PCS (CPT TAVR family co-coded; ICD-PCS used for arm). Concomitant CABG/mitral surgery within 1 day excluded; prior prosthetic valve excluded")
+PUBLISHED["dapa_hf"] = dict(hr=0.74, ci=(0.65, 0.85), measure="HR vs placebo (EMPEROR-Reduced: 0.75, 0.65-0.86)",
+                            endpoint="worsening HF or CV death", rct_arms="dapagliflozin vs placebo", our_orientation=0.74,
+                            source="McMurray et al. NEJM 2019; Packer et al. NEJM 2020")
+PUBLISHED["partner"] = dict(hr=0.89, ci=(0.73, 1.09), measure="HR, ITT (PARTNER 2A, intermediate risk); PARTNER 3 low-risk 0.54 (0.37-0.79) for death/stroke/rehospitalisation at 1 y",
+                            endpoint="death or disabling stroke at 2 years", rct_arms="TAVR vs surgical AVR", our_orientation=0.89,
+                            source="Leon et al. NEJM 2016; Mack et al. NEJM 2019")
