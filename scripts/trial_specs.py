@@ -294,3 +294,17 @@ PUBLISHED = {
                    rct_arms="amlodipine vs chlorthalidone", our_orientation=0.98, source="ALLHAT Officers, JAMA 2002"),
 }
 TRIALS["rocket_af"]["published_hr"] = 0.88  # ITT benchmark for an initiator (ITT-like) emulation
+
+# ---- Switcher variants (Ryan, 2026-09-24): PARADIGM-HF and PARAGON-HF enrolled patients already
+# on ACEi/ARB. Arm 0 = ARNI starters switching from ACEi/ARB; arm 1 = established users continuing
+# the trial comparator (PARADIGM: any ACEi; PARAGON: valsartan). See build_trial_cohort.py.
+TRIALS["paradigm_hf_switch"] = dict(TRIALS["paradigm_hf"], name="PARADIGM-HF switcher (adapted)",
+    spec_version="paradigm_hf_switch_v1", design="switch", prior_class=ACEI + ARB,
+    drugs_90d={k: v for k, v in TRIALS["paradigm_hf"]["drugs_90d"].items() if k != "arb_order"},
+    note="prevalent new-user design; ARB history is part of the switch definition, so ARB order is not a covariate")
+TRIALS["paragon_hf_switch"] = dict(TRIALS["paragon_hf"], name="PARAGON-HF switcher (adapted)",
+    spec_version="paragon_hf_switch_v1", design="switch", prior_class=ACEI + ARB + ["cozaar", "diovan"],
+    drugs_90d={k: v for k, v in TRIALS["paragon_hf"]["drugs_90d"].items() if k != "acei_order"},
+    note="prevalent new-user design; comparator = valsartan continuers")
+PUBLISHED["paradigm_hf_switch"] = PUBLISHED["paradigm_hf"]
+PUBLISHED["paragon_hf_switch"] = PUBLISHED["paragon_hf"]

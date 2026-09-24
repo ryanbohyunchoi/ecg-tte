@@ -51,12 +51,34 @@ def main() -> None:
     create_drug_tokens(con, G, [r[2] for r in rows])
     con.execute("""CREATE TEMP TABLE armexp AS SELECT DISTINCT k.arm_idx, d.person_id, d.d
                    FROM dtok d JOIN kw_df k ON d.tok = k.kw""")
-    con.execute(f"""CREATE TEMP TABLE s1 AS SELECT * FROM
-        (SELECT arm_idx, person_id, min(d) idx FROM armexp GROUP BY 1, 2)
-        WHERE idx BETWEEN DATE '{spec['index_start']}' AND DATE '{spec['index_end']}'""")
-    con.execute("""CREATE TEMP TABLE s2 AS SELECT c.* FROM s1 c WHERE NOT EXISTS (
-        SELECT 1 FROM armexp e WHERE e.person_id = c.person_id AND e.arm_idx <> c.arm_idx
-          AND e.d BETWEEN c.idx - INTERVAL 365 DAY AND c.idx)""")
+    if spec.get("design") == "switch":
+        # Prevalent new-user ("switcher") design: arm 0 = first-ever order of arm-0 drug with a
+        # prior-class order in [index-365, index-1]; arm 1 = established arm-1 users (an arm-1
+        # order at index and another in [index-365, index-1]) with no arm-0 order on/before index;
+        # one seeded-random qualifying order date per person.
+        create_drug_tokens(con, G, spec["prior_class"], table="priortok")
+        win = f"BETWEEN DATE '{spec['index_start']}' AND DATE '{spec['index_end']}'"
+        con.execute(f"""CREATE TEMP TABLE s1a AS SELECT 0 arm_idx, f.person_id, f.idx FROM
+            (SELECT person_id, min(d) idx FROM armexp WHERE arm_idx = 0 GROUP BY 1) f
+            WHERE f.idx {win} AND EXISTS (SELECT 1 FROM priortok p WHERE p.person_id = f.person_id
+              AND p.d BETWEEN f.idx - INTERVAL 365 DAY AND f.idx - INTERVAL 1 DAY)""")
+        con.execute(f"""CREATE TEMP TABLE s1b AS SELECT 1 arm_idx, person_id, idx FROM (
+            SELECT c.person_id, c.d idx, row_number() OVER (PARTITION BY c.person_id ORDER BY hash(c.person_id, c.d, 20260924)) rn
+            FROM (SELECT DISTINCT person_id, d FROM armexp WHERE arm_idx = 1) c
+            WHERE c.d {win}
+              AND EXISTS (SELECT 1 FROM armexp e WHERE e.arm_idx = 1 AND e.person_id = c.person_id
+                          AND e.d BETWEEN c.d - INTERVAL 365 DAY AND c.d - INTERVAL 1 DAY)
+              AND NOT EXISTS (SELECT 1 FROM armexp e WHERE e.arm_idx = 0 AND e.person_id = c.person_id AND e.d <= c.d))
+            WHERE rn = 1""")
+        con.execute("CREATE TEMP TABLE s1 AS SELECT * FROM s1a UNION ALL SELECT * FROM s1b")
+        con.execute("CREATE TEMP TABLE s2 AS SELECT * FROM s1")  # no comparator washout by design
+    else:
+        con.execute(f"""CREATE TEMP TABLE s1 AS SELECT * FROM
+            (SELECT arm_idx, person_id, min(d) idx FROM armexp GROUP BY 1, 2)
+            WHERE idx BETWEEN DATE '{spec['index_start']}' AND DATE '{spec['index_end']}'""")
+        con.execute("""CREATE TEMP TABLE s2 AS SELECT c.* FROM s1 c WHERE NOT EXISTS (
+            SELECT 1 FROM armexp e WHERE e.person_id = c.person_id AND e.arm_idx <> c.arm_idx
+              AND e.d BETWEEN c.idx - INTERVAL 365 DAY AND c.idx)""")
     con.execute(f"""CREATE TEMP TABLE firstvisit AS SELECT person_id, min(visit_start_date) fv
                     FROM {rp(G, 'visit_occurrence')} GROUP BY 1""")
     age = """date_diff('year', p.dob, c.idx)
@@ -66,8 +88,12 @@ def main() -> None:
         JOIN firstvisit v USING (person_id)
         WHERE p.dob IS NOT NULL AND {age} >= {spec.get('min_age', 18)} {max_age}
           AND v.fv <= c.idx - INTERVAL 365 DAY""")
-    con.execute("""CREATE TEMP TABLE s4 AS SELECT arm_idx, person_id, idx FROM (
-        SELECT *, row_number() OVER (PARTITION BY person_id ORDER BY idx, arm_idx) rn FROM s3) WHERE rn = 1""")
+    # Dedupe: earliest index by default. Switch design: the switcher role (arm 0) wins, because
+    # nearly every switcher was earlier an established comparator user (documented limitation:
+    # comparators are continuers who did not switch within the data).
+    order = "arm_idx, idx" if spec.get("design") == "switch" else "idx, arm_idx"
+    con.execute(f"""CREATE TEMP TABLE s4 AS SELECT arm_idx, person_id, idx FROM (
+        SELECT *, row_number() OVER (PARTITION BY person_id ORDER BY {order}) rn FROM s3) WHERE rn = 1""")
 
     # conditions needed for gate/exclusions (on/before index only)
     gate = spec["gate"]
@@ -89,9 +115,11 @@ def main() -> None:
     con.execute(f"CREATE TEMP TABLE s5 AS SELECT * FROM s4 WHERE person_id IN "
                 f"(SELECT person_id FROM cond WHERE {' OR '.join(conds)})")
 
-    stages = [("s1_first_use_in_window", "s1"), ("s2_comparator_washout_365", "s2"),
+    switch = spec.get("design") == "switch"
+    stages = [("s1_switchers_and_continuers" if switch else "s1_first_use_in_window", "s1"),
+              ("s2_no_washout_switch_design" if switch else "s2_comparator_washout_365", "s2"),
               (f"s3_age{spec.get('min_age', 18)}{'-' + str(spec['max_age']) if spec.get('max_age') else '+'}_prior_activity_365", "s3"),
-              ("s4_dedupe_earliest_index", "s4"), ("s5_disease_gate", "s5")]
+              ("s4_dedupe_switcher_role_first" if switch else "s4_dedupe_earliest_index", "s4"), ("s5_disease_gate", "s5")]
     cur = "s5"
     step = 6
 

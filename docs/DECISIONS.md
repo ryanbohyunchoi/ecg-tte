@@ -2410,3 +2410,30 @@ discretion for basic decisions. Full rationale and open questions are in `report
   - A `dxall` sparse base (demographics + every 3-char ICD-10 code with ≥ 2% prevalence).
   - hdPS comparators inside the sparse set.
   - Methods with < 20 matched pairs record retention only (PARAGON-HF outpatient).
+
+### 2026-09-24 — Capture-map analysis (v4) and Ryan's follow-up decisions
+- **Echo source:** `/mnt/raid0/bb2238/metadata/echo_metadata_2026_06_12.parquet` (Ryan). It has
+  ~797K structured echo reports, 2015-07 to 2026-06, and covers 12–63% of each cohort in the prior
+  year. Only structured measurement and grade columns are read; free text and clinician fields
+  are never loaded. Panel v2 is `scripts/build_physiology_panel_v2.py`: six echo domains, plus
+  NT-proBNP, other labs and an echo-performed flag. It is evaluation only. PanEcho labels are
+  superseded.
+- **Primary population reverted to all initiators** (Ryan: broader inclusion). Outpatient
+  initiators are a sensitivity analysis.
+- **Switcher design** (Ryan: yes), prevalent new-user style. ARNI starters with ACEi/ARB in the
+  prior year vs established comparator users (repeat order at index); no ARNI on or before index.
+  - Dual-eligible persons keep the switcher role. Limitation: comparators are continuers who
+    did not switch within the data; exposure-set matching is needed before any outcome analysis.
+  - PARADIGM-HF switcher: 2,125 ARNI / 4,635 ACEi (1,792 with ECG); included, role = physiology.
+  - PARAGON-HF switcher: 251 with ECG; failed feasibility.
+- **Labs:** kept as supporting evaluation targets (Ryan: "perhaps not" as a primary target).
+  They were modestly imbalanced before matching (excess 0.02–0.09) and are balanced to chance by
+  every PS arm.
+- **Capture map** (`--method-set capture`, `scripts/summarize_capture.py`):
+  - Arms: sparse (demographics + selected diagnoses), sparse + ECG (32 raw PCs), hdPS200
+    (= sparse + 200 hdPS flags), hdPS200 + ECG; the clinical PS as reference.
+  - Sensitivity arms: hdPS100/500 (± ECG), CLMBR, all diagnosis codes, claims, clinical + ECG,
+    noise placebo.
+  - Metric: per-domain mean excess |SMD| over chance; capture % = 1 − excess(arm)/excess(unmatched)
+    where the unmatched excess is ≥ 0.02.
+- **Rating rubric** kept (Ryan).

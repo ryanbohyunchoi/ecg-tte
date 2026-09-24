@@ -174,7 +174,7 @@ def main():
     ap.add_argument("--no-cstat", action="store_true")
     ap.add_argument("--keep-exposure-features", action="store_true", help="v1 behaviour")
     ap.add_argument("--label", default="")
-    ap.add_argument("--method-set", choices=["full", "sparse"], default="full",
+    ap.add_argument("--method-set", choices=["full", "sparse", "capture"], default="full",
                     help="sparse: demographics + diagnoses base (no meds/utilisation/physiology) +/- ECG")
     ap.add_argument("--output-dir", required=True)
     args = ap.parse_args()
@@ -267,7 +267,21 @@ def main():
     # prevalence >= 2%), not only the investigator-chosen comorbidities.
     dx_panel = [c for c in panel.columns if c.startswith("dx_")]
     X_dxall = np.hstack([X_demo, panel[dx_panel].gt(0).astype(float).to_numpy()])
-    if args.method_set == "sparse":
+    if args.method_set == "capture":
+        # Capture map (2026-09-24): four arms + references. "sparse" = demographics + selected dx.
+        noise_e = np.random.default_rng(3000 + args.split_seed).normal(size=(len(t), ecg_pc.shape[1]))
+        methods = {"unmatched": None, "clinical (reference)": X_core,
+                   "sparse": X_dx, f"sparse+noise{ecg_pc.shape[1]} (placebo)": np.hstack([X_dx, noise_e]),
+                   "sparse+ECG": np.hstack([X_dx, ecg_pc]),
+                   "hdPS200": np.hstack([X_dx, hd[200]]), "hdPS200+ECG": np.hstack([X_dx, hd[200], ecg_pc]),
+                   "hdPS100": np.hstack([X_dx, hd[100]]), "hdPS100+ECG": np.hstack([X_dx, hd[100], ecg_pc]),
+                   "hdPS500": np.hstack([X_dx, hd[500]]), "hdPS500+ECG": np.hstack([X_dx, hd[500], ecg_pc]),
+                   "sparse+CLMBR": np.hstack([X_dx, clm_f]), "hdPS200+ECG+CLMBR": np.hstack([X_dx, hd[200], ecg_pc, clm_f]),
+                   "dxall": X_dxall, "dxall+ECG": np.hstack([X_dxall, ecg_pc]),
+                   "claims": X_claims, "claims+ECG": np.hstack([X_claims, ecg_pc]),
+                   "clinical+ECG": np.hstack([X_core, ecg_pc])}
+        bases = {}
+    elif args.method_set == "sparse":
         noise_e = np.random.default_rng(3000 + args.split_seed).normal(size=(len(t), ecg_pc.shape[1]))
         methods = {"unmatched": None, "clinical": X_core, "claims": X_claims, "claims+ECGpc": np.hstack([X_claims, ecg_pc]),
                    "demo": X_demo, "demo+ECGpc": np.hstack([X_demo, ecg_pc]),
@@ -310,6 +324,9 @@ def main():
         sB, sA = smd_vector(EB, t, mt, mc), smd_vector(EA, t, mt, mc)
         sC = smd_vector(C_core, t, mt, mc)
         sO = smd_vector(O, t, mt, mc)
+        cB = chance_smd(EB, mt, mc)
+        okB = ~np.isnan(sB) & ~np.isnan(cB)
+        r_excess_B = float(np.mean(sB[okB] - cB[okB])) if okB.any() else np.nan
         nondx = np.array([not f.startswith("dx_") for f in Bf])
         sBn = sB[nondx & ~np.isnan(sB)]
         sB, sA = sB[~np.isnan(sB)], sA[~np.isnan(sA)]
@@ -317,10 +334,18 @@ def main():
                  B_n=len(sB), B_frac_gt_0_1=(sB > 0.1).mean(), B_mean=sB.mean(), B_p95=np.quantile(sB, 0.95),
                  A_frac_gt_0_1=(sA > 0.1).mean(), A_mean=sA.mean(),
                  core_max=np.nanmax(sC), core_n_gt_0_1=int(np.nansum(sC > 0.1)),
-                 B_nondx_frac_gt_0_1=(sBn > 0.1).mean())
+                 B_nondx_frac_gt_0_1=(sBn > 0.1).mean(), excess_poolB=r_excess_B)
+        cC = chance_smd(C_core, mt, mc)
         if PP is not None:
             sP = pd.Series(smd_vector(PP.to_numpy(float), t, mt, mc), index=PP.columns)
             cP = pd.Series(chance_smd(PP.to_numpy(float), mt, mc), index=PP.columns)
+            doms = sorted({c.split("__")[0] for c in PP.columns if "__" in c})
+            for dom in doms:
+                g = sP[[c for c in sP.index if c.startswith(dom + "__")]].dropna()
+                if len(g):
+                    r[f"mean_{dom}"], r[f"k_{dom}"] = float(g.mean()), int(len(g))
+                    r[f"chance_{dom}"] = float(cP[g.index].mean())
+                    r[f"excess_{dom}"] = float((g - cP[g.index]).mean())
             for grp, pre in (("labs", "lab_"), ("echo", "echo_")):
                 cols_g = [c for c in sP.index if c.startswith(pre)]
                 g = sP[cols_g].dropna()
@@ -334,6 +359,7 @@ def main():
             if cols:
                 r[f"n_{gname}_gt_0_1"] = int(np.nansum(sC[gi(cols)] > 0.1))
                 r[f"mean_{gname}"] = float(np.nanmean(sC[gi(cols)]))
+                r[f"excess_{gname}"] = float(np.nanmean(sC[gi(cols)] - cC[gi(cols)]))
         ph_obs = [obs_cols.index(c) for c in phys if c in obs_cols]
         if ph_obs:  # physiology balance on measured (non-imputed) values
             r["n_phys_obs_gt_0_1"] = int(np.nansum(sO[ph_obs] > 0.1))
@@ -350,6 +376,7 @@ def main():
             P = prog.to_numpy(float)
             for j, c in enumerate(prog.columns):
                 r[f"smd_{c}"] = float(smd_vector(P[:, [j]], t, mt, mc)[0])
+                r[f"excess_{c}"] = r[f"smd_{c}"] - float(chance_smd(P[:, [j]], mt, mc)[0])
         if not args.no_cstat and X is not None:
             r["cstat_core"] = cstat_after_matching(X_c_core, t, mt, mc, C=1.0, seed=args.split_seed)
             r["cstat_core_poolB"] = cstat_after_matching(X_c_B, t, mt, mc, C=0.01, seed=args.split_seed)

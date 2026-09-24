@@ -5,6 +5,83 @@ For Ryan. **Balance only; no outcome has been extracted or estimated.** Aggregat
 - Full v3 tables: `docs/V3_TABLES_2026_09_24.md`.
 - The overnight report (all initiators, pre-v3) is kept at `docs/REPORT_OVERNIGHT_2026_09_24.md`.
 
+## 0. Latest update (v4): capture map across four PS arms
+
+Your follow-ups have been applied:
+- **Full echo report:** `bb2238/metadata/echo_metadata_2026_06_12.parquet` now drives the echo panel.
+- **Primary population:** all initiators; outpatient initiators are a sensitivity analysis.
+- **Switcher design:** PARADIGM-HF switcher added. The PARAGON-HF switcher failed feasibility
+  (251 ARNI users with an ECG).
+- **Labs:** kept as supporting targets only. They were imbalanced before matching (excess
+  0.02–0.09) and every arm balances them to chance.
+
+The **clinical PS (reference)** is the "full-data" PS: about 30–36 hand-picked covariates
+including measured EF, BP, HR, BMI, creatinine, K, Na, Hb, diagnoses, medications and visits. It
+is the best case when the measurements exist.
+
+**Capture map (primary, all initiators; 8 physiology trials, 5 controls).** Each cell is the
+median % of the pre-matching excess imbalance removed. 100% means balanced to the level of a
+randomised sample; negative means worse than before matching.
+- Echo domains come from the full echo report (latest study in the prior year; 12–63% of patients).
+- Full tables: `docs/CAPTURE_MAP_ALL_INITIATORS_2026_09_24.md`; outpatient version:
+  `docs/CAPTURE_MAP_OUTPATIENT_2026_09_24.md`.
+
+| Physiology trials | Sparse | Sparse + ECG | hdPS200 | hdPS200 + ECG | Clinical PS |
+|---|---|---|---|---|---|
+| Medications | 27% | 46% | 83% | 85% | 114% |
+| Healthcare use | 41% | 54% | 86% | 91% | 110% |
+| Rest of coded record | 43% | 46% | 88% | 93% | 63% |
+| Core-9 physiology (EF, vitals, basic labs; measured) | 23% | 53% | 70% | 76% | 108% |
+| Echo: LV function | −5% | 34% | 26% | 57% | 73% |
+| **Echo: LV structure / wall thickness** | 16% | **82%** | 55% | **88%** | 71% |
+| Echo: diastolic function / LA | 74% | 89% | 68% | 81% | 78% |
+| Echo: RV / pulmonary pressure | 74% | 104% | 88% | 93% | 81% |
+| Echo: valves | 55% | 27% | 53% | 47% | 58% |
+| NT-proBNP | 83% | 100% | 98% | 96% | 88% |
+| Prognostic risk score | 66% | 72% | 98% | 105% | 85% |
+| Median pairs retained | 1180 | 1066 | 979 | 913 | 1117 |
+
+| Controls (ACS, AF anticoagulation, HTN) | Sparse | Sparse + ECG | hdPS200 | hdPS200 + ECG | Clinical PS |
+|---|---|---|---|---|---|
+| Core-9 physiology | 46% | 53% | 74% | 82% | 103% |
+| Echo: LV structure | 32% | 43% | 41% | 60% | 39% |
+| Echo: valves | 32% | 44% | 85% | 83% | 51% |
+| Rest of coded record | 56% | 60% | 94% | 93% | 77% |
+
+What this shows (exploratory, balance only):
+- **H1, complementarity: supported.**
+  - The ECG captures cardiac structure and function. On LV structure it takes the sparse PS
+    from 16% to 82%, which is more than the clinical PS reaches (71%) even though that PS
+    contains measured EF.
+  - hdPS captures the coded record: medications 83%, visits 86%, rest of record 88%. The ECG
+    adds little there.
+  - Together (hdPS200 + ECG) they give the best or near-best capture in almost every domain.
+- **H2, specificity: supported.** The ECG's gain is concentrated in the pre-specified physiology
+  trials:
+  - LV structure: −0.085 excess SMD (7/8 trials better) vs −0.008 in controls.
+  - Core-9 physiology: −0.034 (8/8) vs −0.009.
+  - The noise placebo has no effect (median ≈ 0).
+- **H3, substitution: partial.** Of the gap between the sparse PS and the clinical PS, adding
+  the ECG closes a median of:
+  - 89% for LV structure;
+  - 98% for diastolic function;
+  - 45% for LV function;
+  - 26% for core-9 physiology.
+
+  For medications and visits it closes almost nothing (8%, 6%); hdPS closes 62% and 56% there.
+- **H4, mechanism.** The ECG sees:
+  - LV structure/hypertrophy, LV function, diastolic filling/LA, and RV/pulmonary pressure.
+  - It does **not** see valve disease: it is worse than the sparse PS on valves (27% vs 55%),
+    whereas hdPS and valve codes help.
+
+  This matches what a 12-lead ECG physiologically encodes.
+- **Caveats:**
+  - Capture percentages rest on 4–8 trials per domain, with wide per-trial variation.
+  - Echo measurements exist only for patients who had an echo (12–63%).
+  - The outpatient sensitivity analysis (about half the pairs) points the same way for LV
+    structure and function and core physiology, but is noisier.
+  - Balance only: no estimates yet.
+
 ## A. Answers to your questions
 
 **1. What is in the sparse PS, and how does the ECG enter it?**
@@ -35,7 +112,7 @@ For Ryan. **Balance only; no outcome has been extracted or estimated.** Aggregat
   is then 1:1 greedy nearest-neighbour on the PS logit (caliper 0.2 SD). **No cosine distance
   is used anywhere.** Cosine matching was dropped earlier because it never balanced confounders.
 
-**2. Balance beyond diagnosis codes: labs, echo features, and deltas vs hdPS.** Yes. Every trial
+**2. Balance beyond diagnosis codes: labs, echo features, and deltas vs hdPS.** *(Superseded by §0: the full echo report is now used. The PanEcho numbers below are kept as history.)* Yes. Every trial
 now has a held-out physiology panel that never enters any PS:
 - **Core 9:** EF, SBP, DBP, HR, BMI, creatinine, K, Na, Hb.
 - **Labs 10:** NT-proBNP, hs-troponin T, eGFR, albumin, BUN, glucose, HbA1c, WBC, platelets, LDL.
