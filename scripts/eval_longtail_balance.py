@@ -169,6 +169,7 @@ def main():
     ap.add_argument("--prognostic-scores", default=None)
     ap.add_argument("--physiology-panel", default=None,
                     help="restricted_physiology_panel.parquet (build_physiology_panel.py); evaluation only")
+    ap.add_argument("--shd-scores", default=None, help="restricted_shd_scores.parquet (score_shd_signal.py); adds SHD arms")
     ap.add_argument("--hdps-k", type=int, nargs="+", default=[100, 200, 500])
     ap.add_argument("--split-seed", type=int, default=0)
     ap.add_argument("--no-cstat", action="store_true")
@@ -200,6 +201,16 @@ def main():
     ecg_f = np.hstack([ph.loc[common].to_numpy(float), pcs(ecg.loc[common].to_numpy(float), 32)])
     clm_f = pcs(clm.loc[common].to_numpy(float), 64)
     panel = panel.loc[common]
+    SHD = None
+    if args.shd_scores:
+        SHD = pd.read_parquet(args.shd_scores).set_index("patient_key")
+        common = common.intersection(SHD.index).sort_values()
+        cov, t = cov.loc[common], t_s.loc[common].to_numpy()
+        obs = obs.reindex(common)
+        ecg_f = np.hstack([ph.loc[common].to_numpy(float), pcs(ecg.loc[common].to_numpy(float), 32)])
+        clm_f = pcs(clm.loc[common].to_numpy(float), 64)
+        panel = panel.loc[common]
+        SHD = SHD.loc[common].to_numpy(float)
     PP = None
     if args.physiology_panel:
         PP = pd.read_parquet(args.physiology_panel).set_index("patient_key").reindex(common)
@@ -280,6 +291,10 @@ def main():
                    "dxall": X_dxall, "dxall+ECG": np.hstack([X_dxall, ecg_pc]),
                    "claims": X_claims, "claims+ECG": np.hstack([X_claims, ecg_pc]),
                    "clinical+ECG": np.hstack([X_core, ecg_pc])}
+        if SHD is not None:
+            methods.update({"sparse+SHD": np.hstack([X_dx, SHD]), "sparse+ECG+SHD": np.hstack([X_dx, ecg_pc, SHD]),
+                            "hdPS200+SHD": np.hstack([X_dx, hd[200], SHD]),
+                            "hdPS200+ECG+SHD": np.hstack([X_dx, hd[200], ecg_pc, SHD])})
         bases = {}
     elif args.method_set == "sparse":
         noise_e = np.random.default_rng(3000 + args.split_seed).normal(size=(len(t), ecg_pc.shape[1]))
