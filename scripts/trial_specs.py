@@ -142,3 +142,119 @@ TRIALS = {
         prognostic=dict(outcome="death_stroke_365", gate_codes=["I48"], hosp_codes=["I63", "I64", "I61"]),
     ),
 }
+
+# ---- Overnight expansion (2026-09-24): physiology-driven trials (primary tests) and
+# ACS/AF anticoagulation controls (no ECG benefit expected). Published HRs are the trials'
+# primary-endpoint estimates as recalled; verify against the source papers before any
+# RCT-agreement analysis (report.md lists this as an open item).
+DOAC_OTHER = ["rivaroxaban", "xarelto", "dabigatran", "pradaxa", "edoxaban", "savaysa", "apixaban", "eliquis"]
+HF_DRUGS = {"beta_blocker_order": BETA_BLOCKER, "mra_order": MRA, "loop_diuretic_order": LOOP,
+            "sglt2_inhibitor_order": SGLT2, "digoxin_order": ["digoxin", "lanoxin"],
+            "amiodarone_order": ["amiodarone"]}
+HF_PROG = dict(outcome="death_or_hf_hosp_365", hosp_codes=["I50"])
+THIAZIDE = ["chlorthalidone", "hydrochlorothiazide", "indapamide", "thalitone", "microzide"]
+AF_VALVE = ["I050", "I052", "I342", "Z952"]
+
+TRIALS.update({
+    "paragon_hf": dict(
+        name="PARAGON-HF (adapted)", spec_version="paragon_hf_adapted_v1", published_hr=0.87, role="physiology",
+        arms=[("sacubitril_valsartan", ["sacubitril", "entresto"]), ("valsartan", ["valsartan", "diovan"])],
+        index_start="2015-07-07", index_end="2024-06-30", min_age=50,
+        gate={"any_before_or_on_index": ["I50"]},
+        exclusions=dict(lvef_lt=45, ef_unknown_require_codes=["I503"], egfr_lt=30, potassium_gt=5.2,
+                        sbp_lt=110, ever_codes=["T783"]),
+        drugs_90d={"acei_order": ACEI, **HF_DRUGS}, extra_dx={},
+        report_covariates=["lvef", "atrial_fibrillation", "creatinine", "sbp"], prognostic=HF_PROG,
+        note="valsartan token also matches sacubitril-valsartan combination strings; those persons fall in both arms and the washout removes them"),
+    "transform_hf": dict(
+        name="TRANSFORM-HF (adapted)", spec_version="transform_hf_adapted_v1", published_hr=1.02, role="physiology",
+        arms=[("torsemide", ["torsemide", "torasemide", "demadex"]), ("furosemide", ["furosemide", "lasix"])],
+        index_start="2013-01-01", index_end="2024-06-30",
+        gate={"window_30d": ["I50"]}, exclusions=dict(egfr_lt=15),
+        drugs_90d={"acei_arb_arni_order": ACEI + ARB + ["sacubitril", "entresto"],
+                   **{k: v for k, v in HF_DRUGS.items() if k != "loop_diuretic_order"},
+                   "thiazide_order": THIAZIDE},
+        extra_dx={}, report_covariates=["lvef", "creatinine", "sodium", "atrial_fibrillation"], prognostic=HF_PROG),
+    "elite_ii": dict(
+        name="ELITE II (adapted)", spec_version="elite_ii_adapted_v1", published_hr=1.13, role="physiology",
+        arms=[("arb", ARB + ["cozaar", "diovan"]), ("acei", ACEI)],
+        index_start="2013-01-01", index_end="2024-06-30", min_age=60,
+        gate={"any_before_or_on_index": ["I50"]},
+        exclusions=dict(lvef_gt=40, hfpef_code_only=True, sbp_lt=90, ever_codes=["T783"]),
+        drugs_90d=dict(HF_DRUGS), extra_dx={},
+        report_covariates=["lvef", "atrial_fibrillation", "creatinine", "sbp"], prognostic=HF_PROG,
+        note="class adaptation: any ARB vs any ACEi (trial: losartan vs captopril)"),
+    "life": dict(
+        name="LIFE (adapted)", spec_version="life_adapted_v1", published_hr=0.87, role="physiology",
+        arms=[("losartan", ["losartan", "cozaar"]), ("atenolol", ["atenolol", "tenormin"])],
+        index_start="2013-01-01", index_end="2024-06-30", min_age=55, max_age=80,
+        gate={"any_before_or_on_index": ["I10", "I11", "I12", "I13", "I15"],
+              "ecg_text_365d": ["LEFT VENTRICULAR HYPERTROPHY", "LVH"]},
+        exclusions=dict(ever_codes=["I50"], codes_window=[(180, ["I21", "I22", "I63"])]),
+        drugs_90d={"acei_order": ACEI, "other_arb_order": [a for a in ARB if a != "losartan"],
+                   "other_beta_blocker_order": [b for b in BETA_BLOCKER if b != "atenolol"],
+                   "thiazide_order": THIAZIDE, "ccb_order": ["amlodipine", "nifedipine", "diltiazem", "verapamil", "felodipine"],
+                   "statin_order": STATIN, "aspirin_order": ANTIPLATELET_ASA},
+        extra_dx={"heart_failure": ["I50"]},
+        report_covariates=["lvef", "sbp", "creatinine", "diabetes"],
+        prognostic=dict(outcome="death_mi_stroke_365", hosp_codes=["I21", "I22", "I63", "I64"])),
+    "dionysos": dict(
+        name="DIONYSOS (adapted)", spec_version="dionysos_adapted_v1", published_hr=1.59, role="physiology",
+        arms=[("dronedarone", ["dronedarone", "multaq"]), ("amiodarone", ["amiodarone", "pacerone", "cordarone"])],
+        index_start="2010-01-01", index_end="2024-06-30",
+        gate={"any_before_or_on_index": ["I48"]}, exclusions=dict(),
+        drugs_90d={"beta_blocker_order": BETA_BLOCKER, "rate_ccb_order": CCB_RATE, "anticoag_order": ANTICOAG,
+                   "digoxin_order": ["digoxin", "lanoxin"], "acei_arb_order": ACEI + ARB, "loop_diuretic_order": LOOP,
+                   "other_antiarrhythmic_order": ["sotalol", "flecainide", "propafenone", "dofetilide"]},
+        extra_dx={"heart_failure": ["I50"]},
+        report_covariates=["lvef", "heart_failure", "creatinine", "age_at_index"],
+        prognostic=dict(outcome="death_af_hf_stroke_hosp_365", hosp_codes=["I48", "I50", "I63", "I64"])),
+    "allhat": dict(
+        name="ALLHAT amlodipine vs thiazide (adapted)", spec_version="allhat_adapted_v1", published_hr=0.98, role="control",
+        arms=[("amlodipine", ["amlodipine", "norvasc"]), ("thiazide", THIAZIDE)],
+        index_start="2013-01-01", index_end="2024-06-30", min_age=55,
+        gate={"any_before_or_on_index": ["I10", "I11", "I12", "I13", "I15"]},
+        exclusions=dict(ever_codes=["I50"]),
+        drugs_90d={"acei_arb_order": ACEI + ARB, "beta_blocker_order": BETA_BLOCKER, "statin_order": STATIN,
+                   "aspirin_order": ANTIPLATELET_ASA, "insulin_order": INSULIN},
+        extra_dx={}, report_covariates=["sbp", "creatinine", "potassium", "diabetes"],
+        prognostic=dict(outcome="death_mi_stroke_365", hosp_codes=["I21", "I22", "I63", "I64"]),
+        note="thiazide class (trial: chlorthalidone); HF history excluded (ALLHAT excluded symptomatic HF)"),
+    "triton": dict(
+        name="TRITON-TIMI 38 (adapted)", spec_version="triton_adapted_v1", published_hr=0.81, role="control",
+        arms=[("prasugrel", ["prasugrel", "effient"]), ("clopidogrel", ["clopidogrel", "plavix"])],
+        index_start="2009-07-10", index_end="2024-06-30",
+        gate={"window_30d": ["I21", "I24", "I200"], "pci_30d": True},
+        exclusions=dict(anticoag_30d=ANTICOAG, ever_codes=["I61", "I62"]),
+        drugs_90d=TRIALS["plato"]["drugs_90d"], extra_dx=TRIALS["plato"]["extra_dx"], index_event_pci=True,
+        report_covariates=["lvef", "stemi_30d", "stroke_history", "creatinine"],
+        prognostic=dict(outcome="death_mi_stroke_365", hosp_codes=["I21", "I22", "I63", "I64"])),
+    "rocket_af": dict(
+        name="ROCKET-AF (adapted)", spec_version="rocket_af_adapted_v1", published_hr=0.79, role="control",
+        arms=[("rivaroxaban", ["rivaroxaban", "xarelto"]), ("warfarin", ["warfarin", "coumadin", "jantoven"])],
+        index_start="2011-11-04", index_end="2024-06-30",
+        gate={"any_before_or_on_index": ["I48"]},
+        exclusions=dict(ever_codes=AF_VALVE, other_anticoag_365d=[d for d in DOAC_OTHER if d not in ("rivaroxaban", "xarelto")]),
+        drugs_90d=TRIALS["aristotle"]["drugs_90d"], extra_dx=TRIALS["aristotle"]["extra_dx"],
+        report_covariates=TRIALS["aristotle"]["report_covariates"], prognostic=TRIALS["aristotle"]["prognostic"]),
+    "rely": dict(
+        name="RE-LY (adapted)", spec_version="rely_adapted_v1", published_hr=0.66, role="control",
+        arms=[("dabigatran", ["dabigatran", "pradaxa"]), ("warfarin", ["warfarin", "coumadin", "jantoven"])],
+        index_start="2010-10-19", index_end="2024-06-30",
+        gate={"any_before_or_on_index": ["I48"]},
+        exclusions=dict(ever_codes=AF_VALVE, other_anticoag_365d=[d for d in DOAC_OTHER if d not in ("dabigatran", "pradaxa")]),
+        drugs_90d=TRIALS["aristotle"]["drugs_90d"], extra_dx=TRIALS["aristotle"]["extra_dx"],
+        report_covariates=TRIALS["aristotle"]["report_covariates"], prognostic=TRIALS["aristotle"]["prognostic"],
+        note="published HR = dabigatran 150 mg stroke/SE; dose not identifiable"),
+})
+for _k, _v in TRIALS.items():
+    _v.setdefault("role", "physiology" if _k in ("comet", "paradigm_hf") else "control")
+
+# LIFE v1 (losartan vs atenolol) failed feasibility (atenolol arm 226 after gates). v2 widens,
+# before any balance was examined, to ARB class vs cardioselective beta-blockers.
+TRIALS["life"] = dict(TRIALS["life"], spec_version="life_adapted_v2",
+    arms=[("arb", ARB + ["cozaar", "diovan"]),
+          ("beta_blocker", ["atenolol", "tenormin", "metoprolol", "lopressor", "toprol", "bisoprolol", "nebivolol"])],
+    drugs_90d={k: v for k, v in TRIALS["life"]["drugs_90d"].items() if k not in ("other_arb_order", "other_beta_blocker_order")}
+              | {"other_beta_blocker_order": ["carvedilol", "propranolol", "labetalol", "nadolol", "coreg"]},
+    note="v2 class adaptation after v1 feasibility failure (trial: losartan vs atenolol)")

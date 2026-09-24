@@ -34,6 +34,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--trial", required=True, choices=sorted(TRIALS))
     ap.add_argument("--omop-dir", default="/mnt/raid0/rbc58/omop/gold")
+    ap.add_argument("--ecg-metadata", default="/mnt/raid0/rbc58/mm_vhd/metadata/ecg_metadata.parquet")
     ap.add_argument("--echo-metadata", default="/mnt/raid0/rbc58/mm_vhd/metadata/echo_accession_number.parquet")
     ap.add_argument("--output-dir", required=True)
     ap.add_argument("--threads", type=int, default=48)
@@ -58,10 +59,12 @@ def main() -> None:
           AND e.d BETWEEN c.idx - INTERVAL 365 DAY AND c.idx)""")
     con.execute(f"""CREATE TEMP TABLE firstvisit AS SELECT person_id, min(visit_start_date) fv
                     FROM {rp(G, 'visit_occurrence')} GROUP BY 1""")
-    con.execute("""CREATE TEMP TABLE s3 AS SELECT c.* FROM s2 c JOIN person p USING (person_id)
+    age = """date_diff('year', p.dob, c.idx)
+              - (CASE WHEN strftime(c.idx, '%m%d') < strftime(p.dob, '%m%d') THEN 1 ELSE 0 END)"""
+    max_age = f"AND {age} <= {spec['max_age']}" if spec.get("max_age") else ""
+    con.execute(f"""CREATE TEMP TABLE s3 AS SELECT c.* FROM s2 c JOIN person p USING (person_id)
         JOIN firstvisit v USING (person_id)
-        WHERE p.dob IS NOT NULL AND date_diff('year', p.dob, c.idx)
-              - (CASE WHEN strftime(c.idx, '%m%d') < strftime(p.dob, '%m%d') THEN 1 ELSE 0 END) >= 18
+        WHERE p.dob IS NOT NULL AND {age} >= {spec.get('min_age', 18)} {max_age}
           AND v.fv <= c.idx - INTERVAL 365 DAY""")
     con.execute("""CREATE TEMP TABLE s4 AS SELECT arm_idx, person_id, idx FROM (
         SELECT *, row_number() OVER (PARTITION BY person_id ORDER BY idx, arm_idx) rn FROM s3) WHERE rn = 1""")
@@ -69,7 +72,10 @@ def main() -> None:
     # conditions needed for gate/exclusions (on/before index only)
     gate = spec["gate"]
     ex = spec["exclusions"]
-    prefixes = sorted({p for v in gate.values() for p in v} | set(ex.get("ever_codes", [])) | {"I50"})
+    code_gates = {k: v for k, v in gate.items() if k in ("any_before_or_on_index", "window_30d")}
+    prefixes = sorted({p for v in code_gates.values() for p in v} | set(ex.get("ever_codes", [])) | {"I50"}
+                      | set(ex.get("ef_unknown_require_codes", []))
+                      | {p for _, codes in ex.get("codes_window", []) for p in codes})
     con.execute(f"""CREATE TEMP TABLE cond AS SELECT c.person_id, c.idx, x.d, x.code FROM s4 c JOIN (
         SELECT person_id, condition_start_date d, upper(replace(condition_source_value, '.', '')) code
         FROM {rp(G, 'condition_occurrence')}
@@ -84,8 +90,8 @@ def main() -> None:
                 f"(SELECT person_id FROM cond WHERE {' OR '.join(conds)})")
 
     stages = [("s1_first_use_in_window", "s1"), ("s2_comparator_washout_365", "s2"),
-              ("s3_age18_prior_activity_365", "s3"), ("s4_dedupe_earliest_index", "s4"),
-              ("s5_disease_gate", "s5")]
+              (f"s3_age{spec.get('min_age', 18)}{'-' + str(spec['max_age']) if spec.get('max_age') else '+'}_prior_activity_365", "s3"),
+              ("s4_dedupe_earliest_index", "s4"), ("s5_disease_gate", "s5")]
     cur = "s5"
     step = 6
 
@@ -101,13 +107,27 @@ def main() -> None:
                     WHERE m.person_id = c.person_id AND m.cid = {cid}
                       AND m.measurement_date BETWEEN c.idx - INTERVAL {days} DAY AND c.idx - INTERVAL 1 DAY)"""
 
+    # additional required gates (AND): ECG diagnosis text, index PCI
+    if gate.get("ecg_text_365d"):
+        likes = " OR ".join(f"upper(Diagnosis) LIKE '%{t.upper()}%'" for t in gate["ecg_text_365d"])
+        con.execute(f"""CREATE TEMP TABLE ecgtxt AS SELECT DISTINCT {mrn_key('MRN')} k, try_cast(ECGDate AS DATE) d
+            FROM read_parquet('{a.ecg_metadata}') WHERE Diagnosis IS NOT NULL AND ({likes})""")
+        apply("gate_no_ecg_text_365d", """NOT EXISTS (SELECT 1 FROM ecgtxt e JOIN person p ON e.k = p.k
+              WHERE p.person_id = c.person_id AND e.d BETWEEN c.idx - INTERVAL 365 DAY AND c.idx)""")
+    if gate.get("pci_30d"):
+        from trial_specs import PCI_CODES
+        con.execute(f"""CREATE TEMP TABLE pci AS SELECT DISTINCT person_id, procedure_date d FROM {rp(G, 'procedure_occurrence')}
+            WHERE person_id IN (SELECT person_id FROM {cur}) AND {code_like('upper(procedure_source_value)', PCI_CODES)}""")
+        apply("gate_no_pci_30d", """NOT EXISTS (SELECT 1 FROM pci x WHERE x.person_id = c.person_id
+              AND x.d BETWEEN c.idx - INTERVAL 30 DAY AND c.idx)""")
+
     need_meas = [cid for key, cid in (("egfr_lt", 40764999), ("potassium_gt", 3023103), ("sbp_lt", 4152194)) if key in ex]
     if need_meas:
         con.execute(f"""CREATE TEMP TABLE meas AS SELECT person_id, measurement_concept_id cid, measurement_date,
             value_as_number FROM {rp(G, 'measurement')}
             WHERE measurement_concept_id IN ({','.join(map(str, need_meas))}) AND value_as_number IS NOT NULL
               AND person_id IN (SELECT person_id FROM s5)""")
-    if "lvef_gt" in ex or ex.get("hfpef_code_only"):
+    if "lvef_gt" in ex or "lvef_lt" in ex or ex.get("hfpef_code_only") or ex.get("ef_unknown_require_codes"):
         con.execute(f"""CREATE TEMP TABLE echo AS SELECT {mrn_key('MRN')} k, try_cast(EchoDate AS DATE) d, EF
             FROM read_parquet('{a.echo_metadata}') WHERE EF BETWEEN 5 AND 90 AND try_cast(EchoDate AS DATE) IS NOT NULL""")
         con.execute(f"""CREATE TEMP TABLE ef AS SELECT c.person_id, arg_max(e.EF, e.d) ef FROM {cur} c
@@ -116,6 +136,14 @@ def main() -> None:
     if "lvef_gt" in ex:
         apply(f"latest_lvef_gt_{ex['lvef_gt']}",
               f"EXISTS (SELECT 1 FROM ef WHERE ef.person_id = c.person_id AND ef.ef > {ex['lvef_gt']})")
+    if "lvef_lt" in ex:
+        apply(f"latest_lvef_lt_{ex['lvef_lt']}",
+              f"EXISTS (SELECT 1 FROM ef WHERE ef.person_id = c.person_id AND ef.ef < {ex['lvef_lt']})")
+    if ex.get("ef_unknown_require_codes"):
+        req = ex["ef_unknown_require_codes"]
+        apply("ef_unknown_without_" + "_".join(req),
+              f"""NOT EXISTS (SELECT 1 FROM ef WHERE ef.person_id = c.person_id)
+                  AND NOT EXISTS (SELECT 1 FROM cond x WHERE x.person_id = c.person_id AND {code_like('x.code', req)})""")
     if ex.get("hfpef_code_only"):
         apply("hfpef_code_without_hfref_code_ef_unknown",
               f"""NOT EXISTS (SELECT 1 FROM ef WHERE ef.person_id = c.person_id)
@@ -132,6 +160,10 @@ def main() -> None:
         apply("history_codes_" + "_".join(ex["ever_codes"]),
               f"EXISTS (SELECT 1 FROM cond x WHERE x.person_id = c.person_id AND x.d < c.idx AND "
               f"{code_like('x.code', ex['ever_codes'])})")
+    for days, codes in ex.get("codes_window", []):
+        apply(f"codes_{days}d_" + "_".join(codes),
+              f"EXISTS (SELECT 1 FROM cond x WHERE x.person_id = c.person_id AND x.d >= c.idx - INTERVAL {days} DAY AND "
+              f"{code_like('x.code', codes)})")
     for key, days in (("anticoag_30d", 30), ("other_anticoag_365d", 365)):
         if key in ex:
             create_drug_tokens(con, G, ex[key], table=f"tok_{key}", person_filter=cur)
