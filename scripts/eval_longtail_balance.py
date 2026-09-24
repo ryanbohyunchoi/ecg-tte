@@ -161,6 +161,8 @@ def main():
     ap.add_argument("--no-cstat", action="store_true")
     ap.add_argument("--keep-exposure-features", action="store_true", help="v1 behaviour")
     ap.add_argument("--label", default="")
+    ap.add_argument("--method-set", choices=["full", "sparse"], default="full",
+                    help="sparse: demographics + diagnoses base (no meds/utilisation/physiology) +/- ECG")
     ap.add_argument("--output-dir", required=True)
     args = ap.parse_args()
     t0 = time.time()
@@ -229,6 +231,15 @@ def main():
     X_demo = cov[[c for c in roles["demo"] if c in cov]].to_numpy()
     X_claims = cov[[c for c in roles["claims"] if c in cov]].to_numpy()
     bases = {"clinical": X_core, "claims": X_claims, "demo": X_demo}
+    # Covariate groups. "dx" base = demographics + recorded diagnoses only (incl. index-event
+    # diagnoses such as STEMI); no medications, utilisation, procedures, EF, labs or vitals.
+    UTIL = {"outpatient_visits", "ed_encounters", "hospital_admissions"}
+    phys = [c for c in roles.get("heldout_physiology", []) if c in cov]
+    meds = [c for c in core if c.endswith("_order")]
+    util = [c for c in core if c in UTIL]
+    dxc = [c for c in core if c not in set(roles["demo"]) | set(phys) | set(meds) | UTIL and "pci" not in c]
+    X_dx = cov[[c for c in roles["demo"] if c in cov] + dxc].to_numpy()
+    ecg_pc = ecg_f[:, ph.shape[1]:]  # 32 PCs only: no supervised phenotype predictions
     noise = np.random.default_rng(1000 + args.split_seed).normal(size=(len(t), ecg_f.shape[1] + clm_f.shape[1]))
     noise_k = np.random.default_rng(2000 + args.split_seed).normal(size=(len(t), max(args.hdps_k)))
 
@@ -236,6 +247,15 @@ def main():
                f"clinical+noise{noise.shape[1]} (placebo)": np.hstack([X_core, noise]),
                f"clinical+noise{noise_k.shape[1]} (placebo)": np.hstack([X_core, noise_k]),
                "clinical+hdPS100bin (v1)": np.hstack([X_core, hd_bin100])}
+    if args.method_set == "sparse":
+        noise_e = np.random.default_rng(3000 + args.split_seed).normal(size=(len(t), ecg_pc.shape[1]))
+        methods = {"unmatched": None, "clinical": X_core, "claims": X_claims, "claims+ECGpc": np.hstack([X_claims, ecg_pc]),
+                   "demo": X_demo, "demo+ECGpc": np.hstack([X_demo, ecg_pc]),
+                   "dx": X_dx, f"dx+noise{ecg_pc.shape[1]} (placebo)": np.hstack([X_dx, noise_e]),
+                   "dx+ECGpc": np.hstack([X_dx, ecg_pc]), "dx+ECG(pc+phenotypes)": np.hstack([X_dx, ecg_f]),
+                   "dx+CLMBR": np.hstack([X_dx, clm_f]), "dx+ECGpc+CLMBR": np.hstack([X_dx, ecg_pc, clm_f]),
+                   "dx+hdPS200": np.hstack([X_dx, hd[200]]), "dx+hdPS200+ECGpc": np.hstack([X_dx, hd[200], ecg_pc])}
+        bases = {}
     for bn, Xb in bases.items():
         methods[bn] = Xb
         methods[f"{bn}+ECG"] = np.hstack([Xb, ecg_f])
@@ -268,6 +288,15 @@ def main():
                  B_n=len(sB), B_frac_gt_0_1=(sB > 0.1).mean(), B_mean=sB.mean(), B_p95=np.quantile(sB, 0.95),
                  A_frac_gt_0_1=(sA > 0.1).mean(), A_mean=sA.mean(),
                  core_max=np.nanmax(sC), core_n_gt_0_1=int(np.nansum(sC > 0.1)))
+        gi = lambda cols: [core.index(c) for c in cols]
+        for gname, cols in (("dx", dxc), ("meds", meds), ("util", util)):
+            if cols:
+                r[f"n_{gname}_gt_0_1"] = int(np.nansum(sC[gi(cols)] > 0.1))
+                r[f"mean_{gname}"] = float(np.nanmean(sC[gi(cols)]))
+        ph_obs = [obs_cols.index(c) for c in phys if c in obs_cols]
+        if ph_obs:  # physiology balance on measured (non-imputed) values
+            r["n_phys_obs_gt_0_1"] = int(np.nansum(sO[ph_obs] > 0.1))
+            r["mean_phys_obs"] = float(np.nanmean(sO[ph_obs]))
         for c in rep:
             r[f"smd_{c}"] = float(sC[core.index(c)])
         for j, c in enumerate(obs_cols):

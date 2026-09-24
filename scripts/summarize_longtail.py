@@ -22,6 +22,6 @@ mean["runs"] = num.size()
 mean["B_frac_min"], mean["B_frac_max"] = lo.B_frac_gt_0_1, hi.B_frac_gt_0_1
 mean.to_csv(f"{out}/summary_pooled.csv")
 cols = [c for c in ["runs", "pairs", "B_frac_gt_0_1", "B_frac_min", "B_frac_max", "B_frac_chance", "B_frac_excess", "B_mean", "core_max", "core_n_gt_0_1",
-                    "smd_lvef", "smd_obs_lvef", "smd_prog_core", "smd_prog_full", "cstat_core", "cstat_core_poolB"] if c in mean]
+                    "n_meds_gt_0_1", "n_util_gt_0_1", "n_phys_obs_gt_0_1", "mean_phys_obs", "smd_lvef", "smd_obs_lvef", "smd_prog_core", "smd_prog_full", "cstat_core", "cstat_core_poolB"] if c in mean]
 pd.set_option("display.width", 250)
 print(mean[cols].round(3).to_string())

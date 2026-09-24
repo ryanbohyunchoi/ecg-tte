@@ -261,6 +261,39 @@ What holds in all four trials:
   12–36% cost in retained pairs.
 - The post-matching C-statistic ranks methods the same way as the pool-B share.
 
+### Sparse PS: demographics + diagnoses ± ECG (2026-09-23, later; exploratory)
+Ryan's proposal: a sparse PS of demographics + recorded diagnoses (`dx`), with no medications,
+utilisation, procedures, EF, labs or vitals, plus ECG. `ECGpc` = 32 centred BCL principal
+components only, with no supervised phenotype predictions. `--method-set sparse`; outputs in
+`audits/claude-sparse-dx-<trial>/summary_pooled.csv`.
+
+"Phys" = the 9 withheld physiology variables (EF, SBP, DBP, HR, BMI, creatinine, K, Na, Hb),
+scored on measured values only.
+
+| Trial | PS | Pairs | Pool-B > 0.1 | Meds > 0.1 (of 6–8) | Phys > 0.1 (of 9) | Phys mean |SMD| | Measured LVEF SMD |
+|---|---|---|---|---|---|---|---|
+| COMET | dx | 2193 | 27.3% | 4.0 | 3.4 | 0.129 | 0.56 |
+| COMET | dx + noise32 (placebo) | 2173 | 27.6% | 4.0 | 3.0 | 0.122 | 0.54 |
+| COMET | **dx + ECGpc** | 1929 | 21.6% | 3.4 | 2.4 | 0.092 | **0.34** |
+| COMET | dx + hdPS200 + ECGpc | 1654 | 2.6% | 2.4 | 2.2 | 0.076 | 0.22 |
+| COMET | full clinical PS | 1871 | 17.9% | 0 | 0 | 0.031 | 0.02 |
+| PARADIGM-HF | dx → dx + ECGpc | 1266 → 1015 | 38.4% → 31.1% | 3 → 2 | 4 → 4 | 0.103 → 0.073 | 0.13 → 0.04 |
+| PLATO | dx → dx + ECGpc | 2223 → 2240 | 19.5% → 20.2% | 3 → 3 | 2 → 1 | 0.056 → 0.056 | 0.06 → 0.05 |
+| ARISTOTLE | dx → dx + ECGpc | 2621 → 2629 | 23.8% → 24.0% | 0 → 0 | 3 → 2 | 0.095 → 0.075 | 0.05 → 0.05 |
+
+Reading:
+- **In HF, the ECG recovers part of the physiology that the sparse PS omits.** In COMET,
+  measured-LVEF imbalance falls from 0.56 to 0.34 (−40%), and mean physiology imbalance falls
+  about 30%. The placebo changes nothing.
+- **Raw ECG PCs do almost as well as PCs + phenotype predictions** (COMET LVEF 0.34 vs 0.32), so
+  the ECG effect does not depend on supervised predicted values.
+- **ECG does not substitute for medications or utilisation.** It is also not a general sickness
+  summary in ACS/AF, where it changes nothing.
+- In PLATO and ARISTOTLE there is little physiologic imbalance to recover (unmatched phys mean
+  0.09–0.11). They cannot test the ECG's value, only its lack of harm.
+- The full clinical PS remains far better on physiology (LVEF 0.02). Sparse + ECG narrows the gap
+  but does not close it.
+
 Implication (four trials): the story "embeddings are a better high-dimensional complement than
 hdPS" is not supported against a properly specified hdPS. What survives: the representations are a
 code-selection-free alternative that is about as good as a tuned hdPS. ECG adds physiologic
