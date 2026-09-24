@@ -110,7 +110,7 @@ def run(source,metadata,waveforms,formats,out,relative_npy=False):
     summary=dict(version='comet_bcl_input_v2_relative_npy' if relative_npy else 'comet_bcl_input_v1',status='running',counts_valid=False,restricted_until_reviewed=True,ready_for_inference=False)
     try:
         before={str(p):stamp(p) for p in (metadata,formats,source/'restricted_cleaned_baseline.parquet')}
-        roster,baseline_hash=load_roster(source)
+        roster,baseline_hash,_=load_roster(source)
         formats_hash=digest(formats)
         rows,qc=select(roster,metadata,waveforms,formats,relative_npy)
         if any(stamp(Path(p))!=s for p,s in before.items()):raise BuildError('source_changed')

@@ -2228,3 +2228,99 @@ At every base (demo/claims/clinical), ECG+CLMBR beats exposure-ranked hdPS100 on
 balance (~half the residual), LVEF balance and retention. A demographics-only base plus
 embeddings does not balance the core confounders (LVEF 0.39, AF 0.28). Proposed framing:
 embeddings complement or replace hdPS; they do not replace investigator-specified confounders.
+
+### 2026-09-23 — Multi-trial replication contract v1 (PARADIGM-HF adapted; proposed, not frozen)
+Ryan asked to check whether the COMET long-tail result replicates before scaling to 10 trials.
+Everything below is new code under an explicit contract (no archived code). Specs live in
+`scripts/trial_specs.py`; a change to any item is a new `spec_version`.
+
+**Cohort (`scripts/build_trial_cohort.py`, OMOP gold, spec `paradigm_hf_adapted_v1`).**
+- Arms: sacubitril/valsartan (tokens `sacubitril`, `entresto`) vs any oral ACEi (10 ingredients
+  plus brands; IV enalaprilat is a separate token and is excluded). Orders, not dispensing.
+  The screen's enalapril/lisinopril-only arm was widened to all ACEi: the RCT comparator was
+  enalapril, but single-ingredient ACEi arms would be small and a class comparator is the usual
+  active-comparator adaptation.
+- New user: first-ever order of the arm class with index in [2015-07-07, 2024-06-30]
+  (US approval date); no order of the other arm in [index-365, index] (index day included).
+  This removes ARNI starters with ACEi use in the prior year (the usual clinical switch path).
+  That is a deliberate new-user choice: the cohort compares naive/ARB-switched ARNI starters with
+  ACEi starters, which differs from the RCT's run-in design.
+- Age >= 18 at index; earliest visit <= index-365 (prior activity); a person eligible in both arms
+  is kept once at the earliest index.
+- Gate: ICD-10 I50 on or before index.
+- HFrEF adaptation: exclude a latest echo EF (365 d, index day excluded) > 40. If EF is unknown,
+  exclude I50.3x (diastolic) without any I50.2x/I50.4x. Unknown EF otherwise passes.
+- RCT safety exclusions, on the latest value in 90 d (unknown passes): eGFR < 30 (concept
+  40764999), potassium > 5.2, SBP < 100; angioedema history (T78.3) before index.
+- Result: 2,885 ARNI / 2,746 ACEi (attrition in `audits/claude-paradigm-cohort-v1/attrition.csv`).
+  The ECG-available analysis population is 4,203 (2,182 / 2,021).
+
+**Core baseline (`scripts/build_core_baseline.py`).** COMET 32-variable table analogue on OMOP gold.
+- Age (exact DOB), sex (gender concept), index year.
+- LVEF: echo EF, 365 d.
+- SBP/DBP/HR/labs: 90 d, latest value per concept. BMI: 365 d. Implausible values -> missing,
+  no older fallback. SBP and DBP are taken independently, not from one reading (a gold limitation).
+- Nine comorbidities: 365 d ICD-10 prefixes as in COMET staging v3.
+- Medications: order in 90 d. For PARADIGM, ACEi/ARNI (arm-defining) are replaced by
+  beta-blocker; ARB, MRA, loop, SGLT2i, digoxin and amiodarone are kept.
+- Visit counts by concept, 365 d. The index day is excluded throughout.
+- Imputation: five datasets from sklearn IterativeImputer(sample_posterior=True) with treatment
+  as a predictor. This is not the COMET R MICE pipeline; it is a lighter chained-equation
+  substitute chosen for speed across trials.
+
+**Representations.**
+- ECG: latest ECG with an existing waveform in [index-365, index], index day allowed (Ryan's
+  decision). Ties go to the lexically last fileID. Fixed BCL, `scripts/bcl_embed_uv.py`
+  (x1000, no 250 Hz flags). 34% of selected ECGs are index-day.
+- Phenotype heads: the COMET-era 40K phenotype set, with every ECG of a cohort patient removed
+  from train and test before fitting (`--exclude-cohort`; 1,066 ECGs for PARADIGM).
+- CLMBR: code-only, frozen, per-cohort MEDS. `build_comet_meds.py` now also accepts a trial
+  cohort report (hash-verified `restricted_cohort.parquet`); its final integrity check no longer
+  hard-codes the COMET baseline file.
+- Probe gate (PARADIGM): ECG sex 0.81 (below the 0.85 gate, as in COMET), age>=65 0.80, AF 0.76;
+  CLMBR AF 0.93. LVEF<=40 is not probeable: the cohort excludes EF>40.
+
+**Panel v2 (`build_preindex_panel.py`).** Code features now hold distinct-day counts in the window
+(v1: 1.0 for any), so hdPS can form frequency levels. The evaluator binarises codes, so pool-B
+SMDs are unchanged. `--dictionary` rebuilds exactly a given feature set (reference cohorts).
+The A/B split is seeded over the dictionary file order. COMET therefore uses its v1 dictionary,
+which reproduces v1 pool assignments exactly (verified: identical pairs and pool-B fractions).
+
+**hdPS v2 (`eval_longtail_balance.py`).** Exposure-only ranking, as instructed.
+- Candidates: pool-A dx/rx/px codes with once / sporadic (>= median user count) / frequent
+  (>= 75th percentile) levels, with duplicates dropped; pool-A lab-measured flags at the once
+  level only. Ranked by |log prevalence ratio|; k = 100/200/500. The v1 any-use hdPS100 is kept.
+- **Exposure-defining features removed.** Prior orders of either arm's study drug (`rx_<arm keyword>`)
+  are dropped from hdPS candidates, pool B and the C-statistic. They are part of the treatment
+  definition (standard hdPS excludes exposure codes). In COMET v1 they were present
+  (`rx_carvedilol`, `rx_metoprolol`) and were selected by hdPS as near-instruments. That cut
+  retention and inflated residual imbalance, so **the COMET v1 hdPS comparator was handicapped**.
+  PARADIGM's panel contains no such features: first-ever use and the washout remove them.
+
+**New diagnostics.**
+- Prognostic-score balance (`build_prognostic_reference.py`, `fit_prognostic_score.py`): Ryan
+  chose 1-year death or HF hospitalisation.
+  - Reference set: 30,000 HF patients never in the cohort. The pseudo-index is a seeded random
+    visit after their first I50 code, in [index_start, 2023-12-31], with age, prior-activity and
+    alive rules.
+  - Outcome: death, or an inpatient visit with an I50 code dated within the stay, in (0, 365] d.
+    This is a binary outcome with loss to follow-up unmodelled.
+  - Features: the same OMOP core builder (median fill plus missing indicators) and the cohort's
+    panel dictionary.
+  - Two L2 logistic scores. prog_core (core only): reference test AUC 0.73 (PARADIGM) / 0.71
+    (COMET). prog_full (core + full panel, CV-chosen C = 3e-4): 0.75 / 0.73.
+  - No cohort outcome is extracted. COMET uses the same builder on its roster (spec `comet`, used
+    only for prognostic features), so the score is defined the same way in both trials.
+- Post-matching C-statistic: 5-fold CV AUC of an L2 logistic model of treatment in the matched
+  sample. (a) Core covariates, C=1. (b) Core + pool B, C=0.01; lab NaN is filled with the median.
+  A label-permutation check gives 0.50. Franklin et al. (2014) caution that the PS-model version
+  of this is uninformative; this one includes covariates never in the PS.
+- Chance floor (`summarize_longtail.py`): the expected share of |SMD| > 0.1 in a randomised sample
+  with the same number of pairs, 2(1 - Φ(0.1·√(pairs/2))). Methods that trim more have a
+  higher floor.
+- Grid: 5 imputations × 5 splits (v1: 3 splits).
+
+All thresholds, k values, PCA dimensions and the method ladder were carried over from the COMET
+exploratory analysis before PARADIGM results were seen. The exposure-feature removal was found
+by inspecting the COMET C-statistic, and was applied to both trials before any pooled results
+were read. Still exploratory; nothing is frozen.

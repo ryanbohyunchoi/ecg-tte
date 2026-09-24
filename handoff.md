@@ -11,6 +11,21 @@ Read `docs/STRATEGY.md` first; it holds every result table. Everything below is
 **exploratory, COMET only**: designs were chosen during the session after earlier results.
 No outcomes have been used.
 
+### Replication update (later 2026-09-23; see `docs/STRATEGY.md` "Replication")
+- **PARADIGM-HF (adapted) is built** under the new multi-trial contract.
+  - Cohort: 2,885 ARNI / 2,746 ACEi; 4,203 have ECG + CLMBR.
+  - Pipeline: `docs/RUN_LONGTAIL_REPLICATION.md`. Decisions: `docs/DECISIONS.md`.
+- **Evaluator v2** is generic across trials.
+  - hdPS gets frequency levels at k = 100/200/500.
+  - New diagnostics: prognostic-score balance (external HF reference set), post-matching
+    C-statistic, and a chance floor.
+- **Correction to item 5 below.** The COMET v1 hdPS picked prior study-drug orders
+  (near-instruments). With them removed, hdPS100 ≈ CLMBR in COMET, and hdPS200 ≈ CLMBR in
+  PARADIGM. hdPS500 is better on long-tail balance, at lower retention.
+- **What replicates:** CLMBR's large gain and ECG's modest gain over the clinical PS. Stacking
+  hdPS + ECG + CLMBR is best in both trials.
+- Next: PLATO, then ARISTOTLE, with the same pipeline.
+
 ### What was established
 1. **The BCL ECG collapse was an input bug.** Checkpoints expect µV, but `all_ecgs` is mV,
    and 250 Hz-flagged files were stretched. Fixed with `scripts/bcl_embed_uv.py` and

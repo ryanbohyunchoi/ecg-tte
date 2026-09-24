@@ -1066,3 +1066,14 @@ PDF regeneration not confirmed. Preserve all original runs and restrictions.
 - [x] Long-tail balance + low-dim vs hdPS analysis (COMET).
 - [ ] Replicate long-tail analysis on PLATO, PARADIGM-HF, ARISTOTLE.
 - [ ] Stronger hdPS comparator; negative-control outcomes; prognostic-score balance.
+
+## Multi-trial long-tail replication (2026-09-23)
+
+- [x] Generic trial pipeline: specs, cohort, core baseline + imputation, panel v2, ECG select/link, phenotype-head cohort exclusion, MEDS roster contract.
+- [x] PARADIGM-HF adapted cohort, BCL, phenotype scores, CLMBR code-only, panel; long-tail v2 grid.
+- [x] hdPS v2 (once/sporadic/frequent, k 100/200/500, exposure-only); exposure-defining features removed.
+- [x] Prognostic-score balance (external reference, 1-y death/HF hosp) and post-matching C-statistic.
+- [x] COMET rerun under v2 (v1 splits preserved).
+- [ ] PLATO adapted cohort and grid.
+- [ ] ARISTOTLE adapted cohort and grid.
+- [ ] Negative-control outcomes; protocol freeze before any trial outcome.

@@ -47,13 +47,21 @@ def numeric(v):
 
 def load_roster(source):
     s=json.loads((source/'summary.json').read_text()); m=json.loads((source/'manifest.json').read_text())
+    p=source/'restricted_cohort.parquet'
+    if p.exists():
+        # Trial cohort contract (scripts/build_trial_cohort.py): hash-verified roster, no MICE status.
+        h=digest(p)
+        if m['outputs'].get(p.name)!=h: raise InputError('baseline_hash_mismatch')
+        rows=pq.read_table(p,columns=['patient_key','treatment_arm','index_date']).to_pylist()
+        if len(rows)!=s['n']: raise InputError('roster_mismatch')
+        return rows,h,p
     p=source/'restricted_cleaned_baseline.parquet'
     if s.get('status')!='complete_mice_preparation' or s.get('counts_valid') is not True: raise InputError('complete_preparation_required')
     h=digest(p)
     if m['outputs'].get(p.name)!=h: raise InputError('baseline_hash_mismatch')
     rows=pq.read_table(p,columns=['patient_key','treatment_arm','index_date']).to_pylist()
     if len(rows)!=s['rows'] or dict(Counter(r['treatment_arm'] for r in rows))!=s['denominators']: raise InputError('roster_mismatch')
-    return rows,h
+    return rows,h,p
 
 
 def concept_rows(path):
@@ -100,7 +108,7 @@ def build(source,gold,concept,output,shards=32):
       domains=list(DOMAINS),omissions=['No outcomes or post-index events','No inferred drug adherence/dose','No static sex/race tokens in v1; demographics retained in restricted roster','No observation table in this declared five-domain v1'])
     atomic_json(output/'summary.json',result)
     try:
-        roster,baseline_hash=load_roster(source)
+        roster,baseline_hash,roster_path=load_roster(source)
         person=files(gold/'person'); domain_files={d:files(gold/d) for d in DOMAINS}
         if not person or any(not f for f in domain_files.values()): raise InputError('required_gold_domain_missing')
         source_paths=[*person,*(p for ps in domain_files.values() for p in ps),concept]
@@ -192,7 +200,7 @@ def build(source,gold,concept,output,shards=32):
         if any(signature(p)!=before[str(p)] for p in source_paths) or files(gold/'person')!=person or any(files(gold/d)!=ps for d,ps in domain_files.items()):raise InputError('source_changed')
         atomic_json(output/'restricted_source_inventory.json',dict(files=before,selected_columns=chosen,concept_sha256=digest(concept)))
         outputs['restricted_source_inventory.json']=digest(output/'restricted_source_inventory.json')
-        if digest(source/'restricted_cleaned_baseline.parquet')!=baseline_hash:raise InputError('baseline_changed')
+        if digest(roster_path)!=baseline_hash:raise InputError('baseline_changed')
         result.update(status='complete_cohort_meds',counts_valid=True,baseline_sha256=baseline_hash,rows=sum(part_counts.values()),arm_coverage=arm_counts,domain_qc=qc,clinical_mapping_concepts=len(mapping))
         atomic_json(output/'manifest.json',dict(version=VERSION,baseline_sha256=baseline_hash,outputs=outputs))
     except Exception as exc:

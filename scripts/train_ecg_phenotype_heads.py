@@ -4,7 +4,10 @@ Heads (on standardised, centred BCL embeddings): logistic for lvef_le_40, afib,
 male; ridge for lvef and age. Fit on the phenotype set's `train` split (patients
 excluded from all trial cohorts by build_ecg_phenotype_set.py), evaluated on its
 `test` split, then applied unchanged to the cohort embeddings. Cohort labels and
-outcomes are never used.
+outcomes are never used. --exclude-cohort drops phenotype-set ECGs of the scored
+cohort's patients (fileID -> MRN via ECG metadata) from train and test before
+fitting, so no cohort patient contributes to the heads (the COMET set was built
+excluding COMET only; later trials reuse it with this filter).
 
 Outputs:
   heads_metrics.json                      held-out AUC / R2 per head (aggregate)
@@ -36,11 +39,25 @@ def main() -> None:
     ap.add_argument("--phenotype-embeddings", required=True, help="embedder output dir (shards)")
     ap.add_argument("--cohort-embeddings-glob", required=True,
                     help="parquet(s) with patient_key + embedding (cohort)")
+    ap.add_argument("--exclude-cohort", nargs="*", default=[],
+                    help="parquet/csv roster(s) with patient_key (=MRN); their ECGs are removed")
+    ap.add_argument("--ecg-metadata", default="/mnt/raid0/rbc58/mm_vhd/metadata/ecg_metadata.parquet")
     ap.add_argument("--output-dir", required=True)
     args = ap.parse_args()
-    os.makedirs(args.output_dir, exist_ok=True)
+    os.makedirs(args.output_dir, exist_ok=False)
 
     lab = pd.read_parquet(args.phenotype_set).set_index("fileID")
+    n_excl = 0
+    if args.exclude_cohort:
+        digits = lambda s: s.astype(str).str.replace(r"\D", "", regex=True).str.lstrip("0")
+        keys = set()
+        for f in args.exclude_cohort:
+            keys |= set(digits((pd.read_parquet(f) if f.endswith(".parquet") else pd.read_csv(f)).patient_key))
+        meta = pd.read_parquet(args.ecg_metadata, columns=["fileID", "MRN"]).dropna().drop_duplicates("fileID")
+        mrn = meta.set_index("fileID").MRN
+        drop = digits(pd.Series(lab.index.map(mrn), index=lab.index).fillna("")).isin(keys)
+        n_excl = int(drop.sum())
+        lab = lab[~drop.to_numpy()]
     E = load_shards(args.phenotype_embeddings)
     lab = lab.loc[lab.index.intersection(E.index)]
     X = E.loc[lab.index].to_numpy(np.float64)
@@ -50,7 +67,8 @@ def main() -> None:
 
     coh = pd.concat([pd.read_parquet(f) for f in sorted(glob.glob(args.cohort_embeddings_glob))])
     Zc = sc.transform(np.stack(coh.embedding.to_numpy()).astype(np.float64))
-    scores, metrics = {"patient_key": coh.patient_key.to_numpy()}, {"n_train": int(tr.sum()), "n_test": int(te.sum())}
+    scores, metrics = {"patient_key": coh.patient_key.to_numpy()}, {"n_train": int(tr.sum()), "n_test": int(te.sum()),
+                                                      "excluded_cohort_ecgs": n_excl}
 
     for name in ["lvef_le_40", "afib", "male"]:
         y = lab[name].to_numpy()

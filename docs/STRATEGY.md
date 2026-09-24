@@ -113,6 +113,84 @@ Reading (exploratory, COMET only):
 - Before scaling: replicate this long-tail test on 2–3 more trials (PLATO, PARADIGM-HF,
   ARISTOTLE) and add negative-control outcomes.
 
+## Replication: PARADIGM-HF + COMET under the v2 evaluator (2026-09-23, later)
+Contract: `docs/DECISIONS.md` ("Multi-trial replication contract v1"). Commands:
+`docs/RUN_LONGTAIL_REPLICATION.md`. Outputs: `audits/claude-longtail-v2-{comet,paradigm}/summary_pooled.csv`.
+Setup:
+- 5 imputations × 5 splits.
+- hdPS v2 uses once/sporadic/frequent levels with k = 100/200/500, exposure-only ranking.
+- Exposure-defining features (prior orders of the study drugs) are removed from hdPS candidates,
+  pool B and the C-statistic.
+- Chance = the expected share of |SMD| > 0.1 in a randomised sample of the same size.
+- Prog = |SMD| of the external prognostic score (core + full panel; 1-y death/HF hospitalisation;
+  fit on 30K HF patients outside each cohort).
+- C = post-matching CV C-statistic of treatment on core + pool-B features (0.5 = indistinguishable).
+
+PARADIGM-HF (adapted): ARNI vs ACEi, n = 4,203 with ECG + CLMBR (2,182 / 2,021). The arms differ
+mostly by calendar year (SMD 0.91), so retention is about 50%.
+
+| PS (PARADIGM) | Pairs | Pool-B > 0.1 (range) | Excess over chance | Prog | C |
+|---|---|---|---|---|---|
+| Unmatched | 2182 | 31.8% | 31.7% | 0.017 | 0.85 |
+| Clinical + noise101 (placebo) | 1061 | 25.8% (21.2–34.0) | 23.7% | 0.026 | 0.68 |
+| Clinical | 1096 | 25.9% (23.2–28.8) | 24.0% | 0.019 | 0.69 |
+| Clinical + ECG | 916 | 21.4% (16.4–25.3) | 18.2% | 0.030 | 0.65 |
+| Clinical + CLMBR | 894 | 10.1% (6.6–13.3) | 6.6% | 0.080 | 0.59 |
+| Clinical + ECG + CLMBR | 806 | 10.3% (7.5–14.9) | 5.9% | 0.067 | 0.58 |
+| Clinical + hdPS100 (v1 any-use) | 920 | 11.4% (7.9–15.8) | 8.2% | 0.024 | 0.62 |
+| Clinical + hdPS100 (v2 levels) | 948 | 13.7% (10.6–17.6) | 10.7% | 0.019 | 0.63 |
+| Clinical + hdPS200 | 875 | 10.7% (7.7–14.1) | 7.0% | 0.027 | 0.61 |
+| Clinical + hdPS500 | 734 | 7.0% (4.8–9.8) | 1.5% | 0.018 | 0.55 |
+| Clinical + hdPS200 + ECG + CLMBR | 699 | 8.0% (5.2–12.2) | 1.8% | 0.042 | 0.53 |
+| Claims + ECG + CLMBR | 821 | 14.0% | 9.7% | 0.041 | 0.60 |
+| Claims + hdPS200 | 898 | 10.7% | 7.3% | 0.019 | 0.63 |
+| Demo + CLMBR / Demo + hdPS200 | 968 / 942 | 9.5% / 9.7% | 6.7% / 6.7% | 0.107 / 0.044 | 0.66 / 0.67 |
+
+COMET rerun under v2 (same cohort and embeddings as the v1 table above; the v1 dictionary keeps
+the v1 splits):
+
+| PS (COMET) | Pairs | Pool-B > 0.1 (range) | Excess over chance | Prog | C |
+|---|---|---|---|---|---|
+| Clinical | 1871 | 17.9% (15.4–22.5) | 17.7% | 0.067 | 0.64 |
+| Clinical + ECG | 1712 | 14.5% (13.2–17.3) | 14.2% | 0.067 | 0.61 |
+| Clinical + CLMBR | 1661 | 3.8% (3.0–4.7) | 3.4% | 0.031 | 0.58 |
+| Clinical + ECG + CLMBR | 1585 | 3.7% (2.2–5.0) | 3.2% | 0.021 | 0.57 |
+| Clinical + hdPS100 (v1 any-use, exposure codes removed) | 1663 | 4.4% (1.9–6.1) | 4.0% | 0.038 | 0.59 |
+| Clinical + hdPS200 | 1616 | 3.9% (1.6–6.1) | 3.4% | 0.028 | 0.58 |
+| Clinical + hdPS500 | 1444 | 2.1% (0.9–4.6) | 1.3% | 0.033 | 0.55 |
+| Clinical + hdPS200 + ECG + CLMBR | 1457 | 1.4% (0.6–2.2) | 0.7% | 0.018 | 0.53 |
+| Claims + ECG + CLMBR | 1652 | 3.8% | 3.4% | 0.027 | 0.61 |
+| Claims + hdPS200 | 1752 | 3.6% | 3.3% | 0.057 | 0.64 |
+
+Reading (exploratory):
+1. **Replicates.**
+   - A rich clinical PS leaves a large share of the pre-index record imbalanced (18% COMET, 26%
+     PARADIGM), and the noise placebo reproduces it.
+   - CLMBR removes most of it (−79% / −61%). ECG alone gives a smaller, consistent gain
+     (−19% / −17%).
+   - The C-statistic and pool-B share rank methods the same way in both trials.
+2. **Does not replicate: "CLMBR beats hdPS".**
+   - The v1 COMET hdPS100 (9.1% at 1,402 pairs) was handicapped: it selected prior orders of
+     the study drugs themselves (`rx_carvedilol`, `rx_metoprolol`), which are near-instruments.
+   - With those removed, hdPS100 gives 4.4% at 1,663 pairs, the same as CLMBR (3.8% at 1,661).
+   - In PARADIGM, CLMBR ≈ hdPS200 (10.1% vs 10.7%, similar retention). hdPS500 is better on
+     long-tail balance in both trials, at lower retention.
+   - The earlier claim "ECG + CLMBR beats hdPS at every base" is withdrawn.
+3. **The combination is best in both trials.** hdPS + ECG + CLMBR comes close to the chance
+   floor (excess about 1–2%), at 30–40% lower retention than the clinical PS.
+4. **Prognostic-score balance does not separate the methods.** Every adjusted PS gives
+   |SMD| < 0.1. In PARADIGM, adding CLMBR slightly worsens it (0.019 → 0.080). In COMET it
+   improves it (0.067 → 0.031).
+5. **LVEF recovery is not testable in PARADIGM.** EF > 40 is excluded and unmatched LVEF SMD is
+   only 0.08. The ECG-for-physiology finding rests on COMET alone: claims + ECG takes held-out
+   LVEF from 0.56 to 0.41, while hdPS does not recover it (claims + hdPS200: 0.48).
+
+Implication: the story "embeddings are a better high-dimensional complement than hdPS" is not
+supported against a properly specified hdPS. What survives: the representations are a
+code-selection-free alternative that is about as good as a tuned hdPS. ECG adds physiologic
+balance that codes don't, where the key confounder is physiologic. Stacking hdPS with the
+embeddings balances best, at a cost in retention.
+
 ## Low-dimensional PS + embeddings vs hdPS (2026-09-23)
 Same long-tail design, 5 imputations × 3 splits (`audits/claude-longtail-lowdim/summary_pooled.csv`).
 - demo = age, sex, index year.
