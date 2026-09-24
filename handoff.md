@@ -24,7 +24,15 @@ No outcomes have been used.
   PARADIGM. hdPS500 is better on long-tail balance, at lower retention.
 - **What replicates:** CLMBR's large gain and ECG's modest gain over the clinical PS. Stacking
   hdPS + ECG + CLMBR is best in both trials.
-- Next: PLATO, then ARISTOTLE, with the same pipeline.
+- **PLATO and ARISTOTLE done (same pipeline).** hdPS beats CLMBR clearly in both, and ECG adds nothing
+  to long-tail balance. CLMBR worsens prognostic-score balance in PARADIGM and ARISTOTLE.
+  Stacking hdPS + ECG + CLMBR is best in all four trials, at a 12–36% retention cost.
+  See the four-trial summary in STRATEGY.
+- Next decisions for Ryan:
+  - Is hdPS (plus embeddings) the primary high-dimensional arm?
+  - Should CABG/index-procedure features become PLATO core covariates? That would be a new
+    spec version, decided before any outcome.
+  - Negative-control outcomes.
 
 ### What was established
 1. **The BCL ECG collapse was an input bug.** Checkpoints expect µV, but `all_ecgs` is mV,

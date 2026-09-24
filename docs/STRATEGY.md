@@ -210,8 +210,59 @@ In PLATO the result reverses:
   Clopidogrel is preferred around CABG. Recent, procedure-driven confounding is what the
   last-token CLMBR representation does not capture and exposure-ranked hdPS does.
 
-Implication: the story "embeddings are a better high-dimensional complement than hdPS" is not
-supported against a properly specified hdPS. What survives: the representations are a
+ARISTOTLE (adapted): apixaban vs warfarin, n = 18,771 with ECG + CLMBR (15,419 / 3,352).
+Source: `audits/claude-longtail-v2-aristotle/summary_pooled.csv`.
+
+| PS (ARISTOTLE) | Pairs | Pool-B > 0.1 (range) | Excess over chance | Prog | C |
+|---|---|---|---|---|---|
+| Unmatched | 3352 | 41.3% | 41.3% | 0.213 | 0.88 |
+| Clinical + noise101 (placebo) | 2577 | 19.9% | 19.8% | 0.148 | 0.71 |
+| Clinical | 2575 | 20.6% (17.5–23.5) | 20.6% | 0.132 | 0.71 |
+| Clinical + ECG | 2589 | 20.3% (17.2–22.8) | 20.2% | 0.141 | 0.70 |
+| Clinical + CLMBR | 2282 | 12.6% (9.7–16.4) | 12.5% | 0.182 | 0.64 |
+| Clinical + ECG + CLMBR | 2257 | 13.0% (10.1–16.6) | 12.9% | 0.191 | 0.64 |
+| Clinical + hdPS100 | 2211 | 4.4% (2.2–5.8) | 4.3% | 0.026 | 0.60 |
+| Clinical + hdPS200 | 2163 | 3.7% (1.9–6.9) | 3.6% | 0.024 | 0.58 |
+| Clinical + hdPS500 | 2072 | 2.3% (1.1–4.7) | 2.1% | 0.016 | 0.55 |
+| Clinical + hdPS200 + ECG + CLMBR | 2011 | 1.0% (0.2–2.2) | 0.9% | 0.027 | 0.53 |
+| Demo + CLMBR / Demo + hdPS200 | 2337 / 2201 | 18.4% / 4.3% | 18.4% / 4.2% | 0.137 / 0.079 | 0.66 / 0.61 |
+
+### Four-trial summary (exploratory)
+Relative change in the pool-B share with |SMD| > 0.1 versus the clinical PS:
+
+| Arm vs clinical PS | COMET | PARADIGM-HF | PLATO | ARISTOTLE |
+|---|---|---|---|---|
+| + ECG | −19% | −17% | −4% | −1% |
+| + CLMBR | −79% | −61% | −32% | −39% |
+| + hdPS100 (v2) | −73% | −47% | −74% | −79% |
+| + hdPS200 | −78% | −59% | −83% | −82% |
+| + hdPS200 + ECG + CLMBR | −92% | −69% | −86% | −95% |
+| Pairs retained, hdPS200 + ECG + CLMBR vs clinical | −22% | −36% | −12% | −22% |
+
+Where it contradicts the COMET story:
+1. **CLMBR is not a better high-dimensional adjuster than hdPS.**
+   - They tie in the two HF trials, which are chronic, code-rich histories.
+   - hdPS wins clearly in ACS and AF.
+   - In PLATO the gap is procedural confounding at the index admission (CABG). The frozen
+     last-token CLMBR vector does not isolate it.
+2. **ECG helps long-tail balance only in the HF trials.** The ECG's value is specific to
+   physiologic, LVEF-driven confounding; it is not a general record summary.
+3. **CLMBR can worsen prognostic balance.**
+   - It worsens it in PARADIGM (0.019 → 0.080) and ARISTOTLE (0.132 → 0.182) while improving
+     long-tail balance.
+   - In ARISTOTLE the clinical PS leaves the prognostic score imbalanced (0.13); hdPS fixes it
+     (0.02–0.03).
+   - Long-tail balance and prognostic balance can disagree, so both must be reported.
+
+What holds in all four trials:
+- A rich clinical PS leaves 15–26% of the pre-index record imbalanced, and a noise placebo shows
+  this is not a trimming artefact.
+- Adding ECG + CLMBR to hdPS reduces the residual further, to near the chance floor, at a
+  12–36% cost in retained pairs.
+- The post-matching C-statistic ranks methods the same way as the pool-B share.
+
+Implication (four trials): the story "embeddings are a better high-dimensional complement than
+hdPS" is not supported against a properly specified hdPS. What survives: the representations are a
 code-selection-free alternative that is about as good as a tuned hdPS. ECG adds physiologic
 balance that codes don't, where the key confounder is physiologic. Stacking hdPS with the
 embeddings balances best, at a cost in retention.

@@ -1074,6 +1074,6 @@ PDF regeneration not confirmed. Preserve all original runs and restrictions.
 - [x] hdPS v2 (once/sporadic/frequent, k 100/200/500, exposure-only); exposure-defining features removed.
 - [x] Prognostic-score balance (external reference, 1-y death/HF hosp) and post-matching C-statistic.
 - [x] COMET rerun under v2 (v1 splits preserved).
-- [ ] PLATO adapted cohort and grid.
-- [ ] ARISTOTLE adapted cohort and grid.
+- [x] PLATO adapted cohort and grid.
+- [x] ARISTOTLE adapted cohort and grid.
 - [ ] Negative-control outcomes; protocol freeze before any trial outcome.
