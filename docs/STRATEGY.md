@@ -232,9 +232,9 @@ Relative change in the pool-B share with |SMD| > 0.1 versus the clinical PS:
 
 | Arm vs clinical PS | COMET | PARADIGM-HF | PLATO | ARISTOTLE |
 |---|---|---|---|---|
-| + ECG | −19% | −17% | −4% | −1% |
+| + ECG | −19% | −17% | −3% | −2% |
 | + CLMBR | −79% | −61% | −32% | −39% |
-| + hdPS100 (v2) | −73% | −47% | −74% | −79% |
+| + hdPS100 (v2) | −73% | −47% | −75% | −79% |
 | + hdPS200 | −78% | −59% | −83% | −82% |
 | + hdPS200 + ECG + CLMBR | −92% | −69% | −86% | −95% |
 | Pairs retained, hdPS200 + ECG + CLMBR vs clinical | −22% | −36% | −12% | −22% |
