@@ -1,8 +1,12 @@
-# Protocol v1 (DRAFT, not frozen): unstructured ECG information for confounding control in EHR-based target trial emulation
+# Protocol v1 (FROZEN 2026-09-24): unstructured ECG information for confounding control in EHR-based target trial emulation
 
-Status: **draft for Ryan's review, 2026-09-24.** No outcome has been extracted for any trial.
-Everything below is to be frozen *before* outcome extraction. Items marked **[OPEN]** need a
-decision. Every choice made after viewing balance results is labelled as such (§12).
+Status: **FROZEN, 2026-09-24.** Approved by Ryan. The Git tag `protocol-v1` marks the frozen commit.
+- No outcome had been extracted for any trial at freeze.
+- Any later change is a versioned amendment (v1.1, …) with its date and reason, recorded before
+  the affected outcome analysis.
+- Every choice made after viewing balance results is disclosed in §12.
+- Items resolved at freeze by assistant default, under Ryan's delegation of basic decisions, are
+  marked "(assistant)".
 
 ## 1. Objective and hypotheses
 
@@ -89,7 +93,7 @@ Specs are in `scripts/trial_specs.py`; decisions are in `docs/DECISIONS.md`.
 | Time zero | First qualifying order/procedure date |
 | Follow-up (phase 2) | From the day after index until the earliest of: outcome, death, end of data, or the trial-matched horizon (§4b). Sensitivity horizons: 12 and 60 months |
 | Outcome (phase 2) | Trial primary endpoint mapped to EHR events (§9) |
-| Estimand | Initiator (ITT-like) effect; per-protocol as sensitivity **[OPEN]** |
+| Estimand | Initiator (ITT-like) effect. No per-protocol analysis in v1: EHR orders do not identify discontinuation reliably (assistant) |
 | Population | **Primary: all initiators. Sensitivity: outpatient initiators** (index order not during an inpatient stay) |
 
 ## 4b. PICOT per trial (Population, Intervention, Comparator, Outcome, Time)
@@ -102,8 +106,11 @@ Outcomes follow the RCT primary endpoint.
 - **Time:** the trial's primary-analysis follow-up, administratively censored at the end of data
   (deaths to 2024-06 for cause, 2024-12 for all-cause). Sensitivity: 12 and 60 months for every
   trial.
-- Horizons marked * are the published median, mean or planned follow-up and are to be verified
-  before freeze.
+- Horizons marked * are the published median or mean follow-up. All were verified at freeze against
+  the primary publications or trial summaries: COMET mean 58 mo; PARADIGM-HF median 27 mo; PARAGON-HF
+  median 35 mo; TRANSFORM-HF 12-mo primary horizon; ELITE II median 555 d; LIFE mean 4.8 y;
+  DAPA-HF median 18.2 mo; ARISTOTLE median 1.8 y; ROCKET-AF median 707 d; RE-LY median 2.0 y;
+  ALLHAT mean 4.9 y. PLATO (12 mo) and PARTNER 2A (2 y) are the primary-endpoint horizons.
 
 | Trial | P (adapted eligibility) | I | C | O (EHR mapping) | T (months) |
 |---|---|---|---|---|---|
@@ -114,7 +121,7 @@ Outcomes follow the RCT primary endpoint.
 | TRANSFORM-HF | I50 within 30 d (discharge proxy) | torsemide | furosemide | all-cause death | 12 (primary horizon; median follow-up 17.4) |
 | ELITE II | HF, age ≥ 60, EF ≤ 40 if measured | ARB | ACEi | all-cause death | 18* (median 555 d) |
 | LIFE | HTN + ECG-LVH, age 55–80, no HF, no MI/stroke 180 d | ARB | cardioselective β-blocker | CV death, MI or stroke | 58* (mean 4.8 y) |
-| DIONYSOS | AF | dronedarone | amiodarone | AF hospitalisation/recurrence proxy or discontinuation **[OPEN; limited emulability]** | 12 |
+| DIONYSOS | AF | dronedarone | amiodarone | **Not emulable** (AF recurrence needs rhythm monitoring). **Balance-only; excluded from phase-2 effect analysis** | – |
 | DAPA-HF/EMPEROR-R | HF + T2D, EF ≤ 40 if measured, eGFR ≥ 30 | SGLT2i | DPP-4i (placebo proxy) | CV death or HF hospitalisation | 18* |
 | PARTNER 2A/3 | aortic stenosis; no concomitant CABG/mitral surgery | TAVR | surgical AVR | death or stroke (disabling not identifiable) | 24 |
 | PLATO | ACS (I21/I24/I20.0) in 30 d, no OAC, no ICH | ticagrelor | clopidogrel | CV death, MI or stroke | 12 |
@@ -178,7 +185,7 @@ Sensitivity arms:
 
 **Matching:** 1:1 greedy nearest-neighbour on the PS logit (L2 logistic, standardised
 covariates), caliper 0.2 × pooled SD, anchored on the smaller arm, without replacement.
-Secondary: overlap weighting **[OPEN]**.
+Secondary (pre-specified): overlap weighting (ATO weights from the same PS model per arm), with weighted SMDs and the same balance domains.
 
 ## 7. Balance evaluation (phase 1)
 
@@ -227,8 +234,15 @@ Pre-specified tests (medians across trials, with counts of trials improved):
     regulatory agreement (same direction and significance), standardised difference.
 - Across trials: paired comparison of |log-HR − log-HR_R| and |log-HR − log-HR_RCT| for M2 vs M1
   and M4 vs M3 (Wilcoxon signed-rank), stratified by role and emulation rating.
-- **Negative-control outcomes** **[OPEN]**: candidates are cataract surgery, inguinal hernia repair,
-  hip/wrist fracture and influenza vaccination. Expected HR ≈ 1 for every comparison.
+- **Negative-control outcomes** (assistant; expected HR ≈ 1 for every comparison). Each is the first
+  occurrence within the trial horizon, excluding patients with the event in the prior 365 d:
+  - cataract surgery: CPT 66982/66984/66987/66988; ICD-10-PCS 08RJ3JZ/08RK3JZ;
+  - inguinal or femoral hernia repair: CPT 49505–49525 and 49650–49651; ICD-10-PCS 0YQ5*/0YQ6*/
+    0YU5*/0YU6*/0YQ7*/0YQ8*/0YU7*/0YU8*;
+  - new non-melanoma skin cancer diagnosis: ICD-10 C44.
+
+  Hip fracture and influenza vaccination were considered and not chosen: they plausibly relate to
+  falls/hypotension and to healthy-adherer behaviour respectively.
 
 ## 9. Reporting
 
@@ -244,10 +258,10 @@ the result.
 
 ## 11. Timeline
 
-1. Ryan resolves the [OPEN] items.
-2. Freeze v1 (tag the commit).
-3. Extract outcomes.
-4. Run phase 2 once.
+1. [done 2026-09-24] Open items resolved; v1 frozen and tagged `protocol-v1`.
+2. Extract outcomes (outcome extraction code is written and reviewed against this protocol
+   before it runs).
+3. Run phase 2 once per trial × arm × imputation. Report everything.
 
 ## 12. Choices made after viewing balance results (disclosure)
 

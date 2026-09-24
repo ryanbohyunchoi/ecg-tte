@@ -2494,3 +2494,19 @@ discretion for basic decisions. Full rationale and open questions are in `report
   - **Result:** SHD scores improve diastolic, RV and LV-function capture but **not valve balance**,
     and are worse than BCL for LV structure. The valve hypothesis is not supported. Keep SHD as a
     reported secondary arm.
+
+### 2026-09-24 — Protocol v1 FROZEN (Ryan approved)
+`docs/PROTOCOL_V1.md` (renamed from `PROTOCOL_V1_DRAFT.md`); Git tag `protocol-v1`. No outcome had
+been extracted. Items resolved at freeze:
+- **Estimand:** initiator (ITT-like) only; no per-protocol analysis (orders do not identify
+  discontinuation) — assistant.
+- **DIONYSOS:** balance-only; excluded from phase 2 (endpoint not emulable).
+- **Overlap weighting:** pre-specified secondary analysis.
+- **Negative controls:** cataract surgery, inguinal/femoral hernia repair, non-melanoma skin cancer
+  (C44) — assistant.
+- **Horizons:** verified against the publications.
+- **Frozen elements:** the trial set, roles, ratings, primary analysis set (≥ 400 clinical-PS pairs),
+  PS arms M0–M4 + reference, SHD secondary arm, balance metrics, and CV death via CT Vital
+  Statistics.
+
+Later changes require a dated amendment made before the affected outcome analysis.

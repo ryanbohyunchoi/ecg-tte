@@ -108,7 +108,7 @@ What this shows (exploratory, balance only):
       the EF heads.
 
     I recommend (a) as the primary SHD arm and (b) as a check.
-- **Protocol v1 draft:** `docs/PROTOCOL_V1_DRAFT.md`. It lists hypotheses H1–H5, the trials with
+- **Protocol v1 draft:** `docs/PROTOCOL_V1.md`. It lists hypotheses H1–H5, the trials with
   verified benchmarks and ratings, the frozen PS arms, the balance metrics and tests, the phase-2
   estimation plan, and a disclosure of every post-hoc choice. The **[OPEN]** items need your
   decision before freezing.
@@ -145,7 +145,7 @@ What this shows (exploratory, balance only):
     representation balances. hdPS (valve codes) is the better tool there.
   - Tables: `docs/CAPTURE_MAP_SHD_PRIMARY_SET_2026_09_24.md`.
 - **Protocol updated:** PICOT table, trial-matched horizons (12/60-month sensitivity), CV-death
-  mapping, the data-sufficiency rule, and the SHD arm (`docs/PROTOCOL_V1_DRAFT.md`).
+  mapping, the data-sufficiency rule, and the SHD arm (`docs/PROTOCOL_V1.md`).
 
 ## A. Answers to your questions
 

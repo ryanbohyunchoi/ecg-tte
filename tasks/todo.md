@@ -1078,4 +1078,5 @@ PDF regeneration not confirmed. Preserve all original runs and restrictions.
 - [x] ARISTOTLE adapted cohort and grid.
 - [ ] Negative-control outcomes; protocol freeze before any trial outcome.
 - [x] Overnight 13-trial expansion (12 analysed; TRITON failed feasibility); report.md.
-- [ ] Ryan decisions from report.md §7; verify published HRs; protocol v1 freeze.
+- [x] Ryan decisions; published HRs verified; protocol v1 frozen (tag protocol-v1).
+- [ ] Phase 2: outcome extraction code (per protocol §4b/§8), review, then one run per trial x arm x imputation.
