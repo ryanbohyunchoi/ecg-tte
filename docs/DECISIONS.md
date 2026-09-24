@@ -2356,3 +2356,31 @@ Same contract and evaluator as PARADIGM-HF, with specs in `scripts/trial_specs.p
 - Result: 20,579 apixaban / 5,283 warfarin; 18,771 with ECG + CLMBR.
 - ECG AF probe AUC is 0.58, because AF is near-universal in an AF cohort; it is not a gate failure
   in the clinical sense.
+
+### 2026-09-24 — Overnight expansion to 13 trials (assistant discretion, per Ryan's instruction)
+Ryan: include as many trials as possible, pivot toward trials where physiology matters, and use
+discretion for basic decisions. Full rationale and open questions are in `report.md`.
+- **Trial roles, fixed before any results.**
+  - Physiology (main test): COMET, PARADIGM-HF, PARAGON-HF, TRANSFORM-HF, ELITE II, LIFE,
+    DIONYSOS.
+  - Control (no ECG benefit expected): PLATO, TRITON, ARISTOTLE, ROCKET-AF, RE-LY, ALLHAT.
+- **Feasibility rule, fixed before building:** the smaller arm must have >= 300 patients with a
+  selected ECG. TRITON failed (278 prasugrel users) and is reported, not analysed.
+- **LIFE v1** (losartan vs atenolol) failed at 226 atenolol users. v2 widened it to ARB vs
+  cardioselective beta-blocker before any LIFE balance was computed.
+- **Class adaptations:**
+  - ELITE II: any ARB vs any ACEi (trial: losartan vs captopril).
+  - ALLHAT: amlodipine vs any thiazide (trial: chlorthalidone).
+  - LIFE v2: as above.
+- **Eligibility adaptations:**
+  - PARAGON-HF: EF >= 45 if measured; if EF is unknown, an I50.3x code is required.
+  - TRANSFORM-HF: an I50 code within 30 d stands in for the index HF hospitalisation.
+  - LIFE: hypertension plus ECG-text LVH within 365 d, age 55–80, no HF, no MI/stroke in 180 d.
+  - DIONYSOS: AF only.
+  - The DOAC trials reuse the ARISTOTLE rules.
+- **Published HRs** are entered from memory and must be verified before any RCT-agreement use.
+- **Pipeline:** unattended `scripts/run_trial_pipeline.sh`, identical to the four-trial analysis.
+  The only new diagnostic tables come from `scripts/summarize_all_trials.py`.
+- **Observed, not acted on:** the share of index orders written during an inpatient stay differs
+  strongly between arms in several trials (e.g. DIONYSOS 17% vs 70%). Setting and route are not
+  in any PS; whether to restrict or adjust is an open decision for Ryan.
