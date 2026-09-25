@@ -14,7 +14,7 @@ for imp in 1 2 3 4 5; do for seed in 0 1 2 3 4; do
     --panel "$PANEL" --panel-dictionary "$DICT" --ecg-emb-glob "$ECG" --ehr-emb-glob "$EHR" \
     --ecg-phenotypes "$PH" --prognostic-scores "$PROG" --label "$LABEL" --method-set "$MSET" ${PHYS:+--physiology-panel "$PHYS"} ${ROSTER:+--roster "$ROSTER"} ${ECHO_START:+--echo-eval-start "$ECHO_START"} ${TRAINMASK:+--mask-train-mrns "$TRAINMASK"} ${SHDS:+--shd-scores "$SHDS"} ${SAVE_MATCHES:+--save-matches} --output-dir "$OUT" \
     > "$OUT/log_imp${imp}_seed${seed}.txt" 2>&1 &
-  while [ "$(jobs -rp | wc -l)" -ge 12 ]; do sleep 2; done
+  while [ "$(jobs -rp | wc -l)" -ge ${GRID_PAR:-12} ]; do sleep 2; done
 done; done
 wait
 "$PY" "$HERE/summarize_longtail.py" "$OUT"
