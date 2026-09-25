@@ -1,0 +1,1237 @@
+{
+  "table1": {
+    "COMET": {
+      "n": 3029,
+      "age_mean": 62,
+      "female_pct": 20,
+      "diabetes_pct": 24.1,
+      "hypertension_pct": null,
+      "atrial_fibrillation_pct": 20,
+      "prior_mi_pct": null,
+      "heart_failure_pct": 100,
+      "prior_stroke_tia_pct": null,
+      "lvef_mean": 26,
+      "sbp_mean": 126,
+      "heart_rate_mean": 81,
+      "bmi_mean": null,
+      "egfr_mean": null,
+      "creatinine_mean_mg_dl": null,
+      "ckd_pct": null,
+      "current_smoker_pct": null,
+      "source_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/12853193/",
+        "https://pubmed.ncbi.nlm.nih.gov/17237130/",
+        "https://www.acc.org/latest-in-cardiology/clinical-trials/2010/02/23/18/58/comet",
+        "https://cardiologytrials.substack.com/p/review-of-the-comet-trial",
+        "https://www.wikijournalclub.org/wiki/COMET"
+      ],
+      "value_notes": {
+        "n": "1511 carvedilol + 1518 metoprolol tartrate (PubMed abstract).",
+        "age_mean": "Lancet abstract: mean 62 (SD 11).",
+        "lvef_mean": "Lancet abstract: mean EF 0.26 (SD 0.07).",
+        "diabetes_pct": "Derived: 3029 randomised minus 2298 without diabetes at baseline (Torp-Pedersen, Heart 2007, PubMed 17237130) = 731/3029 = 24.1%. Consistent with 24% on WikiJournalClub (carvedilol arm).",
+        "female_pct": "Secondary sources only (ACC trial summary 'Female: 20%'; Cardiology Trials substack '80% male'). Lancet Table 1 not accessible (paywall/403).",
+        "sbp_mean": "Secondary (Cardiology Trials substack, 126 mmHg); WikiJournalClub carvedilol arm BP 126/77.",
+        "heart_rate_mean": "Secondary (substack 81 bpm; WJC carvedilol arm 81).",
+        "atrial_fibrillation_pct": "Secondary (substack 20%; WJC carvedilol arm AF/flutter on ECG 21%).",
+        "unverified_carvedilol_arm_only_from_WikiJournalClub": "HTN 37%, prior MI 41%, CVA 7%, BMI 26.9 -- carvedilol arm only, secondary source; not entered as values.",
+        "heart_failure_pct": "By inclusion (chronic HF NYHA II-IV, EF<0.35)."
+      }
+    },
+    "PARADIGM-HF": {
+      "n": 8442,
+      "age_mean": 63.8,
+      "female_pct": 22,
+      "diabetes_pct": 34,
+      "hypertension_pct": 71,
+      "atrial_fibrillation_pct": 37,
+      "prior_mi_pct": 43,
+      "heart_failure_pct": 100,
+      "prior_stroke_tia_pct": 9,
+      "lvef_mean": 29,
+      "sbp_mean": 121,
+      "heart_rate_mean": 72,
+      "bmi_mean": 28,
+      "egfr_mean": 67.7,
+      "creatinine_mean_mg_dl": 1.13,
+      "ckd_pct": 36.4,
+      "current_smoker_pct": 14,
+      "source_urls": [
+        "https://academic.oup.com/eurjhf/article/16/7/817/8427702",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC7754973/"
+      ],
+      "value_notes": {
+        "general": "NEJM 2014 Table 1 (per-arm) not retrievable (403). Main values from the PARADIGM-HF baseline paper (McMurray, Eur J Heart Fail 2014;16:817), Table 2, all 8442 randomised, rounded to integers as printed.",
+        "age_mean": "EJHF baseline paper: 64 (SD 11); 63.8 is the weighted mean of HF-duration subgroups in Yeoh et al. EJHF 2020 (PMC7754973, n=8399).",
+        "prior_stroke_tia_pct": "'Stroke' 9% (TIA not included).",
+        "atrial_fibrillation_pct": "History of AF/flutter.",
+        "egfr_mean": "Not reliably extracted from EJHF baseline paper (extraction tool returned '37', likely the eGFR<60 % row). 67.7 = n-weighted mean over the 4 HF-duration groups in PMC7754973 Table 1 (n=8399 of 8442).",
+        "creatinine_mean_mg_dl": "1.13 = weighted mean from PMC7754973 (n=8399); EJHF baseline paper gives 99 umol/L (=1.12 mg/dL).",
+        "ckd_pct": "eGFR<60, weighted from PMC7754973 (3061/8399=36.4%).",
+        "heart_failure_pct": "By inclusion (HFrEF, LVEF<=40%, later <=35%)."
+      }
+    },
+    "TRANSFORM-HF": {
+      "n": 2859,
+      "age_mean": 65,
+      "female_pct": 36.9,
+      "diabetes_pct": 47.7,
+      "hypertension_pct": null,
+      "atrial_fibrillation_pct": 44.9,
+      "prior_mi_pct": null,
+      "heart_failure_pct": 100,
+      "prior_stroke_tia_pct": null,
+      "lvef_mean": null,
+      "sbp_mean": 118.5,
+      "heart_rate_mean": 80.5,
+      "bmi_mean": 32.2,
+      "egfr_mean": 59.4,
+      "creatinine_mean_mg_dl": null,
+      "ckd_pct": 35.3,
+      "current_smoker_pct": null,
+      "source_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/36648467/",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC9857435/"
+      ],
+      "value_notes": {
+        "age_mean": "MEDIAN 65 (IQR 56-75), not a mean.",
+        "female_pct": "Abstract 36.9%; per-arm 498/1431 (34.8%) vs 557/1428 (39.0%).",
+        "lvef_mean": "Reported only categorically: LVEF<=40% ~69.7% (935/1334 + 901/1301), 41-49% ~5.8%, >=50% ~24.6%.",
+        "hypertension_pct": "Not in Table 1 per extraction (comorbidities listed: AF/flutter, diabetes, CKD; others not confirmed) -- uncertain.",
+        "prior_mi_pct": "Not reported in Table 1 (ischemic etiology reported instead; value not extracted).",
+        "atrial_fibrillation_pct": "AF/flutter, denominators 1419/1420.",
+        "ckd_pct": "Investigator-reported CKD comorbidity.",
+        "sbp_mean": "Arm means 118 (19) vs 119 (20).",
+        "heart_failure_pct": "All hospitalised for HF (inclusion)."
+      }
+    },
+    "ELITE II": {
+      "n": 3152,
+      "age_mean": 71.5,
+      "female_pct": 30,
+      "diabetes_pct": null,
+      "hypertension_pct": null,
+      "atrial_fibrillation_pct": null,
+      "prior_mi_pct": null,
+      "heart_failure_pct": 100,
+      "prior_stroke_tia_pct": null,
+      "lvef_mean": 31,
+      "sbp_mean": null,
+      "heart_rate_mean": null,
+      "bmi_mean": null,
+      "egfr_mean": null,
+      "creatinine_mean_mg_dl": null,
+      "ckd_pct": null,
+      "current_smoker_pct": null,
+      "source_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/10821361/",
+        "https://pubmed.ncbi.nlm.nih.gov/10404354/",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC59604/",
+        "https://www.acc.org/latest-in-cardiology/clinical-trials/2010/02/23/19/03/eliteii"
+      ],
+      "value_notes": {
+        "general": "Lancet 2000 full text (DOI 10.1016/S0140-6736(00)02213-3) not accessible (403); only abstract-level / review-level baseline data verified. Comorbidity rows, SBP, HR, creatinine all unverified -> null.",
+        "n": "1578 losartan + 1574 captopril.",
+        "age_mean": "71.5 per Circulation-type review (PMC59604); design/baseline paper abstract (PubMed 10404354) gives 71.6.",
+        "female_pct": "~30%: ACC summary 'Female: 30'; PMC59604 says 70% men; a search snippet quoted 69% men. Treat as approximate.",
+        "lvef_mean": "Mean 31% (design/baseline paper abstract).",
+        "ischaemic_aetiology": "~79-80% ischaemic HF (review) -- not a Table-1 field requested."
+      }
+    },
+    "LIFE": {
+      "n": 9193,
+      "age_mean": 66.9,
+      "female_pct": 54,
+      "diabetes_pct": 13,
+      "hypertension_pct": 100,
+      "atrial_fibrillation_pct": 4,
+      "prior_mi_pct": null,
+      "heart_failure_pct": null,
+      "prior_stroke_tia_pct": 8,
+      "lvef_mean": null,
+      "sbp_mean": 174.4,
+      "heart_rate_mean": 73.8,
+      "bmi_mean": 28.0,
+      "egfr_mean": null,
+      "creatinine_mean_mg_dl": null,
+      "ckd_pct": null,
+      "current_smoker_pct": 16,
+      "source_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/11937178/",
+        "https://samizdathealth.org/wp-content/uploads/2020/12/LIFE-study-Cardiovascular_morbidity_and_mortality_i.pdf"
+      ],
+      "value_notes": {
+        "general": "Values read directly from Lancet 2002 Table 1 'All (n=9193)' column (PDF copy of the Lancet article).",
+        "n": "4605 losartan + 4588 atenolol.",
+        "diabetes_pct": "1195/9193 (13.0%).",
+        "atrial_fibrillation_pct": "324/9193 (3.5%, printed 4%).",
+        "prior_stroke_tia_pct": "'Cerebrovascular disease' 728 (8%) -- broader than stroke/TIA.",
+        "prior_mi_pct": "Not reported; 'Coronary heart disease' 1469 (16%) instead.",
+        "hypertension_pct": "100% by inclusion (essential hypertension 160-200/95-115 mmHg + ECG-LVH); isolated systolic HTN 14%.",
+        "heart_failure_pct": "Not in Table 1 (known HF with EF<=40% was an exclusion) -> null.",
+        "sbp_mean": "174.4 (SD 14.3); DBP 97.8.",
+        "current_smoker_pct": "1499 (16%)."
+      }
+    },
+    "PLATO": {
+      "n": 18624,
+      "age_mean": 62.2,
+      "female_pct": 28.4,
+      "diabetes_pct": 25.0,
+      "hypertension_pct": 65.4,
+      "atrial_fibrillation_pct": null,
+      "prior_mi_pct": 20.5,
+      "heart_failure_pct": 5.6,
+      "prior_stroke_tia_pct": null,
+      "lvef_mean": null,
+      "sbp_mean": null,
+      "heart_rate_mean": null,
+      "bmi_mean": null,
+      "egfr_mean": null,
+      "creatinine_mean_mg_dl": null,
+      "ckd_pct": 4.2,
+      "current_smoker_pct": 35.9,
+      "source_urls": [
+        "https://clinicaltrials.gov/study/NCT00391872 (results: baseline age, sex)",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC4057642/ (Husted et al., PLATO women vs men Table 1; pooled by summing counts)",
+        "https://pubmed.ncbi.nlm.nih.gov/20802246/ (James et al. EHJ 2010, DM n=4662)",
+        "https://www.nejm.org/doi/full/10.1056/NEJMoa0904327 (primary; blocked 403, not read)"
+      ],
+      "value_notes": {
+        "age_mean": "CT.gov mean 62.2 (SD 11.2); NEJM Table 1 reports median 62",
+        "prior_stroke_tia_pct": "Only separate: nonhemorrhagic stroke (243+479)/18624=3.9%, TIA (169+330)/18624=2.7%; overlap unknown so combined not computed",
+        "heart_failure_pct": "'Congestive heart failure' history",
+        "ckd_pct": "'Chronic renal disease' history",
+        "current_smoker_pct": "'Current/habitual smoker'",
+        "bmi_mean": "only medians by sex available (women 27.5, men 27.4)",
+        "egfr_mean": "only medians by sex (women 74, men 86)",
+        "general": "NEJM primary Table 1 blocked; values derived from sex-stratified PLATO substudy Table 1 (full 18,624)"
+      }
+    },
+    "ARISTOTLE": {
+      "n": 18201,
+      "age_mean": 69.1,
+      "female_pct": 35.3,
+      "diabetes_pct": 25.0,
+      "hypertension_pct": 87.4,
+      "atrial_fibrillation_pct": 100.0,
+      "prior_mi_pct": 14.2,
+      "heart_failure_pct": 30.4,
+      "prior_stroke_tia_pct": 19.4,
+      "lvef_mean": null,
+      "sbp_mean": 131.3,
+      "heart_rate_mean": null,
+      "bmi_mean": null,
+      "egfr_mean": null,
+      "creatinine_mean_mg_dl": null,
+      "ckd_pct": 16.6,
+      "current_smoker_pct": null,
+      "source_urls": [
+        "https://clinicaltrials.gov/study/NCT00412984 (results: age, sex, prior stroke/TIA, CHF, LVEF<=40)",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC4104493/ (Halvorsen et al. EHJ 2014, Table 1 by age group; pooled over 3 groups = all 18,201)",
+        "https://www.nejm.org/doi/full/10.1056/NEJMoa1107039 (primary; blocked)"
+      ],
+      "value_notes": {
+        "age_mean": "CT.gov mean 69.1 (SD 9.7); NEJM reports median 70",
+        "prior_stroke_tia_pct": "prior stroke, TIA, or systemic embolism",
+        "heart_failure_pct": "symptomatic CHF (CT.gov 5541) / HF within 3 mo or LVEF<=40% in paper; LVEF<=40% in 2625 (14.4%)",
+        "ckd_pct": "Cockcroft-Gault CrCl <=50 mL/min (moderate+severe impairment); not eGFR-defined CKD",
+        "sbp_mean": "n-weighted mean of age-group means",
+        "weight": "mean weight by age group 91.8/84.1/76.5 kg; BMI not reported"
+      }
+    },
+    "ROCKET AF": {
+      "n": 14264,
+      "age_mean": 71.2,
+      "female_pct": 39.6,
+      "diabetes_pct": 39.8,
+      "hypertension_pct": 90.5,
+      "atrial_fibrillation_pct": 100.0,
+      "prior_mi_pct": 17.3,
+      "heart_failure_pct": 62.5,
+      "prior_stroke_tia_pct": 54.8,
+      "lvef_mean": null,
+      "sbp_mean": 130,
+      "heart_rate_mean": 76,
+      "bmi_mean": 28,
+      "egfr_mean": 67,
+      "creatinine_mean_mg_dl": null,
+      "ckd_pct": null,
+      "current_smoker_pct": null,
+      "source_urls": [
+        "https://clinicaltrials.gov/study/NCT00403767 (results: n=14236 analysed, mean age 71.2)",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC4974633/ (DeVore et al. Europace 2016, Table 1 'All patients' N=14,171 ITT excl. GCP-violation site)",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC8649140/ (randomized 7131+7133=14264)",
+        "https://www.nejm.org/doi/full/10.1056/NEJMoa1009638 (primary; not accessed)"
+      ],
+      "value_notes": {
+        "n": "14,264 randomized; comorbidity %s from N=14,171 (excludes 93 pts at one site with GCP violation)",
+        "age_mean": "CT.gov mean 71.2; NEJM median 73",
+        "sbp_mean": "MEDIAN 130 (IQR 120-140)",
+        "heart_rate_mean": "MEDIAN 76",
+        "bmi_mean": "MEDIAN 28",
+        "egfr_mean": "MEDIAN Cockcroft-Gault creatinine clearance 67 mL/min (not eGFR)",
+        "prior_stroke_tia_pct": "prior stroke, TIA or non-CNS systemic embolism",
+        "heart_failure_pct": "congestive HF history (62%); LVEF<40% in 23% of those measured",
+        "prior_mi_pct": "17%"
+      }
+    },
+    "RE-LY": {
+      "n": 12098,
+      "age_mean": 71.5,
+      "female_pct": 36.8,
+      "diabetes_pct": 23.3,
+      "hypertension_pct": 78.9,
+      "atrial_fibrillation_pct": 100.0,
+      "prior_mi_pct": 16.6,
+      "heart_failure_pct": 32.0,
+      "prior_stroke_tia_pct": null,
+      "lvef_mean": null,
+      "sbp_mean": null,
+      "heart_rate_mean": null,
+      "bmi_mean": null,
+      "egfr_mean": null,
+      "creatinine_mean_mg_dl": null,
+      "ckd_pct": null,
+      "current_smoker_pct": 7.4,
+      "source_urls": [
+        "https://clinicaltrials.gov/study/NCT00262600 (results: per-arm age, sex, smoking)",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC3204867/ (Pink et al. BMJ 2011, Table 1 reproduces RE-LY all-arm counts /18,113)",
+        "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0256338 (text summary)",
+        "https://www.nejm.org/doi/full/10.1056/NEJMoa0905561 (primary; blocked)"
+      ],
+      "value_notes": {
+        "n": "D150 (6076) + warfarin (6022) per CT.gov; total trial 18,113",
+        "age_mean": "n-weighted from CT.gov arm means (71.5, 71.6)",
+        "female_pct": "D150+warfarin arms (CT.gov)",
+        "current_smoker_pct": "'Smoker' category in CT.gov, D150+warfarin arms",
+        "diabetes_pct": "ALL 3 ARMS (4221/18113), from secondary reproduction of NEJM table; per-arm not verified",
+        "hypertension_pct": "ALL 3 ARMS (14283/18113)",
+        "prior_mi_pct": "ALL 3 ARMS (3005/18113)",
+        "heart_failure_pct": "ALL 3 ARMS (5793/18113)",
+        "prior_stroke_tia_pct": "Not combined: prior stroke 2273 (12.5%) and prior TIA 1663 (9.2%) all arms, overlap unknown; NEJM reports 'previous stroke or TIA' ~20% (not verified)",
+        "other": "SBP, BMI/weight, CrCl per NEJM Table 1 not accessible"
+      }
+    },
+    "ALLHAT": {
+      "n": 24303,
+      "age_mean": 66.9,
+      "female_pct": 47.1,
+      "diabetes_pct": 36.4,
+      "hypertension_pct": 100.0,
+      "atrial_fibrillation_pct": null,
+      "prior_mi_pct": null,
+      "heart_failure_pct": null,
+      "prior_stroke_tia_pct": null,
+      "lvef_mean": null,
+      "sbp_mean": 146,
+      "heart_rate_mean": null,
+      "bmi_mean": 29.7,
+      "egfr_mean": 77.7,
+      "creatinine_mean_mg_dl": 1.0,
+      "ckd_pct": null,
+      "current_smoker_pct": 21.9,
+      "source_urls": [
+        "http://www.columbia.edu/itc/hs/medical/clerkships/primcare/case/hypertension/library/ALLHAT.pdf (reprint of JAMA 2002;288:2981-97, Tables 1 and 4, text p.2989)",
+        "https://jamanetwork.com/journals/jama/fullarticle/195626 (primary; blocked)"
+      ],
+      "value_notes": {
+        "n": "chlorthalidone 15,255 + amlodipine 9,048",
+        "prior_mi_pct": "Only combined 'History of MI or stroke' reported: (3581+2098)/24303 = 23.4%",
+        "history_chd_pct": "History of CHD at baseline (3943+2202)/24303 = 25.3%",
+        "heart_failure_pct": "Not reported; symptomatic HF / EF<35% was an exclusion criterion",
+        "diabetes_pct": "type 2 diabetes (eligibility risk factor)",
+        "sbp_mean": "146 mm Hg all groups (Table 1; Table 3 gives 146.2)",
+        "egfr_mean": "MDRD, measured subset (n=14492/8589)",
+        "creatinine_mean_mg_dl": "text: 'baseline mean creatinine of only 1.0 mg/dL' (whole trial)",
+        "current_smoker_pct": "'Cigarette smoker' 21.9% both arms",
+        "atrial_fibrillation_pct": "not reported"
+      }
+    }
+  },
+  "new_trials": {
+    "DCP": {
+      "full_name": "Diuretic Comparison Project (VA Cooperative Studies Program #597)",
+      "citation": "Ishani A, Cushman WC, Leatherman SM, et al. Chlorthalidone vs. Hydrochlorothiazide for Hypertension-Cardiovascular Events. N Engl J Med 2022;387(26):2401-2410. doi:10.1056/NEJMoa2212270. PMID 36516076. NCT02185417",
+      "arms": {
+        "first": "Switch to chlorthalidone 12.5 or 25 mg/day (n=6756)",
+        "second": "Continue hydrochlorothiazide 25 or 50 mg/day (n=6767)"
+      },
+      "primary_endpoint": "Composite of nonfatal MI, stroke, heart failure resulting in hospitalization, urgent coronary revascularization for unstable angina, and non-cancer-related death (time to first event)",
+      "primary_result": {
+        "measure": "HR",
+        "estimate": 1.04,
+        "ci_lower": 0.94,
+        "ci_upper": 1.16,
+        "ci_level": 0.95,
+        "p": 0.45,
+        "events": "702/6756 (10.4%) chlorthalidone vs 675/6767 (10.0%) HCTZ"
+      },
+      "itt": {
+        "value": true,
+        "description": "Pragmatic open-label randomized trial; primary analysis intention-to-treat (per JAHA per-protocol follow-up paper, which describes the primary as ITT)"
+      },
+      "followup_months": {
+        "value": 28.8,
+        "type": "median",
+        "raw": "median 2.4 years"
+      },
+      "inclusion_criteria": [
+        "Age >=65 years (CT.gov lists 'over age 65')",
+        "VA primary care patient receiving hydrochlorothiazide 25 or 50 mg/day",
+        "Most recent SBP >=120 mm Hg and no SBP <120 mm Hg in prior 90 days"
+      ],
+      "exclusion_criteria": [
+        "Impaired decision-making capacity",
+        "Death expected within 6 months",
+        "Potassium <3.1 mEq/L (or <3.5 if on digoxin) in past 90 days",
+        "Sodium <130 mEq/L in past 90 days",
+        "Medicare Part C enrollment (if insufficient EHR data)"
+      ],
+      "table1": {
+        "n": 13523,
+        "age_mean": 72.4,
+        "female_pct": 3.19,
+        "diabetes_pct": 44.58,
+        "hypertension_pct": 100.0,
+        "atrial_fibrillation_pct": null,
+        "prior_mi_pct": 3.61,
+        "heart_failure_pct": 7.77,
+        "prior_stroke_tia_pct": 7.61,
+        "lvef_mean": null,
+        "sbp_mean": 139,
+        "heart_rate_mean": null,
+        "bmi_mean": 31.8,
+        "egfr_mean": null,
+        "creatinine_mean_mg_dl": null,
+        "ckd_pct": 22.9,
+        "current_smoker_pct": 21.87,
+        "value_notes": {
+          "source": "ClinicalTrials.gov NCT02185417 posted baseline results (Total column, n=13523), consistent with JAHA per-protocol paper Table 1",
+          "prior_stroke_tia_pct": "History of stroke only (TIA not reported separately); history of MI or stroke = 1455 (10.76%)",
+          "ckd_pct": "eGFR <60 mL/min/1.73m2 (3097/13523)",
+          "current_smoker_pct": "2957/13523 = 21.9% of all randomized; JAHA per-protocol Table 1 shows 23.41% (apparently excluding missing/other denominators)",
+          "hypertension_pct": "100% by design (all on HCTZ for hypertension)",
+          "prior_mi_pct": "3.6% seems low for this population; it is the EHR-derived 'history of MI' as posted"
+        }
+      },
+      "source_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/36516076/",
+        "https://clinicaltrials.gov/study/NCT02185417",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC13055484/"
+      ]
+    },
+    "ONTARGET": {
+      "full_name": "ONgoing Telmisartan Alone and in combination with Ramipril Global Endpoint Trial",
+      "citation": "ONTARGET Investigators; Yusuf S, Teo KK, Pogue J, et al. Telmisartan, ramipril, or both in patients at high risk for vascular events. N Engl J Med 2008;358(15):1547-59. doi:10.1056/NEJMoa0801317. PMID 18378520. NCT00153101",
+      "arms": {
+        "first": "Telmisartan 80 mg/day (n=8542)",
+        "second": "Ramipril 10 mg/day (n=8576)"
+      },
+      "primary_endpoint": "Composite of death from cardiovascular causes, myocardial infarction, stroke, or hospitalization for heart failure",
+      "primary_result": {
+        "measure": "RR (reported as 'relative risk'; derived from Cox model, i.e. effectively a HR)",
+        "estimate": 1.01,
+        "ci_lower": 0.94,
+        "ci_upper": 1.09,
+        "ci_level": 0.95,
+        "p": null,
+        "events": "1423 (16.7%) telmisartan vs 1412 (16.5%) ramipril",
+        "note": "Noninferiority design; abstract does not give a P value for this comparison. Combination vs ramipril RR 0.99 (0.92-1.07) not used here."
+      },
+      "itt": {
+        "value": true,
+        "description": "Intention-to-treat primary analysis (per ONTARGET reference-trial description in PLoS Med 2024 emulation paper); 3-week single-blind run-in before randomization"
+      },
+      "followup_months": {
+        "value": 56,
+        "type": "median"
+      },
+      "inclusion_criteria": [
+        "Age >=55 years",
+        "Established CAD (prior MI, stable/unstable angina with documented multivessel CAD or positive stress test, multivessel PCI/CABG), OR PAD, OR prior stroke, OR TIA 7 days-1 year before consent, OR diabetes with end-organ damage",
+        "Able to tolerate ACE inhibitor (ACE-intolerant patients went to TRANSCEND); 3-week run-in"
+      ],
+      "exclusion_criteria": [
+        "Symptomatic congestive heart failure",
+        "Inability to discontinue ACEi/ARB; hypersensitivity/intolerance to ACEi or ARB",
+        "Hemodynamically significant valvular/outflow obstruction, constrictive pericarditis, complex congenital heart disease",
+        "Uncontrolled hypertension on treatment (BP >160/100)",
+        "Renal artery stenosis; serum creatinine >265 umol/L (>3.0 mg/dL); potassium >5.5 mmol/L",
+        "Hepatic dysfunction (ALT/AST >4x ULN), primary aldosteronism, uncorrected volume/sodium depletion",
+        "Planned cardiac surgery/angioplasty within 3 months; heart transplant"
+      ],
+      "table1": {
+        "n": 17118,
+        "age_mean": 66.4,
+        "female_pct": 26.76,
+        "diabetes_pct": 37.5,
+        "hypertension_pct": 69,
+        "atrial_fibrillation_pct": null,
+        "prior_mi_pct": 48,
+        "heart_failure_pct": null,
+        "prior_stroke_tia_pct": 20.9,
+        "lvef_mean": null,
+        "sbp_mean": 141.8,
+        "heart_rate_mean": 68,
+        "bmi_mean": 28.2,
+        "egfr_mean": null,
+        "creatinine_mean_mg_dl": 1.066,
+        "ckd_pct": null,
+        "current_smoker_pct": 12.6,
+        "value_notes": {
+          "n,age,female": "ClinicalTrials.gov posted results, telmisartan + ramipril arms (female 4581/17118)",
+          "diabetes, stroke, SBP, BMI, creatinine, smoker": "From ONTARGET column (all 3 arms, N=25,620) of Table 2 in PLoS Med 2024 (PMC11441682), computed by ONTARGET investigators from trial data; arms were balanced",
+          "prior_stroke_tia_pct": "'Cerebrovascular disease' 20.9% (stroke or TIA qualifying condition)",
+          "creatinine_mean_mg_dl": "94.2 umol/L / 88.4",
+          "hypertension_pct, prior_mi_pct, heart_rate_mean": "SECONDARY SOURCE ONLY (Wiki Journal Club reproduction of NEJM Table 1, ramipril arm, rounded): HTN 69%, MI 48%, HR 68 bpm. Not verified against NEJM (paywalled).",
+          "heart_failure_pct": "Symptomatic HF was an exclusion criterion; not reported"
+        }
+      },
+      "source_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/18378520/",
+        "https://clinicaltrials.gov/study/NCT00153101",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC11441682/",
+        "https://www.wikijournalclub.org/wiki/ONTARGET"
+      ]
+    },
+    "VALUE": {
+      "full_name": "Valsartan Antihypertensive Long-term Use Evaluation",
+      "citation": "Julius S, Kjeldsen SE, Weber M, et al. Outcomes in hypertensive patients at high cardiovascular risk treated with regimens based on valsartan or amlodipine: the VALUE randomised trial. Lancet 2004;363(9426):2022-31. doi:10.1016/S0140-6736(04)16451-9. PMID 15207952",
+      "arms": {
+        "first": "Valsartan-based regimen (80->160 mg, +HCTZ, n=7649)",
+        "second": "Amlodipine-based regimen (5->10 mg, +HCTZ, n=7596)"
+      },
+      "primary_endpoint": "Time to first cardiac event: composite of sudden cardiac death, fatal MI, death during/after PCI or CABG, death due to heart failure, death associated with recent MI on autopsy, heart failure requiring hospital management, nonfatal MI, or emergency procedures to prevent MI",
+      "primary_result": {
+        "measure": "HR",
+        "estimate": 1.04,
+        "ci_lower": 0.94,
+        "ci_upper": 1.15,
+        "ci_level": 0.95,
+        "p": 0.49,
+        "events": "810 (10.6%) valsartan vs 789 (10.4%) amlodipine"
+      },
+      "itt": {
+        "value": true,
+        "description": "All 15,245 randomized (after excluding 68 from GCP-deficient centres) analysed by intention to treat"
+      },
+      "followup_months": {
+        "value": 50.4,
+        "type": "mean",
+        "raw": "mean 4.2 years (SD 1.2)"
+      },
+      "inclusion_criteria": [
+        "Age >=50 years with treated or untreated hypertension",
+        "Untreated: sitting SBP 160-210 and DBP <115 mm Hg; treated: <=210/115 mm Hg (no lower limit)",
+        "High cardiovascular risk by age/sex-based algorithm: risk factors (male sex, age, diabetes, current smoking, high total cholesterol, ECG-LVH, proteinuria, serum creatinine 150-265 umol/L) or disease (CAD, cerebrovascular disease, PAD, LVH with strain)"
+      ],
+      "exclusion_criteria": [
+        "Renal artery stenosis",
+        "Acute MI, PCI or CABG within past 3 months; stroke within past 3 months",
+        "Clinically relevant valvular disease",
+        "Severe hepatic disease; severe chronic renal failure (creatinine >265 umol/L)",
+        "Congestive heart failure requiring ACE inhibitor therapy",
+        "Beta-blocker monotherapy for both CAD and hypertension",
+        "Pregnancy"
+      ],
+      "table1": {
+        "n": 15245,
+        "age_mean": 67.25,
+        "female_pct": 42.43,
+        "diabetes_pct": null,
+        "hypertension_pct": 100.0,
+        "atrial_fibrillation_pct": null,
+        "prior_mi_pct": null,
+        "heart_failure_pct": null,
+        "prior_stroke_tia_pct": 19.77,
+        "lvef_mean": null,
+        "sbp_mean": 154.65,
+        "heart_rate_mean": 72.4,
+        "bmi_mean": 28.65,
+        "egfr_mean": null,
+        "creatinine_mean_mg_dl": 1.143,
+        "ckd_pct": null,
+        "current_smoker_pct": null,
+        "value_notes": {
+          "source": "Lancet full-text PDF hosted by European Society of Hypertension (Table 1 and Table 6 lab values)",
+          "coronary_heart_disease_pct": 45.79,
+          "peripheral_arterial_disease_pct": 13.87,
+          "diabetes_pct": "Not in main-paper Table 1. Back-calculation from new-onset diabetes denominators (690 = 13.1% of non-diabetics in valsartan arm) implies ~31% diabetic at baseline - derived, not reported",
+          "prior_mi_pct": "Only 'coronary heart disease' qualifying disease reported (45.8%)",
+          "creatinine_mean_mg_dl": "Mean 101.1 umol/L (lab set n=7622/7576) / 88.4",
+          "heart_failure_pct": "CHF requiring ACEi excluded; not reported"
+        }
+      },
+      "source_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/15207952/",
+        "https://www.eshonline.org/esh-content/uploads/2019/07/3.-Outcomes-in-hypertensive-patients-at-high-cardiovascular-risk-treated-with-regimens-based-on-valsartan-or-amlodipine-Value-trial.pdf"
+      ]
+    },
+    "ASCOT-BPLA": {
+      "full_name": "Anglo-Scandinavian Cardiac Outcomes Trial - Blood Pressure Lowering Arm",
+      "citation": "Dahlof B, Sever PS, Poulter NR, et al. Prevention of cardiovascular events with an antihypertensive regimen of amlodipine adding perindopril as required versus atenolol adding bendroflumethiazide as required, in ASCOT-BPLA: a multicentre randomised controlled trial. Lancet 2005;366(9489):895-906. doi:10.1016/S0140-6736(05)67185-1. PMID 16154016",
+      "arms": {
+        "first": "Amlodipine 5-10 mg +/- perindopril 4-8 mg (n=9639)",
+        "second": "Atenolol 50-100 mg +/- bendroflumethiazide 1.25-2.5 mg + potassium (n=9618)"
+      },
+      "primary_endpoint": "Nonfatal myocardial infarction (including silent MI) and fatal coronary heart disease",
+      "primary_result": {
+        "measure": "HR (unadjusted)",
+        "estimate": 0.9,
+        "ci_lower": 0.79,
+        "ci_upper": 1.02,
+        "ci_level": 0.95,
+        "p": 0.1052,
+        "events": "429 amlodipine vs 474 atenolol",
+        "note": "Not significant; trial stopped early for mortality (all-cause HR 0.89, 0.81-0.99). Nonfatal MI (excl. silent) + fatal CHD was a secondary endpoint (p=0.0458)."
+      },
+      "itt": {
+        "value": true,
+        "description": "PROBE design; analysis by intention to treat (abstract)"
+      },
+      "followup_months": {
+        "value": 66,
+        "type": "median",
+        "raw": "median 5.5 years; stopped prematurely"
+      },
+      "inclusion_criteria": [
+        "Age 40-79 years",
+        "Hypertension: untreated SBP >=160 and/or DBP >=100 mm Hg, or treated SBP >=140 and/or DBP >=90 mm Hg",
+        ">=3 additional CV risk factors (e.g., male sex, age >=55, LVH, other ECG abnormalities, type 2 diabetes, PAD, prior stroke/TIA, microalbuminuria/proteinuria, smoking, TC:HDL >=6, family history of premature CHD)"
+      ],
+      "exclusion_criteria": [
+        "Previous myocardial infarction",
+        "Currently treated angina",
+        "Cerebrovascular event within previous 3 months",
+        "Heart failure",
+        "Fasting triglycerides >4.5 mmol/L",
+        "Uncontrolled arrhythmias",
+        "Clinically important haematological or biochemical abnormality"
+      ],
+      "table1": {
+        "n": 19257,
+        "age_mean": 63,
+        "female_pct": 23,
+        "diabetes_pct": 27,
+        "hypertension_pct": 100.0,
+        "atrial_fibrillation_pct": null,
+        "prior_mi_pct": null,
+        "heart_failure_pct": null,
+        "prior_stroke_tia_pct": 11,
+        "lvef_mean": null,
+        "sbp_mean": 164.0,
+        "heart_rate_mean": null,
+        "bmi_mean": 29,
+        "egfr_mean": null,
+        "creatinine_mean_mg_dl": 1.12,
+        "ckd_pct": null,
+        "current_smoker_pct": 33,
+        "value_notes": {
+          "source": "SECONDARY SOURCE: RxFiles (Sept 2005) summary of Lancet Table 1 (rounded). Lancet full text inaccessible (403); n, age 40-79 and arm sizes verified from PubMed abstract.",
+          "female_pct": "77% male reported -> 23% female",
+          "current_smoker_pct": "'smoking 33%' as qualifying risk factor (current smoking)",
+          "creatinine_mean_mg_dl": "99 umol/L / 88.4",
+          "prior_mi_pct": "Excluded by design (~0%)",
+          "heart_failure_pct": "Excluded by design (~0%)",
+          "sbp_mean": "Arm-specific baseline SBP 164.1 vs 163.9 (RxFiles), n-weighted",
+          "peripheral_arterial_disease_pct": 6,
+          "lvh_pct": 22,
+          "microalbuminuria_proteinuria_pct": 62
+        }
+      },
+      "source_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/16154016/",
+        "https://www.rxfiles.ca/rxfiles/uploads/documents/HTN-QandA-ASCOT.pdf",
+        "https://www.acc.org/Latest-in-Cardiology/Clinical-Trials/2010/11/17/12/05/ASCOT--Blood-Pressure-Arm"
+      ]
+    },
+    "EMPA-REG OUTCOME": {
+      "full_name": "Empagliflozin Cardiovascular Outcome Event Trial in Type 2 Diabetes Mellitus Patients",
+      "citation": "Zinman B, Wanner C, Lachin JM, et al. Empagliflozin, Cardiovascular Outcomes, and Mortality in Type 2 Diabetes. N Engl J Med 2015;373(22):2117-28. doi:10.1056/NEJMoa1504720. PMID 26378978. NCT01131676",
+      "arms": {
+        "first": "Empagliflozin 10 or 25 mg daily, pooled (n=4687)",
+        "second": "Placebo (n=2333)"
+      },
+      "primary_endpoint": "3-point MACE: death from cardiovascular causes, nonfatal myocardial infarction (excluding silent MI), or nonfatal stroke",
+      "primary_result": {
+        "measure": "HR",
+        "estimate": 0.86,
+        "ci_lower": 0.74,
+        "ci_upper": 0.99,
+        "ci_level": 0.9502,
+        "p": 0.04,
+        "events": "490/4687 (10.5%) vs 282/2333 (12.1%)",
+        "note": "95.02% CI due to interim-analysis alpha spending; P=0.04 for superiority (noninferiority P<0.001)"
+      },
+      "itt": {
+        "value": false,
+        "description": "Modified ITT: primary analysis in the treated set (all randomized patients who received >=1 dose; 7020 of 7028 randomized)"
+      },
+      "followup_months": {
+        "value": 37.2,
+        "type": "median",
+        "raw": "median observation time 3.1 years"
+      },
+      "inclusion_criteria": [
+        "Type 2 diabetes, age >=18",
+        "HbA1c 7.0-9.0% if drug-naive or 7.0-10.0% on stable background therapy (>=12 weeks)",
+        "BMI <=45 kg/m2",
+        "Established CV disease: prior MI, multivessel or single-vessel CAD (with ischemia/UA), unstable angina, prior stroke, or occlusive PAD"
+      ],
+      "exclusion_criteria": [
+        "eGFR <30 mL/min/1.73 m2 (MDRD)",
+        "ACS, stroke or TIA within 2 months",
+        "Planned cardiac surgery/angioplasty within 3 months",
+        "Fasting glucose >240 mg/dL (confirmed) during run-in",
+        "ALT/AST/ALP >3x ULN",
+        "Cancer within 5 years; bariatric surgery within 2 years; systemic steroids"
+      ],
+      "table1": {
+        "n": 7020,
+        "age_mean": 63.1,
+        "female_pct": 28.55,
+        "diabetes_pct": 100.0,
+        "hypertension_pct": null,
+        "atrial_fibrillation_pct": 5.5,
+        "prior_mi_pct": 46.6,
+        "heart_failure_pct": 10.1,
+        "prior_stroke_tia_pct": 23.2,
+        "lvef_mean": null,
+        "sbp_mean": 135,
+        "heart_rate_mean": null,
+        "bmi_mean": 30.6,
+        "egfr_mean": 74,
+        "creatinine_mean_mg_dl": null,
+        "ckd_pct": 25.9,
+        "current_smoker_pct": 13,
+        "value_notes": {
+          "n,age,female": "ClinicalTrials.gov posted results (treated set 7020; female 2004)",
+          "AF, prior MI, HF, CKD": "Fitchett et al. Eur Heart J 2016 (PMC4872285), treated set n=7020",
+          "stroke, SBP, eGFR, smoker, BMI": "Cardiovasc Diabetol 2014 rationale/baseline paper (PMC4072621), preliminary treated set n=7034",
+          "prior_stroke_tia_pct": "History of stroke only (1631/7034); TIA not reported",
+          "egfr_mean": "MDRD, 74 (SD 21)",
+          "ckd_pct": "eGFR <60",
+          "hypertension_pct": "Not verified; 94% on antihypertensive therapy (PMC4072621)",
+          "current_smoker_pct": "13% current, 46% ex-smoker (n=7034)"
+        }
+      },
+      "source_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/26378978/",
+        "https://clinicaltrials.gov/study/NCT01131676",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC4072621/",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC4872285/"
+      ]
+    },
+    "EMPEROR-Preserved": {
+      "full_name": "Empagliflozin Outcome Trial in Patients with Chronic Heart Failure with Preserved Ejection Fraction",
+      "citation": "Anker SD, Butler J, Filippatos G, et al. Empagliflozin in Heart Failure with a Preserved Ejection Fraction. N Engl J Med 2021;385(16):1451-1461. doi:10.1056/NEJMoa2107038. PMID 34449189. NCT03057951",
+      "arms": {
+        "first": "Empagliflozin 10 mg daily (n=2997)",
+        "second": "Placebo (n=2991)"
+      },
+      "primary_endpoint": "Composite of adjudicated cardiovascular death or adjudicated hospitalization for heart failure (time to first event)",
+      "primary_result": {
+        "measure": "HR",
+        "estimate": 0.79,
+        "ci_lower": 0.69,
+        "ci_upper": 0.9,
+        "ci_level": 0.95,
+        "p": "<0.001 (slides: 0.0003)",
+        "events": "415/2997 (13.8%) vs 511/2991 (17.1%)"
+      },
+      "itt": {
+        "value": true,
+        "description": "All randomized patients analysed per assigned group (5988 randomized = analysed)"
+      },
+      "followup_months": {
+        "value": 26.2,
+        "type": "median"
+      },
+      "inclusion_criteria": [
+        "Age >=18 (>=20 Japan)",
+        "Chronic HF NYHA II-IV with LVEF >40%",
+        "NT-proBNP >300 pg/mL (>900 if AF)",
+        "Structural heart disease within 6 months or HF hospitalization within 12 months",
+        "Stable oral diuretic dose if prescribed; with or without diabetes"
+      ],
+      "exclusion_criteria": [
+        "eGFR <20 mL/min/1.73 m2 or dialysis",
+        "SBP >=180 mm Hg at randomization; symptomatic hypotension or SBP <100 mm Hg",
+        "MI, CABG/major CV surgery, stroke or TIA within 90 days",
+        "Acute decompensated HF; heart transplant",
+        "Current/prior SGLT2 inhibitor use; history of ketoacidosis",
+        "Liver disease; pregnancy"
+      ],
+      "table1": {
+        "n": 5988,
+        "age_mean": 71.85,
+        "female_pct": 44.69,
+        "diabetes_pct": 49.06,
+        "hypertension_pct": null,
+        "atrial_fibrillation_pct": 51.05,
+        "prior_mi_pct": null,
+        "heart_failure_pct": 100.0,
+        "prior_stroke_tia_pct": null,
+        "lvef_mean": 54.3,
+        "sbp_mean": null,
+        "heart_rate_mean": 70.36,
+        "bmi_mean": 29.84,
+        "egfr_mean": 60.6,
+        "creatinine_mean_mg_dl": null,
+        "ckd_pct": 50,
+        "current_smoker_pct": null,
+        "value_notes": {
+          "n,age,female": "ClinicalTrials.gov posted results",
+          "diabetes, AF, LVEF, eGFR, CKD": "ESC 2021 presentation slides (Anker/Butler), baseline table by arm",
+          "ckd_pct": "eGFR <60 (50% in each arm)",
+          "egfr_mean": "CKD-EPI, 60.6 +/- 19.8",
+          "heart_rate_mean, bmi_mean": "n-weighted from SBP-subgroup Table 1 of B\u00f6hm et al. Eur Heart J 2023 (PMC9890225); derived",
+          "sbp_mean, hypertension_pct, prior_mi_pct, smoker": "Not verified (NEJM Table 1 paywalled)"
+        }
+      },
+      "source_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/34449189/",
+        "https://clinicaltrials.gov/study/NCT03057951",
+        "https://clinicaltrialresults.org/wp-content/uploads/2021/08/Anker_Emperor-Preserved.pdf",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC9890225/"
+      ]
+    },
+    "EAST-AFNET 4": {
+      "full_name": "Early Treatment of Atrial Fibrillation for Stroke Prevention Trial (EAST-AFNET 4)",
+      "citation": "Kirchhof P, et al. Early Rhythm-Control Therapy in Patients with Atrial Fibrillation. N Engl J Med. 2020;383(14):1305-1316. doi:10.1056/NEJMoa2019422. PMID 32865375",
+      "arms": {
+        "first": "Early rhythm control (antiarrhythmic drugs or AF ablation started soon after randomization)",
+        "second": "Usual care (rate control; rhythm control only for AF-related symptoms)"
+      },
+      "primary_endpoint": "First primary outcome: composite of death from cardiovascular causes, stroke, or hospitalization with worsening of heart failure or acute coronary syndrome (time to first event). Second primary outcome: nights spent in hospital per year.",
+      "primary_result": {
+        "measure": "HR",
+        "estimate": 0.79,
+        "ci_lower": 0.66,
+        "ci_upper": 0.94,
+        "ci_level": 0.96,
+        "p": 0.005,
+        "events": "249 (3.9/100 PY) vs 316 (5.0/100 PY)"
+      },
+      "itt": {
+        "value": true,
+        "description": "Intention-to-treat (all randomized, analysed by assigned group); open-label with blinded outcome assessment. Trial stopped early for efficacy at 3rd interim analysis."
+      },
+      "followup_months": {
+        "value": 61.2,
+        "type": "median",
+        "note": "median 5.1 years per patient"
+      },
+      "inclusion_criteria": [
+        "Early AF: diagnosed <=1 year before enrolment (ECG-documented episode >30 s within 12 months)",
+        "Age >75 years, OR prior stroke/TIA, OR >=2 of: age >65, female sex, hypertension (treated or BP >145/90), diabetes (drug-treated) or impaired glucose tolerance, severe CAD (prior MI, CABG or PCI), stable heart failure (NYHA II or LVEF <50%), LVH >15 mm, CKD MDRD stage 3-4, peripheral artery disease",
+        "Age >=18"
+      ],
+      "exclusion_criteria": [
+        "Life expectancy <1 year",
+        "Prior AF ablation or surgical AF therapy",
+        "Prior failure of amiodarone",
+        "Not suitable for rhythm control",
+        "Severe mitral stenosis or prosthetic mitral valve",
+        "Clinically relevant hepatic dysfunction; thyroid dysfunction requiring therapy",
+        "Severe renal dysfunction (CKD stage 5 / (near) dialysis)",
+        "Drug abuse; pregnancy/breastfeeding"
+      ],
+      "table1": {
+        "n": 2789,
+        "age_mean": 70.5,
+        "female_pct": 46.4,
+        "diabetes_pct": 24.9,
+        "hypertension_pct": 87.9,
+        "atrial_fibrillation_pct": 100.0,
+        "prior_mi_pct": null,
+        "heart_failure_pct": 28.6,
+        "prior_stroke_tia_pct": 11.8,
+        "lvef_mean": null,
+        "sbp_mean": 137.2,
+        "heart_rate_mean": null,
+        "bmi_mean": 29.3,
+        "egfr_mean": null,
+        "creatinine_mean_mg_dl": null,
+        "ckd_pct": 12.6,
+        "current_smoker_pct": null,
+        "value_notes": "n=2789 is from NEJM abstract. NEJM Table 1 could not be accessed (nejm.org HTTP 403). All other values DERIVED by pooling the diabetes/no-diabetes columns (n=2090+694=2784 of 2789 ITT) of Table 1 in the prespecified secondary analysis JAMA Cardiol 2025 (PMC12311819); both arms pooled. ckd_pct = CKD MDRD stage 3 or 4 (12.6%) -- note Wiki Journal Club lists 'CKD 44%', which appears to be a transcription error (44% is the cognitive-impairment figure). heart_failure_pct = 'stable heart failure'. Diabetes = diabetes vs no diabetes as classified in that paper. Median time since AF diagnosis 36 days (NEJM abstract)."
+      },
+      "source_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/32865375/",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC12311819/",
+        "https://clinicaltrials.gov/study/NCT01288352",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC8934687/"
+      ]
+    },
+    "CABANA": {
+      "full_name": "Catheter Ablation vs Antiarrhythmic Drug Therapy for Atrial Fibrillation (CABANA)",
+      "citation": "Packer DL, et al. Effect of Catheter Ablation vs Antiarrhythmic Drug Therapy on Mortality, Stroke, Bleeding, and Cardiac Arrest Among Patients With Atrial Fibrillation: The CABANA Randomized Clinical Trial. JAMA. 2019;321(13):1261-1274. doi:10.1001/jama.2019.0693. PMID 30874766",
+      "arms": {
+        "first": "Catheter ablation (pulmonary vein isolation +/- additional ablation), n=1108",
+        "second": "Drug therapy (rate and/or rhythm control drugs per guidelines), n=1096"
+      },
+      "primary_endpoint": "Composite of death, disabling stroke, serious bleeding, or cardiac arrest",
+      "primary_result": {
+        "measure": "HR",
+        "estimate": 0.86,
+        "ci_lower": 0.65,
+        "ci_upper": 1.15,
+        "ci_level": 0.95,
+        "p": 0.3,
+        "events": "89 (8.0%) vs 101 (9.2%)"
+      },
+      "itt": {
+        "value": true,
+        "description": "Primary analysis was intention-to-treat. Heavy crossover: 27.5% of drug arm received ablation; 9.2% of ablation arm did not undergo ablation. Per-protocol/treatment-received analyses (not primary) favoured ablation."
+      },
+      "followup_months": {
+        "value": 48.5,
+        "type": "median"
+      },
+      "inclusion_criteria": [
+        "Symptomatic AF warranting therapy",
+        "Age >=65, or age <65 with >=1 stroke risk factor (hypertension, heart failure, prior stroke, diabetes, or other heart problems)",
+        ">=2 paroxysmal AF episodes or >=1 persistent AF episode in prior 6 months",
+        "Suitable for both catheter ablation and drug therapy"
+      ],
+      "exclusion_criteria": [
+        "Prior left atrial catheter ablation for AF",
+        "Failure of >=2 antiarrhythmic drugs",
+        "Full list in eTable 1 of Supplement 3 (not retrieved)"
+      ],
+      "table1": {
+        "n": 2204,
+        "age_mean": 68,
+        "female_pct": 37.2,
+        "diabetes_pct": 25.5,
+        "hypertension_pct": 80.6,
+        "atrial_fibrillation_pct": 100.0,
+        "prior_mi_pct": null,
+        "heart_failure_pct": 15.3,
+        "prior_stroke_tia_pct": 10.0,
+        "lvef_mean": null,
+        "sbp_mean": null,
+        "heart_rate_mean": null,
+        "bmi_mean": 30,
+        "egfr_mean": null,
+        "creatinine_mean_mg_dl": null,
+        "ckd_pct": null,
+        "current_smoker_pct": null,
+        "value_notes": "age_mean is actually MEDIAN (68; arm medians 68 and 67). bmi_mean is MEDIAN (30 in both arms). Coronary artery disease 19.2% (prior MI not separately reported). LVEF <=35% in 4.5% of those with measurement (69/1530); mean LVEF not in Table 1. 42.9% paroxysmal, 57.1% persistent AF. Hypertension alone 80.6%; hypertension or LVH 84.0%. SBP, heart rate, renal function, smoking not in main Table 1."
+      },
+      "source_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/30874766/",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC6450284/"
+      ]
+    },
+    "INVEST": {
+      "full_name": "International Verapamil SR-Trandolapril Study (INVEST)",
+      "citation": "Pepine CJ, et al. A calcium antagonist vs a non-calcium antagonist hypertension treatment strategy for patients with coronary artery disease. The International Verapamil-Trandolapril Study (INVEST): a randomized controlled trial. JAMA. 2003;290(21):2805-2816. doi:10.1001/jama.290.21.2805. PMID 14657064",
+      "arms": {
+        "first": "Calcium antagonist strategy (verapamil SR, add trandolapril and/or HCTZ), n=11,267",
+        "second": "Non-calcium antagonist strategy (atenolol, add HCTZ and/or trandolapril), n=11,309"
+      },
+      "primary_endpoint": "First occurrence of all-cause death, nonfatal myocardial infarction, or nonfatal stroke",
+      "primary_result": {
+        "measure": "RR (reported as relative risk; Cox-model hazard)",
+        "estimate": 0.98,
+        "ci_lower": 0.9,
+        "ci_upper": 1.06,
+        "ci_level": 0.95,
+        "p": null,
+        "events": "9.93% vs 10.17%; 2269 total primary events"
+      },
+      "itt": {
+        "value": true,
+        "description": "Open-label, blinded endpoint (PROBE); analysis by randomized strategy (intention-to-treat)."
+      },
+      "followup_months": {
+        "value": 32.4,
+        "type": "mean",
+        "note": "mean 2.7 years (range 1 day-5.4 y); 61,835 patient-years"
+      },
+      "inclusion_criteria": [
+        "Age >=50",
+        "Documented CAD (MI >=3 months prior, angiographic >50% stenosis, classic angina, or concordant abnormal stress tests)",
+        "Essential hypertension (JNC VI) requiring drug therapy",
+        "Heart failure NYHA I-III allowed"
+      ],
+      "exclusion_criteria": [
+        "Beta-blocker use within 2 weeks of randomization",
+        "Beta-blocker taken for MI within previous 12 months",
+        "(Other standard exclusions, e.g., NYHA IV HF, not retrieved verbatim)"
+      ],
+      "table1": {
+        "n": 22576,
+        "age_mean": 66.05,
+        "female_pct": 52.1,
+        "diabetes_pct": 28.35,
+        "hypertension_pct": 100.0,
+        "atrial_fibrillation_pct": null,
+        "prior_mi_pct": 31.95,
+        "heart_failure_pct": 5.55,
+        "prior_stroke_tia_pct": 5.15,
+        "lvef_mean": null,
+        "sbp_mean": 149.5,
+        "heart_rate_mean": 75.55,
+        "bmi_mean": 29.15,
+        "egfr_mean": null,
+        "creatinine_mean_mg_dl": null,
+        "ckd_pct": 1.9,
+        "current_smoker_pct": 12.45,
+        "value_notes": "Pooled by arm-n weighting from JAMA Table 1 (extracted via WebFetch summary of jamanetwork full text; verify against PDF). prior_stroke_tia_pct is 'stroke' only. ckd_pct = 'renal impairment' 1.9%. current_smoker = 'current/recent smoker'. 'Arrhythmia' history 7.1% (AF not separately reported). SBP/HR measured in n=9758/9791. Hypertension 100% by design."
+      },
+      "source_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/14657064/",
+        "https://jamanetwork.com/journals/jama/fullarticle/197761"
+      ]
+    },
+    "CAROLINA": {
+      "full_name": "Cardiovascular Outcome Study of Linagliptin Versus Glimepiride in Patients With Type 2 Diabetes (CAROLINA)",
+      "citation": "Rosenstock J, et al. Effect of Linagliptin vs Glimepiride on Major Adverse Cardiovascular Outcomes in Patients With Type 2 Diabetes: The CAROLINA Randomized Clinical Trial. JAMA. 2019;322(12):1155-1166. doi:10.1001/jama.2019.13772. PMID 31536101",
+      "arms": {
+        "first": "Linagliptin 5 mg once daily, n=3023",
+        "second": "Glimepiride 1-4 mg once daily, n=3010"
+      },
+      "primary_endpoint": "Time to first 3-point MACE: cardiovascular death, nonfatal MI, or nonfatal stroke (noninferiority margin HR upper bound <1.3); original 4P-MACE including hospitalization for unstable angina changed by amendment",
+      "primary_result": {
+        "measure": "HR",
+        "estimate": 0.98,
+        "ci_lower": 0.84,
+        "ci_upper": 1.14,
+        "ci_level": 0.9547,
+        "p": "<0.001 noninferiority; 0.76 superiority",
+        "events": "356/3023 (11.8%) vs 362/3010 (12.0%)"
+      },
+      "itt": {
+        "value": true,
+        "description": "Analysed in 6033 treated participants (of 6042 randomized; 9 excluded, e.g., randomized at multiple sites) by assigned group; described as ITT-type treated set."
+      },
+      "followup_months": {
+        "value": 75.6,
+        "type": "median",
+        "note": "median 6.3 years"
+      },
+      "inclusion_criteria": [
+        "Adults with type 2 diabetes",
+        "HbA1c 6.5-8.5% (6.5-7.5% if on SU/glinide mono or dual therapy with metformin/AGI)",
+        "High CV risk: established ASCVD, OR >=2 risk factors (T2D >10y, SBP >140 or on BP drug, current smoker, LDL >=135 mg/dL or lipid therapy), OR age >=70, OR microvascular complications (eGFR 30-59, UACR >=30, proliferative retinopathy)"
+      ],
+      "exclusion_criteria": [
+        "Insulin therapy",
+        "Prior DPP-4 inhibitor, GLP-1 RA, or thiazolidinedione exposure",
+        "NYHA class III-IV heart failure",
+        "eGFR <30 implied by microvascular criterion range (eGFR 15-29 present in 0.4%)"
+      ],
+      "table1": {
+        "n": 6033,
+        "age_mean": 64.0,
+        "female_pct": 39.9,
+        "diabetes_pct": 100.0,
+        "hypertension_pct": 90.1,
+        "atrial_fibrillation_pct": null,
+        "prior_mi_pct": null,
+        "heart_failure_pct": 4.5,
+        "prior_stroke_tia_pct": 12.1,
+        "lvef_mean": null,
+        "sbp_mean": 136,
+        "heart_rate_mean": 71,
+        "bmi_mean": 30.1,
+        "egfr_mean": 76.7,
+        "creatinine_mean_mg_dl": null,
+        "ckd_pct": 18.8,
+        "current_smoker_pct": 19.8,
+        "value_notes": "Pooled from JAMA Table 1 (PMC). prior_stroke_tia_pct is 'cerebrovascular disease' (12.1%), not strictly stroke/TIA. Prior MI not reported; coronary artery disease 31.7%, any ASCVD 42.0%. eGFR by MDRD (mL/min/1.73m2). ckd_pct = eGFR <60 (18.8%). Mean HbA1c 7.2%, median diabetes duration 6.3 y."
+      },
+      "source_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/31536101/",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC6763993/",
+        "https://clinicaltrials.gov/study/NCT01243424"
+      ]
+    },
+    "CARES": {
+      "full_name": "Cardiovascular Safety of Febuxostat and Allopurinol in Patients with Gout and Cardiovascular Morbidities (CARES)",
+      "citation": "White WB, et al. Cardiovascular Safety of Febuxostat or Allopurinol in Patients with Gout. N Engl J Med. 2018;378(13):1200-1210. doi:10.1056/NEJMoa1710895. PMID 29527974",
+      "arms": {
+        "first": "Febuxostat (40 mg, titrated to 80 mg), n=3098",
+        "second": "Allopurinol (dose adjusted for kidney function, up to 600 mg), n=3092"
+      },
+      "primary_endpoint": "Composite of cardiovascular death, nonfatal MI, nonfatal stroke, or unstable angina with urgent revascularization (noninferiority margin HR 1.3)",
+      "primary_result": {
+        "measure": "HR",
+        "estimate": 1.03,
+        "ci_lower": null,
+        "ci_upper": 1.23,
+        "ci_level": "one-sided 98.5%",
+        "p": "0.002 for noninferiority",
+        "events": "335 (10.8%) vs 321 (10.4%)",
+        "secondary_of_note": "All-cause death HR 1.22 (95% CI 1.01-1.47); CV death HR 1.34 (95% CI 1.03-1.73)"
+      },
+      "itt": {
+        "value": "modified",
+        "description": "Modified ITT (randomized patients who received >=1 dose, n=6190). 56.6% discontinued trial drug and 45.0% discontinued follow-up. On-treatment analysis similar."
+      },
+      "followup_months": {
+        "value": 32,
+        "type": "median",
+        "note": "maximum 85 months"
+      },
+      "inclusion_criteria": [
+        "Men >=50 y or women >=55 y and >=2 y postmenopausal",
+        "Gout (ARA criteria)",
+        "History of major CV or cerebrovascular disease (MI, hospitalized unstable angina, coronary/cerebral revascularization, stroke, hospitalized TIA, PVD, or diabetes with micro/macrovascular disease)",
+        "Serum urate >=7.0 mg/dL, or >=6.0 mg/dL with inadequately controlled gout"
+      ],
+      "exclusion_criteria": [
+        "Secondary hyperuricemia; xanthinuria",
+        "MI or stroke within 60 days before screening",
+        "Creatinine clearance <30 mL/min (Cockcroft-Gault, ideal body weight)",
+        "ALT/AST >2x ULN",
+        "Active peptic ulcer; cancer within 5 years",
+        "Hepatitis B/C or HIV"
+      ],
+      "table1": {
+        "n": 6190,
+        "age_mean": 64,
+        "female_pct": 15.9,
+        "diabetes_pct": null,
+        "hypertension_pct": 92.4,
+        "atrial_fibrillation_pct": null,
+        "prior_mi_pct": 38.6,
+        "heart_failure_pct": 20.1,
+        "prior_stroke_tia_pct": 14.8,
+        "lvef_mean": null,
+        "sbp_mean": null,
+        "heart_rate_mean": null,
+        "bmi_mean": 33.6,
+        "egfr_mean": null,
+        "creatinine_mean_mg_dl": null,
+        "ckd_pct": 52.8,
+        "current_smoker_pct": null,
+        "value_notes": "UNVERIFIED AGAINST PRIMARY: NEJM Table 1 inaccessible (HTTP 403). age/female/HTN/MI/HF/stroke/BMI taken from Wiki Journal Club transcription (secondary). WJC calls age a MEDIAN (64). Diabetes with small-vessel disease 38.5% (per WJC) is an entry-criterion category, not total diabetes, so diabetes_pct left null. stroke may be stroke only (not TIA). ckd_pct = 'moderately impaired' renal function (CrCl 30-<60) 52.8%, from primary-author post hoc (Arthritis Rheumatol 2022, PMC9541704) Table 1 overall columns. Female 15.9% implies 84.1% male."
+      },
+      "source_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/29527974/",
+        "https://www.wikijournalclub.org/wiki/CARES",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC9541704/",
+        "https://clinicaltrials.gov/study/NCT01101035"
+      ]
+    },
+    "ENGAGE AF-TIMI 48": {
+      "full_name": "Effective Anticoagulation with Factor Xa Next Generation in Atrial Fibrillation-Thrombolysis in Myocardial Infarction 48 (ENGAGE AF-TIMI 48)",
+      "citation": "Giugliano RP, et al. Edoxaban versus warfarin in patients with atrial fibrillation. N Engl J Med. 2013;369(22):2093-2104. doi:10.1056/NEJMoa1310907. PMID 24251359",
+      "arms": {
+        "first": "High-dose edoxaban 60 mg once daily (halved to 30 mg if CrCl 30-50, weight <=60 kg, or strong P-gp inhibitor), n=7035",
+        "second": "Warfarin (INR 2.0-3.0), n=7036",
+        "not_used": "Low-dose edoxaban 30 mg (n=7034)"
+      },
+      "primary_endpoint": "Stroke (ischemic or hemorrhagic) or systemic embolism; noninferiority tested in mITT population during treatment period",
+      "primary_result_mitt_on_treatment": {
+        "measure": "HR",
+        "estimate": 0.79,
+        "ci_lower": 0.63,
+        "ci_upper": 0.99,
+        "ci_level": 0.975,
+        "p": "<0.001 for noninferiority (superiority P=0.02 per secondary source)",
+        "events": "annualized 1.18% vs 1.50%"
+      },
+      "primary_result_itt": {
+        "measure": "HR",
+        "estimate": 0.87,
+        "ci_lower": 0.73,
+        "ci_upper": 1.04,
+        "ci_level": 0.975,
+        "p": "0.08 (superiority)",
+        "events": "annualized 1.57% vs 1.80% (rates per Wiki Journal Club; HR/CI from abstract)"
+      },
+      "itt": {
+        "value": "both",
+        "description": "Primary noninferiority: modified ITT on-treatment (patients who took >=1 dose, events while on drug). Superiority: ITT over overall study period."
+      },
+      "followup_months": {
+        "value": 33.6,
+        "type": "median",
+        "note": "median 2.8 years"
+      },
+      "inclusion_criteria": [
+        "Age >=21",
+        "Documented AF within prior 12 months",
+        "CHADS2 score >=2",
+        "Planned anticoagulation for trial duration"
+      ],
+      "exclusion_criteria": [
+        "AF due to reversible disorder",
+        "Moderate/severe mitral stenosis, unresected atrial myxoma, mechanical heart valve",
+        "Creatinine clearance <30 mL/min",
+        "High bleeding risk; dual antiplatelet therapy",
+        "Acute coronary syndrome, revascularization, or stroke within 30 days (per secondary source)",
+        "Contraindication to anticoagulation"
+      ],
+      "table1": {
+        "n": 14071,
+        "age_mean": 72,
+        "female_pct": 38,
+        "diabetes_pct": 36,
+        "hypertension_pct": 94,
+        "atrial_fibrillation_pct": 100.0,
+        "prior_mi_pct": 11.4,
+        "heart_failure_pct": 58,
+        "prior_stroke_tia_pct": 28,
+        "lvef_mean": null,
+        "sbp_mean": null,
+        "heart_rate_mean": null,
+        "bmi_mean": null,
+        "egfr_mean": null,
+        "creatinine_mean_mg_dl": null,
+        "ckd_pct": 19,
+        "current_smoker_pct": null,
+        "value_notes": "NEJM Table 1 inaccessible (HTTP 403). n=7035+7036 (arm sizes confirmed in PMC4802446 Table 1). age/female/diabetes/HTN/HF/stroke-TIA are WARFARIN-arm values from Wiki Journal Club transcription (secondary; rounded); age is MEDIAN 72 (confirmed median 72 in PMC4802446). Cross-check from PMC4802446 (all 3 arms, 3-month landmark n=19,909): female 37.6%, diabetes 36.1%, HTN 93.7%, CHF 57.4%, prior stroke/TIA 28.1% -- consistent. prior_mi_pct (11.4%) is from PMC4802446 (all arms, landmark cohort). ckd_pct = CrCl <50 mL/min (~19% per WJC; 18.8% <=50 in PMC4802446). Median CrCl ~71 mL/min (not eGFR). Mean CHADS2 2.8."
+      },
+      "source_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/24251359/",
+        "https://www.wikijournalclub.org/wiki/ENGAGE_AF-TIMI_48",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC4802446/",
+        "https://clinicaltrials.gov/study/NCT00781391"
+      ]
+    }
+  },
+  "notes": {
+    "part_A": [
+      "PARADIGM-HF NEJM, COMET/ELITE II/LIFE Lancet pages returned 403; values for PARADIGM-HF come from the EJHF baseline paper + a PMC secondary analysis; COMET mostly from abstract + secondary summaries; ELITE II only abstract-level.",
+      "COMET female %, SBP, HR, AF are from secondary summaries (ACC, substack), not the Lancet Table 1.",
+      "TRANSFORM-HF age is a median; LVEF only categorical; hypertension/prior MI/stroke/smoking/creatinine not found in Table 1.",
+      "PARADIGM-HF eGFR/creatinine/CKD derived by n-weighting subgroups of PMC7754973 (n=8399, i.e. 43 fewer than randomised)."
+    ],
+    "part_B": [
+      "NEJM and JAMA sites returned HTTP 403, so primary Table 1s were reconstructed from ClinicalTrials.gov results plus open-access secondary analyses (PMC) whose Table 1 partitions the full randomized cohort.",
+      "PLATO/ARISTOTLE/ROCKET AF/RE-LY age_mean from CT.gov means; the NEJM papers report medians.",
+      "ROCKET AF continuous variables are medians.",
+      "RE-LY comorbidities are all-3-arm pooled values from a secondary reproduction (BMJ 2011 PMC3204867), not arm-restricted.",
+      "ALLHAT prior MI and stroke only reported combined (23.4%)."
+    ],
+    "part_C": [
+      "NEJM, Lancet, JAMA and AHA full texts returned HTTP 403; values came from PubMed abstracts (E-utilities), ClinicalTrials.gov posted results, PMC secondary papers, an ESH-hosted Lancet PDF (VALUE), ESC slides (EMPEROR-Preserved), and RxFiles/Wiki Journal Club (secondary; flagged).",
+      "ASCOT-BPLA Table 1 values are from a secondary summary (RxFiles) and rounded; treat as approximate.",
+      "ONTARGET HTN (69%), prior MI (48%) and heart rate (68) are from Wiki Journal Club (secondary, ramipril arm, rounded). Other ONTARGET fields are from the 3-arm cohort (N=25,620), not strictly tel+ram only.",
+      "ONTARGET: NEJM abstract calls the effect a 'relative risk' 1.01 (0.94-1.09); it is widely quoted as HR.",
+      "EMPA-REG: primary CI is 95.02%, analysis is modified ITT (treated set). Some Table 1 values come from the 7034-patient preliminary treated set.",
+      "DCP: prior MI 3.6% (EHR-derived) is low; current smoker 21.9% of all randomized vs 23.4% in JAHA table (denominator difference).",
+      "VALUE baseline diabetes is not in the main-paper Table 1; ~31% is only a back-calculation.",
+      "EMPEROR-Preserved heart rate and BMI are n-weighted from SBP subgroups; not reported directly."
+    ],
+    "part_D": [
+      "PubMed web pages, NCBI Bookshelf and nejm.org/ahajournals returned CAPTCHA/403; abstracts were retrieved via NCBI E-utilities efetch instead (same text as PubMed).",
+      "EAST-AFNET 4 Table 1 values are derived from a secondary (prespecified) analysis pooling diabetes strata (n=2784/2789), not from NEJM Table 1. HR CI is 96% (not 95%).",
+      "CARES Table 1 largely from Wiki Journal Club (secondary); treat as unverified. Primary HR CI is a ONE-SIDED 98.5% upper bound 1.23; no lower bound in abstract. Commonly quoted signal is CV death HR 1.34, not the primary.",
+      "ENGAGE: CI level is 97.5% for stroke/SE. mITT on-treatment HR 0.79 (0.63-0.99) vs ITT HR 0.87 (0.73-1.04, P=0.08) -- ITT not significant. Table 1 values are warfarin-arm (secondary transcription) with pooled cross-check.",
+      "CAROLINA CI level is 95.47% (alpha adjusted for interim), not 95%.",
+      "INVEST result reported as 'relative risk' 0.98 (0.90-1.06) in abstract; Table 1 via WebFetch model summary of JAMA full text -- spot-check recommended.",
+      "CABANA age and BMI are medians; ITT HR 0.86 (0.65-1.15) is non-significant; per-protocol/treatment-received results were not retrieved here and should not be confused with the ITT primary."
+    ],
+    "general": [
+      "Most NEJM/Lancet/JAMA pages returned 403; values drawn from PubMed abstracts (E-utilities), ClinicalTrials.gov results, PMC secondary/baseline papers, and in some cases secondary summaries (Wiki Journal Club, RxFiles, ACC) -- see per-trial value_notes. Values from secondary summaries should be treated as unverified."
+    ]
+  }
+}
