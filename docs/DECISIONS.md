@@ -2537,3 +2537,11 @@ See `docs/PROTOCOL_V1_2_AMENDMENT.md`. Main fixes:
 - harmonised stroke codes.
 
 The reviewer's synthetic cases were re-run and behave as intended.
+
+### 2026-09-25 — Phase 1 (v1.1) and phase 2 (v1.2) complete; final report
+- **Phase 1** re-run with the exact matcher: 15 trials × 4 populations, 59 grids, all complete.
+- **Phase 2** ran once from commit 043740e (tag protocol-v1.2), for 14 trials × 4 populations.
+- **Headline:** the ECG improves balance of physiologic confounders (LV structure/function,
+  core physiology) in physiology trials, but effect-estimate agreement with the RCTs does not
+  improve: primary set of 10 trials, all paired p > 0.2. H5 is not supported.
+- Results are in `report.md`, `docs/PHASE2_SUMMARY_*.md` and `docs/V11_CAPTURE_MAP_*.md`.

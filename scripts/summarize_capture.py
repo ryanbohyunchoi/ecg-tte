@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from trial_specs import TRIALS  # noqa: E402
+from trial_specs import ONE_PER_RCT_EXCLUDE, TRIALS  # noqa: E402
 
 A = Path("/mnt/raid0/rbc58/ecg-tte/audits")
 POP = sys.argv[1] if len(sys.argv) > 1 else "all"   # all | op | shd | 2016  (v1.1 grids: claude-cap4-<pop>-<trial>)
@@ -55,7 +55,7 @@ def main():
         if PRIMARY_ONLY:  # v1.1: rule defined in the all-initiator population (protocol 4c)
             ref = A / f"claude-cap4-all-{n}" / "summary_pooled.csv"
             ref = pd.read_csv(ref, index_col=0) if ref.exists() else d
-            if ref.loc["clinical (reference)", "pairs"] < MIN_PAIRS:
+            if ref.loc["clinical (reference)", "pairs"] < MIN_PAIRS or n in ONE_PER_RCT_EXCLUDE:  # v1.2: one per RCT
                 continue
         role = TRIALS[key]["role"]
         for dom, _ in DOMAINS:

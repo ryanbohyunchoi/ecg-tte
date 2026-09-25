@@ -1079,4 +1079,5 @@ PDF regeneration not confirmed. Preserve all original runs and restrictions.
 - [ ] Negative-control outcomes; protocol freeze before any trial outcome.
 - [x] Overnight 13-trial expansion (12 analysed; TRITON failed feasibility); report.md.
 - [x] Ryan decisions; published HRs verified; protocol v1 frozen (tag protocol-v1).
-- [ ] Phase 2: outcome extraction code (per protocol §4b/§8), review, then one run per trial x arm x imputation.
+- [x] Phase 2: outcome extraction code reviewed (v1.2), run once; results in report.md.
+- [ ] Ryan: framing decision and follow-ups (report.md §7).

@@ -1,410 +1,319 @@
-# ECG-TTE balance study: report (v3, 2026-09-24)
+# ECG-TTE: final results — balance (phase 1) and effect estimates (phase 2)
 
-For Ryan. **Balance only; no outcome has been extracted or estimated.** Aggregates only.
-- Decision log: `docs/DECISIONS.md`.
-- Full v3 tables: `docs/V3_TABLES_2026_09_24.md`.
-- The overnight report (all initiators, pre-v3) is kept at `docs/REPORT_OVERNIGHT_2026_09_24.md`.
+**Date:** 2026-09-25 (overnight run). For Ryan. Aggregates only.
 
-## 0. Latest update (v4): capture map across four PS arms
+**Protocol:** `docs/PROTOCOL_V1.md` (tag `protocol-v1`), amended before any outcome extraction by
+`docs/PROTOCOL_V1_1_AMENDMENT.md` (tag `protocol-v1.1`) and `docs/PROTOCOL_V1_2_AMENDMENT.md`
+(tag `protocol-v1.2`). Phase 2 ran once, from commit `043740e` (= `protocol-v1.2`).
 
-Your follow-ups have been applied:
-- **Full echo report:** `bb2238/metadata/echo_metadata_2026_06_12.parquet` now drives the echo panel.
-- **Primary population:** all initiators; outpatient initiators are a sensitivity analysis.
-- **Switcher design:** PARADIGM-HF switcher added. The PARAGON-HF switcher failed feasibility
-  (251 ARNI users with an ECG).
-- **Labs:** kept as supporting targets only. They were imbalanced before matching (excess
-  0.02–0.09) and every arm balances them to chance.
+**Earlier reports:** `docs/REPORT_V3_2026_09_24.md`, `docs/REPORT_OVERNIGHT_2026_09_24.md`.
 
-The **clinical PS (reference)** is the "full-data" PS: about 30–36 hand-picked covariates
-including measured EF, BP, HR, BMI, creatinine, K, Na, Hb, diagnoses, medications and visits. It
-is the best case when the measurements exist.
+---
 
-**Capture map (primary, all initiators; 8 physiology trials, 5 controls).** Each cell is the
-median % of the pre-matching excess imbalance removed. 100% means balanced to the level of a
-randomised sample; negative means worse than before matching.
-- Echo domains come from the full echo report (latest study in the prior year; 12–63% of patients).
-- Full tables: `docs/CAPTURE_MAP_ALL_INITIATORS_2026_09_24.md`; outpatient version:
-  `docs/CAPTURE_MAP_OUTPATIENT_2026_09_24.md`.
+## 1. Bottom line
 
-| Physiology trials | Sparse | Sparse + ECG | hdPS200 | hdPS200 + ECG | Clinical PS |
-|---|---|---|---|---|---|
-| Medications | 27% | 46% | 83% | 85% | 114% |
-| Healthcare use | 41% | 54% | 86% | 91% | 110% |
-| Rest of coded record | 43% | 46% | 88% | 93% | 63% |
-| Core-9 physiology (EF, vitals, basic labs; measured) | 23% | 53% | 70% | 76% | 108% |
-| Echo: LV function | −5% | 34% | 26% | 57% | 73% |
-| **Echo: LV structure / wall thickness** | 16% | **82%** | 55% | **88%** | 71% |
-| Echo: diastolic function / LA | 74% | 89% | 68% | 81% | 78% |
-| Echo: RV / pulmonary pressure | 74% | 104% | 88% | 93% | 81% |
-| Echo: valves | 55% | 27% | 53% | 47% | 58% |
-| NT-proBNP | 83% | 100% | 98% | 96% | 88% |
-| Prognostic risk score | 66% | 72% | 98% | 105% | 85% |
-| Median pairs retained | 1180 | 1066 | 979 | 913 | 1117 |
+1. **Balance: the ECG captures cardiac structure and function that codes miss.**
+   - In the physiology trials (primary set, all initiators; echo scored from 2016-07-31), raw ECG
+     embeddings added to a codes-only PS raised capture of echo LV structure from 47% to 81% and
+     of measured core physiology from 19% to 48%.
+   - That is at or above what hdPS achieves for LV structure (63%). hdPS remains far better for
+     the coded record (medications 83%, rest of record 87%).
+   - Combining hdPS and the ECG gives the best capture of LV structure (87%). It even exceeds the
+     full-data clinical PS (70%), which contains measured EF.
+   - The ECG does **not** capture valve disease (20% → 5%).
+2. **The specificity hypothesis (H2) is only partly supported after the audit fixes.**
+   - The ECG's gain on core physiology is larger in physiology trials than in controls (p = 0.026).
+   - For LV structure the difference is borderline (p = 0.089; p = 0.015 in the post-2016
+     sensitivity cohort).
+   - For LV function it is not supported (p = 0.33).
+3. **Effect estimates: better balance did not produce estimates closer to the RCTs (H5 not
+   supported).** Across the 10 primary-set trials:
 
-| Controls (ACS, AF anticoagulation, HTN) | Sparse | Sparse + ECG | hdPS200 | hdPS200 + ECG | Clinical PS |
-|---|---|---|---|---|---|
-| Core-9 physiology | 46% | 53% | 74% | 82% | 103% |
-| Echo: LV structure | 32% | 43% | 41% | 60% | 39% |
-| Echo: valves | 32% | 44% | 85% | 83% | 51% |
-| Rest of coded record | 56% | 60% | 94% | 93% | 77% |
+   | Arm | Mean \|log HR − RCT\| | Estimate agreement |
+   |---|---|---|
+   | Sparse PS | 0.127 | 7/10 |
+   | Sparse + ECG | 0.128 | 6/10 |
+   | hdPS200 | 0.164 | 6/10 |
+   | hdPS200 + ECG | 0.147 | 6/10 |
+   | Full-data clinical PS | 0.122 | 7/10 |
+   | Unadjusted | 0.241 | 3/10 |
 
-What this shows (exploratory, balance only):
-- **H1, complementarity: supported.**
-  - The ECG captures cardiac structure and function. On LV structure it takes the sparse PS
-    from 16% to 82%, which is more than the clinical PS reaches (71%) even though that PS
-    contains measured EF.
-  - hdPS captures the coded record: medications 83%, visits 86%, rest of record 88%. The ECG
-    adds little there.
-  - Together (hdPS200 + ECG) they give the best or near-best capture in almost every domain.
-- **H2, specificity: supported.** The ECG's gain is concentrated in the pre-specified physiology
-  trials:
-  - LV structure: −0.085 excess SMD (7/8 trials better) vs −0.008 in controls.
-  - Core-9 physiology: −0.034 (8/8) vs −0.009.
-  - The noise placebo has no effect (median ≈ 0).
-- **H3, substitution: partial.** Of the gap between the sparse PS and the clinical PS, adding
-  the ECG closes a median of:
-  - 89% for LV structure;
-  - 98% for diastolic function;
-  - 45% for LV function;
-  - 26% for core-9 physiology.
+   - No paired comparison is significant (p = 0.23–0.92).
+   - Any PS adjustment roughly halves the error of the unadjusted estimate. Beyond that, adding
+     the ECG, hdPS or even measured EF/labs does not move estimates closer to the RCT on average.
+   - The only favourable signal is small and exploratory: in the six "close" emulations, sparse +
+     ECG has the lowest error (0.074 vs 0.093 for sparse).
+4. **Negative controls show no systematic residual confounding in any arm:** 1–4 of 30 CIs exclude
+   1 per arm, as expected by chance. The estimates are imprecise, though (mean |log HR| ≈ 0.3).
+5. **For the paper,** a defensible framing is:
+   - *mechanism and balance:* what a routine ECG adds to a code-based PS, and which confounders it
+     captures (LV structure/function) and misses (valves);
+   - *a negative effect finding:* in 10 emulations, these balance improvements did not measurably
+     improve agreement with RCT estimates.
 
-  For medications and visits it closes almost nothing (8%, 6%); hdPS closes 62% and 56% there.
-- **H4, mechanism.** The ECG sees:
-  - LV structure/hypertrophy, LV function, diastolic filling/LA, and RV/pulmonary pressure.
-  - It does **not** see valve disease: it is worse than the sparse PS on valves (27% vs 55%),
-    whereas hdPS and valve codes help.
+   The effect comparison is likely underpowered and limited by outcome measurement in the EHR
+   (§6.4).
 
-  This matches what a 12-lead ECG physiologically encodes.
-- **Caveats:**
-  - Capture percentages rest on 4–8 trials per domain, with wide per-trial variation.
-  - Echo measurements exist only for patients who had an echo (12–63%).
-  - The outpatient sensitivity analysis (about half the pairs) points the same way for LV
-    structure and function and core physiology, but is noisier.
-  - Balance only: no estimates yet.
+---
 
-## 0b. Update: two added trials, supervised SHD encoder, protocol draft
+## 2. What was done since the last report
 
-- **Screened and run:**
-  - **DAPA-HF / EMPEROR-Reduced**: SGLT2i vs DPP-4i in HFrEF with T2D; benchmark HR 0.74
-    (0.65–0.85) vs placebo. 724 in the smaller arm with ECG, but only about 400 matched pairs.
-    Rated **limited (4)**.
-  - **PARTNER 2A/3**: TAVR vs surgical AVR (ICD-10-PCS); benchmark PARTNER 2A HR 0.89
-    (0.73–1.09). 668 with ECG, but only about 350 pairs because risk-based selection separates
-    the arms. Rated **moderate (7)**.
-  - Both have poor overlap, and the ECG shows no consistent gain there.
-  - With them included, the physiology-trial medians are diluted (LV structure capture with ECG
-    82% → 66%). Without them the 8-trial result above is unchanged.
-- **PARADIGM-HF switcher:** rated moderate (7); 1,408 clinical-PS pairs.
-- **Valve disease: a supervised SHD encoder.** Yes, as an added sensitivity arm, because the BCL
-  embedding does not carry valve information.
-  - Available: the PRESENT-SHD deployment models (EF < 40; moderate/severe AS, AR, MR; any valve
-    disease; HCM/LVDD), in `/mnt/nfs_model_saves/ynhh_deployments/present_shd_models/models/`,
-    and the matching 12-lead signal CNNs in `signal_model_saves/12Lead_Signal_training/`.
-  - **Caveat: 35–42% of each cohort (23% in ALLHAT) is in PRESENT-SHD's training set.** Their
-    echo labels would leak into the echo-based evaluation. Options:
-    - (a) run PRESENT-SHD and evaluate echo balance only in cohort patients outside its training
-      set;
-    - (b) train valve/SHD heads out-of-cohort on the BCL embedding with the new echo file, as for
-      the EF heads.
+1. **Audit** of the whole pipeline, run as parallel reviews:
+   - code correctness;
+   - reporting consistency;
+   - data-level checks (tests, time windows, reproducibility, leakage).
 
-    I recommend (a) as the primary SHD arm and (b) as a check.
-- **Protocol v1 draft:** `docs/PROTOCOL_V1.md`. It lists hypotheses H1–H5, the trials with
-  verified benchmarks and ratings, the frozen PS arms, the balance metrics and tests, the phase-2
-  estimation plan, and a disclosure of every post-hoc choice. The **[OPEN]** items need your
-  decision before freezing.
+   It found no critical errors, 5 major and 12 minor code issues, and several reporting errors.
+2. **Protocol v1.1** (before outcomes) fixed them. Main items:
+   - exact PS matcher (the old ±60 window missed matches);
+   - switcher exposure features;
+   - SHD LVEF leakage mask;
+   - echo-data QC;
+   - PCI codes;
+   - deterministic tie-breaks.
 
-## 0c. Update: CV death source, primary analysis set, SHD encoder result
+   Your decisions also went in: a **sequential switcher design** for PARADIGM-HF (removes the use
+   of future information) and **echo evaluation restricted to index ≥ 2016-07-31 (option A)**,
+   plus a sensitivity analysis dropping pre-2016 patients.
+3. **Phase 1 re-run:** all 15 trials × 4 populations (primary; outpatient; SHD arms; post-2016).
+   That is 59 grids of 25 runs each, all complete.
+4. **Pre-run review of the phase-2 code** against the protocol found three bias-relevant issues:
+   - index-day deaths;
+   - I21 re-coding for 28 days after an MI;
+   - index-stay leakage.
 
-- **Cause of death was found via cards-misc.** Its notebook `ehr_omop/n2_CTVitals.ipynb` links
-  Connecticut Vital Statistics death records. The outputs are at
-  `/mnt/raid0/bb2238/ecg_ascvd/omop_database/death/death_ctvitals.parquet` and
-  `.../condition_occurrence/condition_occurrence_ct_vitals.parquet`.
-  - 151K listed-cause ICD-10 codes, 2013-01 to 2024-06, linked to our persons by MRN.
-  - 80–84% of cohort deaths have a cause record.
-  - Limitation: the listed causes are not flagged as underlying vs contributing.
-  - **CV death** = any listed I00–I99; deaths with no cause record count as CV (the trial
-    convention); sensitivity: non-CV. CV death is used wherever the RCT used it.
-- **Primary analysis set** (≥ 400 clinical-PS pairs; independent of ECG results): 12 trials.
-  PARAGON-HF, DAPA-HF and PARTNER go to the supplement. The four-arm result is unchanged there: LV
-  structure capture is sparse 16% → + ECG 84% → hdPS200 + ECG 90% (clinical PS 68%), and core
-  physiology improves with the ECG in 7/7 physiology trials.
-  - Tables: `docs/CAPTURE_MAP_PRIMARY_SET_2026_09_24.md`.
-- **SHD encoder (PRESENT-SHD signal CNNs) was built and evaluated.**
-  - Models: LVEF < 40, moderate/severe AS/AR/MR, any valve disease, HCM/LVDD.
-  - Inputs are in mV. Validation AUCs outside the training set: LVEF < 40 0.62–0.94; valve
-    disease 0.60–0.75.
-  - Echo balance for every arm was scored only in patients outside PRESENT-SHD's training set
-    (about half of each cohort).
-  - **Result:** the SHD scores do **not** fix valve imbalance (valve capture: sparse + ECG 65%, +
-    SHD 49%, + ECG + SHD 25%; noisy with half the echo sample).
-  - They do help diastolic function (84% vs 39%), RV/pulmonary pressure (73% vs −4%) and LV
-    function (70% vs 51%).
-  - They are worse than BCL for LV structure (56% vs 79%).
-  - **Recommendation:** keep BCL as the primary ECG arm and report SHD as a pre-specified secondary
-    arm. The paper can state honestly that valve disease remains the one physiologic domain no ECG
-    representation balances. hdPS (valve codes) is the better tool there.
-  - Tables: `docs/CAPTURE_MAP_SHD_PRIMARY_SET_2026_09_24.md`.
-- **Protocol updated:** PICOT table, trial-matched horizons (12/60-month sensitivity), CV-death
-  mapping, the data-sufficiency rule, and the SHD arm (`docs/PROTOCOL_V1.md`).
+   They were fixed as **Protocol v1.2**, and the reviewer's synthetic test cases were re-run and
+   behave correctly.
+5. **Phase 2:** outcome extraction and Cox estimation (matched, pair-clustered; Rubin's rules over 5
+   imputations; overlap weighting as secondary), run once for 14 trials × 4 populations.
 
-## A. Answers to your questions
+---
 
-**1. What is in the sparse PS, and how does the ECG enter it?**
-- The sparse ("dx") PS contains:
-  - **Demographics:** age, sex, index year.
-  - **Recorded diagnoses:** binary, any ICD-10 code in the 365 days before index (index day
-    excluded), using an investigator-selected cardiology list:
+## 3. Trials and emulation ratings (v1.1, all initiators)
 
-    | Covariate | ICD-10 prefixes |
-    |---|---|
-    | Ischemic heart disease/MI | I20–I25 |
-    | Atrial fibrillation | I48 |
-    | Hypertension | I10–I13, I15 |
-    | Diabetes | E08–E11, E13 |
-    | CKD | N18 |
-    | Stroke | I60–I64, I69 |
-    | COPD/asthma | J44–J46 |
-    | PAD | I70.2, I73.9 |
-    | Valve disease | I05–I08, I34–I37 |
+Rubric items: (a) comparator, (b) eligibility, (c) time zero, (d) endpoint, (e) data sufficiency
+(clinical-PS pairs). Close ≥ 8, moderate 6–7, limited ≤ 5.
 
-  - **Trial-specific extras:**
-    - PLATO: HF (I50), prior PCI/CABG status (Z95.1/Z95.5/Z98.61), GI bleeding, STEMI in 30 days.
-    - AF trials: HF, prior bleeding, TIA, liver disease.
-    - DIONYSOS and LIFE: HF.
-- **Excluded:** medications, visit counts, procedures, EF, labs and vitals.
-- **The ECG enters as covariates, not as a distance.** It is the first 32 principal components of
-  the 256-dimensional BCL embedding, added to the logistic PS alongside the diagnoses. Matching
-  is then 1:1 greedy nearest-neighbour on the PS logit (caliper 0.2 SD). **No cosine distance
-  is used anywhere.** Cosine matching was dropped earlier because it never balanced confounders.
-
-**2. Balance beyond diagnosis codes: labs, echo features, and deltas vs hdPS.** *(Superseded by §0: the full echo report is now used. The PanEcho numbers below are kept as history.)* Yes. Every trial
-now has a held-out physiology panel that never enters any PS:
-- **Core 9:** EF, SBP, DBP, HR, BMI, creatinine, K, Na, Hb.
-- **Labs 10:** NT-proBNP, hs-troponin T, eGFR, albumin, BUN, glucose, HbA1c, WBC, platelets, LDL.
-- **Echo 26:** wall thickness (IVSd, LVPWd, increased-wall-thickness flag); LV dimensions and
-  volumes; LA size and volume; E/e′; diastolic grade; RVSP; TAPSE; RV size and function; aortic
-  root; valve grades and velocities.
-  - These come from the **PanEcho echo-report labels**, which cover a curated 2015–2022 set of
-    34K studies, i.e. only **1–5% of each cohort**.
-  - The full echo report extract you mention is not reachable from this container: the JDAT
-    root is not mounted, and OMOP gold has no echo measurements. **Please point me to the
-    newest echo report file** (§E1).
-
-Scoring is by excess over chance. Small matched sets produce imbalance by chance alone, so each
-variable is scored as its |SMD| minus the |SMD| expected under randomisation given how many
-patients were measured in each matched arm (§C). Results (§C.1–C.3):
-
-- **Core-9 physiology.** In the physiology trials, raw ECG PCs and hdPS200 each remove about
-  0.04 of excess SMD from the sparse PS. The ECG does better than hdPS200 in **5 of 7** physiology
-  trials, and in only **1 of 5** controls. The combination (dx + hdPS200 + ECG) is best.
-- **Measured LVEF** (8 trials where the sparse PS leaves SMD ≥ 0.1):
-  - The ECG beats hdPS200 in **6 of 8** (COMET 0.34 vs 0.46; DIONYSOS 0.18 vs 0.33;
-    TRANSFORM-HF 0.01 vs 0.07; PARAGON-HF 0.73 vs 0.81).
-  - hdPS beats the ECG in ELITE II and ROCKET-AF.
-- **Labs 10.** Already at the chance level under every PS, including the sparse one: there is
-  no residual lab imbalance for any method to fix. One exception is NT-proBNP in DIONYSOS, where
-  the ECG halves it (0.30 → 0.15).
-- **Echo measurements.** The chance level is 0.14–0.53, because so few patients are measured.
-  The direction favours adding the ECG (median excess: dx 0.040, dx + ECG 0.015, dx + hdPS200
-  0.012, both 0.009), but **this is not interpretable at this coverage**.
-
-**3. All diagnosis codes or a cardiology subset?** Both were run (`dx` vs `dxall`; dxall =
-demographics + every 3-character ICD-10 code with ≥ 2% prevalence in the prior year).
-- All codes balance core physiology better in 10 of 12 trials and reduce non-diagnosis long-tail
-  imbalance by a median of about 40%.
-- The ECG still adds on top: dxall + ECG improves core physiology over dxall in 10 of 12 trials.
-- The cost is retention: pairs fall by a median of about 7% (COMET −23%, PARAGON-HF −51%).
-- **Recommendation:** use investigator-selected cardiology diagnoses as the named core, as in
-  RCT-DUPLICATE, and **let hdPS carry "all codes"**. This is equivalent in spirit to dxall, but
-  prioritised and capped at k. Report dxall as a sensitivity analysis.
-
-**"It never reaches the full clinical PS" — does that mean it's worse than high-dimensional PSM?**
-No. That sentence compared sparse + ECG with the clinical PS that *contains* the measured EF,
-labs and vitals. Neither sparse + ECG nor sparse + hdPS reaches that PS on physiology, and that
-gap is the price of missing measurements. Against hdPS:
-- On **physiology**, the ECG ties or beats hdPS in the physiology trials.
-- On the **coded record** (long-tail), hdPS is better.
-- They are complementary, and the combination is best on both.
-
-**What is "claims"?** A *claims-like* covariate set, not insurance data: demographics +
-diagnoses + medication orders + visit counts, without EF, labs or vitals. It mimics what a claims
-database would contain. All data here are Yale EHR (OMOP gold); medications are orders, not
-dispensings.
-
-**hdPS200 vs hdPS500.** hdPS (Schneeweiss 2009):
-- For each pre-index code, it creates binary "once / sporadic / frequent" indicators.
-- It ranks them by how differently prevalent they are between arms. This is exposure-only; no
-  outcome is used.
-- It adds the top **k** to the PS. **hdPS200 = the top 200; hdPS500 = the top 500.**
-
-More k balances more of the record but trims more pairs. **Recommendation: hdPS200 as primary**,
-with k = 100 and 500 as sensitivity analyses.
-
-## B. Your decisions and how they were applied
-
-| # | Decision | Applied |
-|---|---|---|
-| 1 | Outpatient initiation primary "when possible"; all initiators secondary | Done. PLATO and TRANSFORM-HF keep all initiators as primary because the RCTs started treatment in hospital (ACS; HF discharge); outpatient is secondary for them |
-| 2 | Verify HRs | Done (§D). One change: **ROCKET-AF benchmark → ITT HR 0.88** (0.74–1.03); 0.79 was the per-protocol estimate. COMET's 0.83 is carvedilol vs metoprolol; our arm order gives 1.20 |
-| 4 | Rank emulation quality instead of dropping trials | Proposed rubric and ranking in §D |
-| 9 | One imputation method | **sklearn chained equations for all 12 trials**, COMET included. COMET's covariates are now rebuilt with the same OMOP builder, refitted within each population. The R-MICE inputs are kept as history |
-| 10 | Best balance story before any outcome, then pre-register | No outcome touched; §F lists what to freeze |
-| 3, 5, 8 | Fine as is | Unchanged: LIFE ECG use, primary hdPS arm, cross-trial overlap |
-
-Also for consistency: COMET's ECGs were re-selected under the common rule (365 days, index day
-allowed) and re-embedded (6,381 ECGs).
-
-## C. v3 results (primary population)
-
-### C.1 Core-9 physiology, excess |SMD| over chance (0 = as balanced as a randomised sample)
-
-| Trial | Role | Pairs (dx) | dx | dx + ECG | dx + hdPS200 | dx + hdPS200 + ECG | Clinical PS (EF/labs in PS) |
-|---|---|---|---|---|---|---|---|
-| COMET | physiology | 797 | 0.079 | 0.042 | 0.054 | **0.028** | −0.018 |
-| PARADIGM-HF | physiology | 629 | 0.048 | **0.021** | 0.048 | 0.053 | −0.028 |
-| PARAGON-HF ⚠ | physiology | 297 | 0.125 | 0.058 | 0.087 | **0.022** | 0.000 |
-| TRANSFORM-HF | physiology | 697 | 0.086 | 0.029 | 0.036 | **0.018** | −0.011 |
-| ELITE II | physiology | 563 | −0.029 | −0.025 | −0.028 | −0.038 | −0.005 |
-| LIFE | physiology | 960 | 0.068 | 0.062 | 0.018 | **0.006** | 0.029 |
-| DIONYSOS | physiology | 599 | 0.110 | **0.029** | 0.060 | 0.044 | 0.001 |
-| PLATO | control | 2223 | 0.016 | 0.016 | −0.006 | −0.003 | −0.011 |
-| ARISTOTLE | control | 906 | 0.075 | 0.056 | **0.022** | 0.035 | −0.001 |
-| ROCKET-AF | control | 896 | 0.096 | 0.082 | 0.035 | **0.022** | 0.019 |
-| RE-LY | control | 420 | 0.021 | 0.050 | −0.020 | −0.014 | 0.009 |
-| ALLHAT | control | 6262 | 0.056 | 0.045 | 0.052 | **0.045** | −0.002 |
-
-Median change from dx:
-- Physiology trials: ECG −0.037, hdPS200 −0.038, ECG added on top of hdPS200 −0.016.
-- Controls: ECG −0.011, hdPS200 −0.041.
-
-**In the physiology trials the ECG matches hdPS on physiology, and the ECG's gain is specific to
-them.** In the secondary population (all initiators; larger samples) the ECG and hdPS again tie
-on physiology trials (−0.032 vs −0.039). Measured LVEF there: in 5 trials, dx 0.47 → dx + ECG 0.18
-vs dx + hdPS200 0.39.
-
-### C.2 Measured LVEF SMD, primary population (trials with dx ≥ 0.1)
-
-| Trial | dx | dx + ECG | dx + hdPS200 | dx + hdPS200 + ECG |
-|---|---|---|---|---|
-| COMET | 0.61 | **0.34** | 0.46 | **0.24** |
-| PARAGON-HF ⚠ | 0.91 | 0.73 | 0.81 | **0.57** |
-| TRANSFORM-HF | 0.11 | **0.01** | 0.07 | 0.07 |
-| ELITE II | 0.17 | 0.14 | **0.06** | 0.12 |
-| DIONYSOS | 0.35 | **0.18** | 0.33 | 0.19 |
-| ARISTOTLE | 0.20 | **0.07** | 0.08 | 0.07 |
-| ROCKET-AF | 0.28 | 0.23 | 0.13 | **0.09** |
-| RE-LY | 0.13 | **0.04** | 0.09 | 0.09 |
-
-PARADIGM-HF is the one physiology trial where the ECG *worsened* LVEF (0.05 → 0.20, outpatient).
-Its baseline LVEF imbalance was small, and its outpatient sample is small (629 pairs, about 40%
-with measured EF).
-
-### C.3 Long-tail balance of the coded record (full design; pool-B share > 0.1, excess over chance in brackets)
-
-| Trial | Pairs (clinical PS) | Clinical | + ECG | + CLMBR | + hdPS200 | + hdPS200 + ECG + CLMBR |
+| Trial (adapted) | Role | Comparison (arm 1 vs arm 2) | RCT benchmark (our orientation) | Clinical-PS pairs | Rating | Set |
 |---|---|---|---|---|---|---|
-| COMET | 710 | 18.9% (13.0) | 16.3% (9.0) | 11.9% (4.8) | 10.2% (1.1) | 10.8% (−0.8) |
-| PARADIGM-HF | 520 | 28.8% (18.1) | 23.0% (6.1) | 20.1% (3.6) | 17.5% (0.2) | 22.0% (−3.9) |
-| PARAGON-HF ⚠ | 228 | 33.4% (4.8) | 37.1% (3.2) | 38.3% (1.7) | 39.1% (−8.5) | 53.9% (−19.6) |
-| TRANSFORM-HF | 696 | 29.6% (23.3) | 27.1% (20.8) | 15.3% (8.9) | 14.5% (8.0) | 8.6% (1.9) |
-| ELITE II | 554 | 16.6% (7.0) | 18.4% (8.1) | 14.0% (3.4) | 11.7% (−2.6) | 11.9% (−6.1) |
-| LIFE | 916 | 6.9% (3.7) | 7.3% (3.6) | 7.3% (3.2) | 11.2% (6.0) | 9.4% (2.6) |
-| DIONYSOS | 588 | 11.4% (2.7) | 12.6% (3.8) | 6.9% (−2.6) | 8.7% (−0.3) | 6.7% (−4.3) |
-| PLATO | 1883 | 14.9% (14.7) | 14.3% (14.1) | 10.1% (9.8) | 2.5% (2.2) | 2.1% (1.7) |
-| ARISTOTLE | 911 | 19.9% (16.6) | 20.2% (16.9) | 13.0% (9.2) | 8.1% (3.9) | 7.1% (2.0) |
-| ROCKET-AF | 870 | 20.5% (16.8) | 18.9% (14.9) | 13.6% (9.0) | 7.5% (2.0) | 5.9% (−0.9) |
-| RE-LY | 419 | 20.4% (5.6) | 20.7% (5.5) | 16.5% (0.6) | 19.0% (2.4) | 16.9% (−2.2) |
-| ALLHAT | 6208 | 0.3% (0.3) | 0.2% (0.2) | 0.0% (0.0) | 0.1% (0.1) | 0.0% (0.0) |
+| COMET | physiology | metoprolol vs carvedilol | 1.21 (1.08–1.35), death | 2,104 | close (8) | primary |
+| PARADIGM-HF, sequential switcher | physiology | ARNI switchers vs ACEi continuers | 0.80 (0.73–0.87), CV death/HF hosp | 1,176 | moderate (7) | primary |
+| PARADIGM-HF, new-user | physiology | ARNI vs ACEi | same | 1,159 | moderate (6) | sensitivity (one design per RCT) |
+| TRANSFORM-HF | physiology | torsemide vs furosemide | 1.02 (0.89–1.18), death | 697 | moderate (7) | primary |
+| ELITE II | physiology | ARB vs ACEi | 1.13 (0.95–1.35), death | 1,174 | close (8) | primary |
+| LIFE | physiology | ARB vs cardioselective β-blocker (ECG-LVH) | 0.87 (0.77–0.98), CV death/MI/stroke | 1,232 | close (8) | primary |
+| DIONYSOS | physiology | dronedarone vs amiodarone | 1.59 (1.28–1.98) | 751 | moderate (6) | balance only (endpoint not emulable) |
+| PLATO | control | ticagrelor vs clopidogrel | 0.84 (0.77–0.92), CV death/MI/stroke | 2,026 | close (9) | primary |
+| ARISTOTLE | control | apixaban vs warfarin | 0.79 (0.66–0.95), stroke/SE | 2,791 | close (9) | primary |
+| ROCKET-AF | control | rivaroxaban vs warfarin | 0.88 (0.74–1.03) ITT, stroke/SE | 2,062 | close (9) | primary |
+| RE-LY | control | dabigatran vs warfarin | 0.66 (0.53–0.82), stroke/SE | 699 | moderate (7) | primary |
+| ALLHAT | control | amlodipine vs thiazide | 0.98 (0.90–1.07), CHD death/MI | 8,487 | moderate (7) | primary |
+| PARAGON-HF | physiology | ARNI vs valsartan | 0.87 (0.75–1.01) | 310 | limited (5) | supplement |
+| DAPA-HF / EMPEROR-R | physiology | SGLT2i vs DPP-4i (placebo proxy) | 0.74 (0.65–0.85) | 376 | limited (4) | supplement |
+| PARTNER 2A | physiology | TAVR vs surgical AVR | 0.89 (0.73–1.09), death/stroke | 343 | moderate (7) | supplement |
 
-With the outpatient restriction, several trials fall to 400–700 pairs, where most residual
-long-tail imbalance is within chance once hdPS is added.
+Not analysed:
+- TRITON (feasibility, 278 prasugrel users);
+- PARAGON-HF switcher (feasibility);
+- the v1 PARADIGM-HF switcher (replaced by the sequential design).
 
-## D. Trials: verified benchmarks and emulation-quality rating (proposed)
+Balance sets: the primary balance set is 11 trials (6 physiology, 5 control). DIONYSOS is in it for
+balance; the new-user PARADIGM-HF is excluded under one-design-per-RCT. The primary phase-2 set is
+10 trials (without DIONYSOS).
 
-The rubric was fixed before any outcome. Each item is scored 0–2:
-- **(a) Comparator:** exact agents = 2; class or formulation/dose unknown = 1.
-- **(b) Key eligibility:** implementable = 2; partial (e.g. EF only when measured) = 1.
-- **(c) Time zero/setting:** matches the trial = 2; proxy = 1.
-- **(d) Endpoint in the EHR:** all-cause death or stroke/SE = 2; needs cause of death or recurrent
-  events = 1; rhythm-based = 0.
-- **(e) Data:** ≥ 800 clinical-PS pairs in the primary population = 2; 400–799 = 1; < 400 = 0.
+---
 
-**Close ≥ 8, moderate 6–7, limited ≤ 5.** This is RCT-DUPLICATE in spirit, not their exact
-criteria.
+## 4. Phase 1: what each PS arm captures (primary, all initiators)
 
-| Trial | Published primary result (verified) | a | b | c | d | e | Rating | Main limitation |
-|---|---|---|---|---|---|---|---|---|
-| PLATO | HR 0.84 (0.77–0.92), vascular death/MI/stroke | 2 | 2 | 2 | 1 | 2 | **close (9)** | no cause of death |
-| ARISTOTLE | HR 0.79 (0.66–0.95), stroke/SE | 2 | 1 | 2 | 2 | 2 | **close (9)** | CHADS risk factor not required |
-| ROCKET-AF | HR 0.88 (0.74–1.03) ITT, stroke/SE | 2 | 1 | 2 | 2 | 2 | **close (9)** | trial required CHADS2 ≥ 2 |
-| LIFE (v2) | HR 0.87 (0.77–0.98), CV death/MI/stroke | 1 | 2 | 2 | 1 | 2 | **close (8)** | class comparator |
-| COMET | HR 0.83 (0.74–0.93) carvedilol vs metoprolol, all-cause death | 1 | 1 | 2 | 2 | 1 | moderate (7) | metoprolol formulation unknown |
-| TRANSFORM-HF | HR 1.02 (0.89–1.18), all-cause death | 2 | 1 | 1 | 2 | 1 | moderate (7) | HF-discharge time zero is a proxy |
-| ELITE II | HR 1.13 (95.7% CI 0.95–1.35), all-cause death | 1 | 1 | 2 | 2 | 1 | moderate (7) | ARB vs ACEi class |
-| RE-LY | RR 0.66 (0.53–0.82), stroke/SE (150 mg) | 1 | 1 | 2 | 2 | 1 | moderate (7) | dose unknown |
-| ALLHAT | RR 0.98 (0.90–1.07), fatal CHD/nonfatal MI | 1 | 1 | 2 | 1 | 2 | moderate (7) | any thiazide; already balanced |
-| DIONYSOS | HR 1.59 (1.28–1.98), AF recurrence or discontinuation | 2 | 1 | 2 | 0 | 1 | moderate (6) | endpoint needs rhythm follow-up |
-| PARADIGM-HF | HR 0.80 (0.73–0.87), CV death/first HF hospitalisation | 1 | 1 | 1 | 1 | 1 | **limited (5)** | trial required prior ACEi/ARB; our washout excludes ACEi switchers |
-| PARAGON-HF | RR 0.87 (0.75–1.01), total HF hospitalisations + CV death | 2 | 1 | 1 | 1 | 0 | **limited (5)** | 228 pairs; recurrent-event endpoint |
-| TRITON | HR 0.81 (0.73–0.90) | – | – | – | – | – | not analysed | failed feasibility (278 prasugrel) |
+Cells: median % of the pre-matching excess imbalance removed, over the trials with that
+imbalance. 100% = balanced to the level of a randomised sample. Echo domains and measured LVEF are
+scored for index ≥ 2016-07-31. Full tables: `docs/V11_CAPTURE_MAP_ALL_PRIMARY.md`.
 
-Sources: COMET [Lancet 2003](https://pubmed.ncbi.nlm.nih.gov/12853193/);
-PARADIGM-HF [NEJM 2014](https://www.nejm.org/doi/full/10.1056/NEJMoa1409077);
-PARAGON-HF [NEJM 2019](https://www.nejm.org/doi/full/10.1056/NEJMoa1908655);
-TRANSFORM-HF [JAMA 2023](https://jamanetwork.com/journals/jama/fullarticle/2800428);
-ELITE II [Lancet 2000](https://www.thelancet.com/journals/lancet/article/PIIS0140673600022133/fulltext);
-LIFE [Lancet 2002](https://pubmed.ncbi.nlm.nih.gov/11937178/);
-DIONYSOS [J Cardiovasc Electrophysiol 2010](https://pubmed.ncbi.nlm.nih.gov/20384650/);
-PLATO [NEJM 2009](https://www.nejm.org/doi/full/10.1056/NEJMoa0904327);
-TRITON [NEJM 2007](https://www.nejm.org/doi/full/10.1056/NEJMoa0706482);
-ARISTOTLE [NEJM 2011](https://www.nejm.org/doi/full/10.1056/NEJMoa1107039);
-ROCKET-AF [NEJM 2011](https://www.nejm.org/doi/full/10.1056/NEJMoa1009638);
-RE-LY [NEJM 2009](https://www.nejm.org/doi/full/10.1056/NEJMoa0905561);
-ALLHAT [JAMA 2002](https://jamanetwork.com/journals/jama/fullarticle/195626).
+**Physiology trials (n = 6)**
 
-## E. Open questions and uncertainties
+| Domain | Sparse | Sparse + ECG | hdPS200 | hdPS200 + ECG | Clinical PS (reference) |
+|---|---|---|---|---|---|
+| Medications | 42% | 47% | 83% | 85% | 110% |
+| Healthcare use | 45% | 53% | 83% | 92% | 111% |
+| Rest of coded record | 35% | 48% | 87% | 91% | 61% |
+| Core-9 physiology (EF, vitals, basic labs; measured) | 19% | 48% | 61% | 65% | 98% |
+| Echo: LV function | 26% | 49% | 39% | 56% | 83% |
+| **Echo: LV structure / wall thickness** | 47% | **81%** | 63% | **87%** | 70% |
+| Echo: diastolic / LA | 68% | 76% | 60% | 77% | 72% |
+| Echo: RV / pulmonary pressure | 48% | 63% | 75% | 91% | 49% |
+| Echo: valves | 20% | 5% | 52% | 55% | 37% |
+| NT-proBNP | 102% | 110% | 107% | 104% | 110% |
+| Prognostic risk score | 72% | 73% | 91% | 102% | 88% |
+| Median pairs | 1,184 | 1,184 | 1,115 | 1,086 | 1,175 |
 
-1. **Where is the newest echo report?** I need the full structured extract with wall thickness
-   etc. for all echoes; PanEcho covers only 1–5%. With full coverage, the echo panel would
-   become the best independent test of whether the ECG captures physiology. It is currently too
-   sparse to read.
-2. **PARADIGM-HF and PARAGON-HF new-user rule.** Both trials enrolled patients already on an
-   ACEi/ARB. Our comparator washout removes ARNI starters who switched from an ACEi, which is the
-   usual clinical path. Should they get a v2 "switcher" design (ARNI initiators with prior
-   ACEi/ARB vs continuing ACEi/ARB users)? That could move both from "limited" toward "moderate".
-3. **The outpatient restriction halves some trials** (COMET 797 pairs, RE-LY 420, PARAGON-HF 297).
-   Keep outpatient as primary everywhere, or apply it only where the RCT was clearly an
-   outpatient chronic-therapy trial? My recommendation is the latter, which is what I applied for
-   PLATO and TRANSFORM-HF.
-4. **Should the labs panel stay as an evaluation target?** It shows no residual imbalance under
-   any method, so it can't discriminate. Should NT-proBNP (43% measured in HF cohorts) be shown
-   alone as the key severity marker?
-5. **The rating rubric** (§D) is my proposal. Do you want different weights, or RCT-DUPLICATE's
-   exact categories?
-6. **For the pre-registration:**
-   - Primary sparse base: dx (investigator-selected) with dxall as a sensitivity analysis, or
-     the reverse?
-   - Primary high-dimensional arm: hdPS200.
-   - ECG input: 32 raw PCs.
+**Control trials (n = 5):** the ECG adds little.
+- Core-9: 41% → 52%.
+- LV structure: 29% → 35%.
+- hdPS captures valves (77%) and the coded record (93%).
 
-## F. Suggested next steps
+**Hypothesis tests (pre-specified; one-sided Mann-Whitney on the change in excess from adding the
+ECG, physiology vs control):**
 
-1. You decide E1–E3 and E6. I obtain the full echo extract, and possibly add the ARNI switcher
-   variant.
-2. Freeze **Protocol v1** (a draft can be written next):
-   - trial list with emulation ratings;
-   - analysis populations;
-   - PS arms (sparse ± ECG, ± hdPS200; clinical as reference);
-   - balance metrics and chance correction;
-   - the estimate comparison (full-data vs sparse vs sparse + ECG, then RCT agreement);
-   - negative-control outcomes.
-3. Only then extract outcomes.
+| Domain | Physiology (trials improved) | Control (trials improved) | p (primary) | p (post-2016 cohort) |
+|---|---|---|---|---|
+| Core-9 physiology | −0.029 (6/6) | −0.014 (4/5) | **0.026** | 0.063 |
+| LV structure | −0.033 (5/6) | −0.001 (3/5) | 0.089 | **0.015** |
+| LV function | −0.004 (3/6) | +0.037 (1/5) | 0.33 | 0.089 |
 
-## G. Files
+**Share of the sparse → clinical-PS gap closed (H3; medians pooled over both roles):**
 
-- Code: `scripts/`
-  - specs and verified benchmarks: `trial_specs.py`;
-  - `make_outpatient_cohort.py`, `build_physiology_panel.py`, `run_v3_trial.sh`, `summarize_v3.py`.
-- Outputs (restricted, RAID) in `/mnt/raid0/rbc58/ecg-tte/audits/`:
-  - `claude-<trial>-{cohort-op, baseline-op, physpanel-v1}`
-  - `claude-v3-full[-all]-<trial>`, `claude-v3b-sparse[-all]-<trial>`
+| Domain | + ECG | + hdPS200 | + both |
+|---|---|---|---|
+| LV structure | 69% | 76% | 108% |
+| Core-9 | 24% | 50% | 64% |
+| Medications | 7% | 58% | 60% |
+
+**Sensitivities:**
+- **Post-2016 cohort:** the same pattern, stronger for LV structure (27% → 94% with the ECG).
+- **Outpatient initiators:** the same direction but noisier (about half the pairs).
+- **SHD encoder** (PRESENT-SHD signal models; echo and measured LVEF scored outside its training
+  set):
+  - helps diastolic function (85% vs 28% for the ECG) and RV/pulmonary pressure (88% vs 5%);
+  - does not help LV structure (54% vs 79%);
+  - improves valves only combined with the ECG (77%), which is noisy.
+
+  Tables: `docs/V11_CAPTURE_MAP_*`.
+
+---
+
+## 5. Phase 2: effect estimates (primary: all initiators, trial horizon, matched)
+
+HR (95% CI), arm 1 vs arm 2. Full per-trial tables: `docs/PHASE2_SUMMARY_ALL.md` and
+`docs/phase2_tables/`.
+
+| Trial | RCT | Unadjusted | Sparse | Sparse + ECG | hdPS200 | hdPS200 + ECG | Clinical PS |
+|---|---|---|---|---|---|---|---|
+| COMET | 1.21 (1.08–1.35) | 1.33 (1.20–1.46) | 1.18 (1.06–1.32) | 1.19 (1.05–1.33) | 1.10 (0.98–1.24) | 1.15 (1.02–1.31) | 1.14 (1.00–1.30) |
+| PARADIGM-HF (sequential) | 0.80 (0.73–0.87) | 1.20 (1.10–1.32) | 1.02 (0.91–1.14) | 0.96 (0.86–1.07) | 0.97 (0.87–1.08) | 0.94 (0.84–1.06) | 0.99 (0.86–1.15) |
+| TRANSFORM-HF | 1.02 (0.89–1.18) | 0.92 (0.77–1.10) | 0.94 (0.73–1.19) | 0.93 (0.73–1.19) | 1.14 (0.87–1.49) | 1.14 (0.87–1.48) | 0.92 (0.70–1.23) |
+| ELITE II | 1.13 (0.95–1.35) | 0.95 (0.80–1.12) | 0.96 (0.79–1.17) | 0.99 (0.82–1.21) | 1.01 (0.82–1.24) | 0.99 (0.81–1.22) | 0.99 (0.81–1.22) |
+| LIFE | 0.87 (0.77–0.98) | 0.72 (0.59–0.89) | 0.86 (0.68–1.08) | 0.79 (0.63–1.00) | 0.86 (0.68–1.09) | 0.91 (0.72–1.14) | 0.89 (0.70–1.12) |
+| PLATO | 0.84 (0.77–0.92) | 0.70 (0.62–0.79) | 0.79 (0.68–0.91) | 0.85 (0.74–0.98) | 0.90 (0.77–1.05) | 0.93 (0.79–1.09) | 0.91 (0.77–1.08) |
+| ARISTOTLE | 0.79 (0.66–0.95) | 0.57 (0.50–0.64) | 0.75 (0.62–0.90) | 0.79 (0.66–0.94) | 0.71 (0.58–0.88) | 0.75 (0.62–0.92) | 0.73 (0.58–0.91) |
+| ROCKET-AF | 0.88 (0.74–1.03) | 0.48 (0.40–0.58) | 0.69 (0.56–0.86) | 0.72 (0.58–0.89) | 0.65 (0.52–0.83) | 0.76 (0.60–0.96) | 0.73 (0.57–0.94) |
+| RE-LY | 0.66 (0.53–0.82) | 0.69 (0.51–0.92) | 0.82 (0.57–1.18) | 0.99 (0.68–1.43) | 1.04 (0.70–1.53) | 1.20 (0.79–1.81) | 0.82 (0.53–1.25) |
+| ALLHAT | 0.98 (0.90–1.07) | 1.32 (1.17–1.48) | 1.16 (1.01–1.33) | 1.15 (1.00–1.32) | 1.20 (1.05–1.38) | 1.07 (0.93–1.23) | 1.14 (0.98–1.32) |
+| *Supplement: PARAGON-HF* | 0.87 (0.75–1.01) | 1.63 | 1.65 | 1.38 | 1.22 | 1.01 | 1.37 |
+| *Supplement: DAPA-HF proxy* | 0.74 (0.65–0.85) | 0.90 | 0.85 | 0.81 | 0.78 | 0.86 | 0.79 |
+| *Supplement: PARTNER 2A* | 0.89 (0.73–1.09) | 1.90 | 1.03 | 1.29 | 0.62 | 0.61 | 0.98 |
+
+**Agreement across the 10 primary-set trials:**
+
+| Arm | Estimate agreement (HR in RCT CI) | Regulatory agreement | Std-difference agreement | Mean \|Δlog HR\| vs RCT | vs full-data reference | Pearson r |
+|---|---|---|---|---|---|---|
+| Unadjusted | 3/10 | 7/10 | 5/10 | 0.241 | 0.185 | 0.54 |
+| Sparse | 7/10 | 5/10 | 8/10 | 0.127 | 0.039 | 0.60 |
+| Sparse + ECG | 6/10 | 5/10 | 9/10 | 0.128 | 0.055 | 0.46 |
+| hdPS200 | 6/10 | 3/10 | 6/10 | 0.164 | 0.076 | 0.38 |
+| hdPS200 + ECG | 6/10 | 5/10 | 8/10 | 0.147 | 0.082 | 0.25 |
+| Clinical PS (reference) | 7/10 | 5/10 | 9/10 | 0.122 | 0 | 0.64 |
+
+Paired Wilcoxon tests:
+- |Δ vs RCT|, sparse + ECG vs sparse: 7/10 trials closer, p = 0.56.
+- |Δ vs RCT|, hdPS200 + ECG vs hdPS200: 6/10 closer, p = 0.56.
+- vs the full-data reference: p ≥ 0.43 for every comparison.
+
+**Stratified (mean |Δlog HR| vs RCT):**
+
+| Stratum | Sparse | Sparse + ECG | hdPS + ECG | Clinical |
+|---|---|---|---|---|
+| Physiology trials | 0.106 | 0.102 | 0.097 | 0.104 |
+| Controls | 0.149 | 0.155 | 0.198 | 0.141 |
+| Close emulations | 0.093 | 0.074 | 0.086 | 0.090 |
+
+The hdPS arms do worse mainly in the anticoagulation controls (RE-LY, ROCKET-AF).
+
+**Sensitivities:** the conclusions are unchanged. For each analysis, the range of mean |Δlog HR| vs
+RCT across the adjusted arms:
+
+| Analysis | Range | Note |
+|---|---|---|
+| Overlap weighting | 0.10–0.14 | hdPS200 + ECG lowest, 0.104 |
+| 12-month horizon | 0.13–0.19 | |
+| 60-month horizon | 0.11–0.14 | |
+| No-cause deaths as non-CV | 0.12–0.17 | |
+| Post-2016 cohort | 0.10–0.15 | sparse 0.104; sparse + ECG 0.105 |
+| Outpatient-only | 0.19–0.27 | poor for every arm, including the clinical PS; restricting ACS/HF-discharge trials to outpatients departs from those trials |
+| SHD arms | – | sparse + SHD 0.110, r = 0.71, the best r of any arm; not significant |
+
+**Negative controls** (cataract surgery, hernia repair, non-melanoma skin cancer; 30 estimates per
+arm): CIs exclude 1 in 1–4 per arm, which is chance level. No arm shows systematic residual
+confounding.
+
+---
+
+## 6. Interpretation and limitations
+
+1. **What the paper can claim.**
+   - A routine ECG, entered as raw embedding PCs, recovers physiologic confounding that a
+     code-based PS leaves. This is LV structure and function, the cardiac information codes
+     don't carry.
+   - The ECG complements hdPS: hdPS covers the coded record, the ECG covers physiology.
+   - The ECG does not see valve disease.
+   - These are balance results, with a mechanism the echo data make interpretable.
+2. **What it cannot claim.** Better balance on these domains did not translate into estimates
+   closer to the RCTs, and neither did measured EF/labs (the clinical PS). With 10 trials the
+   comparison has little power. The between-arm differences (≈ 0.01–0.04 in log HR) are small
+   relative to the residual trial-to-emulation gap (≈ 0.12). That gap is dominated by factors no
+   PS arm addresses.
+3. **Why the residual gap is large** (likely contributors, not tested):
+   - outcome measurement: the EHR composites are broad;
+   - comparator and population differences from the trials;
+   - initiation of orders rather than dispensing;
+   - differences in follow-up.
+
+   For example, PARADIGM-HF's composite occurs in about 52% of both arms over 27 months (the
+   trial: 22–27%). HF hospitalisation defined by any I50 code during a stay behaves close to
+   all-cause hospitalisation, which pulls toward the null.
+4. **Other limitations:**
+   - EHR orders, not dispensings.
+   - CT Vital Statistics causes are listed causes without an underlying-cause flag (CV death may
+     be over-counted).
+   - Conditions are linked to stays by date only.
+   - Index-admission events (periprocedural stroke, in-hospital reinfarction) are not captured.
+   - The primary set has 10 trials, so tests have low power.
+   - Several design choices were made after viewing balance, all disclosed (protocol §12,
+     amendments).
+   - Phase 2 ran after two amendments, both registered before outcome extraction.
+
+---
+
+## 7. Questions for you
+
+1. **Framing.** Do you agree with a "balance/mechanism positive, effect-agreement null" framing?
+   The alternative is a methods paper on the capture map, with the effect comparison as a
+   secondary aim.
+2. **Outcome refinement.** A pre-specified v1.3 would use a stricter HF-hospitalisation
+   definition. It would have to be declared as post-hoc because outcomes have now been seen, so
+   I'd present it only as exploratory. Do you want it?
+3. **More trials to raise power for H5.** This is only possible with new, pre-specified
+   emulations. Also, TRITON might become feasible with a broader window.
+4. **SHD encoder.** Report it as a secondary arm (current), or develop it further (e.g. more valve
+   targets)?
+
+---
+
+## 8. Audit trail and files
+
+- **Audit findings and fixes:** `docs/DECISIONS.md` (2026-09-24 entries);
+  `docs/PROTOCOL_V1_1_AMENDMENT.md`; `docs/PROTOCOL_V1_2_AMENDMENT.md`.
+- **Checks that passed:**
+  - 302 unit tests (the 2 torch-dependent ones pass in the torch environment);
+  - all ECGs 0–365 d before index;
+  - CLMBR index alignment 100%;
+  - exact reproducibility of a re-run;
+  - reference-set and phenotype-training disjointness;
+  - the matcher equals brute force;
+  - Cox/Rubin recover a known HR in simulation.
+- **Phase 1:** `docs/V11_CAPTURE_MAP_{ALL,OP,SHD,2016}_{PRIMARY,ALLTRIALS}.md`.
+- **Phase 2:** `docs/PHASE2_SUMMARY_{ALL,OP,SHD,2016}.md` and `docs/phase2_tables/*.csv` (events
+  1–10 suppressed).
+- **Restricted outputs on RAID** (`/mnt/raid0/rbc58/ecg-tte/audits/`):
+  - `claude-cap4-{all,op,shd,2016}-<trial>` (grids and matched sets);
+  - `claude-<trial>-outcomes-v1`;
+  - `claude-phase2-<pop>-<trial>.csv`.

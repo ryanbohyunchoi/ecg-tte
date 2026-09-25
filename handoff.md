@@ -11,6 +11,11 @@ Read `docs/STRATEGY.md` first; it holds every result table. Everything below is
 **exploratory, COMET only**: designs were chosen during the session after earlier results.
 No outcomes have been used.
 
+### FINAL RESULTS (2026-09-25) — read `report.md` first
+Protocol v1 + amendments v1.1/v1.2 (all before outcomes). Phase 1 and phase 2 are complete. The ECG
+improves physiologic balance; RCT agreement of effect estimates is not improved (H5 not supported).
+Open questions are listed in report.md §7.
+
 ### Protocol v1 FROZEN (2026-09-24) — read `docs/PROTOCOL_V1.md` and `report.md` first
 Frozen before any outcome extraction; Git tag `protocol-v1`. The next phase is outcome extraction
 and phase-2 estimation exactly as specified, with any change as a dated amendment.
