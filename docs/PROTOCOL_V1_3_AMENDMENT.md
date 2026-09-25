@@ -260,3 +260,9 @@ unchanged.
   - **Reporting.** Both versions are reported. The resampled version is treated as the correct
     implementation of I1, and it decides rule 1. The fixed-set version is labelled as registered
     and flawed.
+- **2026-09-25, deviation 7 (I7), after seeing the results.** A binomial sign test on the number of
+  trials in which the ECG arm is closer to the RCT is added as a supplementary statistic. It is
+  robust to a few trials with large errors, which dominate the registered magnitude-weighted
+  sign-flip test. The registered test remains the one reported for the decision rules.
+- **2026-09-25, addition (reporting only).** Results are also stratified by trial role (physiology
+  vs control), as in phase 2.

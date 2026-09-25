@@ -51,14 +51,14 @@ def key_of(n):
 
 
 # ---------------------------------------------------------------- plasmode
-def plasmode(trials, rng):
+def plasmode(trials, rng, folder="claude-v13-plasmode"):
     rows, per = [], {}
     for n in trials:
-        f = A / "claude-v13-plasmode" / f"reps_{n}.csv"
+        f = A / folder / f"reps_{n}.csv"
         if not f.exists():
             continue
         R = pd.read_csv(f, keep_default_na=False, na_values=[""])  # scenario "null" must not parse as NaN
-        Tr = pd.read_csv(A / "claude-v13-plasmode" / f"truth_{n}.csv", keep_default_na=False, na_values=[""])
+        Tr = pd.read_csv(A / folder / f"truth_{n}.csv", keep_default_na=False, na_values=[""])
         R = R.merge(Tr[["scenario", "arm", "truth_loghr"]], on=["scenario", "arm"])
         R["err"] = R.loghr - R.truth_loghr
         R["cover"] = (R.loghr - 1.96 * R.se <= R.truth_loghr) & (R.truth_loghr <= R.loghr + 1.96 * R.se)
@@ -252,32 +252,37 @@ def main():
     print("All analyses are exploratory (registered 2026-09-25 after phase 2; tag protocol-v1.3).\n")
     rules = {}
 
-    # I1 plasmode
-    S, C = plasmode(trials, rng)
-    if S is not None:
-        S.to_csv(OUT / f"plasmode_by_trial_{tag}.csv", index=False)
-        C.to_csv(OUT / f"plasmode_contrasts_{tag}.csv", index=False)
-        print("## I1 Plasmode simulation\n")
-        P = S.groupby(["scenario", "arm"]).agg(trials=("trial", "nunique"), mean_bias=("bias", "mean"),
-                                               mean_abs_bias=("bias", lambda x: np.mean(np.abs(x))), mean_rmse=("rmse", "mean"),
-                                               mean_coverage=("coverage", "mean")).reset_index()
-        P.to_csv(OUT / f"plasmode_pooled_{tag}.csv", index=False)
+    # I1 plasmode: resampled (deviation 6, decides rule 1) and fixed matched sets (as registered)
+    C = S = None
+    for folder, title in (("claude-v13-plasmode-rs", "resampled cohort, PS and matching refitted per replicate (deviation 6; decides rule 1)"),
+                          ("claude-v13-plasmode", "fixed matched sets, as registered (flawed: conflates chance imbalance with bias)")):
+        S_, C_ = plasmode(trials, rng, folder)
+        if S_ is None:
+            continue
+        sfx = "rs" if folder.endswith("-rs") else "fixed"
+        S_.to_csv(OUT / f"plasmode_{sfx}_by_trial_{tag}.csv", index=False)
+        C_.to_csv(OUT / f"plasmode_{sfx}_contrasts_{tag}.csv", index=False)
+        print(f"## I1 Plasmode simulation — {title}\n")
+        P = S_.groupby(["scenario", "arm"]).agg(trials=("trial", "nunique"), mean_bias=("bias", "mean"),
+                                                mean_abs_bias=("bias", lambda x: np.mean(np.abs(x))), mean_rmse=("rmse", "mean"),
+                                                mean_coverage=("coverage", "mean")).reset_index()
         for scen in ["base", "phys_only", "strong", "none", "null"]:
             x = P[(P.scenario == scen) & P.arm.isin(LAB)].copy()
             x["arm"] = x.arm.map(LAB)
             print(f"**Scenario {scen}** (true conditional HR {'1.0' if scen == 'null' else '0.8'}; bias vs the arm's marginal truth; log-HR scale)\n")
             print(md(x.drop(columns="scenario")) + "\n")
-        c = C[C.contrast.isin(["C1", "C2"]) | C.contrast.str.contains("vs")].copy()
         print("Reduction in |bias| (positive = the first arm is less biased), mean over trials, Monte Carlo 95% CI:\n")
-        print(md(c[["scenario", "contrast", "trials", "bias_reduction", "lo", "hi", "relative_reduction"]]) + "\n")
-        for cn in ("C1", "C2"):
-            r = C[(C.scenario == "base") & (C.contrast == cn)].iloc[0]
-            rules[f"{cn} rule 1 (plasmode base: bias-reduction CI excludes 0, > 0)"] = bool(r.lo > 0)
-            r = C[(C.scenario == "phys_only") & (C.contrast == cn)].iloc[0]
-            rules[f"{cn} rule 1b (plasmode phys_only, supportive)"] = bool(r.lo > 0)
-            a2 = dict(C1="sparse+ECG", C2="hdPS200+ECG")[cn]
-            r = C[(C.scenario == "base") & (C.contrast == f"{a2}-vs-{a2.split('+')[0]}+shufECG")].iloc[0]
-            rules[f"{cn} rule 3 (plasmode base: less biased than shuffled-ECG placebo)"] = bool(r.lo > 0)
+        print(md(C_[["scenario", "contrast", "trials", "bias_reduction", "lo", "hi", "relative_reduction"]]) + "\n")
+        if C is None:
+            C, S = C_, S_
+            for cn in ("C1", "C2"):
+                a2 = dict(C1="sparse+ECG", C2="hdPS200+ECG")[cn]
+                r = C[(C.scenario == "base") & (C.contrast == cn)].iloc[0]
+                rules[f"{cn} rule 1 (plasmode [{sfx}] base: bias-reduction CI excludes 0, > 0)"] = bool(r.lo > 0)
+                r = C[(C.scenario == "phys_only") & (C.contrast == cn)].iloc[0]
+                rules[f"{cn} rule 1b (plasmode [{sfx}] phys_only, supportive)"] = bool(r.lo > 0)
+                r = C[(C.scenario == "base") & (C.contrast == f"{a2}-vs-{a2.split('+')[0]}+shufECG")].iloc[0]
+                rules[f"{cn} rule 3 (plasmode [{sfx}] base: less biased than shuffled-ECG placebo)"] = bool(r.lo > 0)
 
     # I3/I4/I5 bootstrap
     PT, CR = bootstrap(trials, rng)
@@ -346,8 +351,10 @@ def main():
             d = (X[a2] - br) ** 2 - (X[a1] - br) ** 2
             obs, p = sign_flip(d)
             loo = [d.drop(i).mean() for i in d.index]
-            rows.append(dict(contrast=lab, trials=int(d.notna().sum()), mean_d_sqerr=obs, p_signflip=p, loo_min=min(loo), loo_max=max(loo),
-                             trials_ecg_closer=int((d < 0).sum())))
+            from scipy.stats import binomtest
+            k, m = int((d < 0).sum()), int(d.notna().sum())
+            rows.append(dict(contrast=lab, trials=m, mean_d_sqerr=obs, p_signflip=p, loo_min=min(loo), loo_max=max(loo),
+                             trials_ecg_closer=k, p_sign_test_supplementary=binomtest(k, m, 0.5).pvalue))
         print(md(pd.DataFrame(rows), 4) + "\n")
         if S is not None:  # detectability: plasmode-expected gain vs between-trial noise of the paired |Δ| difference
             print("**Detectability.** Trials needed to detect the plasmode-expected reduction in |log HR − RCT| (paired t, "
@@ -427,6 +434,30 @@ def main():
         CA.to_csv(OUT / f"calibrated_agreement_{tag}.csv", index=False)
         print("\nAgreement with the RCT after empirical calibration of the primary estimates:\n")
         print(md(CA, 3) + "\n")
+
+    # stratified by trial role (physiology vs control), key contrasts only
+    roles = {r: [n for n in trials if TRIALS[key_of(n)].get("role") == r] for r in ("physiology", "control")}
+    print("## Stratified by trial role (physiology vs control)\n")
+    rows = []
+    for r, tr in roles.items():
+        if len(tr) < 3:
+            continue
+        _, Cp = plasmode(tr, rng, "claude-v13-plasmode-rs")
+        _, Cb = bootstrap(tr, rng, arms_pairs=CONTRASTS)
+        _, Mv = multiverse(tr)
+        for cn in ("C1", "C2"):
+            row = dict(role=r, trials=len(tr), contrast=cn)
+            if Cp is not None:
+                x = Cp[(Cp.scenario == "base") & (Cp.contrast == cn)].iloc[0]
+                row.update(plasmode_rs_bias_reduction=x.bias_reduction, pl_lo=x.lo, pl_hi=x.hi)
+            for tgt in ("RCT", "R+"):
+                x = Cb[(Cb.target == tgt) & (Cb.contrast == cn)].iloc[0]
+                row[f"boot_{tgt}_d"], row[f"boot_{tgt}_lo"], row[f"boot_{tgt}_hi"] = x.mean_d_sqerr, x.lo, x.hi
+            x = Mv[(Mv.contrast == cn) & (Mv.target == "rct") & (Mv.metric == "mean_abs")].iloc[0]
+            row["multiverse_share_rct"] = x.share_favouring
+            rows.append(row)
+    if rows:
+        print(md(pd.DataFrame(rows), 4) + "\n")
 
     print("## Pre-specified decision rules\n")
     for k, v in rules.items():
