@@ -113,3 +113,19 @@ v1.4 asks whether the ECG's contribution grows in the settings where it should m
     R+) and resampled plasmode (200 replicates, v1.3 scenarios).
   - **Question:** how much confounding does the ECG capture on its own, compared with
     demographics and coded diagnoses?
+- **2026-09-25, post-hoc addition G (Ryan).** Directional consistency and closeness metrics in the
+  style of RCT-DUPLICATE. Exploratory.
+  - **Metrics, per arm:**
+    - direction: the same side of HR = 1 as the RCT, over all trials and over RCTs whose CI
+      excludes 1;
+    - regulatory agreement;
+    - share of trials with an emulated HR within 0.8–1.25× the RCT HR;
+    - Pearson and Spearman correlation of log HRs;
+    - calibration slope.
+  - **Subsets:** all trials, closely emulated trials, physiology trials, and trials whose RCT
+    result was significant.
+  - **Uncertainty:** 95% CIs from the paired bootstrap. Point estimates are from the full cohort,
+    imputation 1.
+  - **Caution:** metrics based on counts give discrete bootstrap distributions. Their percentile
+    CIs can exclude the point estimate, so they are descriptive.
+  - Script: `scripts/v14_direction.py`; output: `docs/V14_DIRECTION.md`.
