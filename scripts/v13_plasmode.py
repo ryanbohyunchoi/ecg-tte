@@ -57,6 +57,26 @@ def one(job):
     return out
 
 
+def one_resampled(rep):
+    """v1.3 deviation 6: resample the cohort, refit PS and matching for every arm, then simulate every
+    scenario's outcomes on the same resample (Franklin et al. 2014 plasmode)."""
+    T, lam, rho, C = G["T"], G["lam"], G["rho"], G["C"]
+    N = len(T.t)
+    rows = np.random.default_rng(50_000 + rep).integers(0, N, N)
+    trt = T.t[rows]
+    X = T.arms(ARMS, rows=rows)
+    M = {a: (None, None) if X[a] is None else match(ps_logit(X[a], trt), trt)[:2] for a in ARMS}
+    out = []
+    for scen in SCEN:
+        rng = np.random.default_rng(7_000_000 + 1_000_000 * list(SCEN).index(scen) + rep)
+        lp = G["lp0"][scen][rows] + np.log(SCEN[scen]["hr"]) * trt
+        tt, ee = simulate(lp, lam, rho, C[rows], rng)
+        for a, (idx, cl) in M.items():
+            b, se = cox(tt, ee, trt) if idx is None else cox(tt[idx], ee[idx], trt[idx], cluster=cl)
+            out.append(dict(scenario=scen, rep=rep, arm=a, loghr=b, se=se))
+    return out
+
+
 def truth(scen, idx, copies=20):
     """Marginal log HR in the population `idx` from counterfactual outcomes under both treatments
     (common random numbers across the two treatments)."""
@@ -80,6 +100,7 @@ def main():
     ap.add_argument("--reps", type=int, default=200)
     ap.add_argument("--workers", type=int, default=14)
     ap.add_argument("--output-dir", required=True)
+    ap.add_argument("--resample", action="store_true", help="v1.3 deviation 6: resample cohort and refit PS/matching per replicate")
     a = ap.parse_args()
     T = Trial(a.trial)
     t, e, ok, H, O = outcomes(a.trial, T.key, T.keys)
@@ -123,9 +144,12 @@ def main():
     tr = [dict(scenario=s, arm=arm, truth_loghr=truth(s, M[arm][0]), conditional_loghr=float(np.log(SCEN[s]["hr"])))
           for s in SCEN for arm in ARMS]
     pd.DataFrame(tr).assign(trial=a.trial).to_csv(f"{a.output_dir}/truth_{a.trial}.csv", index=False)
-    jobs = [(s, r) for s in SCEN for r in range(a.reps)]
     with Pool(a.workers) as p:
-        res = [r for rr in p.imap_unordered(one, jobs, chunksize=4) for r in rr]
+        if a.resample:
+            res = [r for rr in p.imap_unordered(one_resampled, range(a.reps)) for r in rr]
+        else:
+            jobs = [(s, r) for s in SCEN for r in range(a.reps)]
+            res = [r for rr in p.imap_unordered(one, jobs, chunksize=4) for r in rr]
     pd.DataFrame(res).assign(trial=a.trial).to_csv(f"{a.output_dir}/reps_{a.trial}.csv", index=False)
     meta = dict(trial=a.trial, n=len(T.t), weibull_rho=round(float(rho), 3), events_real=int(e[ok].sum()),
                 real_event_rate=round(float(e[ok].mean()), 4),

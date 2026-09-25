@@ -247,3 +247,16 @@ unchanged.
   `transport_ess20`, keeps dropping the variable with the largest standardised gap until the
   effective sample size is at least 20% of the matched sample. Both variants are reported. Only
   the effective sample size was inspected; the estimates were not compared.
+- **2026-09-25, deviation 6 (I1), made after seeing the plasmode results.**
+  - **The problem.** The registered plasmode kept each arm's matched set fixed across replicates.
+    So the per-trial "bias" includes the chance covariate imbalance of that single matched sample,
+    and the Monte Carlo CIs do not reflect it. The clinical reference R contains every
+    outcome-model covariate, yet it showed |bias| up to 0.08 (RE-LY) in the null scenario, where
+    the true effect is zero in every arm. In the extension trials, the sign of C1/C2 reversed
+    relative to the primary trials.
+  - **The fix.** A resampled plasmode (Franklin et al. 2014): in each replicate, resample the
+    cohort with replacement, refit hdPS, PS and matching for every arm, then simulate all
+    scenarios on that resample. 200 replicates per trial; truths as before.
+  - **Reporting.** Both versions are reported. The resampled version is treated as the correct
+    implementation of I1, and it decides rule 1. The fixed-set version is labelled as registered
+    and flawed.
