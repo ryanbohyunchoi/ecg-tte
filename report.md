@@ -245,6 +245,40 @@ RCT across the adjusted arms:
 arm): CIs exclude 1 in 1–4 per arm, which is chance level. No arm shows systematic residual
 confounding.
 
+**Exploratory, post hoc (added 2026-09-25): comparison that accounts for standard errors.** This
+summary uses each trial's emulated and RCT standard errors. For each trial,
+z = (log HR_emulated − log HR_RCT) / √(SE²_emulated + SE²_RCT). The differences are then pooled
+across trials with a DerSimonian–Laird random-effects model.
+- **τ** is the between-trial spread of the error that sampling error cannot explain. Smaller is
+  better.
+- **Coverage** is how often the emulated 95% CI contains the RCT point estimate.
+
+Primary set, all initiators:
+
+| Arm | Mean \|z\| | \|z\| < 1.96 | Pooled bias (log HR) | τ | I² | Coverage | Median SE |
+|---|---|---|---|---|---|---|---|
+| M0 unadjusted | 2.56 | 5/10 | −0.066 | 0.301 | 91% | 4/10 | 0.075 |
+| M1 sparse | 1.15 | 8/10 | +0.008 | 0.123 | 57% | 7/10 | 0.098 |
+| M2 sparse + ECG | 1.04 | 9/10 | +0.025 | 0.094 | 43% | 7/10 | 0.096 |
+| M3 hdPS200 | 1.33 | 6/10 | +0.036 | 0.131 | 59% | 6/10 | 0.105 |
+| M4 hdPS200 + ECG | 1.07 | 8/10 | +0.052 | 0.078 | 33% | 8/10 | 0.103 |
+| R clinical | 1.00 | 9/10 | +0.032 | 0.075 | 29% | 9/10 | 0.110 |
+
+Adding the ECG lowers the unexplained heterogeneity for both base PSs: τ goes from 0.123 to 0.094
+for sparse and from 0.131 to 0.078 for hdPS200. The post-2016 cohort shows the same pattern (sparse
+0.109 → 0.076). The ECG arms move toward the clinical PS (0.075), and precision is unchanged
+(median SE is essentially the same).
+
+None of these differences is significant:
+- paired Wilcoxon of |z| against sparse: sparse + ECG p = 0.38 (smaller |z| in 7/10 trials);
+  hdPS200 + ECG p = 0.85;
+- every pooled-bias CI includes 0.
+
+In the SHD population, sparse + SHD has the lowest τ of any arm (0.055, 10/10 with |z| < 1.96),
+also not significant. The results are consistent with the |Δlog HR| comparison. With 10 trials
+there is little power. Script: `scripts/summarize_phase2_se.py`. Tables:
+`docs/PHASE2_SE_EXPLORATORY_{ALL,2016,SHD}.md`.
+
 ---
 
 ## 6. Interpretation and limitations
