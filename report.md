@@ -361,7 +361,17 @@ the PS and matching in every replicate (Franklin 2014). Only the corrected versi
   - PRESENT-SHD logits added to sparse: −0.017 (−0.048 to 0.002).
   - The second encoder added to sparse: −0.010 (−0.045 to 0.001).
   - Both point estimates favour the ECG, but neither is significant, and neither holds against R+.
-  - There is no clear dose response across 8–64 PCs.
+  - Dose response for sparse vs the RCT: the effect grows with the amount of ECG information.
+
+    | ECG input added to sparse | Mean Δ squared error vs RCT (95% CI) |
+    |---|---|
+    | 8 PCs | +0.005 |
+    | 16 PCs | +0.008 |
+    | 32 PCs | −0.001 |
+    | 64 PCs | −0.013 (−0.050 to 0.001) |
+    | 32 PCs + phenotypes | −0.014 (−0.046 to −0.001) |
+
+    This pattern does not appear against R+, or on top of hdPS.
 - **Negative-control calibration.**
   - Adding the ECG did not reduce systematic error in the negative controls. Change in σ: C1
     −0.006, C2 +0.006; both p > 0.6.
