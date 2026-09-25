@@ -212,6 +212,12 @@ class Trial:
                 out[a] = core
             elif a == "R+":
                 out[a] = np.hstack([core, sel(self.X_pp)])
+            elif a == "ECGonly":  # post-hoc v1.4 addition: ECG PCs alone
+                out[a] = pc
+            elif a == "demo":
+                out[a] = sel(self.cov[self.demo].to_numpy())
+            elif a == "demo+ECG":
+                out[a] = np.hstack([sel(self.cov[self.demo].to_numpy()), pc])
             elif a == "sparse":
                 out[a] = dx
             elif a == "hdPS200":

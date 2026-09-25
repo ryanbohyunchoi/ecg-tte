@@ -100,8 +100,12 @@ def main():
     ap.add_argument("--reps", type=int, default=200)
     ap.add_argument("--workers", type=int, default=14)
     ap.add_argument("--output-dir", required=True)
+    ap.add_argument("--arms", default=None, help="comma-separated arm list (default: ARMS)")
     ap.add_argument("--resample", action="store_true", help="v1.3 deviation 6: resample cohort and refit PS/matching per replicate")
     a = ap.parse_args()
+    global ARMS
+    if a.arms:
+        ARMS = a.arms.split(",")
     T = Trial(a.trial)
     t, e, ok, H, O = outcomes(a.trial, T.key, T.keys)
     # outcome model on patients with outcomes

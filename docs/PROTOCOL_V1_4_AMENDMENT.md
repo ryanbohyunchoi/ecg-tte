@@ -102,3 +102,14 @@ v1.4 asks whether the ECG's contribution grows in the settings where it should m
   now exclude any trial–arm cell with fewer than 80% successful replicates, and the table reports
   the number of trials each contrast used. Pool-vs-pool differences use only the trials valid in
   both pools. This was decided before looking at the affected contrasts, which were blank.
+- **2026-09-25, post-hoc addition F (Ryan's question, "ECG alone?").** Added after the v1.4
+  results; exploratory.
+  - **Arms:**
+    - ECG only (the 32 PCs, no other covariate);
+    - demographics only (age, sex, index year);
+    - demographics + ECG.
+  - **Comparators:** unadjusted, sparse, sparse + ECG, clinical PS and R+.
+  - **Analyses, all 18 trials:** real-data paired bootstrap (200 replicates; targets the RCT and
+    R+) and resampled plasmode (200 replicates, v1.3 scenarios).
+  - **Question:** how much confounding does the ECG capture on its own, compared with
+    demographics and coded diagnoses?
