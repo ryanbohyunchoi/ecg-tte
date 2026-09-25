@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ECG-TTE: does unstructured ECG information improve confounding control? — results</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root { --ink:#1d2330; --muted:#5d6678; --line:#dde2ea; --bg:#f7f8fb; --card:#fff; --acc:#2c5fd6; --ecg:#d9480f; --good:#2b8a3e; --bad:#c92a2a; --warn:#e8a200; }
+* { box-sizing: border-box; }
+body { margin:0; font: 15px/1.55 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color:var(--ink); background:var(--bg); }
+nav { position:fixed; top:0; left:0; bottom:0; width:250px; background:#111a2e; color:#cfd6e6; overflow-y:auto; padding:18px 0; }
+nav h1 { font-size:15px; margin:0 18px 14px; color:#fff; line-height:1.3; }
+nav a { display:block; color:#cfd6e6; text-decoration:none; padding:6px 18px; font-size:13.5px; border-left:3px solid transparent; }
+nav a:hover, nav a.active { background:#1c2742; color:#fff; border-left-color:#6f9bff; }
+nav .sub { padding-left:32px; font-size:12.5px; color:#9aa6bf; }
+main { margin-left:250px; padding:28px 40px 80px; max-width:1250px; }
+section { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:22px 28px; margin-bottom:26px; }
+h2 { margin:0 0 6px; font-size:22px; } h3 { margin:22px 0 8px; font-size:17px; } h4 { margin:14px 0 6px; font-size:15px; }
+.lede { color:var(--muted); margin-top:0; }
+.cards { display:grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap:14px; margin:14px 0; }
+.card { border:1px solid var(--line); border-radius:8px; padding:14px 16px; background:#fbfcfe; }
+.card .big { font-size:26px; font-weight:700; } .card .lbl { color:var(--muted); font-size:13px; }
+.pill { display:inline-block; padding:1px 8px; border-radius:10px; font-size:12px; font-weight:600; }
+.pill.yes { background:#d3f9d8; color:#1b5e20; } .pill.no { background:#ffe3e3; color:#8b1a1a; } .pill.part { background:#fff3bf; color:#7a5800; }
+.pill.phys { background:#ffe8cc; color:#8a3b00; } .pill.ctrl { background:#e7f5ff; color:#11508a; }
+table { border-collapse:collapse; width:100%; font-size:13.5px; margin:8px 0 14px; }
+th, td { border-bottom:1px solid var(--line); padding:6px 8px; text-align:left; vertical-align:top; }
+th { background:#f1f4f9; cursor:pointer; user-select:none; position:sticky; top:0; } th:hover { background:#e6ebf4; }
+td.num, th.num { text-align:right; font-variant-numeric: tabular-nums; }
+tr.sel { background:#eef4ff; } tbody tr:hover { background:#f6f9ff; cursor:default; }
+.controls { display:flex; flex-wrap:wrap; gap:14px; align-items:center; margin:10px 0; padding:10px 12px; background:#f4f6fa; border-radius:8px; font-size:13.5px; }
+.controls label { display:flex; gap:6px; align-items:center; }
+select, input[type=range] { font: inherit; padding:3px 6px; }
+.note { background:#fff9e6; border-left:4px solid var(--warn); padding:10px 14px; margin:12px 0; border-radius:4px; font-size:14px; }
+.key { background:#eef4ff; border-left:4px solid var(--acc); padding:10px 14px; margin:12px 0; border-radius:4px; font-size:14px; }
+.bad { background:#fff0f0; border-left:4px solid var(--bad); padding:10px 14px; margin:12px 0; border-radius:4px; font-size:14px; }
+details { border:1px solid var(--line); border-radius:6px; padding:8px 12px; margin:8px 0; background:#fcfdff; }
+details summary { cursor:pointer; font-weight:600; }
+.gloss dt { font-weight:700; margin-top:8px; } .gloss dd { margin:2px 0 0 0; color:#333; }
+svg text { font-family: inherit; }
+.tip { position:fixed; pointer-events:none; background:#111a2e; color:#fff; padding:6px 9px; border-radius:5px; font-size:12.5px; max-width:340px; display:none; z-index:10; }
+.timeline { border-left:3px solid var(--line); margin-left:8px; padding-left:18px; }
+.timeline div { margin:10px 0; } .timeline b { color:var(--acc); }
+.two { display:grid; grid-template-columns: 1fr 1fr; gap:22px; } @media (max-width:1100px){ .two{grid-template-columns:1fr;} }
+.small { font-size:12.5px; color:var(--muted); }
+code { background:#f1f3f7; padding:1px 4px; border-radius:3px; font-size:12.5px; }
+</style>
+</head>
+<body>
+<nav id="nav">
+  <h1>ECG-TTE results<br><span style="font-weight:400;color:#9aa6bf;font-size:12px" id="gen"></span></h1>
+  <a href="#s-bottom">1. Bottom line</a>
+  <a href="#s-read">2. How to read this</a>
+  <a href="#s-design">3. Study design & timeline</a>
+  <a href="#s-trials">4. Trials</a>
+  <a href="#s-phase1">5. Phase 1 — balance</a>
+  <a href="#s-phase2">6. Phase 2 — effect estimates</a>
+  <a class="sub" href="#s-forest">Forest plot per trial</a>
+  <a class="sub" href="#s-agree">Agreement metrics</a>
+  <a class="sub" href="#s-meanvsdemo">Mean |Δ| vs demonstrated</a>
+  <a href="#s-v13">7. Robustness program (v1.3)</a>
+  <a class="sub" href="#s-plasmode">Plasmode (known truth)</a>
+  <a class="sub" href="#s-boot">Paired bootstrap</a>
+  <a class="sub" href="#s-mv">Multiverse</a>
+  <a class="sub" href="#s-dose">Dose response, SHD, encoder 2</a>
+  <a class="sub" href="#s-designfid">Closer to the trial</a>
+  <a class="sub" href="#s-nco">Negative controls</a>
+  <a href="#s-v14">8. Where does ECG add? (v1.4)</a>
+  <a href="#s-rules">9. Decision-rule scoreboard</a>
+  <a href="#s-limits">10. Limitations & next steps</a>
+  <a href="#s-files">11. Files & provenance</a>
+</nav>
+<div class="tip" id="tip"></div>
+<main>
+
+<section id="s-bottom">
+  <h2>1. Bottom line</h2>
+  <p class="lede">Question: when a propensity score (PS) is built from structured EHR data, does adding the patient's raw 12-lead ECG (as an embedding) improve confounding control — and does that make emulated trial results agree better with the randomized trials?</p>
+  <div class="cards" id="cards"></div>
+  <div class="key"><b>In one sentence.</b> The ECG supplies cardiac-structure information that the coded record does not (it clearly improves <i>balance</i> on measured physiology), but the gain in <i>effect estimates</i> is small — a real but tiny bias reduction for a sparse PS in simulation, a consistent-direction but non-significant move toward the RCT results — and far below what benchmarking against RCTs can detect.</div>
+  <h3>What each part found</h3>
+  <table id="t-summary"></table>
+</section>
+
+<section id="s-read">
+  <h2>2. How to read this</h2>
+  <p class="lede">Key terms, in plain language. Hover over most chart elements for exact numbers; column headers sort tables.</p>
+  <div class="two">
+  <dl class="gloss">
+    <dt>Target trial emulation (TTE)</dt><dd>Re-creating a randomized trial's question in EHR data: same kind of patients, same two treatments started at a clear "time zero", same outcome.</dd>
+    <dt>Propensity score (PS) and matching</dt><dd>A model of the probability of receiving treatment A (vs B) given baseline characteristics. Patients are paired 1:1 on this score so the two groups look alike on what went into the model.</dd>
+    <dt>Sparse PS (M1)</dt><dd>Demographics + a list of selected diagnoses only. Stands in for a minimal, "data-poor" adjustment set.</dd>
+    <dt>hdPS200 (M3)</dt><dd>High-dimensional PS: sparse + the 200 coded features (diagnoses, drugs, procedures, lab-test flags) most imbalanced between arms, chosen automatically.</dd>
+    <dt>+ ECG (M2, M4)</dt><dd>32 principal components of the pre-trained BCL ECG encoder's embedding of the patient's most recent pre-index ECG (the "unstructured" information).</dd>
+    <dt>Clinical PS (R)</dt><dd>Investigator-chosen covariates including labs, vitals and EF — the best conventional adjustment set; used as a reference.</dd>
+    <dt>R+ (physiology reference)</dt><dd>R plus every echo measure, NT-proBNP and labs. Estimates from the same data, so comparing to R+ removes RCT-vs-emulation design differences.</dd>
+  </dl>
+  <dl class="gloss">
+    <dt>Balance / capture %</dt><dd>After matching, how different are the arms on characteristics <i>not</i> in the PS (e.g. echo LV structure)? Measured as excess |standardized difference| above chance. Capture % = share of the unmatched imbalance removed.</dd>
+    <dt>Hazard ratio (HR), log HR</dt><dd>Relative rate of the outcome, arm A vs arm B. We compare on the log scale: |log HR difference| of 0.10 ≈ a 10% relative difference in HR.</dd>
+    <dt>Agreement with the RCT</dt><dd>Estimate agreement = our HR inside the RCT's CI; std-difference agreement = |(our − RCT)/combined SE| &lt; 1.96; mean |Δlog HR| = average distance.</dd>
+    <dt>C1, C2</dt><dd>The two contrasts of interest: C1 = sparse+ECG vs sparse; C2 = hdPS200+ECG vs hdPS200.</dd>
+    <dt>Plasmode simulation</dt><dd>Keep the real patients and their real treatment choices, but simulate outcomes from a known model with a known true effect — so bias can be measured exactly.</dd>
+    <dt>Paired bootstrap</dt><dd>Re-sample patients 200 times, redo PS + matching + Cox each time, to get the uncertainty of the <i>difference</i> between two arms.</dd>
+    <dt>Multiverse</dt><dd>Re-run everything under 200 reasonable analysis choices (PS model, caliper, 1:1/1:3, weighting, hdPS split) to check a result is not an artifact of one choice.</dd>
+  </dl>
+  </div>
+</section>
+
+<section id="s-design">
+  <h2>3. Study design & timeline</h2>
+  <div class="two">
+  <div>
+  <h4>Design</h4>
+  <ul>
+    <li>New-user, active-comparator emulations on the Yale OMOP EHR (2013–2024), all initiators.</li>
+    <li>Arms M0–M4 + R (+ R+ from v1.3); 1:1 greedy caliper matching (0.2 SD of logit PS).</li>
+    <li>Phase 1 (balance) was run and frozen before any outcome was looked at (protocol v1, v1.1).</li>
+    <li>Phase 2 (hazard ratios, Cox, robust SE, 5 imputations) run once (v1.2).</li>
+    <li>v1.3 and v1.4: exploratory robustness and mechanism analyses, each registered before running, with dated deviation logs.</li>
+  </ul>
+  </div>
+  <div class="timeline">
+    <div><b>Protocol v1</b> (frozen) — trials, arms, balance metrics, hypotheses H1–H5.</div>
+    <div><b>v1.1</b> — audit fixes: exact matcher, sequential PARADIGM-HF design, echo evaluation from 2016-07-31.</div>
+    <div><b>v1.2</b> — outcome-code fixes; phase 2 run once → H5 (better RCT agreement) not supported.</div>
+    <div><b>v1.3</b> — robustness: plasmode, bootstrap, multiverse, design fidelity, NCO calibration, 8 new trials (18 total).</div>
+    <div><b>v1.4</b> — where does the ECG add? data-poor patients, code dropout, no-echo, echo-physiology plasmode, HF-hospitalisation outcome.</div>
+  </div>
+  </div>
+</section>
+
+<section id="s-trials">
+  <h2>4. Trials</h2>
+  <p class="lede">Each row is one emulated RCT. Click a row to jump to its forest plot. "Physiology" trials are those where cardiac structure/function plausibly drives treatment choice (where the ECG should help most); "control" trials are those where it should not.</p>
+  <div class="controls"><label>Show <select id="trialset"><option value="all">all 18</option><option value="primary">10 frozen primary</option><option value="extension">8 extension (v1.3)</option></select></label>
+  <label>Role <select id="trialrole"><option value="all">all</option><option value="physiology">physiology</option><option value="control">control</option></select></label></div>
+  <table id="t-trials"></table>
+  <details><summary>Trials that could not be analysed</summary><table id="t-failed"></table></details>
+</section>
+
+<section id="s-phase1">
+  <h2>5. Phase 1 — balance on characteristics the PS did not use</h2>
+  <p class="lede">Capture % = share of the pre-matching imbalance removed by matching (100% = fully balanced; 0% = no better than unmatched; negative = worse). Blank = nothing to capture in that trial. This is where the ECG's signal is clearest.</p>
+  <div class="controls"><label>Arm for the heat map <select id="caparm"></select></label>
+  <label>Trials <select id="capset"><option value="all">all</option><option value="physiology">physiology</option><option value="control">control</option></select></label></div>
+  <div id="capbars"></div><div id="capheat" style="overflow-x:auto"></div>
+  <div class="small">Values above 100% mean the post-matching imbalance fell below what chance alone would produce; they are shown as 100+. Values below −100% are shown as ≤−100. Hover for exact values.</div>
+  <div class="key">Read across the bar chart: for the echo domains (LV structure, LV function, diastolic, RV), adding the ECG moves sparse and hdPS200 most of the way to — or past — the clinical PS. Valves are the exception: the ECG does not see valve disease.</div>
+</section>
+
+<section id="s-phase2">
+  <h2>6. Phase 2 — effect estimates</h2>
+  <h3 id="s-forest">Forest plot per trial</h3>
+  <div class="controls"><label>Trial <select id="ftrial"></select></label>
+  <label>Analysis <select id="fana"><option value="trial|matched">trial horizon, matched (primary)</option><option value="12m|matched">12 months, matched</option><option value="60m|matched">60 months, matched</option><option value="trial|overlap_weighted">trial horizon, overlap weights</option></select></label></div>
+  <div id="forest"></div>
+  <div class="small" id="ftext"></div>
+  <h3 id="s-agree">Agreement with the RCT, all trials</h3>
+  <div class="controls"><label>Trial set <select id="aset"><option value="all">all 18</option><option value="primary">10 primary</option><option value="extension">8 extension</option><option value="physiology">physiology only</option><option value="control">control only</option></select></label></div>
+  <table id="t-agree"></table>
+  <div id="scatter"></div>
+  <h3 id="s-meanvsdemo">Why a lower mean |Δ| is not "demonstrated" agreement</h3>
+  <p>Each dot is one trial: how much closer (negative) or farther (positive) the ECG arm is from the RCT than its comparator, in |log HR| units. The mean of the dots is the headline improvement. The bar shows its 95% CI (t-interval across trials). If the bar crosses zero, the improvement is not distinguishable from chance — even though the mean is on the "better" side.</p>
+  <div class="controls"><label>Contrast <select id="pcon"><option value="C1">C1: sparse+ECG vs sparse</option><option value="C2">C2: hdPS200+ECG vs hdPS200</option></select></label>
+  <label>Trial set <select id="pset"><option value="all">all 18</option><option value="primary">10 primary</option><option value="extension">8 extension</option><option value="physiology">physiology</option><option value="control">control</option></select></label></div>
+  <div id="paired"></div>
+  <div class="note" id="pairednote"></div>
+</section>
+
+<section id="s-v13">
+  <h2>7. Robustness program (protocol v1.3)</h2>
+  <h3 id="s-plasmode">Plasmode: bias with a known true effect</h3>
+  <p>Real cohorts, real treatment assignment, simulated outcomes (true conditional HR 0.8, or 1.0 in "null"). Each replicate resamples patients and refits PS + matching (the corrected design; the registered fixed-matched-set version overstated the ECG's benefit — toggle to compare). Bars: reduction in |bias| when the ECG is added (positive = ECG arm less biased), with 95% Monte Carlo CI.</p>
+  <div class="controls"><label>Version <select id="plver"><option value="rs">resampled (correct)</option><option value="fixed">fixed matched sets (registered, flawed)</option></select></label></div>
+  <div id="plasmode"></div>
+  <details><summary>Scenario definitions</summary><ul>
+    <li><b>base</b>: outcome depends on all clinical covariates as fitted to the real outcome.</li>
+    <li><b>phys_only</b>: only demographics, diagnoses and core-9 physiology drive the outcome (medications and utilisation switched off).</li>
+    <li><b>strong</b>: physiology coefficients doubled. <b>none</b>: physiology switched off. <b>null</b>: true HR 1.0.</li></ul></details>
+  <h3 id="s-boot">Paired bootstrap on real data</h3>
+  <p>For each trial, 200 bootstrap replicates; statistic = mean over trials of [error(ECG arm)² − error(comparator)²] against the chosen target. Negative = ECG arm closer. Intervals that cross zero = not demonstrated.</p>
+  <div class="controls"><label>Target <select id="btgt"><option value="RCT">RCT result</option><option value="R+">R+ (same-data physiology reference)</option><option value="R">R (clinical PS)</option></select></label></div>
+  <div id="boot"></div>
+  <h3 id="s-mv">Multiverse (200 analysis specifications)</h3>
+  <p>Distribution over specifications of [mean error of ECG arm − mean error of comparator] across trials. Left of zero = ECG arm better in that specification. Specifications are highly correlated (same data), so the share is a robustness check, not a significance test.</p>
+  <div class="controls"><label>Contrast <select id="mvcon"><option value="C1">C1</option><option value="C2">C2</option></select></label>
+  <label>Metric <select id="mvmet"><option value="d_abs_rct">mean |Δ| vs RCT</option><option value="d_sq_rct">mean Δ² vs RCT</option><option value="d_abs_rplus">mean |Δ| vs R+</option><option value="d_sq_rplus">mean Δ² vs R+</option></select></label>
+  <label>Colour by <select id="mvcol"><option value="model">PS model</option><option value="estimator">estimator</option></select></label></div>
+  <div id="mv"></div>
+  <h3 id="s-dose">Dose response, supervised SHD scores, second encoder</h3>
+  <div class="controls"><label>Target <select id="dtgt"><option value="RCT">RCT</option><option value="R+">R+</option></select></label></div>
+  <div id="dose"></div>
+  <h3 id="s-designfid">Closer to the trial design</h3>
+  <p>Mean |Δlog HR| vs the RCT per arm under each design refinement (lower = closer). None improved agreement overall; transport, strict outcomes and the run-in lose events and effective sample size.</p>
+  <div id="designfid"></div>
+  <h3 id="s-nco">Negative-control outcomes and empirical calibration</h3>
+  <p>25 outcomes with no plausible drug effect (e.g. cataract surgery, ingrown nail). Their HRs estimate each arm's systematic error: μ = average bias, σ = spread. Adding the ECG did not reduce either.</p>
+  <table id="t-nco"></table>
+</section>
+
+<section id="s-v14">
+  <h2>8. Where does the ECG add information? (protocol v1.4)</h2>
+  <p class="lede">Pre-registered tests of the settings where the ECG should matter most: thin coded records, codes deliberately deleted, no echo available, echo physiology as the hidden confounder, and a physiology-driven outcome.</p>
+  <div id="v14box"></div>
+</section>
+
+<section id="s-rules">
+  <h2>9. Decision-rule scoreboard (v1.3, 18 trials)</h2>
+  <p>Pre-specified criteria for claiming "the ECG improves effect estimation". A full claim needed all to be met.</p>
+  <table id="t-rules"></table>
+</section>
+
+<section id="s-limits">
+  <h2>10. Limitations & next steps</h2>
+  <ul>
+    <li><b>RCT benchmarks mix design error with confounding.</b> Population, adherence, outcome definitions and dose differ; this swamps small confounding improvements (≈0.12–0.15 log-HR differences even for the best PS).</li>
+    <li><b>Orders, not dispensings.</b> No days-supply; per-protocol analyses are approximate; dose not identifiable.</li>
+    <li><b>Imputed physiology.</b> Core-9 values are imputed when missing; the plasmode physiology partly reflects imputation, which is why v1.4 D uses measured echo values.</li>
+    <li><b>One health system, data-rich patients.</b> hdPS works best here; the ECG's niche may be data-poor settings (v1.4 A–C).</li>
+    <li><b>Exploratory analyses after seeing phase 2.</b> Registered before running, with deviation logs, but no multiplicity correction.</li>
+  </ul>
+  <div id="nextsteps"></div>
+</section>
+
+<section id="s-files">
+  <h2>11. Files & provenance</h2>
+  <ul class="small">
+    <li>Protocols: <code>docs/PROTOCOL_V1.md</code>, <code>docs/PROTOCOL_V1_1_AMENDMENT.md</code>, <code>…V1_2…</code>, <code>…V1_3…</code>, <code>…V1_4…</code> (git tags protocol-v1 … protocol-v1.4).</li>
+    <li>Report: <code>report.md</code>; v1.3 tables <code>docs/V13_SUMMARY_{PRIMARY,EXTENSION,COMBINED}.md</code>; v1.4 <code>docs/V14_SUMMARY.md</code>.</li>
+    <li>Code: <code>scripts/</code> (phase 1: <code>eval_longtail_balance.py</code>; phase 2: <code>run_phase2.py</code>; v1.3: <code>v13_*.py</code>; v1.4: <code>v14_*.py</code>; this page: <code>build_presentation.py</code>).</li>
+    <li>This page contains aggregate results only (no patient-level data; event counts under 11 suppressed upstream). Generated <span id="gen2"></span>.</li>
+  </ul>
+</section>
+</main>
+<script>
+/*DATA*/
+const L = DATA.labels, tip = document.getElementById('tip');
+const COL = {"unmatched":"#868e96","sparse":"#74c0fc","sparse+ECG":"#d9480f","hdPS200":"#4263eb","hdPS200+ECG":"#f08c00","clinical (reference)":"#2b8a3e","R+":"#5f3dc4","RCT":"#111"};
+const f2 = x => (x===null||x===undefined||isNaN(x)) ? "–" : (+x).toFixed(2), f3 = x => (x===null||x===undefined||isNaN(x)) ? "–" : (+x).toFixed(3), f4 = x => (x===null||x===undefined||isNaN(x)) ? "–" : (+x).toFixed(4);
+const pct = x => (x===null||x===undefined||isNaN(x)) ? "" : Math.round(x)+"%";
+document.getElementById('gen').textContent = "generated " + DATA.meta.generated + " · " + DATA.meta.commit;
+document.getElementById('gen2').textContent = DATA.meta.generated + " (commit " + DATA.meta.commit + ")";
+function showTip(e, html){ tip.innerHTML = html; tip.style.display='block'; tip.style.left=(e.clientX+14)+'px'; tip.style.top=(e.clientY+12)+'px'; }
+function hideTip(){ tip.style.display='none'; }
+function S(tag, attrs, parent){ const el=document.createElementNS('http://www.w3.org/2000/svg', tag); for(const k in (attrs||{})) el.setAttribute(k, attrs[k]); if(parent) parent.appendChild(el); return el; }
+function svg(w,h){ return S('svg',{width:w,height:h,viewBox:`0 0 ${w} ${h}`}); }
+function txt(p,x,y,s,a){ const t=S('text',Object.assign({x:x,y:y,'font-size':12,fill:'#333'},a||{}),p); t.textContent=s; return t; }
+function hover(el, html){ el.addEventListener('mousemove', e=>showTip(e, html)); el.addEventListener('mouseleave', hideTip); }
+function table(id, cols, rows, opts){
+  opts = opts||{}; const t=document.getElementById(id); t.innerHTML='';
+  const th=document.createElement('thead'), tr=document.createElement('tr');
+  cols.forEach((c,i)=>{ const h=document.createElement('th'); h.textContent=c.label; if(c.num) h.className='num'; h.onclick=()=>{ const dir = t.dataset.sort==i ? -1 : 1; t.dataset.sort = dir==1? i : -1; rows.sort((a,b)=>{ const x=c.val(a), y=c.val(b); return (x>y?1:x<y?-1:0)*dir; }); body(); }; tr.appendChild(h); });
+  th.appendChild(tr); t.appendChild(th); const tb=document.createElement('tbody'); t.appendChild(tb);
+  function body(){ tb.innerHTML=''; rows.forEach(r=>{ const row=document.createElement('tr'); if(opts.onclick){ row.style.cursor='pointer'; row.onclick=()=>opts.onclick(r);} cols.forEach(c=>{ const d=document.createElement('td'); const v=c.fmt? c.fmt(r) : c.val(r); if(typeof v==='string' && v.startsWith('<')) d.innerHTML=v; else d.textContent=v; if(c.num) d.className='num'; row.appendChild(d); }); tb.appendChild(row); }); }
+  body();
+}
+const trials = DATA.trials, byId = Object.fromEntries(trials.map(t=>[t.id,t]));
+trials.forEach(t=>{ t.short = t.name.split(' (')[0].split(':')[0].replace(' amlodipine vs thiazide','').replace(' switcher','').trim(); });
+function inSet(t, s){ return s==='all' || t.set===s || t.role===s; }
+const rolePill = r => `<span class="pill ${r==='physiology'?'phys':'ctrl'}">${r}</span>`;
+
+// ---------- summary cards
+(function(){
+  const bc = DATA.v13.boot_cross||[], pr = DATA.v13.plasmode_rs||[];
+  const g = (arr, f) => arr.find(f)||{};
+  const p1 = g(pr, r=>r.scenario==='base'&&r.contrast==='C1'), p2 = g(pr, r=>r.scenario==='base'&&r.contrast==='C2');
+  const cap = (arm, d) => { const v = trials.filter(t=>t.role==='physiology').map(t=>(DATA.capture[t.id][arm]||{})[d]).filter(x=>x!==undefined).sort((a,b)=>a-b); return v.length? v[Math.floor(v.length/2)] : NaN; };
+  const cards = [
+    ["Trials analysed", trials.length, `${trials.filter(t=>t.role==='physiology').length} physiology · ${trials.filter(t=>t.role==='control').length} control`],
+    ["LV-structure balance, sparse → +ECG", `${pct(cap('sparse','LVSTRUCT'))} → ${pct(cap('sparse+ECG','LVSTRUCT'))}`, "median capture, physiology trials (phase 1)"],
+    ["Plasmode bias reduction, C1", `${(p1.bias_reduction>=0?'+':'')}${f3(p1.bias_reduction)}`, `log HR (95% CI ${f3(p1.lo)} to ${f3(p1.hi)}); ≈${pct(100*p1.relative_reduction)} of sparse's bias`],
+    ["Plasmode bias reduction, C2", `${(p2.bias_reduction>=0?'+':'')}${f3(p2.bias_reduction)}`, `CI ${f3(p2.lo)} to ${f3(p2.hi)} — no gain on top of hdPS`],
+    ["RCT agreement improved?", "not demonstrated", "consistent direction for C1, CIs include 0 on registered tests"],
+  ];
+  document.getElementById('cards').innerHTML = cards.map(c=>`<div class="card"><div class="lbl">${c[0]}</div><div class="big">${c[1]}</div><div class="lbl">${c[2]}</div></div>`).join('');
+  const rows = [
+    {part:"Phase 1 — balance", q:"Does the ECG balance characteristics the PS didn't use?", a:"<span class='pill yes'>yes</span> Large gains for echo LV structure/function and measured physiology; not for valves."},
+    {part:"Phase 2 — effect estimates", q:"Does the ECG make HRs agree better with the RCTs?", a:"<span class='pill no'>not demonstrated</span> Mean error slightly lower with ECG, but within noise (H5 not supported)."},
+    {part:"v1.3 plasmode", q:"With a known truth, does the ECG reduce bias?", a:"<span class='pill part'>small</span> C1: yes, ≈8% (≈20% in physiology trials). C2: no."},
+    {part:"v1.3 bootstrap / permutation", q:"Is the improvement vs the RCT distinguishable from chance?", a:"<span class='pill no'>no</span> except physiology trials C1 (exploratory subgroup); not vs R+."},
+    {part:"v1.3 multiverse", q:"Is the direction robust to analysis choices?", a:"<span class='pill yes'>direction yes</span> C1 favoured in all 200 specifications vs RCT (not a significance test)."},
+    {part:"v1.3 design fidelity", q:"Does emulating the trial more closely help?", a:"<span class='pill no'>no</span> None of transport, per-protocol, run-in, strict outcomes improved overall agreement."},
+    {part:"v1.4 mechanism", q:"Does the ECG help more where data are thin, echo is missing, or echo physiology confounds?", a:"<span id='v14sum'>see section 8</span>"},
+  ];
+  table('t-summary', [{label:"Part",val:r=>r.part},{label:"Question",val:r=>r.q},{label:"Answer",val:r=>r.a}], rows);
+})();
+
+// ---------- trials table
+function drawTrials(){
+  const s = document.getElementById('trialset').value, ro = document.getElementById('trialrole').value;
+  const rows = trials.filter(t=>inSet(t,s) && (ro==='all'||t.role===ro));
+  table('t-trials', [
+    {label:"Trial", val:r=>r.short, fmt:r=>`<span title="${r.name}">${r.short}</span>`}, {label:"Set", val:r=>r.set}, {label:"Role", val:r=>r.role, fmt:r=>rolePill(r.role)},
+    {label:"Our comparison", val:r=>r.arms}, {label:"RCT result (HR, 95% CI)", val:r=>r.rct_hr, fmt:r=>`${f2(r.rct_hr)} (${f2(r.rct_lo)}–${f2(r.rct_hi)})`},
+    {label:"Endpoint", val:r=>r.endpoint}, {label:"Horizon (mo)", val:r=>r.horizon, num:true},
+    {label:"Clinical-PS pairs", val:r=>r.pairs, num:true}, {label:"Emulation rating", val:r=>r.rating_score, fmt:r=>`${r.rating} (${r.rating_score})`}
+  ], rows, {onclick: r=>{ document.getElementById('ftrial').value=r.id; drawForest(); location.hash='#s-forest'; }});
+  table('t-failed', [{label:"Trial",val:r=>r.name},{label:"Reason",val:r=>r.reason}], DATA.failed);
+}
+['trialset','trialrole'].forEach(i=>document.getElementById(i).onchange=drawTrials); drawTrials();
+
+// ---------- phase 1
+const CAPARMS = ["sparse","sparse+ECG","hdPS200","hdPS200+ECG","clinical (reference)"];
+const ca = document.getElementById('caparm'); CAPARMS.forEach(a=>{ const o=document.createElement('option'); o.value=a; o.textContent=L[a]; ca.appendChild(o); }); ca.value="sparse+ECG";
+function median(v){ v=v.filter(x=>x!==undefined&&x!==null&&!isNaN(x)).sort((a,b)=>a-b); if(!v.length) return NaN; const m=Math.floor(v.length/2); return v.length%2? v[m] : (v[m-1]+v[m])/2; }
+function drawCapture(){
+  const set = document.getElementById('capset').value, arm = ca.value;
+  const tr = trials.filter(t=>inSet(t,set));
+  const doms = DATA.domains;
+  // grouped bars of median capture
+  const W=900, rowH=30, H=doms.length*rowH+50, x0=230, xw=W-x0-30; const sv=svg(W,H);
+  const xs = v => x0 + (Math.max(-50, Math.min(100, v)) + 50)/150*xw;
+  [-50,0,50,100].forEach(v=>{ S('line',{x1:xs(v),x2:xs(v),y1:20,y2:H-25,stroke:v==0?'#999':'#eee'},sv); txt(sv,xs(v),H-10,v+'%',{'text-anchor':'middle',fill:'#777'}); });
+  doms.forEach(([d,lab],i)=>{ const y=25+i*rowH; txt(sv,x0-6,y+15,lab,{'text-anchor':'end'});
+    CAPARMS.forEach((a,j)=>{ const m = median(tr.map(t=>(DATA.capture[t.id][a]||{})[d])); if(isNaN(m)) return; const bar=S('rect',{x:Math.min(xs(0),xs(m)),y:y+j*5,width:Math.abs(xs(m)-xs(0)),height:4.5,fill:COL[a]},sv); hover(bar,`<b>${lab}</b><br>${L[a]}: median capture ${pct(m)} (${tr.filter(t=>(DATA.capture[t.id][a]||{})[d]!==undefined).length} trials)`); }); });
+  const lg=S('g',{},sv); CAPARMS.forEach((a,j)=>{ S('rect',{x:x0-180+j*140,y:4,width:10,height:10,fill:COL[a]},lg); txt(lg,x0-180+j*140+14,13,L[a],{'font-size':11}); });
+  const cb=document.getElementById('capbars'); cb.innerHTML='<h4>Median capture across trials, by arm</h4>'; cb.appendChild(sv);
+  // heat map trials x domains for chosen arm
+  const cw=52, ch=21, hx=180, hy=120, W2=hx+doms.length*cw+10, H2=hy+tr.length*ch+10, s2=svg(W2,H2);
+  doms.forEach(([d,lab],i)=>{ const t=txt(s2,hx+i*cw+cw/2,hy-6,lab,{'text-anchor':'start','font-size':10.5,transform:`rotate(-55 ${hx+i*cw+cw/2} ${hy-6})`}); });
+  tr.forEach((t,r)=>{ txt(s2,hx-6,hy+r*ch+14,t.short,{'text-anchor':'end','font-size':11.5}); doms.forEach(([d,lab],i)=>{ const v=(DATA.capture[t.id][arm]||{})[d]; const c = v===undefined? '#f3f3f3' : v>=0 ? `rgba(43,138,62,${Math.min(1,v/100)*0.85+0.1})` : `rgba(201,42,42,${Math.min(1,-v/100)*0.85+0.1})`;
+    const rc=S('rect',{x:hx+i*cw,y:hy+r*ch,width:cw-2,height:ch-2,fill:c},s2); if(v!==undefined){ const sv_ = v>100? '100+' : v<-100? '≤−100' : Math.round(v); txt(s2,hx+i*cw+cw/2-1,hy+r*ch+14,sv_,{'text-anchor':'middle','font-size':10,fill:Math.abs(v)>55?'#fff':'#222'}); }
+    hover(rc, `<b>${t.name}</b><br>${lab}<br>${L[arm]}: ${v===undefined?'nothing to capture':pct(v)}`); }); });
+  const ch_=document.getElementById('capheat'); ch_.innerHTML=`<h4>Capture % per trial — ${L[arm]}</h4>`; ch_.appendChild(s2);
+}
+['caparm','capset'].forEach(i=>document.getElementById(i).onchange=drawCapture); drawCapture();
+
+// ---------- forest
+const ft=document.getElementById('ftrial'); trials.forEach(t=>{ const o=document.createElement('option'); o.value=t.id; o.textContent=t.short + ' — ' + t.arms; ft.appendChild(o); });
+function drawForest(){
+  const t = byId[ft.value], an = document.getElementById('fana').value, P = (DATA.phase2[t.id]||{})[an]||{};
+  const rows = [{k:'RCT', hr:t.rct_hr, lo:t.rct_lo, hi:t.rct_hi, lab:'RCT result'}].concat(["unmatched","sparse","sparse+ECG","hdPS200","hdPS200+ECG","clinical (reference)","R+"].filter(a=>P[a]).map(a=>({k:a, hr:P[a].hr, lo:P[a].lo, hi:P[a].hi, lab:L[a], n1:P[a].n1, n0:P[a].n0})));
+  const W=760, rh=30, H=rows.length*rh+50, x0=220, xw=W-x0-150; const sv=svg(W,H);
+  const vals = rows.flatMap(r=>[r.lo,r.hi]).filter(v=>v>0); let lo=Math.min(0.5,...vals), hi=Math.max(2,...vals); lo=Math.max(lo,0.2); hi=Math.min(hi,5);
+  const xs = v => x0 + (Math.log(Math.max(lo,Math.min(hi,v))) - Math.log(lo))/(Math.log(hi)-Math.log(lo))*xw;
+  [0.25,0.5,0.75,1,1.5,2,3,4].filter(v=>v>=lo&&v<=hi).forEach(v=>{ S('line',{x1:xs(v),x2:xs(v),y1:10,y2:H-30,stroke:v==1?'#888':'#eee','stroke-dasharray':v==1?'':'2,2'},sv); txt(sv,xs(v),H-12,v,{'text-anchor':'middle',fill:'#666'}); });
+  S('rect',{x:xs(t.rct_lo),y:10,width:xs(t.rct_hi)-xs(t.rct_lo),height:H-40,fill:'#111',opacity:0.06},sv);
+  rows.forEach((r,i)=>{ const y=25+i*rh; txt(sv,x0-10,y+4,r.lab,{'text-anchor':'end','font-weight':r.k==='RCT'?700:400});
+    S('line',{x1:xs(r.lo),x2:xs(r.hi),y1:y,y2:y,stroke:COL[r.k]||'#333','stroke-width':2.2},sv);
+    const c=S(r.k==='RCT'?'rect':'circle', r.k==='RCT'? {x:xs(r.hr)-5,y:y-5,width:10,height:10,fill:'#111'} : {cx:xs(r.hr),cy:y,r:5.5,fill:COL[r.k]}, sv);
+    txt(sv,W-140,y+4,`${f2(r.hr)} (${f2(r.lo)}–${f2(r.hi)})`,{'font-size':12});
+    hover(c, `<b>${r.lab}</b><br>HR ${f2(r.hr)} (95% CI ${f2(r.lo)}–${f2(r.hi)})` + (r.n1? `<br>matched n: ${r.n1} vs ${r.n0}`:'') + (r.k!=='RCT'? `<br>|Δlog HR| vs RCT: ${f3(Math.abs(Math.log(r.hr)-Math.log(t.rct_hr)))}`:'')); });
+  const f=document.getElementById('forest'); f.innerHTML=''; f.appendChild(sv);
+  document.getElementById('ftext').innerHTML = `<b>${t.name}</b> — ${t.arms}; RCT: ${t.rct_arms}; endpoint: ${t.endpoint}; horizon ${t.horizon} months; ${t.pairs} clinical-PS pairs; rating ${t.rating}. ${t.note||''} <br>Shaded band = RCT 95% CI. HR scale is logarithmic. R+ is shown for the primary analysis only.`;
+}
+['ftrial','fana'].forEach(i=>document.getElementById(i).onchange=drawForest); drawForest();
+
+// ---------- agreement
+function rctb(t){ const b=Math.log(t.rct_hr), se=(Math.log(t.rct_hi)-Math.log(t.rct_lo))/(2*1.96); return [b,se]; }
+function agreeRows(set){
+  const tr = trials.filter(t=>inSet(t,set)); const out=[];
+  ["unmatched","sparse","sparse+ECG","hdPS200","hdPS200+ECG","clinical (reference)","R+"].forEach(a=>{
+    const d=[], z=[], est=[], cov=[]; tr.forEach(t=>{ const P=(DATA.phase2[t.id]||{})["trial|matched"]||{}; if(!P[a]) return; const [b,se]=rctb(t); const x=P[a].loghr, s=P[a].se; d.push(x-b); z.push((x-b)/Math.sqrt(s*s+se*se)); est.push(P[a].hr>=t.rct_lo && P[a].hr<=t.rct_hi); cov.push(Math.exp(x-1.96*s)<=t.rct_hr && t.rct_hr<=Math.exp(x+1.96*s)); });
+    if(!d.length) return; const w=d.map((_,i)=>1); out.push({arm:a, n:d.length, mad:d.reduce((s,v)=>s+Math.abs(v),0)/d.length, est:est.filter(x=>x).length, std:z.filter(v=>Math.abs(v)<1.96).length, mz:z.reduce((s,v)=>s+Math.abs(v),0)/z.length, cov:cov.filter(x=>x).length}); });
+  return out;
+}
+function drawAgree(){
+  const set=document.getElementById('aset').value, rows=agreeRows(set);
+  table('t-agree', [{label:"Arm",val:r=>L[r.arm]},{label:"Trials",val:r=>r.n,num:true},{label:"Mean |Δlog HR| vs RCT",val:r=>r.mad,fmt:r=>f3(r.mad),num:true},
+    {label:"Estimate agreement",val:r=>r.est,fmt:r=>`${r.est}/${r.n}`,num:true},{label:"Std-difference agreement",val:r=>r.std,fmt:r=>`${r.std}/${r.n}`,num:true},
+    {label:"Mean |z|",val:r=>r.mz,fmt:r=>f2(r.mz),num:true},{label:"Our CI covers RCT HR",val:r=>r.cov,fmt:r=>`${r.cov}/${r.n}`,num:true}], rows);
+  // scatter: our HR vs RCT HR
+  const tr=trials.filter(t=>inSet(t,set)), W=560, H=420, m=50, sv=svg(W,H), lo=0.4, hi=2.2;
+  const xs=v=>m+(Math.log(v)-Math.log(lo))/(Math.log(hi)-Math.log(lo))*(W-2*m), ys=v=>H-m-(Math.log(v)-Math.log(lo))/(Math.log(hi)-Math.log(lo))*(H-2*m);
+  S('line',{x1:xs(lo),y1:ys(lo),x2:xs(hi),y2:ys(hi),stroke:'#aaa','stroke-dasharray':'4,3'},sv);
+  [0.5,0.75,1,1.5,2].forEach(v=>{ txt(sv,xs(v),H-m+16,v,{'text-anchor':'middle',fill:'#666'}); txt(sv,m-8,ys(v)+4,v,{'text-anchor':'end',fill:'#666'}); });
+  txt(sv,W/2,H-8,'RCT hazard ratio',{'text-anchor':'middle'}); txt(sv,14,H/2,'Emulated HR',{transform:`rotate(-90 14 ${H/2})`,'text-anchor':'middle'});
+  const shown=["sparse","sparse+ECG","hdPS200","hdPS200+ECG","clinical (reference)"];
+  tr.forEach(t=>{ const P=(DATA.phase2[t.id]||{})["trial|matched"]||{}; shown.forEach(a=>{ if(!P[a]) return; const c=S('circle',{cx:xs(Math.max(lo,Math.min(hi,t.rct_hr))),cy:ys(Math.max(lo,Math.min(hi,P[a].hr))),r:4.5,fill:COL[a],opacity:0.8},sv); hover(c,`<b>${t.name}</b><br>${L[a]}: ${f2(P[a].hr)} vs RCT ${f2(t.rct_hr)}`); }); });
+  const lg=S('g',{},sv); shown.forEach((a,j)=>{ S('circle',{cx:m+10,cy:m+j*16,r:4.5,fill:COL[a]},lg); txt(lg,m+18,m+j*16+4,L[a],{'font-size':11}); });
+  const sc=document.getElementById('scatter'); sc.innerHTML='<h4>Emulated vs RCT hazard ratios (diagonal = perfect agreement)</h4>'; sc.appendChild(sv);
+}
+document.getElementById('aset').onchange=drawAgree; drawAgree();
+
+// ---------- paired differences (mean vs demonstrated)
+function tq(df){ const t={1:12.71,2:4.30,3:3.18,4:2.78,5:2.57,6:2.45,7:2.36,8:2.31,9:2.26,10:2.23,11:2.20,12:2.18,13:2.16,14:2.14,15:2.13,16:2.12,17:2.11}; return t[df]||1.96; }
+function drawPaired(){
+  const cn=document.getElementById('pcon').value, set=document.getElementById('pset').value, [a2,a1]= cn==='C1'? ["sparse+ECG","sparse"] : ["hdPS200+ECG","hdPS200"];
+  const pts=[]; trials.filter(t=>inSet(t,set)).forEach(t=>{ const P=(DATA.phase2[t.id]||{})["trial|matched"]||{}; if(!P[a1]||!P[a2]) return; const b=Math.log(t.rct_hr); pts.push({t, d:Math.abs(P[a2].loghr-b)-Math.abs(P[a1].loghr-b)}); });
+  pts.sort((x,y)=>x.d-y.d); const n=pts.length, mean=pts.reduce((s,p)=>s+p.d,0)/n, sd=Math.sqrt(pts.reduce((s,p)=>s+(p.d-mean)**2,0)/(n-1)), se=sd/Math.sqrt(n), lo=mean-tq(n-1)*se, hi=mean+tq(n-1)*se;
+  const W=760, rh=19, H=n*rh+90, x0=200, xw=W-x0-40, sv=svg(W,H), ext=Math.max(0.2, ...pts.map(p=>Math.abs(p.d)));
+  const xs=v=>x0+(v+ext)/(2*ext)*xw;
+  [-0.2,-0.1,0,0.1,0.2].filter(v=>Math.abs(v)<=ext).forEach(v=>{ S('line',{x1:xs(v),x2:xs(v),y1:10,y2:H-60,stroke:v==0?'#888':'#eee'},sv); txt(sv,xs(v),H-44,v,{'text-anchor':'middle',fill:'#666'}); });
+  txt(sv,xs(-ext/2),H-28,'← ECG arm closer to RCT',{'text-anchor':'middle',fill:'#2b8a3e'}); txt(sv,xs(ext/2),H-28,'ECG arm farther →',{'text-anchor':'middle',fill:'#c92a2a'});
+  pts.forEach((p,i)=>{ const y=18+i*rh; txt(sv,x0-8,y+4,p.t.short,{'text-anchor':'end','font-size':11.5}); const c=S('circle',{cx:xs(p.d),cy:y,r:5,fill:p.d<0?'#2b8a3e':'#c92a2a'},sv); hover(c,`<b>${p.t.name}</b> (${p.t.role})<br>Δ|log HR − RCT| = ${f3(p.d)}`); });
+  const yb=H-62; S('rect',{x:xs(lo),y:yb-6,width:xs(hi)-xs(lo),height:12,fill:'#2c5fd6',opacity:0.25},sv); S('line',{x1:xs(mean),x2:xs(mean),y1:yb-9,y2:yb+9,stroke:'#2c5fd6','stroke-width':3},sv);
+  txt(sv,x0-8,yb+4,'mean & 95% CI',{'text-anchor':'end','font-weight':700});
+  const pd=document.getElementById('paired'); pd.innerHTML=''; pd.appendChild(sv);
+  const closer=pts.filter(p=>p.d<0).length;
+  document.getElementById('pairednote').innerHTML = `<b>${cn}, ${n} trials.</b> Mean difference ${f3(mean)} (SD across trials ${f3(sd)}, SE ${f3(se)}); 95% CI ${f3(lo)} to ${f3(hi)}. The ECG arm is closer in ${closer}/${n} trials. ` + (hi<0? "The whole interval is below zero here." : "The interval includes zero: the lower average error is <b>not distinguishable from chance</b> — each trial's difference is noisy (sampling error of both our estimate and the RCT, plus trial-specific design differences), so a ~0.01 mean gain needs hundreds of trials to be demonstrated.");
+}
+['pcon','pset'].forEach(i=>document.getElementById(i).onchange=drawPaired); drawPaired();
+
+// ---------- generic CI plot
+function ciplot(el, rows, opts){
+  opts=opts||{}; const W=opts.w||960, rh=24, H=rows.length*rh+55, x0=opts.x0||300, xw=W-x0-190, sv=svg(W,H);
+  const vals=rows.flatMap(r=>[r.lo,r.hi,r.est]).filter(v=>v!==null&&!isNaN(v)); const ext=Math.max(opts.min||0.01, ...vals.map(Math.abs))*1.08;
+  const xs=v=>x0+(v+ext)/(2*ext)*xw;
+  S('line',{x1:xs(0),x2:xs(0),y1:8,y2:H-35,stroke:'#888'},sv);
+  [-ext*0.66,-ext*0.33,ext*0.33,ext*0.66].forEach(v=>{ S('line',{x1:xs(v),x2:xs(v),y1:8,y2:H-35,stroke:'#f0f0f0'},sv); txt(sv,xs(v),H-22,v.toFixed(3),{'text-anchor':'middle',fill:'#777','font-size':10.5}); });
+  if(opts.left) txt(sv,xs(-ext/2),H-6,opts.left,{'text-anchor':'middle',fill:opts.leftGood?'#2b8a3e':'#c92a2a','font-size':11.5});
+  if(opts.right) txt(sv,xs(ext/2),H-6,opts.right,{'text-anchor':'middle',fill:opts.leftGood?'#c92a2a':'#2b8a3e','font-size':11.5});
+  rows.forEach((r,i)=>{ const y=18+i*rh; txt(sv,x0-8,y+4,r.label,{'text-anchor':'end','font-size':12,'font-weight':r.bold?700:400});
+    if(r.lo!==null&&!isNaN(r.lo)) S('line',{x1:xs(r.lo),x2:xs(r.hi),y1:y,y2:y,stroke:r.color||'#333','stroke-width':2.2},sv);
+    const good = opts.leftGood ? r.hi<0 : r.lo>0, badc = opts.leftGood ? r.lo>0 : r.hi<0;
+    const c=S('circle',{cx:xs(r.est),cy:y,r:5,fill: good? '#2b8a3e' : badc ? '#c92a2a' : (r.color||'#555')},sv);
+    txt(sv,W-180,y+4,`${f3(r.est)} [${f3(r.lo)}, ${f3(r.hi)}]`,{'font-size':11.5});
+    hover(c, `<b>${r.label}</b><br>${f4(r.est)} (95% CI ${f4(r.lo)} to ${f4(r.hi)})` + (r.extra? '<br>'+r.extra : '')); });
+  el.innerHTML=''; el.appendChild(sv);
+}
+
+// ---------- plasmode
+function drawPlasmode(){
+  const v=document.getElementById('plver').value, arr = v==='rs'? DATA.v13.plasmode_rs : DATA.v13.plasmode_fixed;
+  const scen=["base","phys_only","strong","none","null"], rows=[];
+  scen.forEach(s=>["C1","C2"].forEach(c=>{ const r=(arr||[]).find(x=>x.scenario===s&&x.contrast===c); if(r) rows.push({label:`${s} · ${c==='C1'?'sparse→+ECG':'hdPS→+ECG'}`, est:r.bias_reduction, lo:r.lo, hi:r.hi, color:c==='C1'?COL['sparse+ECG']:COL['hdPS200+ECG'], extra:`relative to comparator's |bias|: ${pct(100*r.relative_reduction)}; ${r.trials} trials`}); }));
+  scen.forEach(s=>{ const r=(arr||[]).find(x=>x.scenario===s&&x.contrast==='sparse+ECG-vs-sparse+shufECG'); if(r) rows.push({label:`${s} · real ECG vs shuffled ECG (sparse)`, est:r.bias_reduction, lo:r.lo, hi:r.hi, color:'#888'}); });
+  ciplot(document.getElementById('plasmode'), rows, {left:'ECG arm more biased', right:'ECG arm less biased', leftGood:false, x0:330});
+}
+document.getElementById('plver').onchange=drawPlasmode; drawPlasmode();
+
+// ---------- bootstrap
+function drawBoot(){
+  const tg=document.getElementById('btgt').value, bc=DATA.v13.boot_cross||[];
+  const want=[["C1","C1: sparse+ECG vs sparse"],["C2","C2: hdPS200+ECG vs hdPS200"],["sparse+noise32-vs-sparse","placebo: sparse+noise vs sparse"],["sparse+shufECG-vs-sparse","placebo: sparse+shuffled ECG vs sparse"],["sparse+ECG-vs-sparse+shufECG","real vs shuffled ECG (sparse)"],["hdPS200+ECG-vs-hdPS200+shufECG","real vs shuffled ECG (hdPS)"]];
+  const rows=want.map(([k,lab])=>{ const r=bc.find(x=>x.target===tg&&x.contrast===k); return r? {label:lab, est:r.mean_d_sqerr, lo:r.lo, hi:r.hi, color:k.startsWith('C1')?COL['sparse+ECG']:k.startsWith('C2')?COL['hdPS200+ECG']:'#888', extra:`ECG arm closer in ${pct(100*r.share_trials_closer)} of trials; leave-one-out ${f4(r.loo_min)} to ${f4(r.loo_max)}`} : null; }).filter(x=>x);
+  ciplot(document.getElementById('boot'), rows, {left:'first arm closer', right:'first arm farther', leftGood:true, x0:300});
+}
+document.getElementById('btgt').onchange=drawBoot; drawBoot();
+
+// ---------- multiverse
+function drawMV(){
+  const cn=document.getElementById('mvcon').value, met=document.getElementById('mvmet').value, cb=document.getElementById('mvcol').value;
+  const pts=(DATA.v13.multiverse||[]).filter(r=>r.contrast===cn).map(r=>({v:r[met], r})).sort((a,b)=>a.v-b.v);
+  const W=760, H=300, m=45, sv=svg(W,H); if(!pts.length){ document.getElementById('mv').textContent='no data'; return; }
+  const ext=Math.max(...pts.map(p=>Math.abs(p.v)))*1.1, xs=i=>m+i/(pts.length-1)*(W-2*m), ys=v=>H/2-v/ext*(H/2-m);
+  S('line',{x1:m,x2:W-m,y1:ys(0),y2:ys(0),stroke:'#888'},sv);
+  const cats=[...new Set(pts.map(p=>p.r[cb]))], pal=['#4263eb','#d9480f','#2b8a3e','#ae3ec9','#f08c00','#0c8599','#e64980','#5c940d','#1098ad','#862e9c'];
+  pts.forEach((p,i)=>{ const c=S('circle',{cx:xs(i),cy:ys(p.v),r:3.2,fill:pal[cats.indexOf(p.r[cb])%pal.length]},sv); hover(c,`${p.r.model} · seed ${p.r.seed} · ${p.r.estimator}<br>difference ${f4(p.v)}`); });
+  txt(sv,W-m,ys(0)-8,'↑ ECG arm worse',{fill:'#c92a2a','text-anchor':'end'}); txt(sv,W-m,ys(0)+18,'↓ ECG arm better',{fill:'#2b8a3e','text-anchor':'end'});
+  cats.forEach((c,j)=>{ S('circle',{cx:m+10,cy:m-25+j*14,r:4,fill:pal[j%pal.length]},sv); txt(sv,m+18,m-21+j*14,c,{'font-size':10.5}); });
+  txt(sv,W/2,H-10,'200 specifications, sorted',{'text-anchor':'middle',fill:'#666'});
+  const share=pts.filter(p=>p.v<0).length/pts.length; const el=document.getElementById('mv'); el.innerHTML=`<div class="small">ECG arm better in <b>${pct(100*share)}</b> of specifications (median difference ${f4(pts[Math.floor(pts.length/2)].v)}).</div>`; el.appendChild(sv);
+}
+['mvcon','mvmet','mvcol'].forEach(i=>document.getElementById(i).onchange=drawMV); drawMV();
+
+// ---------- dose / SHD / ENC2
+function drawDose(){
+  const tg=document.getElementById('dtgt').value, bc=DATA.v13.boot_cross||[], sh=DATA.v13.boot_shd||[];
+  const rows=[];
+  [["sparse+ECG8","8 PCs"],["sparse+ECG16","16 PCs"],["sparse+ECG","32 PCs (base)"],["sparse+ECG64","64 PCs"],["sparse+ECGpheno","32 PCs + phenotypes"]].forEach(([a,l])=>{ const r=bc.find(x=>x.target===tg&&x.contrast===`${a}-vs-sparse`); if(r) rows.push({label:`sparse + ${l}`, est:r.mean_d_sqerr, lo:r.lo, hi:r.hi, color:COL['sparse+ECG']}); });
+  [["sparse+SHD-vs-sparse","sparse + PRESENT-SHD scores"],["sparse+ENC2-vs-sparse","sparse + encoder 2 (LVEF CNN)"]].forEach(([k,l])=>{ const r=sh.find(x=>x.target===tg&&x.contrast===k); if(r) rows.push({label:l, est:r.mean_d_sqerr, lo:r.lo, hi:r.hi, color:'#c2255c'}); });
+  [["hdPS200+ECG8","8 PCs"],["hdPS200+ECG16","16 PCs"],["hdPS200+ECG","32 PCs (base)"],["hdPS200+ECG64","64 PCs"],["hdPS200+ECGpheno","32 PCs + phenotypes"]].forEach(([a,l])=>{ const r=bc.find(x=>x.target===tg&&x.contrast===`${a}-vs-hdPS200`); if(r) rows.push({label:`hdPS200 + ${l}`, est:r.mean_d_sqerr, lo:r.lo, hi:r.hi, color:COL['hdPS200+ECG']}); });
+  [["hdPS200+SHD-vs-hdPS200","hdPS200 + PRESENT-SHD scores"],["hdPS200+ENC2-vs-hdPS200","hdPS200 + encoder 2"]].forEach(([k,l])=>{ const r=sh.find(x=>x.target===tg&&x.contrast===k); if(r) rows.push({label:l, est:r.mean_d_sqerr, lo:r.lo, hi:r.hi, color:'#c2255c'}); });
+  ciplot(document.getElementById('dose'), rows, {left:'closer to target', right:'farther', leftGood:true, x0:300});
+}
+document.getElementById('dtgt').onchange=drawDose; drawDose();
+
+// ---------- design fidelity
+(function(){
+  const d=DATA.v13.design||[], ans=["primary","strict","transport","transport_ess20","pp_naive_365","pp_ipcw_365","pp_ipcw_180","pp_ipcw_730","pp_naive_switch","pp_ipcw_switch","runin90"];
+  const lab={primary:"Primary (frozen phase 2)",strict:"Primary-diagnosis hospitalisations only",transport:"Transport to RCT Table 1",transport_ess20:"Transport (ESS ≥ 20%)",pp_naive_365:"Per-protocol, naive (365-d grace)",pp_ipcw_365:"Per-protocol, IPCW (365 d)",pp_ipcw_180:"Per-protocol, IPCW (180 d)",pp_ipcw_730:"Per-protocol, IPCW (730 d)",pp_naive_switch:"Censor at switch, naive",pp_ipcw_switch:"Censor at switch, IPCW",runin90:"90-day run-in landmark"};
+  const arms=["M1 sparse","M2 sparse+ECG","M3 hdPS200","M4 hdPS200+ECG","R clinical","R+ physiology ref"], ac=["sparse","sparse+ECG","hdPS200","hdPS200+ECG","clinical (reference)","R+"];
+  const W=820, rh=26, H=ans.length*rh+60, x0=280, cw=(W-x0-10)/arms.length, sv=svg(W,H);
+  arms.forEach((a,j)=>{ txt(sv,x0+j*cw+cw/2,18,a.replace(' physiology ref',''),{'text-anchor':'middle','font-size':11,'font-weight':700}); });
+  const all=d.map(r=>r.mean_abs_dlog).filter(v=>v!==null), mn=Math.min(...all), mx=Math.max(...all);
+  ans.forEach((an,i)=>{ const y=30+i*rh; txt(sv,x0-8,y+15,lab[an]||an,{'text-anchor':'end','font-size':12});
+    const rr=arms.map(a=>d.find(r=>r.analysis===an&&r.arm===a)); const best=Math.min(...rr.filter(x=>x).map(x=>x.mean_abs_dlog));
+    rr.forEach((r,j)=>{ if(!r) return; const t=(r.mean_abs_dlog-mn)/(mx-mn); const c=S('rect',{x:x0+j*cw+2,y:y,width:cw-4,height:rh-4,fill:`rgba(${Math.round(255*t)},${Math.round(160*(1-t))+60},${Math.round(120*(1-t))},0.55)`,stroke:r.mean_abs_dlog===best?'#111':'none','stroke-width':2},sv);
+      txt(sv,x0+j*cw+cw/2,y+15,f3(r.mean_abs_dlog),{'text-anchor':'middle','font-size':11.5}); hover(c,`<b>${lab[an]}</b><br>${r.arm}: mean |Δ| ${f3(r.mean_abs_dlog)}; estimate agreement ${r.estimate_agreement}/${r.trials}; std-diff ${r.std_diff_agreement}/${r.trials}; τ ${f3(r.tau)}`); }); });
+  txt(sv,x0,H-10,'Cell = mean |Δlog HR| vs RCT (lower is better); outlined = best arm in that row.',{'font-size':11,fill:'#666'});
+  document.getElementById('designfid').appendChild(sv);
+})();
+
+// ---------- NCO
+(function(){
+  const n=DATA.v13.nco||[]; const arms=[...new Set(n.map(r=>r.arm))]; const rows=arms.map(a=>{ const g=n.filter(r=>r.arm===a); const m=v=>v.reduce((s,x)=>s+x,0)/v.length; return {arm:a, mu:m(g.map(r=>r.mu)), amu:m(g.map(r=>Math.abs(r.mu))), sigma:m(g.map(r=>r.sigma)), k:g.length}; });
+  table('t-nco',[{label:"Arm",val:r=>L[r.arm]||r.arm},{label:"Trials",val:r=>r.k,num:true},{label:"Mean μ (average NCO log HR)",val:r=>r.mu,fmt:r=>f3(r.mu),num:true},{label:"Mean |μ|",val:r=>r.amu,fmt:r=>f3(r.amu),num:true},{label:"Mean σ (spread)",val:r=>r.sigma,fmt:r=>f3(r.sigma),num:true}], rows);
+})();
+
+// ---------- v1.4
+(function(){
+  const box=document.getElementById('v14box'), H=DATA.v14.hypotheses||[], PL=DATA.v14.plasmode||[], BT=DATA.v14.boot||[];
+  if(!H.length){ box.innerHTML='<div class="note">v1.4 results are not available yet in this build — re-run <code>scripts/build_presentation.py</code> after <code>v14_summarize.py</code>.</div>'; document.getElementById('v14sum').textContent='pending'; return; }
+  const sup=H.filter(h=>h.supported).length;
+  document.getElementById('v14sum').innerHTML = `<span class="pill ${sup? 'part':'no'}">${sup}/${H.length} tests supported</span> see section 8`;
+  let html = `<h3>Hypothesis tests</h3><table id="t-hyp"></table>`;
+  html += `<h3>Plasmode bias reduction by setting</h3><div class="controls"><label>Contrast <select id="v14c"><option>C1</option><option>C2</option></select></label><label>Scenario <select id="v14s"></select></label></div><div id="v14pl"></div>`;
+  html += `<h3>Real-data bootstrap by setting</h3><div class="controls"><label>Target <select id="v14t"><option value="R+">R+</option><option value="RCT">RCT</option></select></label></div><div id="v14bt"></div>`;
+  box.innerHTML=html;
+  table('t-hyp',[{label:"Hypothesis",val:r=>r.hypothesis},{label:"Contrast",val:r=>r.contrast},{label:"Trials",val:r=>r.trials,num:true},{label:"Test",val:r=>r.test},{label:"Estimate",val:r=>r.estimate,fmt:r=>f4(r.estimate),num:true},{label:"95% CI",val:r=>r.lo,fmt:r=>`${f4(r.lo)} to ${f4(r.hi)}`},{label:"Supported",val:r=>r.supported?1:0,fmt:r=>`<span class="pill ${r.supported?'yes':'no'}">${r.supported?'yes':'no'}</span>`}], H);
+  const scen=[...new Set(PL.map(r=>r.scenario))]; const ss=document.getElementById('v14s'); scen.forEach(s=>{ const o=document.createElement('option'); o.value=s; o.textContent=s; ss.appendChild(o); });
+  const order=["dropout_0","dropout_0.5","dropout_0.75","dropout_0.9","density_high","density_mid","density_low","echo_yes","echo_no","echo_subcohort","hf_outcome"];
+  const plab={dropout_0:"codes intact (v1.3)",'dropout_0.5':"50% of codes deleted",'dropout_0.75':"75% of codes deleted",'dropout_0.9':"90% of codes deleted",density_high:"code density: high tertile",density_mid:"code density: middle",density_low:"code density: low tertile",echo_yes:"has an echo (2016+)",echo_no:"no echo (2016+)",echo_subcohort:"echo subcohort (echo-physiology plasmode)",hf_outcome:"HF-hospitalisation outcome"};
+  function draw(){ const c=document.getElementById('v14c').value, s=ss.value;
+    const rows=order.map(p=>{ const r=PL.find(x=>x.pool===p&&x.scenario===s&&x.contrast===c); return r? {label:plab[p]||p, est:r.bias_reduction, lo:r.lo, hi:r.hi, color:c==='C1'?COL['sparse+ECG']:COL['hdPS200+ECG'], extra:`${r.trials} trials; relative ${pct(100*r.relative)}`}:null; }).filter(x=>x);
+    ciplot(document.getElementById('v14pl'), rows, {left:'ECG arm more biased', right:'ECG arm less biased', leftGood:false, x0:320});
+    const tg=document.getElementById('v14t').value;
+    const rb=order.map(p=>{ const r=BT.find(x=>x.pool===p&&x.contrast===c&&x.target===tg); return r? {label:plab[p]||p, est:r.mean_d_sqerr, lo:r.lo, hi:r.hi, color:c==='C1'?COL['sparse+ECG']:COL['hdPS200+ECG'], extra:`${r.trials} trials`}:null; }).filter(x=>x);
+    ciplot(document.getElementById('v14bt'), rb, {left:'ECG arm closer', right:'ECG arm farther', leftGood:true, x0:320}); }
+  ['v14c','v14s','v14t'].forEach(i=>document.getElementById(i).onchange=draw); if(scen.includes('base')) ss.value='base'; draw();
+})();
+
+// ---------- rules
+(function(){ const r=DATA.v13.rules||[]; table('t-rules',[{label:"Rule",val:x=>x.rule},{label:"Met?",val:x=>String(x.met),fmt:x=>`<span class="pill ${String(x.met)==='True'||x.met===true?'yes':'no'}">${String(x.met)==='True'||x.met===true?'met':'not met'}</span>`}], r); })();
+
+// ---------- nav highlight
+const links=[...document.querySelectorAll('nav a')]; window.addEventListener('scroll',()=>{ let cur=''; document.querySelectorAll('section, h3[id]').forEach(s=>{ if(s.getBoundingClientRect().top<120) cur=s.id; }); links.forEach(a=>a.classList.toggle('active', a.getAttribute('href')==='#'+cur)); });
+</script>
+</body>
+</html>
