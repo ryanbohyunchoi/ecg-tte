@@ -107,6 +107,8 @@ class Trial:
         if with_shd:
             self.shd = S.loc[common].to_numpy(float)
         panel = panel.loc[common]
+        code_cols = [c for c in panel.columns if c.split("_")[0] in ("dx", "rx", "px")]
+        self.density = (panel[code_cols] > 0).sum(1).to_numpy()  # v1.4 A: distinct pre-index code features
         dic = pd.read_csv(P["dic"])
         rng = np.random.default_rng(split_seed)
         pool = {}
@@ -141,6 +143,11 @@ class Trial:
         early = self.index_date.lt(pd.Timestamp(ECHO_START)).fillna(True).to_numpy()
         echo_cols = [c for c in PP.columns if c.split("__")[0] not in ("LAB", "BNP")]
         PP.loc[early, echo_cols] = np.nan
+        self.post2016 = ~early
+        self.echo_cols = [c for c in echo_cols if c.split("__")[0] in ("LVSTRUCT", "LVFUNC", "DIAST", "RVPULM")]
+        self.echo_any = PP[[c for c in echo_cols if not c.startswith("ACCESS")]].notna().any(axis=1).to_numpy()  # any echo measure (ACCESS = echo-done flag excluded)
+        self.echo_lv = PP[self.echo_cols].notna().any(axis=1).to_numpy()
+        self.PP_echo = PP[self.echo_cols].apply(pd.to_numeric, errors="coerce")
         keep = [c for c in PP.columns if PP[c].notna().mean() >= 0.05 and PP[c].nunique() > 1]
         PPk = PP[keep]
         miss = PPk.isna().astype(float).add_suffix("__missing")
@@ -149,6 +156,30 @@ class Trial:
         self.rng_shuffle = np.random.default_rng(424242)
         self.shuffle_perm = self.rng_shuffle.permutation(len(common))
         self.noise32 = np.random.default_rng(3000 + split_seed).normal(size=(len(common), 32))  # as grid placebo
+
+    def degraded(self, p, seed=0):
+        """v1.4 B: copy with each recorded code (diagnosis flags, medication-order flags, hdPS code levels)
+        deleted per patient with probability p. Demographics, labs, vitals, echo, ECG unchanged."""
+        import copy
+        D = copy.copy(self)
+        rng = np.random.default_rng(90_000 + int(round(p * 1000)) + seed)
+        n = len(self.t)
+        cov = self.cov.copy()
+        coded = self.dxc + self.meds
+        for c in coded:
+            v = cov[c].to_numpy()
+            drop = rng.uniform(size=n) < p
+            cov[c] = np.where(drop & (v > 0), 0.0, v)
+        D.cov = cov
+        D.X_dx = cov[self.demo + self.dxc].to_numpy()
+        D.X_core = cov.to_numpy()
+        codes = pd.Index([c.rsplit("__", 1)[0] for c in self.lv.columns])
+        uc = codes.unique()
+        M = rng.uniform(size=(n, len(uc))) < p
+        keepmask = ~M[:, uc.get_indexer(codes)]
+        D.lv = self.lv * keepmask
+        D.lv_np = D.lv.to_numpy(float)
+        return D
 
     # ---- design matrices ----
     def hd(self, k=200, t=None, rows=None):
