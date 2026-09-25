@@ -11,7 +11,8 @@ import pandas as pd
 from scipy.stats import wilcoxon
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from trial_specs import NCO, PUBLISHED, TRIALS  # noqa: E402
+from trial_specs import NCO, ONE_PER_RCT_EXCLUDE, PUBLISHED, TRIALS, rating  # noqa: E402
+from scipy.stats import norm
 
 A = Path("/mnt/raid0/rbc58/ecg-tte/audits")
 POP = sys.argv[1] if len(sys.argv) > 1 else "all"
@@ -33,15 +34,23 @@ def bench(key):
     if abs(p["our_orientation"] - p["hr"]) > 1e-6:  # orientation flipped (COMET)
         lo, hi = 1 / hi, 1 / lo
     b = np.log(p["our_orientation"])
-    se = (np.log(hi) - np.log(lo)) / (2 * 1.96)
+    z = norm.ppf(0.5 + p.get("ci_level", 0.95) / 2)
+    se = (np.log(hi) - np.log(lo)) / (2 * z)
     return b, se, lo, hi
 
 
-def primary_set():
+RATINGS = {}
+
+
+def primary_set(one_per_rct=True):
     keep = []
     for key, n in ORDER:
         f = A / f"claude-cap4-all-{n}" / "summary_pooled.csv"
-        if f.exists() and pd.read_csv(f, index_col=0).loc["clinical (reference)", "pairs"] >= 400:
+        if not f.exists():
+            continue
+        pairs = pd.read_csv(f, index_col=0).loc["clinical (reference)", "pairs"]
+        RATINGS[n] = rating(key, pairs)
+        if pairs >= 400 and not (one_per_rct and n in ONE_PER_RCT_EXCLUDE):
             keep.append(n)
     return keep
 
@@ -68,6 +77,7 @@ def main():
         return
     P = primary_set()
     print(f"# Phase 2 — population: {POP}\n")
+    print("Each RCT counted once in cross-trial summaries: PARADIGM-HF = sequential switcher design (new-user design: sensitivity).\n")
     print("Primary analysis set (clinical-PS pairs >= 400, all initiators; DIONYSOS not emulable): " + ", ".join(P) + "\n")
     prim = D[(D.outcome == "primary") & (D.horizon == "trial") & (D.analysis == "matched")]
     print("## Primary outcome, trial horizon, matched (HR, 95% CI; our arm order = arm 1 vs arm 2)\n")
@@ -79,7 +89,8 @@ def main():
             continue
         b, se, lo, hi = bench(key)
         cells = [fmt(x.loc[a]) if a in x.index else "–" for a in ARMS]
-        print(f"| {TRIALS[key]['name'].replace(' (adapted)', '')} | {'primary' if n in P else 'suppl.'} | "
+        rt = RATINGS.get(n, (None, "?", None))
+        print(f"| {TRIALS[key]['name'].replace(' (adapted)', '')} ({rt[1]}) | {'primary' if n in P else 'suppl.'} | "
               f"{np.exp(b):.2f} ({lo:.2f}–{hi:.2f}) | " + " | ".join(cells) + " |")
 
     def metrics(sub, arms, trials):
@@ -129,6 +140,24 @@ def main():
                 p = wilcoxon(da[ok], db[ok]).pvalue
                 print(f"- |log HR − {tgt}|: {LABEL[a]} vs {LABEL[b]}: median {da[ok].median():.3f} vs {db[ok].median():.3f}; "
                       f"{a} closer in {(da[ok] < db[ok]).sum()}/{ok.sum()} trials; p = {p:.3f}")
+
+    print("\n## Stratified: mean |log HR − RCT| by role and emulation rating (primary set)\n")
+    print("| Stratum | Trials | " + " | ".join(LABEL[a] for a in ARMS) + " |")
+    print("|---|---|" + "---|" * len(ARMS))
+    strata = {"physiology": [n for k, n in ORDER if n in P and TRIALS[k]["role"] == "physiology"],
+              "control": [n for k, n in ORDER if n in P and TRIALS[k]["role"] == "control"],
+              "rating close": [n for n in P if RATINGS[n][1] == "close"],
+              "rating moderate/limited": [n for n in P if RATINGS[n][1] != "close"]}
+    for lab, tr in strata.items():
+        m = metrics(prim, ARMS, tr).set_index("arm") if tr else pd.DataFrame()
+        cells = [f"{m.loc[LABEL[a], 'mean_abs_dlog_rct']:.3f}" if not m.empty and LABEL[a] in m.index else "–" for a in ARMS]
+        print(f"| {lab} | {len(tr)} | " + " | ".join(cells) + " |")
+    P_alt = [n for n in primary_set(one_per_rct=False) if n != "paradigm-hf-seq"]
+    print("\nSensitivity (PARADIGM-HF new-user design instead of the sequential switcher):\n")
+    m = metrics(prim, ARMS, P_alt)
+    for r in m.itertuples():
+        print(f"- {r.arm}: estimate agreement {r.estimate_agreement}/{r.trials}, regulatory {r.regulatory_agreement}/{r.trials}, "
+              f"mean |Δlog HR| vs RCT {r.mean_abs_dlog_rct:.3f}, vs R {r.mean_abs_dlog_ref:.3f}")
 
     print("\n## Negative-control outcomes (trial horizon, matched; expected HR = 1)\n")
     nco = D[D.outcome.isin(NCO.keys()) & (D.horizon == "trial") & (D.analysis == "matched") & D.name.isin(P)]

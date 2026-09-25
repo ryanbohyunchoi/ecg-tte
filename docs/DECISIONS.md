@@ -2527,3 +2527,13 @@ Later changes require a dated amendment made before the affected outcome analysi
   - a regenerated report;
   - running phase 2.
 - Details: `docs/PROTOCOL_V1_1_AMENDMENT.md`; tag `protocol-v1.1`.
+
+### 2026-09-24 — Protocol v1.2 (pre-run review of phase-2 code; before outcome extraction)
+See `docs/PROTOCOL_V1_2_AMENDMENT.md`. Main fixes:
+- index-day deaths (previously immortal follow-up);
+- 28-day I22-only MI rule;
+- merged inpatient stays (index-stay leakage);
+- no hospitalisation events after an other-cause death;
+- harmonised stroke codes.
+
+The reviewer's synthetic cases were re-run and behave as intended.

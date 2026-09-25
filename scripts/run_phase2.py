@@ -21,7 +21,7 @@ import pandas as pd
 from lifelines import CoxPHFitter
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from trial_specs import NCO  # noqa: E402
+from trial_specs import HORIZON_MONTHS, NCO  # noqa: E402
 
 warnings.filterwarnings("ignore")
 
@@ -67,6 +67,10 @@ def main():
     ap.add_argument("--output-csv", required=True)
     a = ap.parse_args()
     O = pd.read_parquet(a.outcomes).set_index("patient_key")
+    assert a.horizon_days == int(round(HORIZON_MONTHS[a.trial] * 30.4375)), "horizon mismatch with trial_specs"
+    n_excl = int(O.get("exclude_phase2", pd.Series(0, index=O.index)).sum())
+    if "exclude_phase2" in O:
+        O = O[O.exclude_phase2 == 0]
     files = sorted(glob.glob(f"{a.grid_dir}/restricted_matches_imp*_seed0.parquet"))
     if not files:
         raise SystemExit("no saved matches")
@@ -79,7 +83,11 @@ def main():
     for f in files:
         M = pd.read_parquet(f)
         for meth, g in M.groupby("method", sort=False):
-            g = g.set_index("patient_key").join(O, how="inner")
+            g = g.set_index("patient_key")
+            missing = ~g.index.isin(O.index)
+            # only patients flagged exclude_phase2 may be missing; anything else is a linkage error
+            assert missing.sum() <= n_excl, f"{meth}: {missing.sum()} patients without outcomes"
+            g = g.join(O, how="inner")
             for oname, tc, ec in outs:
                 for hname, H in horizons:
                     if hname != "trial" and oname != "primary":
@@ -110,7 +118,8 @@ def main():
         rows.append(dict(trial=a.trial, method=meth, outcome=oname, horizon=hname, analysis=analysis, imputations=m,
                          loghr=b, se=se, hr=np.exp(b), lo=np.exp(b - 1.96 * se), hi=np.exp(b + 1.96 * se),
                          n_treated=round(np.mean(v["n1"])), n_control=round(np.mean(v["n0"])),
-                         events_treated=sup(round(np.mean(v["e1"]))), events_control=sup(round(np.mean(v["e0"])))))
+                         events_treated=sup(round(np.mean(v["e1"]))) if min(v["e1"]) >= 11 or max(v["e1"]) == 0 else "<11",
+                         events_control=sup(round(np.mean(v["e0"]))) if min(v["e0"]) >= 11 or max(v["e0"]) == 0 else "<11"))
     pd.DataFrame(rows).to_csv(a.output_csv, index=False)
     print(json.dumps(dict(trial=a.trial, rows=len(rows))))
 

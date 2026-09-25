@@ -1,6 +1,6 @@
 # Protocol v1 (FROZEN 2026-09-24): unstructured ECG information for confounding control in EHR-based target trial emulation
 
-**Amended by v1.1 (2026-09-24, before any outcome extraction): see `docs/PROTOCOL_V1_1_AMENDMENT.md`.**
+**Amended by v1.1 and v1.2 (2026-09-24, both before any outcome extraction): see `docs/PROTOCOL_V1_1_AMENDMENT.md` and `docs/PROTOCOL_V1_2_AMENDMENT.md`.**
 
 Status: **FROZEN, 2026-09-24.** Approved by Ryan. The Git tag `protocol-v1` marks the frozen commit.
 - No outcome had been extracted for any trial at freeze.

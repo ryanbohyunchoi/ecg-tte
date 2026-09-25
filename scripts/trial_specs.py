@@ -403,3 +403,31 @@ NCO = {"nco_cataract": ("proc", ["66982", "66984", "66987", "66988", "08RJ3JZ", 
                                 "0YQ5", "0YQ6", "0YQ7", "0YQ8", "0YU5", "0YU6", "0YU7", "0YU8"]),
        "nco_skin_cancer": ("dx", ["C44"])}
 DEATH_END, COD_END = "2024-12-31", "2024-06-24"
+
+# ---- v1.2 (2026-09-24, before outcome extraction): harmonised stroke codes (I60 SAH, I61 ICH, I63 ischaemic,
+# I64 legacy; subdural I62 excluded), systemic embolism I74; femoral hernia repair codes added.
+STROKE = ["I60", "I61", "I63", "I64"]
+OUTCOMES.update({
+    "life": ["cv_death", ("hosp", ["I21", "I22"]), ("hosp", STROKE)],
+    "plato": ["cv_death", ("hosp", ["I21", "I22"]), ("hosp", STROKE)],
+    "aristotle": [("hosp", STROKE + ["I74"])], "rocket_af": [("hosp", STROKE + ["I74"])], "rely": [("hosp", STROKE + ["I74"])],
+    "partner": ["death", ("hosp", STROKE)],
+})
+NCO["nco_hernia"] = ("proc", NCO["nco_hernia"][1] + ["49550", "49553", "49555", "49557"])
+PUBLISHED["elite_ii"]["ci_level"] = 0.957
+# Cross-trial summaries count each RCT once: PARADIGM-HF is represented by the sequential switcher design
+# (closest to the trial population, which was already on ACEi/ARB); the new-user design is a sensitivity.
+ONE_PER_RCT_EXCLUDE = ["paradigm"]
+# Emulation-rating rubric items (a) comparator, (b) eligibility, (c) time zero/setting, (d) endpoint; item (e)
+# data sufficiency is computed from clinical-PS pairs in the all-initiator v1.1 grid (>=800: 2; 400-799: 1; <400: 0).
+RATING_ITEMS = {"comet": (1, 1, 2, 2), "paradigm_hf": (1, 1, 1, 1), "paradigm_hf_switch": (1, 1, 2, 1),
+                "paradigm_hf_seq": (1, 1, 2, 1), "paragon_hf": (2, 1, 1, 1), "transform_hf": (2, 1, 1, 2),
+                "elite_ii": (1, 1, 2, 2), "life": (1, 2, 2, 1), "dionysos": (2, 1, 2, 0), "plato": (2, 2, 2, 1),
+                "aristotle": (2, 1, 2, 2), "rocket_af": (2, 1, 2, 2), "rely": (1, 1, 2, 2), "allhat": (1, 1, 2, 1),
+                "dapa_hf": (0, 1, 2, 1), "partner": (2, 1, 2, 2)}
+
+
+def rating(key, pairs):
+    e = 2 if pairs >= 800 else 1 if pairs >= 400 else 0
+    total = sum(RATING_ITEMS[key]) + e
+    return total, ("close" if total >= 8 else "moderate" if total >= 6 else "limited"), e

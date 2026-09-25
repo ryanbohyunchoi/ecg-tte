@@ -57,19 +57,40 @@ def main():
         JOIN read_parquet('{B}/condition_occurrence/condition_occurrence_ct_vitals.parquet') c ON c.person_id = ap.apid
         GROUP BY 1""").df().set_index("patient_key")
 
-    def first_hosp(codes):
-        return con.execute(f"""SELECT r.patient_key, min(v.visit_start_date) d FROM r
-            JOIN {rp(G, 'visit_occurrence')} v USING (person_id)
-            JOIN {rp(G, 'condition_occurrence')} c ON c.person_id = r.person_id
-            WHERE v.visit_concept_id = 9201 AND v.visit_start_date > r.idx
-              AND c.condition_start_date BETWEEN v.visit_start_date AND coalesce(v.visit_end_date, v.visit_start_date)
-              AND {code_like("upper(replace(c.condition_source_value, '.', ''))", codes)}
+    # v1.2: inpatient visits merged into stays (overlapping or contiguous, gap <= 1 day); an event stay
+    # must start after the end of the stay containing the index date (index-stay events excluded).
+    con.execute(f"""CREATE TEMP TABLE iv AS SELECT v.person_id, v.visit_start_date s,
+            coalesce(v.visit_end_date, v.visit_start_date) e
+        FROM {rp(G, 'visit_occurrence')} v WHERE v.visit_concept_id = 9201 AND v.person_id IN (SELECT person_id FROM r)""")
+    con.execute("""CREATE TEMP TABLE stays AS
+        WITH o AS (SELECT *, max(e) OVER (PARTITION BY person_id ORDER BY s, e ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) pe FROM iv),
+             g AS (SELECT *, sum(CASE WHEN pe IS NULL OR s > pe + INTERVAL 1 DAY THEN 1 ELSE 0 END)
+                            OVER (PARTITION BY person_id ORDER BY s, e ROWS UNBOUNDED PRECEDING) gid FROM o)
+        SELECT person_id, gid, min(s) s, max(e) e FROM g GROUP BY 1, 2""")
+    con.execute("""CREATE TEMP TABLE idxstay AS SELECT r.patient_key, r.person_id, r.idx,
+            coalesce(max(st.e) FILTER (WHERE st.s <= r.idx AND st.e >= r.idx), r.idx) idx_stay_end
+        FROM r LEFT JOIN stays st USING (person_id) GROUP BY 1, 2, 3""")
+
+    def first_hosp(codes, mi=False):
+        # v1.2: for MI (I21/I22) within 28 days of index only I22 (subsequent MI) counts (ICD-10-CM codes
+        # I21 for 4 weeks after an MI on every encounter)
+        cond = code_like("upper(replace(c.condition_source_value, '.', ''))", codes)
+        if mi:
+            cond = f"""({cond} AND (st.s > x.idx + INTERVAL 28 DAY OR upper(replace(c.condition_source_value, '.', '')) LIKE 'I22%'))"""
+        return con.execute(f"""SELECT x.patient_key, min(st.s) d FROM idxstay x
+            JOIN stays st ON st.person_id = x.person_id AND st.s > x.idx_stay_end
+            JOIN {rp(G, 'condition_occurrence')} c ON c.person_id = x.person_id
+            WHERE c.condition_start_date BETWEEN st.s AND st.e AND {cond}
             GROUP BY 1""").df().set_index("patient_key").d
 
     idx = pd.to_datetime(r.set_index("patient_key").index_date)
     keys = idx.index
     dd = pd.to_datetime(death.reindex(keys))
-    dd = dd.where(dd > idx)                     # deaths on/before index are data errors: not events
+    # v1.2: death before index = data error -> patient excluded from phase 2 (flag); death on the index
+    # day = event at t = 0.5 for outcomes that include death, censoring at t = 0.5 otherwise.
+    death_before_index = dd.notna() & (dd < idx)
+    death_on_index = dd.notna() & (dd == idx)
+    dd = dd.where(~death_before_index)
     has_cause = cause.reindex(keys).n.fillna(0) > 0
     any_cv = cause.reindex(keys).any_cv.fillna(False).astype(bool)
     chd = cause.reindex(keys).chd.fillna(False).astype(bool)
@@ -86,12 +107,14 @@ def main():
             elif comp == "chd_death":
                 ev_dates.append(dd.where(chd))
             else:
-                ev_dates.append(pd.to_datetime(first_hosp(comp[1]).reindex(keys)))
+                is_mi = any(c_.startswith(("I21", "I22")) for c_ in comp[1])
+                ev_dates.append(pd.to_datetime(first_hosp(comp[1], mi=is_mi).reindex(keys)))
         ev = pd.concat(ev_dates, axis=1).min(axis=1)
         stop = pd.concat([ev, end, dd], axis=1).min(axis=1)  # other-cause death censors
-        event = ev.notna() & (ev <= end)
+        event = ev.notna() & (ev <= end) & ~(dd < ev)       # v1.2: nothing counts after an other-cause death
         stop = stop.where(~event, ev)
-        t = (stop - idx).dt.days.clip(lower=1)
+        t = (stop - idx).dt.days.astype(float)
+        t = t.where(t > 0, 0.5)                              # v1.2: index-day death (event or censoring) at t = 0.5
         return t, event.astype(int)
 
     res = pd.DataFrame(index=keys)
@@ -115,17 +138,21 @@ def main():
         stop = pd.concat([post, endn, dd], axis=1).min(axis=1)
         ev = post.notna() & (post <= endn) & ~(dd < post)
         stop = stop.where(~ev, post)
-        tt = (stop - idx).dt.days.clip(lower=1).astype(float)
+        tt = (stop - idx).dt.days.astype(float)
+        tt = tt.where(tt > 0, 0.5)
         ee = ev.astype(float)
         m = keys.isin(prior)
         tt[m], ee[m] = np.nan, np.nan
         res[f"t_{name}"], res[f"e_{name}"] = tt, ee
+    # v1.2 exclusions from phase 2 (flagged; excluded by run_phase2): death before index; index on/after admin end
+    res["exclude_phase2"] = (death_before_index | (idx >= pd.Timestamp(admin_end))).astype(int).to_numpy()
     res.index.name = "patient_key"
     res.reset_index().to_parquet(out / "restricted_outcomes.parquet")
-    summ = dict(trial=a.trial, n=int(len(res)), horizon_days=horizon_days, follow_days=follow_days, admin_end=admin_end, components=[str(c) for c in comps],
-                events_primary=int(res.e_primary.sum()), deaths_after_index=int(dd.notna().sum()),
-                deaths_with_cause_record=int((dd.notna() & has_cause).sum()),
-                nco_events={k: int(np.nansum(res[f"e_{k}"])) for k in NCO})
+    sup = lambda n: int(n) if (n == 0 or n >= 11) else "<11"
+    summ = dict(trial=a.trial, n=int(len(res)), horizon_days=horizon_days, follow_days=follow_days, admin_end=admin_end,
+                components=[str(c) for c in comps], excluded_phase2=sup(res.exclude_phase2.sum()),
+                deaths_on_index_day=sup(death_on_index.sum()),
+                share_deaths_with_cause_record=round(float((dd.notna() & has_cause).sum() / max(dd.notna().sum(), 1)), 3))
     json.dump(summ, open(out / "summary.json", "w"), indent=2)
     print(json.dumps(summ))
 
