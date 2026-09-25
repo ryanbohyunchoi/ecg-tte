@@ -53,6 +53,16 @@ def main() -> None:
             f"WHERE procedure_date IS NOT NULL AND {code_like('upper(procedure_source_value)', codes)}"
             for i, (_, codes) in enumerate(spec["arms"]))
         con.execute(f"CREATE TEMP TABLE armexp AS SELECT DISTINCT * FROM ({conds})")
+    elif spec.get("design") == "proc_vs_drug":
+        # v1.3: arm 0 = procedure codes (procedure_source_value prefixes), arm 1 = drug keywords
+        (_, pcodes), (arm1, kws1) = spec["arms"]
+        con.execute(f"""CREATE TEMP TABLE armexp0 AS SELECT DISTINCT 0 arm_idx, person_id, procedure_date d
+            FROM {rp(G, 'procedure_occurrence')} WHERE procedure_date IS NOT NULL
+              AND {code_like('upper(procedure_source_value)', pcodes)}""")
+        con.register("kw_df", pd.DataFrame([(1, arm1, k.lower()) for k in kws1], columns=["arm_idx", "arm", "kw"]))
+        create_drug_tokens(con, G, [k.lower() for k in kws1])
+        con.execute("""CREATE TEMP TABLE armexp AS SELECT * FROM armexp0 UNION
+                       SELECT DISTINCT k.arm_idx, d.person_id, d.d FROM dtok d JOIN kw_df k ON d.tok = k.kw""")
     else:
         rows = [(i, arm, kw.lower()) for i, (arm, kws) in enumerate(spec["arms"]) for kw in kws]
         con.register("kw_df", pd.DataFrame(rows, columns=["arm_idx", "arm", "kw"]))
@@ -132,7 +142,8 @@ def main() -> None:
     gate = spec["gate"]
     ex = spec["exclusions"]
     code_gates = {k: v for k, v in gate.items() if k in ("any_before_or_on_index", "window_30d")}
-    prefixes = sorted({p for v in code_gates.values() for p in v} | set(ex.get("ever_codes", [])) | {"I50"}
+    extra_gate_codes = {p for lst in gate.get("require_all", []) for p in lst} | set(gate.get("first_dx_within", ([], 0))[0])
+    prefixes = sorted({p for v in code_gates.values() for p in v} | set(ex.get("ever_codes", [])) | {"I50"} | extra_gate_codes
                       | set(ex.get("ef_unknown_require_codes", []))
                       | {p for _, codes in ex.get("codes_window", []) for p in codes})
     con.execute(f"""CREATE TEMP TABLE cond AS SELECT c.person_id, c.idx, x.d, x.code FROM s4 c JOIN (
@@ -182,6 +193,15 @@ def main() -> None:
             WHERE person_id IN (SELECT person_id FROM {cur}) AND {code_like('upper(procedure_source_value)', PCI_CODES)}""")
         apply("gate_no_pci_30d", """NOT EXISTS (SELECT 1 FROM pci x WHERE x.person_id = c.person_id
               AND x.d BETWEEN c.idx - INTERVAL 30 DAY AND c.idx)""")
+
+    # v1.3 gates: every listed code group present on/before index; first-ever diagnosis recent
+    for j, lst in enumerate(gate.get("require_all", [])):
+        apply(f"gate_require_{'_'.join(lst[:3])}", f"""NOT EXISTS (SELECT 1 FROM cond x WHERE x.person_id = c.person_id
+              AND x.idx = c.idx AND {code_like('x.code', lst)})""")
+    if gate.get("first_dx_within"):
+        fcodes, fdays = gate["first_dx_within"]
+        apply(f"gate_first_{'_'.join(fcodes)}_within_{fdays}d", f"""EXISTS (SELECT 1 FROM cond x WHERE x.person_id = c.person_id
+              AND x.idx = c.idx AND {code_like('x.code', fcodes)} AND x.d < c.idx - INTERVAL {fdays} DAY)""")
 
     need_meas = [cid for key, cid in (("egfr_lt", 40764999), ("potassium_gt", 3023103), ("sbp_lt", 4152194)) if key in ex]
     if need_meas:
@@ -233,7 +253,7 @@ def main() -> None:
         apply(f"codes_{days}d_" + "_".join(codes),
               f"EXISTS (SELECT 1 FROM cond x WHERE x.person_id = c.person_id AND x.idx = c.idx AND x.d >= c.idx - INTERVAL {days} DAY AND "
               f"{code_like('x.code', codes)})")
-    for key, days in (("anticoag_30d", 30), ("other_anticoag_365d", 365)):
+    for key, days in (("anticoag_30d", 30), ("other_anticoag_365d", 365), ("other_drugs_365d", 365)):
         if key in ex:
             create_drug_tokens(con, G, ex[key], table=f"tok_{key}", person_filter=cur)
             apply(key, f"""EXISTS (SELECT 1 FROM tok_{key} o WHERE o.person_id = c.person_id
