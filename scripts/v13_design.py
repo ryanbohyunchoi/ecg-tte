@@ -34,7 +34,9 @@ ARMS = ["unmatched", "sparse", "sparse+ECG", "hdPS200", "hdPS200+ECG", "clinical
 FACTS = json.load(open(os.path.join(os.path.dirname(__file__), "..", "docs", "v13", "rct_facts.json")))
 T1NAME = {"comet": "COMET", "paradigm_hf_seq": "PARADIGM-HF", "transform_hf": "TRANSFORM-HF", "elite_ii": "ELITE II",
           "life": "LIFE", "plato": "PLATO", "aristotle": "ARISTOTLE", "rocket_af": "ROCKET AF", "rely": "RE-LY",
-          "allhat": "ALLHAT"}
+          "allhat": "ALLHAT", "emperor_preserved": "EMPEROR-Preserved", "east_afnet4": "EAST-AFNET 4", "cabana": "CABANA",
+          "dcp": "DCP", "ontarget": "ONTARGET", "value": "VALUE", "ascot": "ASCOT-BPLA", "empa_reg": "EMPA-REG OUTCOME",
+          "carolina": "CAROLINA", "invest": "INVEST"}
 # RCT Table-1 field -> (core covariate, transform of the published value)
 T1MAP = {"age_mean": ("age_at_index", lambda v: v), "female_pct": ("male", lambda v: 1 - v / 100),
          "diabetes_pct": ("diabetes", lambda v: v / 100), "hypertension_pct": ("hypertension", lambda v: v / 100),
