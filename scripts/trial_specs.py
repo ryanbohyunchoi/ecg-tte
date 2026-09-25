@@ -431,3 +431,21 @@ def rating(key, pairs):
     e = 2 if pairs >= 800 else 1 if pairs >= 400 else 0
     total = sum(RATING_ITEMS[key]) + e
     return total, ("close" if total >= 8 else "moderate" if total >= 6 else "limited"), e
+
+# ---- v1.3 (2026-09-25, exploratory; docs/PROTOCOL_V1_3_AMENDMENT.md I8): expanded negative-control
+# outcomes. Chosen for no plausible effect of any study drug class. Excluded: bleeding (anticoagulants,
+# antiplatelets), gout (diuretics), angioedema/cough (ACEi/ARNI), gingival hyperplasia/oedema (CCB),
+# hypoglycaemia/genital infection/ketoacidosis (SGLT2i), falls/syncope/hypotension, hyperkalaemia,
+# photosensitivity-related skin disease beyond the frozen C44 control (thiazides).
+NCO_EXT = dict(NCO, **{
+    "nco_ingrown_nail": ("dx", ["L600"]), "nco_otitis_externa": ("dx", ["H60"]),
+    "nco_seborrheic_keratosis": ("dx", ["L82"]), "nco_carpal_tunnel": ("dx", ["G560"]),
+    "nco_plantar_fasciitis": ("dx", ["M722"]), "nco_conjunctivitis": ("dx", ["H10"]),
+    "nco_allergic_rhinitis": ("dx", ["J30"]), "nco_lipoma": ("dx", ["D17"]),
+    "nco_contact_dermatitis": ("dx", ["L23", "L24", "L25"]), "nco_acne": ("dx", ["L70"]),
+    "nco_warts": ("dx", ["B07"]), "nco_onychomycosis": ("dx", ["B351"]), "nco_epidermal_cyst": ("dx", ["L720"]),
+    "nco_rotator_cuff": ("dx", ["M751"]), "nco_trigger_finger": ("dx", ["M653"]), "nco_dupuytren": ("dx", ["M720"]),
+    "nco_cerumen": ("dx", ["H612"]), "nco_pterygium": ("dx", ["H110"]), "nco_ganglion": ("dx", ["M674"]),
+    "nco_hallux_valgus": ("dx", ["M201"]), "nco_chalazion": ("dx", ["H001"]), "nco_dental_caries": ("dx", ["K02"]),
+})
+PRIMARY_BILLING = "HOSPITAL_BILLING_DX Y"  # v1.3 II4: primary diagnosis of the hospital billing record

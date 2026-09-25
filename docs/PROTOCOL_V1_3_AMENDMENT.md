@@ -227,3 +227,17 @@ unchanged.
 ## Deviation log
 
 (filled in during implementation, dated, before summaries)
+
+- **2026-09-25, deviation 1 (II2).** In LIFE, the median time to "discontinuation" with G = 365 d
+  is exactly 365 d: more than half of initiators have no repeat order within a year. Refills
+  probably run on the original prescription, which has refills but no days-supply. G = 730 d is
+  added as a further sensitivity. This was seen before any per-protocol estimate was computed.
+- **2026-09-25, deviation 2 (II2).** Added a switch-only variant, which censors only at the first
+  order of the other arm's drug. Switching is observable in order data; discontinuation is not.
+- **2026-09-25, deviation 3 (I1).** Added the plasmode scenario "phys_only": κ = 1, and the
+  medication and utilisation coefficients set to 0. It isolates confounding by physiology, which
+  the ECG could capture, from confounding by medication and utilisation, which it cannot. Added
+  before any plasmode result was seen.
+- **2026-09-25, deviation 4 (I1).** The truth is computed from 20 counterfactual copies with common
+  random numbers, instead of 5 independent copies. This reduces Monte Carlo error in the truth.
+  Changed after a 3-replicate smoke test on LIFE, before the full run.
