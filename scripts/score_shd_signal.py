@@ -45,7 +45,7 @@ ECHO = "/mnt/raid0/bb2238/metadata/echo_metadata_2026_06_12.parquet"
 TRAIN_MRNS = "/mnt/raid0/rbc58/mosaic/present_shd_train_mrns.txt"
 LABELS = {"lvef_lt40": ("EF", lambda v: (v < 40).astype(float)), "modsev_as": ("ModerateOrSevereAS", None),
           "modsev_ar": ("ModerateOrSevereAR", None), "modsev_mr": ("ModerateOrSevereMR", None),
-          "modsev_valve": ("ModerateOrSevereValveDisease", None), "hcm_lvdd_ivsd15": ("IVSdAbove15", None)}
+          "modsev_valve": ("ModerateOrSevereValveDisease", None), "hcm_lvdd_ivsd15": ("HCM_LVDD_IVSd15_IntermediateAsNA", None)}  # v1.1: the model's actual target
 ROOT = "/mnt/raid0/bb2238/signals/preprocessed/all_ecgs"
 SCALE = 1.0  # mV (see docstring)
 

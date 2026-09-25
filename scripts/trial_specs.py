@@ -65,7 +65,9 @@ NUMERIC_CORE = {
 # Index-event characteristics (PLATO): STEMI = I21.0-I21.3; PCI = CPT 92920-92944, C9600-C9608,
 # legacy 92980-92982/92995-92996, ICD-10-PCS coronary dilation 0270-0273
 STEMI_CODES = ["I210", "I211", "I212", "I213"]
-PCI_CODES = ["9292", "9293", "92941", "92943", "92944", "C960", "9298", "9299", "0270", "0271", "0272", "0273"]
+PCI_CODES = ["92920", "92921", "92924", "92925", "92928", "92929", "92933", "92934", "92937", "92938", "92941",
+             "92943", "92944", "C9600", "C9601", "C9602", "C9603", "C9604", "C9605", "C9606", "C9607", "C9608",
+             "92980", "92981", "92982", "92984", "92995", "92996", "0270", "0271", "0272", "0273"]  # v1.1: explicit codes (no valvuloplasty)
 # EF comes from echo metadata (EF 5-90), latest in [index-365, index-1].
 LVEF_LOOKBACK = 365
 # Variables withheld from the "claims-like" base (EF, labs, vitals)
@@ -330,7 +332,7 @@ TRIALS["dapa_hf"] = dict(
 TAVR_PCS = ["02RF3", "X2RF3"]
 SAVR_PCS = ["02RF0", "02RF4", "X2RF0"]
 CABG_CODES = ["0210", "0211", "0212", "0213", "3351", "3352", "3353"]
-MITRAL_SURG = ["02RG", "02QG", "02UG", "0338T"]
+MITRAL_SURG = ["02RG", "02QG", "02UG"]
 TRIALS["partner"] = dict(
     name="PARTNER 2A/3 (adapted): TAVR vs surgical AVR", spec_version="partner_adapted_v1",
     published_hr=0.89, role="physiology", design="procedure",
@@ -362,3 +364,42 @@ CV_DEATH_ICD = ["I"]  # ICD-10 chapter IX
 HORIZON_MONTHS = {"comet": 58, "paradigm_hf": 27, "paradigm_hf_switch": 27, "paragon_hf": 35, "transform_hf": 12,
                   "elite_ii": 18, "life": 58, "dionysos": 12, "plato": 12, "aristotle": 22, "rocket_af": 23,
                   "rely": 24, "allhat": 59, "dapa_hf": 18, "partner": 24}
+
+# ---- v1.1 (2026-09-24): sequential switcher design replaces the "switch" design for PARADIGM-HF
+TRIALS["paradigm_hf_seq"] = dict(TRIALS["paradigm_hf_switch"], name="PARADIGM-HF switcher, sequential (adapted)",
+    spec_version="paradigm_hf_seq_v1", design="switch_seq", seq_ratio=4, seq_window_days=30,
+    note="sequential prevalent new-user design: switchers vs established ACEi users sampled at the switch date (+/-30 d, up to 4), no future information; later switching ignored (ITT)")
+PUBLISHED["paradigm_hf_seq"] = PUBLISHED["paradigm_hf"]
+HORIZON_MONTHS["paradigm_hf_seq"] = 27
+
+# ---- Phase-2 outcome definitions (protocol v1 4b; frozen). Components:
+#   "death"        all-cause death (OMOP gold death; data to 2024-12-31)
+#   "cv_death"     death with any listed CT-Vitals cause I00-I99, or no cause record (sensitivity: non-CV);
+#                  cause records end 2024-06-24, so composites with cv_death are censored there
+#   "chd_death"    death with a listed cause I20-I25 (ALLHAT)
+#   ("hosp", [codes])  first inpatient stay (visit 9201) starting after index with a qualifying
+#                  ICD-10 prefix recorded between its start and end dates
+OUTCOMES = {
+    "comet": ["death"],
+    "paradigm_hf": ["cv_death", ("hosp", ["I50"])],
+    "paradigm_hf_switch": ["cv_death", ("hosp", ["I50"])],
+    "paradigm_hf_seq": ["cv_death", ("hosp", ["I50"])],
+    "paragon_hf": ["cv_death", ("hosp", ["I50"])],
+    "transform_hf": ["death"],
+    "elite_ii": ["death"],
+    "life": ["cv_death", ("hosp", ["I21", "I22"]), ("hosp", ["I60", "I61", "I62", "I63", "I64"])],
+    "plato": ["cv_death", ("hosp", ["I21", "I22"]), ("hosp", ["I60", "I61", "I62", "I63", "I64"])],
+    "aristotle": [("hosp", ["I61", "I62", "I63", "I64", "I74"])],
+    "rocket_af": [("hosp", ["I61", "I62", "I63", "I64", "I74"])],
+    "rely": [("hosp", ["I61", "I62", "I63", "I64", "I74"])],
+    "allhat": ["chd_death", ("hosp", ["I21", "I22"])],
+    "dapa_hf": ["cv_death", ("hosp", ["I50"])],
+    "partner": ["death", ("hosp", ["I61", "I62", "I63", "I64"])],
+    # dionysos: not emulable (balance-only, protocol v1 4b)
+}
+# Negative-control outcomes (protocol v1 8): first occurrence; patients with the event in the prior 365 d excluded
+NCO = {"nco_cataract": ("proc", ["66982", "66984", "66987", "66988", "08RJ3JZ", "08RK3JZ"]),
+       "nco_hernia": ("proc", ["49505", "49507", "49520", "49521", "49525", "49650", "49651",
+                                "0YQ5", "0YQ6", "0YQ7", "0YQ8", "0YU5", "0YU6", "0YU7", "0YU8"]),
+       "nco_skin_cancer": ("dx", ["C44"])}
+DEATH_END, COD_END = "2024-12-31", "2024-06-24"

@@ -49,7 +49,7 @@ def build(con, gold, echo_meta, roster: pd.DataFrame, spec: dict) -> pd.DataFram
 
     con.execute(f"""CREATE OR REPLACE TEMP TABLE echo AS SELECT {mrn_key('MRN')} k, try_cast(EchoDate AS DATE) d, EF
         FROM read_parquet('{echo_meta}') WHERE EF BETWEEN 5 AND 90 AND try_cast(EchoDate AS DATE) IS NOT NULL""")
-    lvef = con.execute(f"""SELECT r.patient_key, arg_max(e.EF, e.d) lvef FROM r
+    lvef = con.execute(f"""SELECT r.patient_key, arg_max(e.EF, (e.d, e.EF)) lvef FROM r
         JOIN (SELECT person_id, {mrn_key('person_source_value')} k FROM {rp(gold, 'person')}) p USING (person_id)
         JOIN echo e ON e.k = p.k
         WHERE e.d BETWEEN r.idx - INTERVAL {LVEF_LOOKBACK} DAY AND r.idx - INTERVAL 1 DAY GROUP BY 1""").df()
@@ -57,7 +57,7 @@ def build(con, gold, echo_meta, roster: pd.DataFrame, spec: dict) -> pd.DataFram
 
     con.register("num_df", pd.DataFrame([(n, v[0], v[1], v[2], v[3]) for n, v in NUMERIC_CORE.items()],
                                         columns=["name", "cid", "days", "lo", "hi"]))
-    meas = con.execute(f"""SELECT r.patient_key, n.name, arg_max(m.value_as_number, m.measurement_datetime) v
+    meas = con.execute(f"""SELECT r.patient_key, n.name, arg_max(m.value_as_number, (m.measurement_datetime, m.value_as_number)) v
         FROM r JOIN {rp(gold, 'measurement')} m USING (person_id)
         JOIN num_df n ON m.measurement_concept_id = n.cid
         WHERE m.value_as_number IS NOT NULL
@@ -160,7 +160,8 @@ def main() -> None:
                  claims=[c for c in core if c not in HELDOUT_PHYSIOLOGY],
                  heldout_physiology=[c for c in HELDOUT_PHYSIOLOGY if c in core],
                  report_covariates=spec["report_covariates"], imputations=a.imputations,
-                 exposure_features=sorted({f"rx_{kw.lower()}" for _, kws in spec["arms"] for kw in kws}))
+                 exposure_features=sorted({f"rx_{kw.lower()}" for _, kws in spec["arms"] for kw in kws}
+                                          | {f"rx_{kw.lower()}" for kw in spec.get("prior_class", [])}))
     json.dump(roles, open(out / "roles.json", "w"), indent=2)
     by = {}
     for arm, g in obs.groupby("treated"):

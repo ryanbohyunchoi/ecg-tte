@@ -76,6 +76,30 @@ class LongtailV2Tests(unittest.TestCase):
         exp = np.nanmean(E.chance_smd(v, mt, mc))
         assert abs(obs - exp) < 0.006
 
+    def test_ps_greedy_equals_exact_nearest_available_search(self):
+        # v1.1 regression: the former +/-60 window missed valid matches in dense regions
+        rng = np.random.default_rng(3)
+        for n1, n0, sh in ((300, 900, 1.0), (1500, 1200, 0.7), (2000, 8000, 1.5)):
+            t = np.r_[np.ones(n1, int), np.zeros(n0, int)]
+            lg = np.r_[rng.normal(sh, 1, n1), rng.normal(0, 1, n0)]
+            mt, mc = E.ps_greedy(lg, t)
+            anchor = 1 if n1 <= n0 else 0
+            s = lg if anchor == 1 else -lg
+            width = 0.2 * np.sqrt((lg[t == 1].var() + lg[t == 0].var()) / 2)
+            ai = np.where(t == anchor)[0]
+            ai = ai[np.argsort(-s[ai], kind="stable")]
+            cl = np.where(t != anchor)[0]
+            avail = np.ones(len(t), bool)
+            dist = []
+            for i in ai:
+                d = np.abs(lg[cl] - lg[i]); d[~avail[cl]] = np.inf
+                k = int(np.argmin(d))
+                if d[k] <= width:
+                    avail[cl[k]] = False; dist.append(d[k])
+            assert len(mt) == len(dist)
+            assert np.allclose(np.sort(np.abs(lg[mt] - lg[mc])), np.sort(dist))
+            assert set(t[mt]) == {1} and set(t[mc]) == {0}
+
     def test_trial_common_sql_fragments(self):
         assert code_like("c", ["I50", "I21"]) == "(c LIKE 'I50%' OR c LIKE 'I21%')"
         assert "regexp_replace" in mrn_key("MRN")

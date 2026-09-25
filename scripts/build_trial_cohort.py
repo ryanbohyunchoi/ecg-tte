@@ -59,7 +59,29 @@ def main() -> None:
         create_drug_tokens(con, G, [r[2] for r in rows])
         con.execute("""CREATE TEMP TABLE armexp AS SELECT DISTINCT k.arm_idx, d.person_id, d.d
                        FROM dtok d JOIN kw_df k ON d.tok = k.kw""")
-    if spec.get("design") == "switch":
+    if spec.get("design") == "switch_seq":
+        # v1.1 sequential ("prevalent new-user") switcher design. Candidate records:
+        #   arm 0: first-ever arm-0 order with a prior-class order in [index-365, index-1];
+        #   arm 1: established arm-1 users: an arm-1 order at index and another in [index-365, index-1],
+        #          with no arm-0 order on/before index; at most one candidate date per person-month.
+        # Eligibility is applied per record; comparators are then sampled sequentially (see below).
+        create_drug_tokens(con, G, spec["prior_class"], table="priortok")
+        win = f"BETWEEN DATE '{spec['index_start']}' AND DATE '{spec['index_end']}'"
+        con.execute(f"""CREATE TEMP TABLE s1a AS SELECT 0 arm_idx, f.person_id, f.idx FROM
+            (SELECT person_id, min(d) idx FROM armexp WHERE arm_idx = 0 GROUP BY 1) f
+            WHERE f.idx {win} AND EXISTS (SELECT 1 FROM priortok p WHERE p.person_id = f.person_id
+              AND p.d BETWEEN f.idx - INTERVAL 365 DAY AND f.idx - INTERVAL 1 DAY)""")
+        con.execute(f"""CREATE TEMP TABLE s1b AS SELECT 1 arm_idx, person_id, idx FROM (
+            SELECT c.person_id, c.d idx, row_number() OVER (PARTITION BY c.person_id, date_trunc('month', c.d) ORDER BY c.d) rn
+            FROM (SELECT DISTINCT person_id, d FROM armexp WHERE arm_idx = 1) c
+            WHERE c.d {win}
+              AND EXISTS (SELECT 1 FROM armexp e WHERE e.arm_idx = 1 AND e.person_id = c.person_id
+                          AND e.d BETWEEN c.d - INTERVAL 365 DAY AND c.d - INTERVAL 1 DAY)
+              AND NOT EXISTS (SELECT 1 FROM armexp e WHERE e.arm_idx = 0 AND e.person_id = c.person_id AND e.d <= c.d))
+            WHERE rn = 1""")
+        con.execute("CREATE TEMP TABLE s1 AS SELECT * FROM s1a UNION ALL SELECT * FROM s1b")
+        con.execute("CREATE TEMP TABLE s2 AS SELECT * FROM s1")
+    elif spec.get("design") == "switch":
         # Prevalent new-user ("switcher") design: arm 0 = first-ever order of arm-0 drug with a
         # prior-class order in [index-365, index-1]; arm 1 = established arm-1 users (an arm-1
         # order at index and another in [index-365, index-1]) with no arm-0 order on/before index;
@@ -100,8 +122,11 @@ def main() -> None:
     # nearly every switcher was earlier an established comparator user (documented limitation:
     # comparators are continuers who did not switch within the data).
     order = "arm_idx, idx" if spec.get("design") == "switch" else "idx, arm_idx"
-    con.execute(f"""CREATE TEMP TABLE s4 AS SELECT arm_idx, person_id, idx FROM (
-        SELECT *, row_number() OVER (PARTITION BY person_id ORDER BY {order}) rn FROM s3) WHERE rn = 1""")
+    if spec.get("design") == "switch_seq":  # records kept; one person per study decided by sequential sampling
+        con.execute("CREATE TEMP TABLE s4 AS SELECT arm_idx, person_id, idx FROM s3")
+    else:
+        con.execute(f"""CREATE TEMP TABLE s4 AS SELECT arm_idx, person_id, idx FROM (
+            SELECT *, row_number() OVER (PARTITION BY person_id ORDER BY {order}) rn FROM s3) WHERE rn = 1""")
 
     # conditions needed for gate/exclusions (on/before index only)
     gate = spec["gate"]
@@ -120,14 +145,15 @@ def main() -> None:
         conds.append(code_like("code", gate["any_before_or_on_index"]))
     if "window_30d" in gate:
         conds.append(f"({code_like('code', gate['window_30d'])} AND d >= idx - INTERVAL 30 DAY)")
-    con.execute(f"CREATE TEMP TABLE s5 AS SELECT * FROM s4 WHERE person_id IN "
-                f"(SELECT person_id FROM cond WHERE {' OR '.join(conds)})")
+    con.execute(f"CREATE TEMP TABLE s5 AS SELECT * FROM s4 WHERE (person_id, idx) IN "
+                f"(SELECT person_id, idx FROM cond WHERE {' OR '.join(conds)})")
 
-    switch = spec.get("design") == "switch"
+    switch = spec.get("design") in ("switch", "switch_seq")
     stages = [("s1_switchers_and_continuers" if switch else "s1_first_use_in_window", "s1"),
               ("s2_no_washout_switch_design" if switch else "s2_comparator_washout_365", "s2"),
               (f"s3_age{spec.get('min_age', 18)}{'-' + str(spec['max_age']) if spec.get('max_age') else '+'}_prior_activity_365", "s3"),
-              ("s4_dedupe_switcher_role_first" if switch else "s4_dedupe_earliest_index", "s4"), ("s5_disease_gate", "s5")]
+              ("s4_records_kept_for_sequential_sampling" if spec.get("design") == "switch_seq" else
+               "s4_dedupe_switcher_role_first" if switch else "s4_dedupe_earliest_index", "s4"), ("s5_disease_gate", "s5")]
     cur = "s5"
     step = 6
 
@@ -139,7 +165,7 @@ def main() -> None:
         cur, step = nxt, step + 1
 
     def latest_measure(cid, days):
-        return f"""(SELECT arg_max(m.value_as_number, m.measurement_date) FROM meas m
+        return f"""(SELECT arg_max(m.value_as_number, (m.measurement_date, m.value_as_number)) FROM meas m
                     WHERE m.person_id = c.person_id AND m.cid = {cid}
                       AND m.measurement_date BETWEEN c.idx - INTERVAL {days} DAY AND c.idx - INTERVAL 1 DAY)"""
 
@@ -166,25 +192,25 @@ def main() -> None:
     if "lvef_gt" in ex or "lvef_lt" in ex or ex.get("hfpef_code_only") or ex.get("ef_unknown_require_codes"):
         con.execute(f"""CREATE TEMP TABLE echo AS SELECT {mrn_key('MRN')} k, try_cast(EchoDate AS DATE) d, EF
             FROM read_parquet('{a.echo_metadata}') WHERE EF BETWEEN 5 AND 90 AND try_cast(EchoDate AS DATE) IS NOT NULL""")
-        con.execute(f"""CREATE TEMP TABLE ef AS SELECT c.person_id, arg_max(e.EF, e.d) ef FROM {cur} c
+        con.execute(f"""CREATE TEMP TABLE ef AS SELECT c.person_id, c.idx, arg_max(e.EF, (e.d, e.EF)) ef FROM {cur} c
             JOIN person p USING (person_id) JOIN echo e ON e.k = p.k
-            WHERE e.d BETWEEN c.idx - INTERVAL 365 DAY AND c.idx - INTERVAL 1 DAY GROUP BY 1""")
+            WHERE e.d BETWEEN c.idx - INTERVAL 365 DAY AND c.idx - INTERVAL 1 DAY GROUP BY 1, 2""")
     if "lvef_gt" in ex:
         apply(f"latest_lvef_gt_{ex['lvef_gt']}",
-              f"EXISTS (SELECT 1 FROM ef WHERE ef.person_id = c.person_id AND ef.ef > {ex['lvef_gt']})")
+              f"EXISTS (SELECT 1 FROM ef WHERE ef.person_id = c.person_id AND ef.idx = c.idx AND ef.ef > {ex['lvef_gt']})")
     if "lvef_lt" in ex:
         apply(f"latest_lvef_lt_{ex['lvef_lt']}",
-              f"EXISTS (SELECT 1 FROM ef WHERE ef.person_id = c.person_id AND ef.ef < {ex['lvef_lt']})")
+              f"EXISTS (SELECT 1 FROM ef WHERE ef.person_id = c.person_id AND ef.idx = c.idx AND ef.ef < {ex['lvef_lt']})")
     if ex.get("ef_unknown_require_codes"):
         req = ex["ef_unknown_require_codes"]
         apply("ef_unknown_without_" + "_".join(req),
-              f"""NOT EXISTS (SELECT 1 FROM ef WHERE ef.person_id = c.person_id)
-                  AND NOT EXISTS (SELECT 1 FROM cond x WHERE x.person_id = c.person_id AND {code_like('x.code', req)})""")
+              f"""NOT EXISTS (SELECT 1 FROM ef WHERE ef.person_id = c.person_id AND ef.idx = c.idx)
+                  AND NOT EXISTS (SELECT 1 FROM cond x WHERE x.person_id = c.person_id AND x.idx = c.idx AND {code_like('x.code', req)})""")
     if ex.get("hfpef_code_only"):
         apply("hfpef_code_without_hfref_code_ef_unknown",
-              f"""NOT EXISTS (SELECT 1 FROM ef WHERE ef.person_id = c.person_id)
-                  AND EXISTS (SELECT 1 FROM cond x WHERE x.person_id = c.person_id AND x.code LIKE 'I503%')
-                  AND NOT EXISTS (SELECT 1 FROM cond x WHERE x.person_id = c.person_id
+              f"""NOT EXISTS (SELECT 1 FROM ef WHERE ef.person_id = c.person_id AND ef.idx = c.idx)
+                  AND EXISTS (SELECT 1 FROM cond x WHERE x.person_id = c.person_id AND x.idx = c.idx AND x.code LIKE 'I503%')
+                  AND NOT EXISTS (SELECT 1 FROM cond x WHERE x.person_id = c.person_id AND x.idx = c.idx
                                   AND (x.code LIKE 'I502%' OR x.code LIKE 'I504%'))""")
     if "egfr_lt" in ex:
         apply(f"latest_egfr_lt_{ex['egfr_lt']}", f"coalesce({latest_measure(40764999, 90)} < {ex['egfr_lt']}, false)")
@@ -194,23 +220,61 @@ def main() -> None:
         apply(f"latest_sbp_lt_{ex['sbp_lt']}", f"coalesce({latest_measure(4152194, 90)} < {ex['sbp_lt']}, false)")
     if ex.get("ever_codes"):
         apply("history_codes_" + "_".join(ex["ever_codes"]),
-              f"EXISTS (SELECT 1 FROM cond x WHERE x.person_id = c.person_id AND x.d < c.idx AND "
+              f"EXISTS (SELECT 1 FROM cond x WHERE x.person_id = c.person_id AND x.idx = c.idx AND x.d < c.idx AND "
               f"{code_like('x.code', ex['ever_codes'])})")
     if ex.get("concomitant_procedure_codes"):
         cc = ex["concomitant_procedure_codes"]
         con.execute(f"""CREATE TEMP TABLE conproc AS SELECT DISTINCT person_id, procedure_date d FROM {rp(G, 'procedure_occurrence')}
             WHERE person_id IN (SELECT person_id FROM {cur}) AND {code_like('upper(procedure_source_value)', cc)}""")
-        apply("concomitant_procedure_within_1d", """EXISTS (SELECT 1 FROM conproc x WHERE x.person_id = c.person_id
-              AND x.d BETWEEN c.idx - INTERVAL 1 DAY AND c.idx + INTERVAL 1 DAY)""")
+        # v1.1: window [index-1, index] (no post-index information)
+        apply("concomitant_procedure_day_before_or_index", """EXISTS (SELECT 1 FROM conproc x WHERE x.person_id = c.person_id
+              AND x.d BETWEEN c.idx - INTERVAL 1 DAY AND c.idx)""")
     for days, codes in ex.get("codes_window", []):
         apply(f"codes_{days}d_" + "_".join(codes),
-              f"EXISTS (SELECT 1 FROM cond x WHERE x.person_id = c.person_id AND x.d >= c.idx - INTERVAL {days} DAY AND "
+              f"EXISTS (SELECT 1 FROM cond x WHERE x.person_id = c.person_id AND x.idx = c.idx AND x.d >= c.idx - INTERVAL {days} DAY AND "
               f"{code_like('x.code', codes)})")
     for key, days in (("anticoag_30d", 30), ("other_anticoag_365d", 365)):
         if key in ex:
             create_drug_tokens(con, G, ex[key], table=f"tok_{key}", person_filter=cur)
             apply(key, f"""EXISTS (SELECT 1 FROM tok_{key} o WHERE o.person_id = c.person_id
                           AND o.d BETWEEN c.idx - INTERVAL {days} DAY AND c.idx)""")
+
+    if spec.get("design") == "switch_seq":
+        # Sequential sampling (no future information): switchers in calendar order; for each, up to
+        # K comparator records within +/- W days of the switch date, from persons not yet in the study
+        # and not the switcher; one record per person (closest date). A person enters once: someone
+        # already sampled as a comparator is not re-entered as a later switcher (ITT; later switching
+        # ignored). Seeded.
+        K, W = spec.get("seq_ratio", 4), spec.get("seq_window_days", 30)
+        rec = con.execute(f"SELECT arm_idx, person_id, idx FROM {cur}").df()
+        rec["idx"] = pd.to_datetime(rec.idx)
+        sw = rec[rec.arm_idx == 0].sort_values(["idx", "person_id"])
+        cp = rec[rec.arm_idx == 1].sort_values("idx").reset_index(drop=True)
+        cpd = cp.idx.to_numpy()
+        rng = __import__("numpy").random.default_rng(20260924)
+        used, seq_out = set(), []
+        for r in sw.itertuples():
+            if r.person_id in used:
+                continue
+            lo = cpd.searchsorted(r.idx - pd.Timedelta(days=W), "left")
+            hi = cpd.searchsorted(r.idx + pd.Timedelta(days=W), "right")
+            cand = cp.iloc[lo:hi]
+            cand = cand[~cand.person_id.isin(used) & (cand.person_id != r.person_id)]
+            if cand.empty:
+                continue
+            cand = cand.assign(gap=(cand.idx - r.idx).abs()).sort_values(["person_id", "gap"]).drop_duplicates("person_id")
+            pick = cand.iloc[rng.permutation(len(cand))[:K]]
+            used.add(r.person_id)
+            seq_out.append((0, r.person_id, r.idx))
+            for q in pick.itertuples():
+                used.add(q.person_id)
+                seq_out.append((1, q.person_id, q.idx))
+        seq = pd.DataFrame(seq_out, columns=["arm_idx", "person_id", "idx"])
+        con.register("seq_df", seq)
+        nxt = f"s{step}"
+        con.execute(f"CREATE TEMP TABLE {nxt} AS SELECT arm_idx, person_id, CAST(idx AS DATE) idx FROM seq_df")
+        stages.append((f"{nxt}_sequential_sampling_ratio{K}_window{W}d", nxt))
+        cur, step = nxt, step + 1
 
     arms = [arm for arm, _ in spec["arms"]]
     att = []

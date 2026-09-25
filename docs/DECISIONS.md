@@ -2510,3 +2510,20 @@ been extracted. Items resolved at freeze:
   Statistics.
 
 Later changes require a dated amendment made before the affected outcome analysis.
+
+### 2026-09-24 — Audit and Protocol v1.1 amendment (before any outcome extraction)
+- Independent audits: code (0 critical, 5 major, 12 minor) and reporting (several stale numbers and
+  overclaims). Data-level checks by the assistant all passed:
+  - tests;
+  - ECG windows;
+  - CLMBR index alignment;
+  - reproducibility (exact);
+  - reference and phenotype-set disjointness.
+- Ryan approved:
+  - the sequential switcher design;
+  - echo evaluation restricted to index ≥ 2016-07-31 (option A), plus the sensitivity analysis
+    dropping pre-2016 patients;
+  - a rerun of all phase-1 grids with the corrected matcher;
+  - a regenerated report;
+  - running phase 2.
+- Details: `docs/PROTOCOL_V1_1_AMENDMENT.md`; tag `protocol-v1.1`.

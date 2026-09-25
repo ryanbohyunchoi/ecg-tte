@@ -48,7 +48,13 @@ GRADE = {"LVSTRUCT": {"LVWallThickness": "wall_thickness_grade"},
 FLAG = {"LVSTRUCT": {"IVSdAbove15": "ivsd_gt15"}, "DIAST": {"LVDD": "lvdd"},
         "VALVE": {"ModerateOrSevereAS": "modsev_as", "ModerateOrSevereAR": "modsev_ar",
                   "ModerateOrSevereMR": "modsev_mr", "ModerateOrSevereMS": "modsev_ms"}}
-LEVEL = {"none": 0, "normal": 0, "preserved": 0, "visually normal": 0, "trace": 0.5, "minimal": 0.5,
+LIMITS = {"LVSTRUCT__ivsd": (0.4, 3.0), "LVSTRUCT__lvpwd": (0.4, 3.0), "LVSTRUCT__lvidd": (2.0, 9.0),
+          "LVSTRUCT__lvedvi": (10, 300), "LVSTRUCT__lvesvi": (3, 250), "LVFUNC__ef": (5, 90), "LVFUNC__lvsvi": (5, 150),
+          "LVFUNC__gls": (3, 40), "DIAST__e_a": (0.2, 6), "DIAST__e_eprime": (2, 50), "DIAST__eprime_med": (1, 30),
+          "DIAST__eprime_lat": (1, 30), "DIAST__lavi": (5, 200), "RVPULM__tapse": (0.5, 4.5), "RVPULM__rv_s": (2, 30),
+          "RVPULM__rvsp": (10, 130), "RVPULM__rvidd": (1.5, 7.0), "RVPULM__rap": (0, 25), "VALVE__av_vmax": (0.5, 7),
+          "VALVE__av_mean_grad": (1, 120), "VALVE__tv_peak_grad": (2, 150), "AORTA__ao_root": (1.5, 6.0)}  # v1.1
+LEVEL = {"none": 0, "trivial": 0.5, "normal": 0, "preserved": 0, "visually normal": 0, "trace": 0.5, "minimal": 0.5,
          "low normal": 0.5, "mild": 1, "mildly increased": 1, "mildly decreased": 1, "mildly dilated": 1,
          "mild-mod": 1.5, "decreased": 1.5, "increased": 1.5, "dilated": 1.5, "visually dilated": 1.5,
          "moderate": 2, "moderately increased": 2, "moderately decreased": 2, "moderately dilated": 2,
@@ -79,17 +85,18 @@ def main():
 
     src = {c: f"{d}__{v}" for part in (NUM, GRADE, FLAG) for d, m in part.items() for c, v in m.items()}
     sel = ", ".join(f'e."{c}" AS "{v}"' for c, v in src.items())
-    ech = con.execute(f"""WITH e AS (SELECT {mrn_key('MRN')} k, try_cast(EchoDate AS DATE) d, {', '.join(f'"{c}"' for c in src)}
+    ech = con.execute(f"""WITH e AS (SELECT {mrn_key('MRN')} k, try_cast(EchoDate AS DATE) d, CAST(AccessionNumber AS VARCHAR) acc, {', '.join(f'"{c}"' for c in src)}
                                      FROM read_parquet('{ECHO}'))
-        SELECT r.patient_key, e.d, {sel} FROM r
+        SELECT r.patient_key, e.d, e.acc, {sel} FROM r
         JOIN (SELECT person_id, {mrn_key('person_source_value')} k FROM {rp(a.omop_dir, 'person')}) p USING (person_id)
         JOIN e ON e.k = p.k WHERE e.d BETWEEN r.idx - INTERVAL 365 DAY AND r.idx - INTERVAL 1 DAY""").df()
-    ech = ech.sort_values(["patient_key", "d"]).groupby("patient_key").tail(1).set_index("patient_key").drop(columns="d")
+    ech = ech.sort_values(["patient_key", "d", "acc"]).groupby("patient_key").tail(1).set_index("patient_key").drop(columns=["d", "acc"])
     for d, m in GRADE.items():
         for v in m.values():
             col = f"{d}__{v}"
             raw = ech[col]
-            ech[col] = raw.where(raw.notna()).map(lambda x: LEVEL.get(str(x).strip().lower()) if pd.notna(x) else np.nan)
+            lev = dict(LEVEL, decreased=np.nan) if v == "wall_thickness_grade" else LEVEL  # v1.1: 'decreased' wall is not a grade
+            ech[col] = raw.where(raw.notna()).map(lambda x, lev=lev: lev.get(str(x).strip().lower()) if pd.notna(x) else np.nan)
     for d, m in FLAG.items():
         for v in m.values():
             col = f"{d}__{v}"
@@ -97,7 +104,9 @@ def main():
     for d, m in NUM.items():
         for v in m.values():
             ech[f"{d}__{v}"] = pd.to_numeric(ech[f"{d}__{v}"], errors="coerce")
-    ech["LVFUNC__ef"] = ech["LVFUNC__ef"].where(ech["LVFUNC__ef"].between(5, 90))
+    ech["LVFUNC__gls"] = ech["LVFUNC__gls"].abs()  # v1.1: reported with mixed sign; use magnitude
+    for c, (lo, hi) in LIMITS.items():
+        ech[c] = ech[c].where(ech[c].between(lo, hi))
     panel = pd.concat([lab, ech], axis=1).reindex(r.patient_key)
     panel["ACCESS__echo_done"] = panel.index.isin(ech.index).astype(float)
     panel.index.name = "patient_key"

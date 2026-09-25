@@ -52,8 +52,11 @@ def main():
         d = load(n)
         if d is None:
             continue
-        if PRIMARY_ONLY and d.loc["clinical (reference)", "pairs"] < MIN_PAIRS:
-            continue
+        if PRIMARY_ONLY:  # v1.1: rule defined in the all-initiator population (protocol 4c)
+            ref = A / f"claude-cap4-all-{n}" / "summary_pooled.csv"
+            ref = pd.read_csv(ref, index_col=0) if ref.exists() else d
+            if ref.loc["clinical (reference)", "pairs"] < MIN_PAIRS:
+                continue
         role = TRIALS[key]["role"]
         for dom, _ in DOMAINS:
             col = f"excess_{dom}"

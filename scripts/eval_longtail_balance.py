@@ -108,9 +108,11 @@ def logit_ps(X: np.ndarray, t: np.ndarray) -> np.ndarray:
     return np.log(p / (1 - p))
 
 
-def ps_greedy(lg: np.ndarray, t: np.ndarray, cal: float = 0.2, window: int = 60):
+def ps_greedy(lg: np.ndarray, t: np.ndarray, cal: float = 0.2):
     """Greedy 1:1 caliper matching; anchor = smaller arm, processed in descending
-    anchor-propensity order. Returns (treated_idx, control_idx)."""
+    anchor-propensity order; each anchor takes the nearest still-available control
+    within the caliper (exact search: v1.1 fix of the former +/-60-position window,
+    which missed valid matches). Returns (treated_idx, control_idx)."""
     anchor = 1 if (t == 1).sum() <= (t == 0).sum() else 0
     s = lg if anchor == 1 else -lg
     width = cal * np.sqrt((lg[t == 1].var() + lg[t == 0].var()) / 2)
@@ -118,17 +120,34 @@ def ps_greedy(lg: np.ndarray, t: np.ndarray, cal: float = 0.2, window: int = 60)
     ai = ai[np.argsort(-s[ai], kind="stable")]
     cl = np.where(t != anchor)[0]
     cl = cl[np.argsort(lg[cl], kind="stable")]
-    vals, avail, ma, mo = lg[cl], np.ones(len(t), bool), [], []
+    vals, n = lg[cl], len(cl)
+    # skip pointers over used controls: right[k] -> smallest available >= k; left[k] -> largest available <= k
+    right = np.arange(n + 1)
+    left = np.arange(n + 1)  # position m = k + 1 (m = 0 is the "none" sentinel)
+
+    def find(par, k):
+        root = k
+        while par[root] != root:
+            root = par[root]
+        while par[k] != root:
+            par[k], k = root, par[k]
+        return root
+
+    ma, mo = [], []
     for i in ai:
-        j = np.searchsorted(vals, lg[i])
+        j = int(np.searchsorted(vals, lg[i]))
+        r = find(right, j)                  # nearest available at or right of j (n = none)
+        l = find(left, j) - 1               # nearest available left of j (index into vals; -1 = none)
         best, bd = None, width
-        for k in range(max(0, j - window), min(len(cl), j + window)):
-            if avail[cl[k]] and abs(vals[k] - lg[i]) <= bd:
-                best, bd = cl[k], abs(vals[k] - lg[i])
+        if l >= 0 and lg[i] - vals[l] <= bd:
+            best, bd = l, lg[i] - vals[l]
+        if r < n and vals[r] - lg[i] <= bd:
+            best, bd = r, vals[r] - lg[i]
         if best is not None:
-            avail[best] = False
+            right[best] = best + 1
+            left[best + 1] = best
             ma.append(i)
-            mo.append(best)
+            mo.append(cl[best])
     ma, mo = np.array(ma, int), np.array(mo, int)
     return (ma, mo) if anchor == 1 else (mo, ma)
 
@@ -170,6 +189,13 @@ def main():
     ap.add_argument("--physiology-panel", default=None,
                     help="restricted_physiology_panel.parquet (build_physiology_panel.py); evaluation only")
     ap.add_argument("--shd-scores", default=None, help="restricted_shd_scores.parquet (score_shd_signal.py); adds SHD arms")
+    ap.add_argument("--roster", default=None, help="restricted_cohort.parquet (patient_key, index_date) for echo masking")
+    ap.add_argument("--echo-eval-start", default=None,
+                    help="v1.1 (option A): score echo domains and measured LVEF only for index >= this date")
+    ap.add_argument("--mask-train-mrns", default=None,
+                    help="MRN list; echo domains and measured LVEF are not scored for these patients (SHD leakage)")
+    ap.add_argument("--save-matches", action="store_true",
+                    help="phase 2: with split seed 0, save per-method matched pairs and PS logits (restricted)")
     ap.add_argument("--hdps-k", type=int, nargs="+", default=[100, 200, 500])
     ap.add_argument("--split-seed", type=int, default=0)
     ap.add_argument("--no-cstat", action="store_true")
@@ -214,6 +240,24 @@ def main():
     PP = None
     if args.physiology_panel:
         PP = pd.read_parquet(args.physiology_panel).set_index("patient_key").reindex(common)
+    # v1.1 echo evaluation masks: coverage period (echo sources start 2015-07) and SHD training patients
+    n_echo_masked = 0
+    if args.echo_eval_start or args.mask_train_mrns:
+        mask = pd.Series(False, index=common)
+        if args.echo_eval_start:
+            ro = pd.read_parquet(args.roster).set_index("patient_key").index_date
+            mask |= pd.to_datetime(ro.reindex(common)).lt(pd.Timestamp(args.echo_eval_start)).fillna(True).to_numpy()
+        if args.mask_train_mrns:
+            dg = lambda x: pd.Series(x, dtype=str).str.replace(r"\D", "", regex=True).str.lstrip("0")
+            tr = set(dg(pd.read_csv(args.mask_train_mrns, header=None, dtype=str)[0]))
+            mask |= dg(common).isin(tr).to_numpy()
+        m = mask.to_numpy()
+        n_echo_masked = int(m.sum())
+        if "lvef" in obs:
+            obs.loc[m, "lvef"] = np.nan
+        if PP is not None:
+            echo_cols = [c for c in PP.columns if c.split("__")[0] not in ("LAB", "BNP")]
+            PP.loc[m, echo_cols] = np.nan
     prog = None
     if args.prognostic_scores:
         prog = pd.read_parquet(args.prognostic_scores).set_index("patient_key").reindex(common)
@@ -264,7 +308,7 @@ def main():
     phys = [c for c in roles.get("heldout_physiology", []) if c in cov]
     meds = [c for c in core if c.endswith("_order")]
     util = [c for c in core if c in UTIL]
-    dxc = [c for c in core if c not in set(roles["demo"]) | set(phys) | set(meds) | UTIL and "pci" not in c]
+    dxc = [c for c in core if c not in set(roles["demo"]) | set(phys) | set(meds) | UTIL and c != "pci_index_30d"]  # v1.1: keep prior PCI/CABG Z-codes
     X_dx = cov[[c for c in roles["demo"] if c in cov] + dxc].to_numpy()
     ecg_pc = ecg_f[:, ph.shape[1]:]  # 32 PCs only: no supervised phenotype predictions
     noise = np.random.default_rng(1000 + args.split_seed).normal(size=(len(t), ecg_f.shape[1] + clm_f.shape[1]))
@@ -331,8 +375,15 @@ def main():
 
     rows = []
     idx = np.arange(len(t))
+    saved = []
     for name, X in methods.items():
-        mt, mc = (idx[t == 1], idx[t == 0]) if X is None else ps_greedy(logit_ps(X, t), t)
+        lg_m = None if X is None else logit_ps(X, t)
+        mt, mc = (idx[t == 1], idx[t == 0]) if X is None else ps_greedy(lg_m, t)
+        if args.save_matches and args.split_seed == 0:
+            pair = np.full(len(t), -1)
+            pair[mt] = np.arange(len(mt)); pair[mc] = np.arange(len(mc))
+            saved.append(pd.DataFrame({"method": name, "patient_key": common.to_numpy(), "treated": t, "pair": pair,
+                                       "ps_logit": np.full(len(t), np.nan) if lg_m is None else lg_m}))
         if len(mt) < 20:  # near-complete separation: record retention, no balance metrics
             rows.append(dict(method=name, pairs=len(mt), imputation=args.imputation, split_seed=args.split_seed))
             continue
@@ -400,10 +451,12 @@ def main():
             r["cstat_core_poolB"] = cstat_after_matching(X_c_B, t, idx[t == 1], idx[t == 0], C=0.01, seed=args.split_seed)
         r.update(imputation=args.imputation, split_seed=args.split_seed)
         rows.append(r)
+    if saved:
+        pd.concat(saved).to_parquet(f"{args.output_dir}/restricted_matches_imp{args.imputation}_seed{args.split_seed}.parquet")
     out = pd.DataFrame(rows).set_index("method")
     out.to_csv(f"{args.output_dir}/longtail_imp{args.imputation}_seed{args.split_seed}.csv")
     meta = dict(label=args.label, n=int(len(t)), n_treated=int(t.sum()), n_control=int((1 - t).sum()),
-                panel_A=len(A), panel_B=len(Bf), exposure_features_dropped=0 if args.keep_exposure_features else n_expo,
+                panel_A=len(A), panel_B=len(Bf), echo_eval_masked=n_echo_masked, exposure_features_dropped=0 if args.keep_exposure_features else n_expo,
                 count_panel=bool(counts_panel), hdps_candidates=int(lv.shape[1]),
                 hdps_levels_in_top=lvl_counts, seconds=round(time.time() - t0, 1))
     json.dump(meta, open(f"{args.output_dir}/meta_imp{args.imputation}_seed{args.split_seed}.json", "w"), indent=2)
