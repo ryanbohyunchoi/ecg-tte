@@ -37,7 +37,11 @@ PRIMARY = {"comet": ("comet", "claude-comet-progref-v1/roster"),
            "plato": ("plato", "claude-plato-cohort-v1"), "aristotle": ("aristotle", "claude-aristotle-cohort-v1"),
            "rocket-af": ("rocket_af", "claude-rocket-af-cohort-v1"), "rely": ("rely", "claude-rely-cohort-v1"),
            "allhat": ("allhat", "claude-allhat-cohort-v1")}
-EXTRA = {}  # extension trials (part III) register here: name -> (key, cohort dir)
+# extension trials (part III): name -> (key, cohort dir)
+EXTRA = {n: (k, f"claude-{n}-cohort-v1") for n, k in (
+    ("emperor-preserved", "emperor_preserved"), ("east-afnet4", "east_afnet4"), ("cabana", "cabana"),
+    ("paradise-mi", "paradise_mi"), ("dcp", "dcp"), ("ontarget", "ontarget"), ("value", "value"), ("ascot", "ascot"),
+    ("empa-reg", "empa_reg"), ("carolina", "carolina"), ("invest", "invest"))}
 
 
 def paths(n):
