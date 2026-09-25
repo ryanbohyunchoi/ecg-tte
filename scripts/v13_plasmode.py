@@ -62,7 +62,10 @@ def one_resampled(rep):
     scenario's outcomes on the same resample (Franklin et al. 2014 plasmode)."""
     T, lam, rho, C = G["T"], G["lam"], G["rho"], G["C"]
     N = len(T.t)
-    rows = np.random.default_rng(50_000 + rep).integers(0, N, N)
+    fr = G.get("subsample")
+    rng0 = np.random.default_rng(50_000 + rep)
+    # audit fix: optional subsampling without replacement (valid for matching estimators; no duplicate patients)
+    rows = np.sort(rng0.choice(N, int(round(fr * N)), replace=False)) if fr else rng0.integers(0, N, N)
     trt = T.t[rows]
     X = T.arms(ARMS, rows=rows)
     M = {a: (None, None) if X[a] is None else match(ps_logit(X[a], trt), trt)[:2] for a in ARMS}
@@ -101,6 +104,7 @@ def main():
     ap.add_argument("--workers", type=int, default=14)
     ap.add_argument("--output-dir", required=True)
     ap.add_argument("--arms", default=None, help="comma-separated arm list (default: ARMS)")
+    ap.add_argument("--subsample", type=float, default=None, help="with --resample: subsample this fraction without replacement")
     ap.add_argument("--resample", action="store_true", help="v1.3 deviation 6: resample cohort and refit PS/matching per replicate")
     a = ap.parse_args()
     global ARMS
@@ -143,7 +147,7 @@ def main():
         else:
             idx, cl, _ = match(ps_logit(X[arm], T.t), T.t)
             M[arm] = (idx, cl)
-    G.update(T=T, lp0=lp0, lam=lam, rho=rho, C=C, M=M)
+    G.update(T=T, lp0=lp0, lam=lam, rho=rho, C=C, M=M, subsample=a.subsample)
     os.makedirs(a.output_dir, exist_ok=True)
     tr = [dict(scenario=s, arm=arm, truth_loghr=truth(s, M[arm][0]), conditional_loghr=float(np.log(SCEN[s]["hr"])))
           for s in SCEN for arm in ARMS]

@@ -637,3 +637,13 @@ OUTCOMES.update({
 RATING_ITEMS.update({"emperor_preserved": (0, 1, 2, 1), "east_afnet4": (1, 1, 2, 1), "cabana": (1, 1, 2, 1), "castle_af": (1, 1, 2, 1),
                      "paradise_mi": (1, 1, 2, 1), "dcp": (2, 1, 2, 1), "ontarget": (1, 1, 2, 2), "value": (1, 1, 2, 1),
                      "ascot": (1, 1, 2, 1), "empa_reg": (0, 1, 2, 2), "carolina": (2, 1, 2, 2), "invest": (1, 1, 2, 1), "engage_af": (2, 1, 2, 2)})
+
+# ---- v1.3/v1.4 audit fixes (2026-09-25): new cohort versions; v1 cohorts kept as history ----
+TRIALS["emperor_preserved"] = dict(TRIALS["emperor_preserved"], spec_version="emperor_preserved_adapted_v2",
+    gate={"any_before_or_on_index": ["I50"], "require_all": [["E11"]]},
+    note=TRIALS["emperor_preserved"]["note"] + "; v2: type 2 diabetes required (DPP-4i comparator implies T2D; audit fix)")
+TRIALS["cabana"] = dict(TRIALS["cabana"], spec_version="cabana_adapted_v2", washout_arms=[1],
+    note="v2 (audit fix): ablation arm may have prior antiarrhythmic use (as in CABANA); antiarrhythmic arm = new users without "
+         "ablation in the prior year; serious bleeding = GI bleeding / non-traumatic ICH hospitalisation only")
+OUTCOMES["cabana"] = ["death", ("hosp", STROKE), ("hosp", ["I46"]), ("hosp", ["K920", "K921", "K922", "I62"])]
+TRIALS["east_afnet4"]["add_on"] = True  # per-protocol: rate-control orders in the rhythm-control arm are expected, not switching

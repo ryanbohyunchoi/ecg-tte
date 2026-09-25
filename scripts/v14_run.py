@@ -83,7 +83,9 @@ def truth(lp0, lam, rho, C, copies=20):
 # ---------------------------------------------------------------- workers
 def _pl_rep(rep):
     Tm, pool, lps, lam, rho, C = G["Tm"], G["pool"], G["lps"], G["lam"], G["rho"], G["C"]
-    rows = pool[np.random.default_rng(50_000 + rep).integers(0, len(pool), len(pool))]
+    r0 = np.random.default_rng(50_000 + rep)
+    fr = G.get("subsample")
+    rows = pool[np.sort(r0.choice(len(pool), int(round(fr * len(pool))), replace=False))] if fr else pool[r0.integers(0, len(pool), len(pool))]
     trt = Tm.t[rows]
     X = Tm.arms(ARMS, rows=rows)
     M = {a: match(ps_logit(X[a], trt), trt)[:2] for a in ARMS}
@@ -148,8 +150,10 @@ def main():
     ap.add_argument("--reps", type=int, default=200)
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--output-dir", required=True)
+    ap.add_argument("--subsample", type=float, default=None, help="plasmode: subsample fraction without replacement (audit fix)")
     a = ap.parse_args()
     O = a.output_dir
+    G["subsample"] = a.subsample
     T = Trial(a.trial)
     t, e, ok, H, _ = outcomes(a.trial, T.key, T.keys)
     uses_cause = any(c in ("cv_death", "chd_death") for c in OUTCOMES[T.key])
@@ -185,6 +189,13 @@ def main():
                 D = T.degraded(pdrop)
                 pn = f"dropout_{pdrop}"
                 save(run_boot(D, everyone, t, e, ok, a.reps, a.workers), "boot", mode=mode, pool=pn)
+                R, Tr = run_plasmode(D, everyone, std_lps, lam, rho, C, a.reps, a.workers)
+                save(R, "plasmode", mode=mode, pool=pn)
+                save(Tr, "truth", mode=mode, pool=pn)
+        elif mode == "dropout_pl":  # audit fix: dropout plasmode only (use with --subsample)
+            for pdrop in (0.0, 0.5, 0.75, 0.9):
+                D = T.degraded(pdrop) if pdrop > 0 else T
+                pn = f"dropout_{pdrop}"
                 R, Tr = run_plasmode(D, everyone, std_lps, lam, rho, C, a.reps, a.workers)
                 save(R, "plasmode", mode=mode, pool=pn)
                 save(Tr, "truth", mode=mode, pool=pn)

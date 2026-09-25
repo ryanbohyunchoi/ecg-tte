@@ -39,7 +39,7 @@ PRIMARY = {"comet": ("comet", "claude-comet-progref-v1/roster"),
            "allhat": ("allhat", "claude-allhat-cohort-v1")}
 # extension trials (part III): name -> (key, cohort dir)
 EXTRA = {n: (k, f"claude-{n}-cohort-v1") for n, k in (
-    ("emperor-preserved", "emperor_preserved"), ("east-afnet4", "east_afnet4"), ("cabana", "cabana"),
+    ("emperor-preserved-v2", "emperor_preserved"), ("east-afnet4", "east_afnet4"), ("cabana-v2", "cabana"),
     ("paradise-mi", "paradise_mi"), ("dcp", "dcp"), ("ontarget", "ontarget"), ("value", "value"), ("ascot", "ascot"),
     ("empa-reg", "empa_reg"), ("carolina", "carolina"), ("invest", "invest"))}
 

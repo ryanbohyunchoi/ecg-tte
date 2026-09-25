@@ -116,9 +116,13 @@ def main() -> None:
         con.execute(f"""CREATE TEMP TABLE s1 AS SELECT * FROM
             (SELECT arm_idx, person_id, min(d) idx FROM armexp GROUP BY 1, 2)
             WHERE idx BETWEEN DATE '{spec['index_start']}' AND DATE '{spec['index_end']}'""")
-        con.execute("""CREATE TEMP TABLE s2 AS SELECT c.* FROM s1 c WHERE NOT EXISTS (
+        # v1.3 audit fix: spec['washout_arms'] limits the comparator washout to the listed arms
+        # (CABANA: ablation patients may have prior antiarrhythmic use, as in the trial)
+        wa = spec.get("washout_arms")
+        warm = f"AND c.arm_idx IN ({','.join(map(str, wa))})" if wa else ""
+        con.execute(f"""CREATE TEMP TABLE s2 AS SELECT c.* FROM s1 c WHERE NOT (EXISTS (
             SELECT 1 FROM armexp e WHERE e.person_id = c.person_id AND e.arm_idx <> c.arm_idx
-              AND e.d BETWEEN c.idx - INTERVAL 365 DAY AND c.idx)""")
+              AND e.d BETWEEN c.idx - INTERVAL 365 DAY AND c.idx) {warm})""")
     con.execute(f"""CREATE TEMP TABLE firstvisit AS SELECT person_id, min(visit_start_date) fv
                     FROM {rp(G, 'visit_occurrence')} GROUP BY 1""")
     age = """date_diff('year', p.dob, c.idx)

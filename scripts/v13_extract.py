@@ -134,7 +134,7 @@ def main():
 
     # on-treatment periods (drug designs)
     pp_note = "not applicable (procedure design)"
-    if spec.get("design") != "procedure":
+    if spec.get("design") not in ("procedure", "proc_vs_drug"):  # audit fix: no drug orders in a procedure arm
         rows = [(i, kw.lower()) for i, (_, kws) in enumerate(spec["arms"]) for kw in kws]
         kwdf = pd.DataFrame(rows, columns=["arm_idx", "kw"])
         con.register("kwdf", kwdf)
@@ -144,7 +144,10 @@ def main():
         o["d"] = pd.to_datetime(o.d)
         o = o.merge(idx.rename("idx").reset_index(), on="patient_key")
         o["own"] = (o.arm_idx == 0) == (o.treated == 1)  # arm_idx 0 = treated arm
-        other = o[~o.own & (o.d > o.idx)].groupby("patient_key").d.min().reindex(keys)
+        oth = o[~o.own & (o.d > o.idx)]
+        if spec.get("add_on"):  # audit fix: add-on designs (EAST-AFNET 4) keep the comparator drug in the treated arm
+            oth = oth[oth.treated == 0]
+        other = oth.groupby("patient_key").d.min().reindex(keys)
         own = o[o.own][["patient_key", "d"]].drop_duplicates()
         own = pd.concat([own, idx.rename("d").reset_index()]).drop_duplicates().sort_values(["patient_key", "d"])
         own["nxt"] = own.groupby("patient_key").d.shift(-1)
