@@ -89,8 +89,9 @@ def main():
     rct_draw = {t: np.r_[meta[t]["b"], meta[t]["b"] + meta[t]["se"] * np.random.default_rng(zlib.crc32(t.encode())).normal(size=len(reps) - 1)]
                 for t in trials}
     print("# Directional consistency and closeness to the RCT (post-hoc v1.4 addition G; exploratory)\n")
-    print("Point estimates from the full cohort (imputation 1); 95% CIs from 200 paired bootstrap replicates "
-          "(patients resampled within trial, RCT estimate drawn from its CI).\n")
+    print("Point estimates from the full cohort (imputation 1). Inference for arm differences: exact McNemar (binary metrics) and "
+          "sign-flip (mean |Δ|) tests across trials. Bootstrap intervals (lo, hi) are descriptive only: re-matching on resamples with "
+          "duplicate patients is not valid for matching estimators (audit 2026-09-25).\n")
     rows, drows = [], []
     for sname, tr in subsets.items():
         res = []
@@ -115,7 +116,29 @@ def main():
                 bs = np.array([x[j2][m] - x[j1][m] for x in res[1:]], float)
                 lo, hi = np.nanpercentile(bs, [2.5, 97.5])
                 better = (p < 0) if m == "mean_abs" else (p > 0)
-                drows.append(dict(subset=sname, comparison=f"{LAB[a2]} − {LAB[a1]}", metric=m, trials=len(tr), difference=p, lo=lo, hi=hi,
+                # audit fix: exact paired tests on the full-cohort estimates (bootstrap interval descriptive only)
+                B0 = np.array([Lb.loc[(t, 0)].to_numpy() for t in tr]); S0 = np.array([Ls.loc[(t, 0)].to_numpy() for t in tr])
+                rb0 = np.array([meta[t]["b"] for t in tr]); rs0 = np.array([meta[t]["sig"] for t in tr])
+                def per_trial(j):
+                    b, s_ = B0[:, j], S0[:, j]
+                    sig = np.abs(b / s_) > 1.96
+                    dirn = np.sign(b) == np.sign(rb0)
+                    return {"direction": dirn.astype(float), "regulatory": np.where(rs0, sig & dirn, ~sig).astype(float),
+                            "within25": (np.abs(b - rb0) <= np.log(1.25)).astype(float), "mean_abs": np.abs(b - rb0)}.get(m)
+                pt = None
+                if m in ("direction", "regulatory", "within25"):
+                    x2, x1 = per_trial(j2), per_trial(j1)
+                    k_up, k_dn = int(((x2 == 1) & (x1 == 0)).sum()), int(((x2 == 0) & (x1 == 1)).sum())
+                    from scipy.stats import binomtest
+                    pt = binomtest(k_up, k_up + k_dn, 0.5).pvalue if k_up + k_dn else 1.0
+                    exact = f"McNemar exact: {k_up} gained vs {k_dn} lost, p = {pt:.3f}"
+                elif m == "mean_abs":
+                    from v13_summarize import sign_flip
+                    pt = sign_flip(per_trial(j2) - per_trial(j1))[1]
+                    exact = f"sign-flip p = {pt:.3f}"
+                else:
+                    exact = ""
+                drows.append(dict(subset=sname, comparison=f"{LAB[a2]} − {LAB[a1]}", metric=m, trials=len(tr), difference=p, exact_test=exact, lo=lo, hi=hi,
                                   share_boot_favouring=float(np.mean(bs < 0) if m == "mean_abs" else np.mean(bs > 0)),
                                   favours_first=bool(better)))
     R = pd.DataFrame(rows)
@@ -129,7 +152,7 @@ def main():
         print(md(show, 2) + "\n")
         y = Dd[Dd.subset == sname]
         print("Differences between arms (first − second; for mean_abs negative favours the first arm):\n")
-        print(md(y[["comparison", "metric", "difference", "lo", "hi", "share_boot_favouring"]], 3) + "\n")
+        print(md(y[["comparison", "metric", "difference", "exact_test", "lo", "hi"]], 3) + "\n")
     print("Definitions: direction = same side of HR 1 as the RCT; direction_sigRCT = same, among RCTs whose CI excludes 1; "
           "regulatory = same significance and direction (RCT-DUPLICATE); within25 = emulated HR within 0.8–1.25× the RCT HR; "
           "slope = calibration slope of emulated on RCT log HR (1 = ideal).\n")

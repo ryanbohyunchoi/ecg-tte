@@ -22,13 +22,14 @@ KEY = {n: k for n, (k, _) in {**PRIMARY, **EXTRA}.items()}
 B = 500
 
 
-def read(kind):
-    fs = glob.glob(str(D / f"{kind}_*_*.csv"))
-    return pd.concat([pd.read_csv(f, keep_default_na=False, na_values=[""]) for f in fs]) if fs else pd.DataFrame()
+def read(kind, folder=None):
+    fs = glob.glob(str((folder or D) / f"{kind}_*_*.csv"))
+    d = pd.concat([pd.read_csv(f, keep_default_na=False, na_values=[""]) for f in fs]) if fs else pd.DataFrame()
+    return d[d.trial.isin(KEY)] if len(d) else d  # audit fix: current trial versions only (v1 EMPEROR-Preserved / CABANA excluded)
 
 
-def plasmode_errors():
-    R, Tr = read("plasmode"), read("truth")
+def plasmode_errors(folder=None, add_v13=True):
+    R, Tr = read("plasmode", folder), read("truth", folder)
     if R.empty:
         return {}
     R = R.merge(Tr, on=["trial", "mode", "pool", "scenario", "arm"])
@@ -37,8 +38,10 @@ def plasmode_errors():
     for (tr, pool, sc, arm), g in R.groupby(["trial", "pool", "scenario", "arm"]):
         E[(tr, pool, sc, arm)] = g.sort_values("rep").err.to_numpy()
     # v1.3 resampled plasmode = dropout 0 / full cohort reference
-    for f in glob.glob(str(A / "claude-v13-plasmode-rs" / "reps_*.csv")):
+    for f in (glob.glob(str(A / "claude-v13-plasmode-rs" / "reps_*.csv")) if add_v13 else []):
         n = Path(f).stem[5:]
+        if n not in KEY:
+            continue
         r = pd.read_csv(f, keep_default_na=False, na_values=[""])
         t = pd.read_csv(A / "claude-v13-plasmode-rs" / f"truth_{n}.csv", keep_default_na=False, na_values=[""])
         r = r.merge(t[["scenario", "arm", "truth_loghr"]], on=["scenario", "arm"])
@@ -84,7 +87,7 @@ def boot_d(Bt, pool, tgt, a2, a1, only=None):
     if not M:
         return None
     M = pd.concat(M, axis=1)
-    return M.loc[0].mean(), M.drop(index=0).mean(axis=1).to_numpy(), M.shape[1]
+    return M.loc[0].mean(), M.drop(index=0).mean(axis=1).to_numpy(), M.shape[1], M.loc[0]
 
 
 def ci(x):
@@ -135,10 +138,17 @@ def main():
                 if r is None:
                     continue
                 lo, hi = ci(r[1])
-                br.append(dict(pool=pool, contrast=cn, target=tgt, trials=r[2], mean_d_sqerr=r[0], lo=lo, hi=hi))
+                from v13_summarize import sign_flip
+                _, psf = sign_flip(r[3].dropna().to_numpy())
+                loo = [r[3].drop(i).mean() for i in r[3].index]
+                br.append(dict(pool=pool, contrast=cn, target=tgt, trials=r[2], mean_d_sqerr=r[0], p_signflip=psf, closer=int((r[3] < 0).sum()),
+                               loo_min=min(loo), loo_max=max(loo), without_cabana=r[3].drop([i for i in r[3].index if i.startswith("cabana")]).mean(),
+                               boot_lo=lo, boot_hi=hi))
     BR = pd.DataFrame(br)
     BR.to_csv(OUT / "bootstrap_contrasts.csv", index=False)
-    print("## Real-data paired bootstrap: mean over trials of err(ECG arm)² − err(comparator)² (negative = ECG closer)\n")
+    print("## Real data: mean over trials of err(ECG arm)² − err(comparator)² (negative = ECG closer)\n")
+    print("Inference by the exact sign-flip test across trials; bootstrap interval (boot_lo, boot_hi) descriptive only "
+          "(re-matching on resamples with duplicates is not valid for matching estimators).\n")
     print(md(BR, 4) + "\n")
 
     # hypotheses
@@ -166,7 +176,9 @@ def main():
         r1, r2 = boot_d(Bt, p1, tgt, a2, a1, common), boot_d(Bt, p2, tgt, a2, a1, common)
         if r1 is None or r2 is None:
             return None
-        return r1[0] - r2[0], *ci(r1[1] - r2[1]), len(common)
+        from v13_summarize import sign_flip
+        dd = (r1[3] - r2[3]).dropna()
+        return r1[0] - r2[0], sign_flip(dd.to_numpy())[1], None, len(common)
 
     for cn in ("C1", "C2"):
         for hyp, p1, p2, sc_list in (("A (low vs high code density)", "density_low", "density_high", ("base", "phys_only")),
@@ -180,8 +192,8 @@ def main():
             if not hyp.startswith("B"):
                 r = bs_diff(p1, p2, cn)
                 if r:
-                    H.append(dict(hypothesis=hyp, contrast=cn, trials=r[3], test=f"bootstrap vs R+: d({p1}) − d({p2})",
-                                  estimate=r[0], lo=r[1], hi=r[2], supported=bool(r[2] < 0)))
+                    H.append(dict(hypothesis=hyp, contrast=cn, trials=r[3], test=f"real data vs R+: d({p1}) − d({p2}); lo = sign-flip p",
+                                  estimate=r[0], lo=r[1], hi=None, supported=bool(r[0] < 0 and r[1] < 0.05)))
         for sc in ("echo_only", "echo_base", "echo_strong"):
             x = PL[(PL.pool == "echo_subcohort") & (PL.scenario == sc) & (PL.contrast == cn)]
             if len(x):
@@ -196,8 +208,21 @@ def main():
         x = BR[(BR.pool == "hf_outcome") & (BR.contrast == cn) & (BR.target == "R+")]
         if len(x):
             x = x.iloc[0]
-            H.append(dict(hypothesis="E (HF hospitalisation outcome)", contrast=cn, trials=int(x.trials), test="bootstrap vs R+",
-                          estimate=x.mean_d_sqerr, lo=x.lo, hi=x.hi, supported=bool(x.hi < 0)))
+            H.append(dict(hypothesis="E (HF hospitalisation outcome)", contrast=cn, trials=int(x.trials), test="real data vs R+ (lo = sign-flip p)",
+                          estimate=x.mean_d_sqerr, lo=x.p_signflip, hi=None, supported=bool(x.mean_d_sqerr < 0 and x.p_signflip < 0.05)))
+    # audit fix: dropout hypothesis B from the subsampled plasmode (valid for matching)
+    Ess = plasmode_errors(A / "claude-v14-ss", add_v13=False)
+    if Ess:
+        for cn, a2, a1 in CON:
+            for sc in ("base", "phys_only"):
+                for pdrop in ("0.5", "0.75", "0.9"):
+                    r1 = reduction(Ess, f"dropout_{pdrop}", sc, a2, a1, rng)
+                    r0 = reduction(Ess, "dropout_0.0", sc, a2, a1, rng, only=r1["names"] if r1 else None)
+                    if r1 and r0:
+                        d = r1["bs"] - r0["bs"]
+                        H.append(dict(hypothesis="B (dropout; subsampled plasmode — primary after audit)", contrast=cn, trials=r1["trials"],
+                                      test=f"plasmode {sc}: reduction(dropout {pdrop}) − reduction(intact); reductions {r1['est']:+.4f} vs {r0['est']:+.4f}",
+                                      estimate=r1["est"] - r0["est"], lo=ci(d)[0], hi=ci(d)[1], supported=bool(ci(d)[0] > 0)))
     HT = pd.DataFrame(H)
     HT.to_csv(OUT / "hypotheses.csv", index=False)
     print(md(HT, 4) + "\n")

@@ -48,7 +48,9 @@ def main():
         print(f"## Agreement ({grp} trials; imputation 1 point estimates)\n")
         print(md(g, 3) + "\n")
     # plasmode
-    S, C = plasmode(trials, rng, f"{F}/pl")
+    plf = f"{F}/pl-ss" if (A / F / "pl-ss").exists() and any((A / F / "pl-ss").glob("reps_*.csv")) else f"{F}/pl"
+    print(f"Plasmode source: {plf} (pl-ss = 80% subsampling without replacement, valid for matching; pl = bootstrap resampling)\n")
+    S, C = plasmode(trials, rng, plf)
     if S is not None:
         P = S.groupby(["scenario", "arm"]).agg(mean_abs_bias=("bias", lambda v: np.mean(np.abs(v))), mean_rmse=("rmse", "mean"),
                                                coverage=("coverage", "mean")).reset_index()
@@ -64,11 +66,11 @@ def main():
         from v13_summarize import CONTRASTS  # noqa: F401
         per = {}
         for n in trials:
-            f = A / F / "pl" / f"reps_{n}.csv"
+            f = A / plf / f"reps_{n}.csv"
             if not f.exists():
                 continue
             R = pd.read_csv(f, keep_default_na=False, na_values=[""])
-            T = pd.read_csv(A / F / "pl" / f"truth_{n}.csv", keep_default_na=False, na_values=[""])
+            T = pd.read_csv(A / plf / f"truth_{n}.csv", keep_default_na=False, na_values=[""])
             R = R.merge(T[["scenario", "arm", "truth_loghr"]], on=["scenario", "arm"])
             R["err"] = R.loghr - R.truth_loghr
             per[n] = {(sc, a): g.sort_values("rep").err.to_numpy() for (sc, a), g in R.groupby(["scenario", "arm"])}
@@ -88,8 +90,9 @@ def main():
     _, B = bootstrap(trials, rng, targets=("RCT", "R+"), arms_pairs=PAIRS, folder=F)
     if B is not None:
         B.to_csv(OUT / "ecgonly_bootstrap.csv", index=False)
-        print("## Real-data paired bootstrap: mean over trials of err(first)² − err(second)² (negative = first closer)\n")
-        print(md(B[["target", "contrast", "trials", "mean_d_sqerr", "lo", "hi", "share_trials_closer"]], 4) + "\n")
+        print("## Real data: mean over trials of err(first)² − err(second)² (negative = first closer)\n")
+        print("Inference: exact sign-flip test across trials (p_signflip); bootstrap interval descriptive only.\n")
+        print(md(B[["target", "contrast", "trials", "mean_d_sqerr", "p_signflip", "share_trials_closer", "loo_min", "loo_max", "without_cabana", "lo", "hi"]], 4) + "\n")
 
 
 if __name__ == "__main__":

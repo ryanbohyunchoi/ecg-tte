@@ -135,9 +135,11 @@ def bootstrap(trials, rng, targets=("RCT", "R", "R+"), arms_pairs=None, folder="
             point = M.loc[0].mean()
             bs = M.drop(index=0).mean(axis=1)  # trials resampled independently (each has its own replicates)
             loo = [M.drop(columns=[c]).loc[0].mean() for c in M.columns]
+            _, psf = sign_flip(M.loc[0].dropna().to_numpy())  # audit fix: exact across-trial test (bootstrap CI descriptive only)
+            nocab = M.drop(columns=[c for c in M.columns if str(c).startswith("cabana")]).loc[0].mean()
             cross.append(dict(target=tgt, contrast=lab, arm=a2, vs=a1, trials=M.shape[1], mean_d_sqerr=point,
-                              lo=bs.quantile(0.025), hi=bs.quantile(0.975), share_trials_closer=float((M.loc[0] < 0).mean()),
-                              loo_min=min(loo), loo_max=max(loo)))
+                              lo=bs.quantile(0.025), hi=bs.quantile(0.975), p_signflip=psf, share_trials_closer=float((M.loc[0] < 0).mean()),
+                              loo_min=min(loo), loo_max=max(loo), without_cabana=nocab))
     return pd.DataFrame(per_trial), pd.DataFrame(cross)
 
 
@@ -254,12 +256,13 @@ def main():
 
     # I1 plasmode: resampled (deviation 6, decides rule 1) and fixed matched sets (as registered)
     C = S = None
-    for folder, title in (("claude-v13-plasmode-rs", "resampled cohort, PS and matching refitted per replicate (deviation 6; decides rule 1)"),
+    for folder, title in (("claude-v13-plasmode-ss", "80% subsample without replacement, PS and matching refitted per replicate (audit fix; decides rule 1)"),
+                          ("claude-v13-plasmode-rs", "bootstrap resample with replacement (deviation 6; duplicates distort matching — superseded)"),
                           ("claude-v13-plasmode", "fixed matched sets, as registered (flawed: conflates chance imbalance with bias)")):
         S_, C_ = plasmode(trials, rng, folder)
         if S_ is None:
             continue
-        sfx = "rs" if folder.endswith("-rs") else "fixed"
+        sfx = "ss" if folder.endswith("-ss") else "rs" if folder.endswith("-rs") else "fixed"
         S_.to_csv(OUT / f"plasmode_{sfx}_by_trial_{tag}.csv", index=False)
         C_.to_csv(OUT / f"plasmode_{sfx}_contrasts_{tag}.csv", index=False)
         print(f"## I1 Plasmode simulation — {title}\n")
@@ -292,17 +295,19 @@ def main():
         print("## I3 Within-trial paired bootstrap (200 replicates per trial)\n")
         print("Mean over trials of err(arm)² − err(comparator)² (negative = the first arm is closer to the target); "
               "95% CI across bootstrap replicates; leave-one-trial-out range of the point estimate.\n")
-        print(md(CR[["target", "contrast", "trials", "mean_d_sqerr", "lo", "hi", "share_trials_closer", "loo_min", "loo_max"]], 4) + "\n")
+        print("**Inference:** the exact sign-flip test across trials (p_signflip) is the valid test; the bootstrap CI (lo, hi) re-matches on "
+              "resamples with duplicate patients, which is not valid for matching estimators (audit), and is shown for description only.\n")
+        print(md(CR[["target", "contrast", "trials", "mean_d_sqerr", "p_signflip", "lo", "hi", "share_trials_closer", "loo_min", "loo_max", "without_cabana"]], 4) + "\n")
         for cn in ("C1", "C2"):
             for tgt in ("RCT", "R+"):
                 r = CR[(CR.target == tgt) & (CR.contrast == cn)]
                 if len(r):
-                    rules[f"{cn} rule 2 (bootstrap vs {tgt}: CI < 0)"] = bool(r.iloc[0].hi < 0)
+                    rules[f"{cn} rule 2 (vs {tgt}: mean Δ squared error < 0, exact sign-flip p < 0.05; audit fix)"] = bool(r.iloc[0].mean_d_sqerr < 0 and r.iloc[0].p_signflip < 0.05)
             # rule 3: ECG beats placebo (real ECG closer than shuffled ECG vs R+ and RCT)
             a2 = dict(C1="sparse+ECG", C2="hdPS200+ECG")[cn]
             r = CR[(CR.target == "R+") & (CR.contrast == f"{a2}-vs-{a2.split('+')[0]}+shufECG")]
             if len(r):
-                rules[f"{cn} rule 3 (beats shuffled-ECG placebo vs R+: CI < 0)"] = bool(r.iloc[0].hi < 0)
+                rules[f"{cn} rule 3 (beats shuffled-ECG placebo vs R+: sign-flip p < 0.05)"] = bool(r.iloc[0].mean_d_sqerr < 0 and r.iloc[0].p_signflip < 0.05)
             r = CR[(CR.target == "R+") & (CR.contrast == cn)]
             if len(r):
                 rules[f"{cn} rule 4b (leave-one-out: sign holds in every set vs R+)"] = bool(r.iloc[0].loo_max < 0)
@@ -316,7 +321,7 @@ def main():
         CR5.to_csv(OUT / f"bootstrap_shd_enc2_cross_{tag}.csv", index=False)
         PT5.to_csv(OUT / f"bootstrap_shd_enc2_by_trial_{tag}.csv", index=False)
         print("## I5 Supervised SHD logits and second ECG encoder (PRESENT-SHD LVEF<40 CNN penultimate layer, 32 PCs); SHD-scored cohort\n")
-        print(md(CR5[["target", "contrast", "trials", "mean_d_sqerr", "lo", "hi", "share_trials_closer", "loo_min", "loo_max"]], 4) + "\n")
+        print(md(CR5[["target", "contrast", "trials", "mean_d_sqerr", "p_signflip", "share_trials_closer", "loo_min", "loo_max"]], 4) + "\n")
 
     # I6 multiverse
     SP, MV = multiverse(trials)
@@ -442,7 +447,7 @@ def main():
     for r, tr in roles.items():
         if len(tr) < 3:
             continue
-        _, Cp = plasmode(tr, rng, "claude-v13-plasmode-rs")
+        _, Cp = plasmode(tr, rng, "claude-v13-plasmode-ss")
         _, Cb = bootstrap(tr, rng, arms_pairs=CONTRASTS)
         _, Mv = multiverse(tr)
         for cn in ("C1", "C2"):
@@ -452,7 +457,7 @@ def main():
                 row.update(plasmode_rs_bias_reduction=x.bias_reduction, pl_lo=x.lo, pl_hi=x.hi)
             for tgt in ("RCT", "R+"):
                 x = Cb[(Cb.target == tgt) & (Cb.contrast == cn)].iloc[0]
-                row[f"boot_{tgt}_d"], row[f"boot_{tgt}_lo"], row[f"boot_{tgt}_hi"] = x.mean_d_sqerr, x.lo, x.hi
+                row[f"{tgt}_d"], row[f"{tgt}_p_signflip"] = x.mean_d_sqerr, x.p_signflip
             x = Mv[(Mv.contrast == cn) & (Mv.target == "rct") & (Mv.metric == "mean_abs")].iloc[0]
             row["multiverse_share_rct"] = x.share_favouring
             rows.append(row)

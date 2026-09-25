@@ -129,3 +129,61 @@ v1.4 asks whether the ECG's contribution grows in the settings where it should m
   - **Caution:** metrics based on counts give discrete bootstrap distributions. Their percentile
     CIs can exclude the point estimate, so they are descriptive.
   - Script: `scripts/v14_direction.py`; output: `docs/V14_DIRECTION.md`.
+
+## Independent audit, 2026-09-25: corrections
+
+The audit report is kept in the session scratchpad; its findings are summarised here. Every
+correction below was made before the affected results were re-summarised.
+
+1. **Inference.**
+   - **The problem.** The within-trial paired bootstrap re-matches on resamples that contain
+     duplicate patients. That is not valid for matching estimators (Abadie & Imbens 2008). Its
+     distributions were off-centre: the SD of the shift in the paired C1 difference across
+     trials was about 0.06, comparable to the effect.
+   - **The fix.** Every real-data claim now uses the exact sign-flip test across trials, with
+     leave-one-out and without-CABANA ranges. Binary agreement metrics use exact McNemar tests.
+     Bootstrap intervals are reported as descriptive only.
+   - **Consequence.** These claims are withdrawn pending re-analysis:
+     - the precision-weighted analysis (p = 0.02), because its per-trial variances came from the
+       bootstrap;
+     - the "physiology-trial CI excludes 0" result;
+     - "significantly closer" under dropout.
+2. **Plasmode.**
+   - Resampling with replacement shares the problem in item 1. The primary plasmode is now an
+     80% subsample without replacement in each replicate, with PS and matching refitted. It is
+     run for v1.3 (`claude-v13-plasmode-ss`), v1.4 dropout (`claude-v14-ss`) and the ECG-only
+     arms (`claude-v14-ecgonly/pl-ss`).
+   - The earlier versions are reported for comparison.
+   - By construction, outcomes are simulated from the clinical-PS covariates. The clinical PS is
+     therefore correctly specified in the plasmode; this is now stated explicitly.
+3. **EMPEROR-Preserved.** v1 had no type 2 diabetes gate, although its DPP-4i comparator implies
+   T2D. Coded diabetes was 51% on SGLT2i vs 81% on DPP-4i, and mean index years were 2022 vs 2018.
+   v2 requires E11, is rebuilt through the whole frozen pipeline, and replaces v1 everywhere.
+4. **CABANA.** In v1:
+   - the ablation arm was restricted to patients with no antiarrhythmic use in the prior year,
+     which is a selected group;
+   - "serious bleeding" included D62 and R58 in any position, giving a 39% composite event rate
+     against about 9% in the RCT.
+
+   v2:
+   - applies the comparator washout to the antiarrhythmic arm only (`washout_arms`);
+   - defines bleeding as GI or non-traumatic intracranial hospitalisation (K920–K922, I62).
+
+   It is rebuilt through the whole pipeline and replaces v1.
+5. **Per-protocol.**
+   - Not applicable to the procedure-vs-drug design (CABANA), because the ablation arm has no
+     drug orders.
+   - For the add-on design (EAST-AFNET 4), rate-control orders in the rhythm-control arm are no
+     longer counted as switching (`add_on`). EAST-AFNET 4's v1.3 outcomes and design analyses are
+     re-extracted.
+6. **Reporting corrections.**
+   - "About 20% in physiology trials" should read about 14%.
+   - C2 in the plasmode is a slight increase in bias, not "no gain".
+   - For C1, the 200 multiverse specifications are 40 distinct ones for the seed-independent
+     arms (GBM is seed-dependent). They are reported as such.
+   - Dropout also deletes hdPS lab-order flags. These are coded orders, so this is consistent
+     with "codes"; stated.
+   - Under dropout, R+ is itself degraded, and a single random deletion is used; stated.
+   - v1.4 E did not add prior HF hospitalisation to R+; logged as a deviation.
+   - The entropy-balancing docstring was wrong, and CABANA's Table-1 values are medians used as
+     means; noted.
