@@ -241,3 +241,9 @@ unchanged.
 - **2026-09-25, deviation 4 (I1).** The truth is computed from 20 counterfactual copies with common
   random numbers, instead of 5 independent copies. This reduces Monte Carlo error in the truth.
   Changed after a 3-replicate smoke test on LIFE, before the full run.
+- **2026-09-25, deviation 5 (II1).** In the LIFE smoke test (sparse arm, imputation 1), balancing to
+  the RCT's Table 1 converged but left an effective sample size of 183 out of about 2,400. The
+  driver is the trial's mean SBP of 174 mmHg; our cohort's is much lower. A second variant,
+  `transport_ess20`, keeps dropping the variable with the largest standardised gap until the
+  effective sample size is at least 20% of the matched sample. Both variants are reported. Only
+  the effective sample size was inspected; the estimates were not compared.
