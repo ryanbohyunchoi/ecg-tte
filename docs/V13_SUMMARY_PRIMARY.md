@@ -4,7 +4,114 @@ Trials: comet, paradigm-hf-seq, transform-hf, elite-ii, life, plato, aristotle, 
 
 All analyses are exploratory (registered 2026-09-25 after phase 2; tag protocol-v1.3).
 
-## I1 Plasmode simulation
+## I1 Plasmode simulation — resampled cohort, PS and matching refitted per replicate (deviation 6; decides rule 1)
+
+**Scenario base** (true conditional HR 0.8; bias vs the arm's marginal truth; log-HR scale)
+
+| arm | trials | mean_bias | mean_abs_bias | mean_rmse | mean_coverage |
+|---|---|---|---|---|---|
+| R+ physiology ref | 10 | -0.003 | 0.021 | 0.104 | 0.948 |
+| R clinical | 10 | -0.008 | 0.019 | 0.101 | 0.946 |
+| M3 hdPS200 | 10 | -0.008 | 0.036 | 0.111 | 0.927 |
+| M4 hdPS200+ECG | 10 | -0.004 | 0.036 | 0.114 | 0.928 |
+| M1 sparse | 10 | -0.022 | 0.048 | 0.115 | 0.881 |
+| M2 sparse+ECG | 10 | -0.014 | 0.043 | 0.111 | 0.887 |
+| M0 unadjusted | 10 | -0.087 | 0.194 | 0.218 | 0.344 |
+
+**Scenario phys_only** (true conditional HR 0.8; bias vs the arm's marginal truth; log-HR scale)
+
+| arm | trials | mean_bias | mean_abs_bias | mean_rmse | mean_coverage |
+|---|---|---|---|---|---|
+| R+ physiology ref | 10 | -0.015 | 0.020 | 0.106 | 0.946 |
+| R clinical | 10 | -0.016 | 0.021 | 0.101 | 0.957 |
+| M3 hdPS200 | 10 | -0.025 | 0.038 | 0.114 | 0.928 |
+| M4 hdPS200+ECG | 10 | -0.022 | 0.031 | 0.114 | 0.929 |
+| M1 sparse | 10 | -0.031 | 0.038 | 0.111 | 0.905 |
+| M2 sparse+ECG | 10 | -0.033 | 0.038 | 0.109 | 0.925 |
+| M0 unadjusted | 10 | -0.095 | 0.158 | 0.188 | 0.501 |
+
+**Scenario strong** (true conditional HR 0.8; bias vs the arm's marginal truth; log-HR scale)
+
+| arm | trials | mean_bias | mean_abs_bias | mean_rmse | mean_coverage |
+|---|---|---|---|---|---|
+| R+ physiology ref | 10 | -0.012 | 0.016 | 0.101 | 0.954 |
+| R clinical | 10 | -0.010 | 0.019 | 0.097 | 0.948 |
+| M3 hdPS200 | 10 | -0.018 | 0.045 | 0.113 | 0.922 |
+| M4 hdPS200+ECG | 10 | -0.013 | 0.044 | 0.115 | 0.918 |
+| M1 sparse | 10 | -0.040 | 0.066 | 0.123 | 0.841 |
+| M2 sparse+ECG | 10 | -0.034 | 0.059 | 0.120 | 0.857 |
+| M0 unadjusted | 10 | -0.110 | 0.212 | 0.235 | 0.325 |
+
+**Scenario none** (true conditional HR 0.8; bias vs the arm's marginal truth; log-HR scale)
+
+| arm | trials | mean_bias | mean_abs_bias | mean_rmse | mean_coverage |
+|---|---|---|---|---|---|
+| R+ physiology ref | 10 | -0.009 | 0.015 | 0.106 | 0.950 |
+| R clinical | 10 | -0.012 | 0.018 | 0.101 | 0.956 |
+| M3 hdPS200 | 10 | -0.003 | 0.025 | 0.109 | 0.938 |
+| M4 hdPS200+ECG | 10 | 0.001 | 0.029 | 0.112 | 0.934 |
+| M1 sparse | 10 | -0.010 | 0.041 | 0.110 | 0.904 |
+| M2 sparse+ECG | 10 | -0.007 | 0.035 | 0.112 | 0.900 |
+| M0 unadjusted | 10 | -0.075 | 0.182 | 0.207 | 0.389 |
+
+**Scenario null** (true conditional HR 1.0; bias vs the arm's marginal truth; log-HR scale)
+
+| arm | trials | mean_bias | mean_abs_bias | mean_rmse | mean_coverage |
+|---|---|---|---|---|---|
+| R+ physiology ref | 10 | -0.011 | 0.017 | 0.095 | 0.956 |
+| R clinical | 10 | -0.010 | 0.018 | 0.096 | 0.952 |
+| M3 hdPS200 | 10 | -0.009 | 0.040 | 0.108 | 0.913 |
+| M4 hdPS200+ECG | 10 | -0.006 | 0.039 | 0.108 | 0.918 |
+| M1 sparse | 10 | -0.027 | 0.055 | 0.112 | 0.874 |
+| M2 sparse+ECG | 10 | -0.020 | 0.045 | 0.108 | 0.895 |
+| M0 unadjusted | 10 | -0.090 | 0.194 | 0.217 | 0.318 |
+
+Reduction in |bias| (positive = the first arm is less biased), mean over trials, Monte Carlo 95% CI:
+
+| scenario | contrast | trials | bias_reduction | lo | hi | relative_reduction |
+|---|---|---|---|---|---|---|
+| base | C1 | 10 | 0.005 | 0.000 | 0.008 | 0.098 |
+| base | C2 | 10 | -0.000 | -0.004 | 0.002 | -0.012 |
+| base | sparse+noise32-vs-sparse | 10 | -0.001 | -0.004 | 0.003 | -0.025 |
+| base | sparse+shufECG-vs-sparse | 10 | -0.004 | -0.007 | -0.000 | -0.077 |
+| base | sparse+ECG-vs-sparse+shufECG | 10 | 0.008 | 0.004 | 0.011 | 0.162 |
+| base | hdPS200+noise32-vs-hdPS200 | 10 | -0.003 | -0.006 | 0.001 | -0.072 |
+| base | hdPS200+shufECG-vs-hdPS200 | 10 | -0.000 | -0.004 | 0.003 | -0.001 |
+| base | hdPS200+ECG-vs-hdPS200+shufECG | 10 | -0.000 | -0.003 | 0.003 | -0.010 |
+| none | C1 | 10 | 0.005 | 0.001 | 0.008 | 0.129 |
+| none | C2 | 10 | -0.003 | -0.007 | 0.001 | -0.129 |
+| none | sparse+noise32-vs-sparse | 10 | -0.001 | -0.004 | 0.003 | -0.014 |
+| none | sparse+shufECG-vs-sparse | 10 | -0.004 | -0.007 | -0.001 | -0.098 |
+| none | sparse+ECG-vs-sparse+shufECG | 10 | 0.009 | 0.005 | 0.012 | 0.207 |
+| none | hdPS200+noise32-vs-hdPS200 | 10 | -0.003 | -0.006 | 0.001 | -0.100 |
+| none | hdPS200+shufECG-vs-hdPS200 | 10 | -0.003 | -0.007 | 0.002 | -0.129 |
+| none | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.000 | -0.005 | 0.003 | 0.000 |
+| null | C1 | 10 | 0.010 | 0.006 | 0.013 | 0.178 |
+| null | C2 | 10 | 0.001 | -0.001 | 0.004 | 0.034 |
+| null | sparse+noise32-vs-sparse | 10 | -0.002 | -0.005 | 0.002 | -0.029 |
+| null | sparse+shufECG-vs-sparse | 10 | -0.001 | -0.004 | 0.002 | -0.018 |
+| null | sparse+ECG-vs-sparse+shufECG | 10 | 0.011 | 0.007 | 0.013 | 0.192 |
+| null | hdPS200+noise32-vs-hdPS200 | 10 | -0.001 | -0.004 | 0.002 | -0.019 |
+| null | hdPS200+shufECG-vs-hdPS200 | 10 | 0.001 | -0.002 | 0.004 | 0.036 |
+| null | hdPS200+ECG-vs-hdPS200+shufECG | 10 | -0.000 | -0.003 | 0.003 | -0.002 |
+| phys_only | C1 | 10 | 0.000 | -0.003 | 0.004 | 0.000 |
+| phys_only | C2 | 10 | 0.007 | 0.003 | 0.010 | 0.188 |
+| phys_only | sparse+noise32-vs-sparse | 10 | 0.001 | -0.002 | 0.006 | 0.039 |
+| phys_only | sparse+shufECG-vs-sparse | 10 | 0.001 | -0.003 | 0.004 | 0.014 |
+| phys_only | sparse+ECG-vs-sparse+shufECG | 10 | -0.001 | -0.004 | 0.003 | -0.014 |
+| phys_only | hdPS200+noise32-vs-hdPS200 | 10 | 0.000 | -0.004 | 0.004 | 0.001 |
+| phys_only | hdPS200+shufECG-vs-hdPS200 | 10 | 0.003 | -0.001 | 0.006 | 0.089 |
+| phys_only | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.004 | -0.000 | 0.007 | 0.109 |
+| strong | C1 | 10 | 0.008 | 0.004 | 0.011 | 0.115 |
+| strong | C2 | 10 | 0.001 | -0.002 | 0.004 | 0.021 |
+| strong | sparse+noise32-vs-sparse | 10 | 0.003 | -0.002 | 0.005 | 0.044 |
+| strong | sparse+shufECG-vs-sparse | 10 | -0.002 | -0.005 | 0.001 | -0.035 |
+| strong | sparse+ECG-vs-sparse+shufECG | 10 | 0.010 | 0.006 | 0.013 | 0.146 |
+| strong | hdPS200+noise32-vs-hdPS200 | 10 | -0.002 | -0.005 | 0.002 | -0.037 |
+| strong | hdPS200+shufECG-vs-hdPS200 | 10 | -0.006 | -0.008 | -0.003 | -0.126 |
+| strong | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.007 | 0.003 | 0.010 | 0.130 |
+
+## I1 Plasmode simulation — fixed matched sets, as registered (flawed: conflates chance imbalance with bias)
 
 **Scenario base** (true conditional HR 0.8; bias vs the arm's marginal truth; log-HR scale)
 
@@ -73,42 +180,42 @@ Reduction in |bias| (positive = the first arm is less biased), mean over trials,
 | base | C1 | 10 | 0.011 | 0.006 | 0.014 | 0.202 |
 | base | C2 | 10 | 0.010 | 0.004 | 0.013 | 0.247 |
 | base | sparse+noise32-vs-sparse | 10 | -0.008 | -0.012 | -0.003 | -0.146 |
-| base | sparse+shufECG-vs-sparse | 10 | -0.007 | -0.010 | -0.004 | -0.140 |
+| base | sparse+shufECG-vs-sparse | 10 | -0.007 | -0.010 | -0.005 | -0.140 |
 | base | sparse+ECG-vs-sparse+shufECG | 10 | 0.018 | 0.014 | 0.021 | 0.300 |
-| base | hdPS200+noise32-vs-hdPS200 | 10 | -0.000 | -0.006 | 0.006 | -0.011 |
-| base | hdPS200+shufECG-vs-hdPS200 | 10 | 0.003 | -0.003 | 0.008 | 0.073 |
+| base | hdPS200+noise32-vs-hdPS200 | 10 | -0.000 | -0.006 | 0.005 | -0.011 |
+| base | hdPS200+shufECG-vs-hdPS200 | 10 | 0.003 | -0.003 | 0.007 | 0.073 |
 | base | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.007 | 0.003 | 0.009 | 0.188 |
-| none | C1 | 10 | 0.000 | -0.003 | 0.004 | 0.012 |
+| none | C1 | 10 | 0.000 | -0.002 | 0.004 | 0.012 |
 | none | C2 | 10 | 0.010 | 0.005 | 0.014 | 0.285 |
 | none | sparse+noise32-vs-sparse | 10 | -0.002 | -0.008 | 0.002 | -0.063 |
 | none | sparse+shufECG-vs-sparse | 10 | -0.005 | -0.010 | -0.001 | -0.130 |
-| none | sparse+ECG-vs-sparse+shufECG | 10 | 0.006 | 0.001 | 0.011 | 0.125 |
-| none | hdPS200+noise32-vs-hdPS200 | 10 | 0.002 | -0.004 | 0.007 | 0.053 |
+| none | sparse+ECG-vs-sparse+shufECG | 10 | 0.006 | 0.001 | 0.010 | 0.125 |
+| none | hdPS200+noise32-vs-hdPS200 | 10 | 0.002 | -0.004 | 0.008 | 0.053 |
 | none | hdPS200+shufECG-vs-hdPS200 | 10 | -0.000 | -0.006 | 0.005 | -0.010 |
 | none | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.010 | 0.006 | 0.013 | 0.292 |
 | null | C1 | 10 | 0.009 | 0.005 | 0.012 | 0.168 |
 | null | C2 | 10 | 0.013 | 0.008 | 0.015 | 0.287 |
-| null | sparse+noise32-vs-sparse | 10 | -0.006 | -0.011 | -0.002 | -0.107 |
-| null | sparse+shufECG-vs-sparse | 10 | -0.008 | -0.012 | -0.005 | -0.156 |
-| null | sparse+ECG-vs-sparse+shufECG | 10 | 0.017 | 0.013 | 0.021 | 0.280 |
+| null | sparse+noise32-vs-sparse | 10 | -0.006 | -0.011 | -0.001 | -0.107 |
+| null | sparse+shufECG-vs-sparse | 10 | -0.008 | -0.011 | -0.005 | -0.156 |
+| null | sparse+ECG-vs-sparse+shufECG | 10 | 0.017 | 0.012 | 0.020 | 0.280 |
 | null | hdPS200+noise32-vs-hdPS200 | 10 | 0.003 | -0.002 | 0.008 | 0.068 |
 | null | hdPS200+shufECG-vs-hdPS200 | 10 | 0.006 | 0.001 | 0.009 | 0.127 |
 | null | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.007 | 0.004 | 0.010 | 0.184 |
 | phys_only | C1 | 10 | 0.013 | 0.008 | 0.016 | 0.296 |
 | phys_only | C2 | 10 | 0.011 | 0.008 | 0.014 | 0.288 |
-| phys_only | sparse+noise32-vs-sparse | 10 | 0.007 | 0.002 | 0.011 | 0.176 |
+| phys_only | sparse+noise32-vs-sparse | 10 | 0.007 | 0.002 | 0.012 | 0.176 |
 | phys_only | sparse+shufECG-vs-sparse | 10 | 0.003 | -0.002 | 0.006 | 0.081 |
 | phys_only | sparse+ECG-vs-sparse+shufECG | 10 | 0.009 | 0.007 | 0.013 | 0.235 |
 | phys_only | hdPS200+noise32-vs-hdPS200 | 10 | 0.007 | 0.002 | 0.013 | 0.187 |
 | phys_only | hdPS200+shufECG-vs-hdPS200 | 10 | 0.004 | -0.001 | 0.009 | 0.103 |
-| phys_only | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.007 | 0.002 | 0.013 | 0.206 |
+| phys_only | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.007 | 0.002 | 0.012 | 0.206 |
 | strong | C1 | 10 | 0.016 | 0.013 | 0.019 | 0.244 |
 | strong | C2 | 10 | 0.012 | 0.009 | 0.014 | 0.218 |
 | strong | sparse+noise32-vs-sparse | 10 | -0.005 | -0.010 | -0.001 | -0.071 |
-| strong | sparse+shufECG-vs-sparse | 10 | -0.007 | -0.011 | -0.004 | -0.108 |
-| strong | sparse+ECG-vs-sparse+shufECG | 10 | 0.023 | 0.021 | 0.027 | 0.318 |
-| strong | hdPS200+noise32-vs-hdPS200 | 10 | 0.005 | -0.000 | 0.011 | 0.098 |
-| strong | hdPS200+shufECG-vs-hdPS200 | 10 | 0.004 | -0.001 | 0.008 | 0.078 |
+| strong | sparse+shufECG-vs-sparse | 10 | -0.007 | -0.011 | -0.005 | -0.108 |
+| strong | sparse+ECG-vs-sparse+shufECG | 10 | 0.023 | 0.020 | 0.027 | 0.318 |
+| strong | hdPS200+noise32-vs-hdPS200 | 10 | 0.005 | 0.000 | 0.011 | 0.098 |
+| strong | hdPS200+shufECG-vs-hdPS200 | 10 | 0.004 | -0.002 | 0.008 | 0.078 |
 | strong | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.007 | 0.003 | 0.013 | 0.151 |
 
 ## I3 Within-trial paired bootstrap (200 replicates per trial)
@@ -172,6 +279,29 @@ Mean over trials of err(arm)² − err(comparator)² (negative = the first arm i
 | R+ | hdPS200+ECG64-vs-hdPS200 | 10 | 0.0089 | -0.0252 | 0.0233 | 0.5000 | -0.0003 | 0.0121 |
 | R+ | hdPS200+ECGpheno-vs-hdPS200 | 10 | -0.0074 | -0.0275 | 0.0236 | 0.6000 | -0.0101 | 0.0006 |
 
+## I5 Supervised SHD logits and second ECG encoder (PRESENT-SHD LVEF<40 CNN penultimate layer, 32 PCs); SHD-scored cohort
+
+| target | contrast | trials | mean_d_sqerr | lo | hi | share_trials_closer | loo_min | loo_max |
+|---|---|---|---|---|---|---|---|---|
+| RCT | C1 | 10 | 0.0058 | -0.0372 | 0.0292 | 0.7000 | -0.0062 | 0.0093 |
+| RCT | C2 | 10 | 0.0040 | -0.0441 | 0.0523 | 0.6000 | -0.0128 | 0.0118 |
+| RCT | sparse+SHD-vs-sparse | 10 | -0.0068 | -0.0443 | 0.0226 | 0.7000 | -0.0094 | -0.0027 |
+| RCT | sparse+ENC2-vs-sparse | 10 | 0.0075 | -0.0390 | 0.0264 | 0.2000 | 0.0025 | 0.0130 |
+| RCT | hdPS200+SHD-vs-hdPS200 | 10 | -0.0202 | -0.0423 | 0.0327 | 0.7000 | -0.0227 | -0.0144 |
+| RCT | hdPS200+ENC2-vs-hdPS200 | 10 | 0.0130 | -0.0384 | 0.0222 | 0.7000 | -0.0087 | 0.0189 |
+| R | C1 | 10 | 0.0102 | -0.0174 | 0.0172 | 0.4000 | 0.0011 | 0.0122 |
+| R | C2 | 10 | 0.0150 | -0.0251 | 0.0295 | 0.3000 | 0.0014 | 0.0176 |
+| R | sparse+SHD-vs-sparse | 10 | -0.0004 | -0.0149 | 0.0137 | 0.5000 | -0.0013 | 0.0012 |
+| R | sparse+ENC2-vs-sparse | 10 | 0.0058 | -0.0176 | 0.0143 | 0.5000 | 0.0019 | 0.0071 |
+| R | hdPS200+SHD-vs-hdPS200 | 10 | 0.0042 | -0.0212 | 0.0325 | 0.4000 | -0.0024 | 0.0096 |
+| R | hdPS200+ENC2-vs-hdPS200 | 10 | 0.0214 | -0.0272 | 0.0214 | 0.3000 | 0.0032 | 0.0249 |
+| R+ | C1 | 10 | -0.0016 | -0.0182 | 0.0178 | 0.5000 | -0.0034 | 0.0005 |
+| R+ | C2 | 10 | 0.0037 | -0.0297 | 0.0230 | 0.6000 | -0.0011 | 0.0070 |
+| R+ | sparse+SHD-vs-sparse | 10 | 0.0017 | -0.0184 | 0.0152 | 0.6000 | -0.0005 | 0.0034 |
+| R+ | sparse+ENC2-vs-sparse | 10 | -0.0032 | -0.0163 | 0.0150 | 0.8000 | -0.0048 | -0.0013 |
+| R+ | hdPS200+SHD-vs-hdPS200 | 10 | 0.0058 | -0.0232 | 0.0258 | 0.5000 | 0.0008 | 0.0094 |
+| R+ | hdPS200+ENC2-vs-hdPS200 | 10 | 0.0074 | -0.0267 | 0.0186 | 0.5000 | 0.0006 | 0.0104 |
+
 ## I6 Multiverse (4 PS models × 5 hdPS split seeds × 10 estimators = 200 specifications; imputation 1)
 
 Per specification: mean over trials of |log HR − target|; difference first arm − comparator (negative favours the first arm).
@@ -213,21 +343,21 @@ Per specification: mean over trials of |log HR − target|; difference first arm
 
 ## I7 Exact sign-flip permutation (frozen phase-2 estimates vs RCT) and leave-one-trial-out
 
-| contrast | trials | mean_d_sqerr | p_signflip | loo_min | loo_max | trials_ecg_closer |
-|---|---|---|---|---|---|---|
-| C1 | 10 | 0.0058 | 0.9414 | -0.0062 | 0.0093 | 7 |
-| C2 | 10 | 0.0040 | 0.9531 | -0.0128 | 0.0118 | 6 |
+| contrast | trials | mean_d_sqerr | p_signflip | loo_min | loo_max | trials_ecg_closer | p_sign_test_supplementary |
+|---|---|---|---|---|---|---|---|
+| C1 | 10 | 0.0058 | 0.9414 | -0.0062 | 0.0093 | 7 | 0.3438 |
+| C2 | 10 | 0.0040 | 0.9531 | -0.0128 | 0.0118 | 6 | 0.7539 |
 
 **Detectability.** Trials needed to detect the plasmode-expected reduction in |log HR − RCT| (paired t, two-sided α = 0.05, 80% power), using the between-trial SD of the frozen phase-2 paired differences:
 
 | contrast | scenario | expected_gain | sd_paired_abs_diff | trials_needed |
 |---|---|---|---|---|
-| C1 | base | 0.011 | 0.076 | 408.000 |
-| C1 | phys_only | 0.013 | 0.076 | 289.000 |
-| C1 | strong | 0.016 | 0.076 | 171.000 |
-| C2 | base | 0.010 | 0.083 | 545.000 |
-| C2 | phys_only | 0.011 | 0.083 | 457.000 |
-| C2 | strong | 0.012 | 0.083 | 405.000 |
+| C1 | base | 0.005 | 0.076 | 2057.000 |
+| C1 | phys_only | 0.000 | 0.076 | 49715294270.000 |
+| C1 | strong | 0.008 | 0.076 | 769.000 |
+| C2 | base | -0.000 | 0.083 | inf |
+| C2 | phys_only | 0.007 | 0.083 | 1060.000 |
+| C2 | strong | 0.001 | 0.083 | 64134.000 |
 
 ## I9 E-values for the disagreement with the RCT (HR ratio; rare-outcome approximation)
 
@@ -353,14 +483,23 @@ Agreement with the RCT after empirical calibration of the primary estimates:
 | M2 sparse+ECG | 10 | 0.187 | 4 | 9 | 1.437 | 0.207 | 0.800 |
 | M0 unadjusted | 10 | 0.281 | 2 | 6 | 2.166 | 0.351 | 0.500 |
 
+## Stratified by trial role (physiology vs control)
+
+| role | trials | contrast | plasmode_rs_bias_reduction | pl_lo | pl_hi | boot_RCT_d | boot_RCT_lo | boot_RCT_hi | boot_R+_d | boot_R+_lo | boot_R+_hi | multiverse_share_rct |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| physiology | 5 | C1 | 0.0104 | 0.0029 | 0.0130 | -0.0055 | -0.0452 | 0.0199 | 0.0014 | -0.0241 | 0.0164 | 0.9750 |
+| physiology | 5 | C2 | -0.0068 | -0.0110 | -0.0021 | -0.0026 | -0.0389 | 0.0162 | -0.0022 | -0.0431 | 0.0219 | 0.8650 |
+| control | 5 | C1 | -0.0010 | -0.0062 | 0.0068 | 0.0171 | -0.0515 | 0.0631 | -0.0047 | -0.0259 | 0.0298 | 0.5000 |
+| control | 5 | C2 | 0.0059 | -0.0002 | 0.0099 | 0.0106 | -0.0712 | 0.1058 | 0.0096 | -0.0332 | 0.0476 | 0.5900 |
+
 ## Pre-specified decision rules
 
-- C1 rule 1 (plasmode base: bias-reduction CI excludes 0, > 0): **met**
-- C1 rule 1b (plasmode phys_only, supportive): **met**
-- C1 rule 3 (plasmode base: less biased than shuffled-ECG placebo): **met**
-- C2 rule 1 (plasmode base: bias-reduction CI excludes 0, > 0): **met**
-- C2 rule 1b (plasmode phys_only, supportive): **met**
-- C2 rule 3 (plasmode base: less biased than shuffled-ECG placebo): **met**
+- C1 rule 1 (plasmode [rs] base: bias-reduction CI excludes 0, > 0): **met**
+- C1 rule 1b (plasmode [rs] phys_only, supportive): **not met**
+- C1 rule 3 (plasmode [rs] base: less biased than shuffled-ECG placebo): **met**
+- C2 rule 1 (plasmode [rs] base: bias-reduction CI excludes 0, > 0): **not met**
+- C2 rule 1b (plasmode [rs] phys_only, supportive): **met**
+- C2 rule 3 (plasmode [rs] base: less biased than shuffled-ECG placebo): **not met**
 - C1 rule 2 (bootstrap vs RCT: CI < 0): **not met**
 - C1 rule 2 (bootstrap vs R+: CI < 0): **not met**
 - C1 rule 3 (beats shuffled-ECG placebo vs R+: CI < 0): **not met**

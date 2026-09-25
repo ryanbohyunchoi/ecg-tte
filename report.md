@@ -281,6 +281,135 @@ there is little power. Script: `scripts/summarize_phase2_se.py`. Tables:
 
 ---
 
+## 5b. Exploratory robustness program (protocol v1.3, 2026-09-25)
+
+**Status.** Registered in `docs/PROTOCOL_V1_3_AMENDMENT.md` (tag `protocol-v1.3`) after phase 2 and
+before any of these analyses ran. Seven deviations are dated and logged in that file. The frozen
+phase-2 results in §5 are unchanged. Everything here is exploratory. CIPHER-EHR was deferred (Ryan).
+
+- **Full tables:**
+  - `docs/V13_SUMMARY_PRIMARY.md` (10 frozen primary trials)
+  - `docs/V13_SUMMARY_EXTENSION.md` (8 new trials)
+  - `docs/V13_SUMMARY_COMBINED.md` (18 trials)
+- **Scripts:** `scripts/v13_*.py`.
+- **Code check:** the v1.3 loader reproduces the saved phase-2 PS logits exactly (max difference
+  about 1e-11). Its phase-2 re-estimates match the frozen estimates to within 4e-16.
+
+**Contrasts.**
+- C1 = sparse + ECG vs sparse.
+- C2 = hdPS200 + ECG vs hdPS200.
+
+**What was run.**
+- **I1 Plasmode.** Known true effect, 5 scenarios, 200 replicates per trial.
+- **I2–I3 Paired bootstrap.** 200 replicates per trial; hdPS, PS and matching refitted in each.
+  Three targets:
+  - the RCT, with its sampling error propagated;
+  - the clinical reference R;
+  - a new physiology reference R+ (R plus every echo domain, NT-proBNP and labs).
+- **I4 Placebos.** 32 noise columns, and the real ECG shuffled between patients.
+- **I5 Dose response and alternative ECG inputs.**
+  - 8, 16, 32 or 64 PCs, and 32 PCs + phenotypes.
+  - The PRESENT-SHD logits.
+  - A second encoder: the penultimate layer (3,840 dimensions → 32 PCs) of the PRESENT-SHD
+    LVEF < 40 CNN.
+- **I6 Multiverse.** 200 specifications: 4 PS models × 5 hdPS splits × 10 estimators.
+- **I7 Tests across trials.** Exact sign-flip permutation and leave-one-trial-out.
+- **I8 Empirical calibration.** 25 negative-control outcomes.
+- **I9 E-values.**
+- **Part II Closer to the trial.**
+  - Transport to the RCT's published Table 1 (entropy balancing; sources in `docs/v13/rct_facts.json`).
+  - Per-protocol analysis with IPCW. Deviations defined three ways: a grace period of 365, 180 or
+    730 days, or switching only.
+  - A 90-day run-in landmark.
+  - Primary-billing-diagnosis hospitalisations only.
+  - Dose: not feasible, because orders record the ingredient only.
+- **Part III New trials.** 13 new RCT emulations were specified; benchmarks were checked against
+  the primary papers.
+  - **8 passed every gate:**
+    - physiology: EMPEROR-Preserved, EAST-AFNET 4, CABANA;
+    - control: ONTARGET, VALUE, ASCOT-BPLA, EMPA-REG OUTCOME, CAROLINA.
+  - **5 were too small:** CASTLE-AF, ENGAGE AF, DCP, INVEST, PARADISE-MI.
+
+**Correction found during the run (deviation 6).** The registered plasmode kept each arm's matched
+set fixed across replicates, so chance imbalance in that one sample showed up as "bias". Even the
+correctly specified clinical PS showed |bias| up to 0.08 when the true effect was null. The fixed
+version made the ECG look 20–30% better. The corrected version resamples the cohort and refits
+the PS and matching in every replicate (Franklin 2014). Only the corrected version is used below.
+
+### Results (18 trials unless stated)
+
+| Question | C1: sparse + ECG vs sparse | C2: hdPS200 + ECG vs hdPS200 |
+|---|---|---|
+| **Plasmode, known truth, base scenario:** reduction in \|bias\| (log HR), 95% CI | **+0.004 (0.002 to 0.006)**, about 8% of sparse's bias; beats the shuffled-ECG placebo (+0.007) | −0.002 (−0.005 to 0.000); no gain |
+| Plasmode, physiology trials only (n = 8) | **+0.009 (0.004 to 0.011)** | −0.008 (−0.011 to −0.004); slight harm |
+| Plasmode, only physiology confounds (the phys_only scenario) | 0.000 (−0.002 to 0.002) | +0.003 (0.000 to 0.005) |
+| **Real data, paired bootstrap vs RCT:** mean Δ squared error | −0.001 (−0.044 to 0.005) | −0.002 (−0.030 to 0.028) |
+| Paired bootstrap vs RCT, physiology trials only | **−0.007 (−0.079 to −0.002)** | −0.004 (−0.031 to 0.012) |
+| Paired bootstrap vs R+ (no RCT design error) | −0.001 (−0.016 to 0.008) | +0.002 (−0.019 to 0.013) |
+| Trials in which the ECG arm is closer to the RCT | **14/18** (supplementary sign test p = 0.03; registered sign-flip p = 0.99) | 11/18 (p = 0.48) |
+| Multiverse: specifications favouring the ECG, vs RCT (mean \|Δ\|) | **100%** | 86% |
+| Multiverse: specifications favouring the ECG, vs R+ (mean \|Δ\|) | 83% | 59% |
+| Trials needed to detect the plasmode-sized gain with RCT benchmarks | about 1,450 (base) / 540 (strong) | not detectable (no gain) |
+
+**Other findings.**
+
+- **Placebos.**
+  - Adding pure noise or shuffled ECG to sparse did not help, and in the plasmode it slightly
+    increased bias.
+  - Real ECG beat shuffled ECG in the plasmode, but not in the real-data bootstrap.
+- **Dose response and alternative ECG inputs, vs the RCT.**
+  - PRESENT-SHD logits added to sparse: −0.017 (−0.048 to 0.002).
+  - The second encoder added to sparse: −0.010 (−0.045 to 0.001).
+  - Both point estimates favour the ECG, but neither is significant, and neither holds against R+.
+  - There is no clear dose response across 8–64 PCs.
+- **Negative-control calibration.**
+  - Adding the ECG did not reduce systematic error in the negative controls. Change in σ: C1
+    −0.006, C2 +0.006; both p > 0.6.
+  - Calibration widened the intervals but did not improve any arm's agreement with the RCT.
+- **E-values.** The median E-value for the disagreement between the emulation and the RCT is
+  about 1.5 in every arm. Modest unmeasured confounding, or design error, could explain the gaps.
+- **Part II: closer to the trial design.**
+  - No design refinement improved overall agreement.
+  - Transport to the RCT's Table 1, strict primary diagnoses and the 90-day run-in all made
+    agreement worse. They lose events and effective sample size, and SBP targets such as LIFE's
+    mean of 174 mmHg cannot be reached.
+  - One consistent pattern: in the on-treatment analyses (IPCW, switch-only or 730-day grace
+    periods), hdPS200 + ECG had the smallest error of all arms, including the clinical PS.
+
+    | Arm | Mean \|Δlog HR\| | τ |
+    |---|---|---|
+    | hdPS200 + ECG | 0.138–0.149 | 0.118–0.126 |
+    | hdPS200 | 0.167–0.176 | – |
+    | Clinical PS | 0.149–0.154 | – |
+
+  - Per-protocol here rests on order records without days-supply. More than half of initiators
+    have no re-order within a year.
+
+**Bottom line of v1.3.**
+1. **Measurable, but small.** Where the truth is known, adding the ECG to a sparse PS removes a
+   small but real amount of bias, about 8% overall and about 20% in physiology trials. It does
+   nothing on top of hdPS.
+2. **Consistent in direction, not significant on the registered tests.** Against the RCTs, sparse
+   + ECG moves estimates in the right direction consistently:
+   - 14 of 18 trials;
+   - every one of the 200 analysis specifications;
+   - bootstrap CI excluding 0 in the physiology trials.
+
+   The registered magnitude-based tests are not significant, and nothing holds against the
+   within-data physiology reference R+.
+3. **RCT benchmarking can't adjudicate a gain this size.** A gain of this size (≈ 0.004–0.009
+   log HR) is far below what benchmarking against RCTs can detect. Differences in design between
+   the RCTs and the emulations, about 0.12–0.15 log HR even for the best PS, swamp it.
+4. **None of the pre-specified decision rules for "ECG improves" was fully met.** C1 met rules 1
+   (plasmode), 3 (placebo, plasmode) and 4a (multiverse). It failed rule 2 (bootstrap), rule 3 on
+   real data, and rule 4b (leave-one-out). The correct claim is **partial**. The ECG's
+   demonstrable value is in balancing measured physiology (phase 1) and a small reduction in bias
+   for sparse PSs. Improved agreement with RCTs is not demonstrated.
+5. **The mechanism is not what we assumed.** In the plasmode, the ECG's gain disappears when only
+   the core-9 physiology confounds (the phys_only scenario). So the gain there does not come
+   from proxying the core-9 values, many of which are imputed. The mechanism behind the small
+   gain is unresolved.
+
 ## 6. Interpretation and limitations
 
 1. **What the paper can claim.**
