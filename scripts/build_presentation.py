@@ -26,6 +26,13 @@ DOMAINS = [("phys_obs", "Core-9 physiology (measured)"), ("LVSTRUCT", "Echo: LV 
            ("DIAST", "Echo: diastolic / LA"), ("RVPULM", "Echo: RV / pulmonary"), ("VALVE", "Echo: valves"),
            ("AORTA", "Echo: aortic root"), ("BNP", "NT-proBNP"), ("LAB", "Other labs"), ("meds", "Medications"),
            ("util", "Healthcare use"), ("poolB", "Rest of coded record"), ("prog_full", "Prognostic score")]
+V14_NOTES = [
+    "<b>Thin coded record → the ECG helps, and it shows up against the RCTs (hypothesis B supported).</b> When 50–90% of each patient's recorded codes are deleted at random (same patients, same ECGs), the plasmode bias reduction from adding the ECG to sparse grows from +0.004 (codes intact) to +0.013, +0.016 and +0.022 log HR, and on the <i>real</i> data sparse+ECG moves significantly closer to both the RCTs (e.g. 75% dropout: −0.056, 95% CI −0.079 to −0.016) and the physiology reference R+ (−0.018, −0.034 to −0.005). On top of hdPS the gain is smaller (plasmode +0.005 to +0.010; real-data CIs include 0).",
+    "<b>Naturally data-poor patients (hypothesis A) did not show it.</b> The lowest code-density tertile had no larger ECG gain for sparse; for hdPS the plasmode gain was larger in the low tertile (+0.010, CI 0.0005–0.019) but not in the real-data bootstrap. Patients with few codes also tend to be less confounded, so natural thinness is not the same as losing information.",
+    "<b>No echo vs echo (hypothesis C): no difference.</b> The sparse+ECG gain is similar whether or not the patient had an echo (+0.011 vs +0.009).",
+    "<b>Echo physiology as the hidden confounder (hypothesis D): little confounding to remove.</b> When only demographics, diagnoses and measured echo physiology drive the outcome, sparse is already about as unbiased as the clinical PS (|bias| 0.033 vs 0.036), so there is nothing for the ECG to fix. Conditional on coded diagnoses, the cardiac structure the ECG captures is a weak confounder in these cohorts — which explains why large balance gains (phase 1) translate into small bias reductions.",
+    "<b>HF-hospitalisation outcome (hypothesis E): small.</b> Plasmode gains of +0.001 to +0.005; real-data bootstrap vs R+ not significant.",
+]
 FAILED = {"castle_af": "ablation arm 149 at cohort", "engage_af": "edoxaban arm 70 at cohort", "dcp": "smaller arm with ECG 255",
           "invest": "smaller arm with ECG 224", "paradise_mi": "smaller arm with ECG 296",
           "dionysos": "not emulable (outcome); balance only", "paradigm_hf": "new-user design; sensitivity only (sequential design used)"}
@@ -109,7 +116,7 @@ def main():
             nco=recs(csv(V13 / "nco_systematic_error_combined.csv")),
             rules=recs(csv(V13 / "decision_rules_combined.csv").rename(columns={"Unnamed: 0": "rule", "0": "met"})
                        if csv(V13 / "decision_rules_combined.csv") is not None else None)),
-        v14=dict(plasmode=recs(csv(V14 / "plasmode_contrasts.csv")), boot=recs(csv(V14 / "bootstrap_contrasts.csv")),
+        v14=dict(notes=V14_NOTES, plasmode=recs(csv(V14 / "plasmode_contrasts.csv")), boot=recs(csv(V14 / "bootstrap_contrasts.csv")),
                  hypotheses=recs(csv(V14 / "hypotheses.csv")), strata=recs(csv(V14 / "strata.csv"))),
     )
     html = TEMPLATE.replace("/*DATA*/", "const DATA = " + json.dumps(DATA, default=float).replace("</", "<\\/") + ";")

@@ -420,6 +420,56 @@ the PS and matching in every replicate (Franklin 2014). Only the corrected versi
    from proxying the core-9 values, many of which are imputed. The mechanism behind the small
    gain is unresolved.
 
+## 5c. Where does the ECG add information? (protocol v1.4, 2026-09-25, exploratory)
+
+**Status.** Registered in `docs/PROTOCOL_V1_4_AMENDMENT.md` (tag `protocol-v1.4`) before running.
+Covers all 18 trials. One deviation is logged: trial–arm cells with fewer than 80% successful
+replicates are dropped from the summaries (the CAROLINA echo subgroup).
+
+**Where the results are.**
+- Tables: `docs/V14_SUMMARY.md`.
+- Interactive page: `docs/presentation/ecg_tte_results.html`, section 8.
+
+**Plasmode bias reduction** from adding the ECG to sparse (C1), base scenario. Positive values
+mean the ECG arm is less biased.
+
+| Setting | C1 bias reduction (log HR, 95% CI) | Real data: C1 vs RCT, mean Δ squared error | Real data: C1 vs R+ |
+|---|---|---|---|
+| Codes intact (v1.3) | +0.004 (0.001 to 0.006) | −0.001 (−0.044 to 0.005) | −0.001 (−0.016 to 0.008) |
+| 50% of codes deleted | **+0.013 (0.010 to 0.015)** | **−0.039 (−0.065 to −0.006)** | −0.013 (−0.024 to 0.002) |
+| 75% of codes deleted | **+0.016 (0.014 to 0.018)** | **−0.056 (−0.079 to −0.016)** | **−0.018 (−0.034 to −0.005)** |
+| 90% of codes deleted | **+0.022 (0.020 to 0.025)** | **−0.044 (−0.092 to −0.028)** | **−0.019 (−0.045 to −0.009)** |
+| Lowest code-density tertile | −0.003 (−0.009 to 0.002) | +0.022 (−0.079 to 0.055) | +0.009 (−0.041 to 0.047) |
+| No echo (index 2016 or later) | +0.011 (0.008 to 0.015) | −0.025 (−0.066 to 0.039) | +0.002 (−0.036 to 0.038) |
+| Echo available (index 2016 or later) | +0.009 (0.002 to 0.012) | +0.006 (−0.066 to 0.065) | −0.007 (−0.085 to 0.082) |
+| HF-hospitalisation outcome | +0.001 (−0.001 to 0.003) | – | −0.004 (−0.008 to 0.004) |
+
+**Hypotheses.**
+- **B (codes deleted): supported, and the only place the gain shows up on real data.**
+  - In the plasmode, the ECG's benefit grows steadily as the coded record is thinned. At 90%
+    deletion, sparse's |bias| goes from 0.147 to 0.124 with the ECG added.
+  - On the real data, sparse + ECG then moves significantly closer to both the RCTs and R+.
+  - On top of hdPS the gain is smaller: plasmode +0.005 to +0.010, and the real-data CIs include 0.
+- **A (naturally data-poor patients): not supported for sparse.** For hdPS the plasmode gain was
+  larger in the low-density tertile, +0.010 (0.0005 to 0.019). Patients with few codes are also
+  less confounded, so having a naturally thin record is not the same as losing information.
+- **C (no echo): not supported.** The gains are similar with and without an echo.
+- **D (echo physiology as the hidden confounder): mostly not supported, and it explains why.**
+  When only demographics, diagnoses and measured echo physiology drive the outcome, sparse is
+  already about as unbiased as the clinical PS (|bias| 0.033 vs 0.036). Once coded diagnoses are
+  adjusted for, the cardiac structure the ECG captures is a weak confounder in these cohorts. So
+  the large balance gains of phase 1 translate into small reductions in bias.
+  - C1 was positive in `echo_base` and `echo_strong`.
+  - For C2, adding the ECG to hdPS increased bias in `echo_base`: −0.017 (−0.025 to −0.006).
+- **E (HF-hospitalisation outcome): small.** Plasmode gains of +0.001 to +0.005; the real-data
+  bootstrap vs R+ was not significant.
+
+**Implication.** The ECG's added value is as a substitute for coded information that is missing.
+When the coded record is intact, as in this large, data-rich health system, it has little to add.
+When much of the record is missing, the ECG's contribution is large enough to show up against the
+RCTs. The natural settings to test next are external or data-poor sites: new patients, claims-poor
+systems, or cross-system transport.
+
 ## 6. Interpretation and limitations
 
 1. **What the paper can claim.**

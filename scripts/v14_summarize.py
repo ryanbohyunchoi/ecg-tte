@@ -51,7 +51,9 @@ def plasmode_errors():
 def reduction(E, pool, sc, a2, a1, rng, boot=True, only=None):
     """Mean over trials of |bias(a1)| - |bias(a2)| (positive = a2 less biased); per-trial rep resampling."""
     trials = sorted({k[0] for k in E if k[1] == pool and k[2] == sc and k[3] in (a1, a2)} & (set(only) if only else set(k[0] for k in E)))
-    pairs = [(E[(t, pool, sc, a1)], E[(t, pool, sc, a2)]) for t in trials if (t, pool, sc, a1) in E and (t, pool, sc, a2) in E]
+    ok = lambda v: np.isfinite(v).mean() >= 0.8  # deviation 1: drop trial-arm cells with < 80% successful replicates
+    keep = [t for t in trials if (t, pool, sc, a1) in E and (t, pool, sc, a2) in E and ok(E[(t, pool, sc, a1)]) and ok(E[(t, pool, sc, a2)])]
+    pairs = [(E[(t, pool, sc, a1)], E[(t, pool, sc, a2)]) for t in keep]
     if not pairs:
         return None
     est = np.mean([abs(np.nanmean(x)) - abs(np.nanmean(y)) for x, y in pairs])
@@ -59,7 +61,7 @@ def reduction(E, pool, sc, a2, a1, rng, boot=True, only=None):
     if boot:
         bs = np.array([np.mean([abs(np.nanmean(x[ix])) - abs(np.nanmean(y[ix]))
                                 for x, y in pairs for ix in [rng.integers(0, len(x), len(x))]]) for _ in range(B)])
-    return dict(trials=len(pairs), est=est, bs=bs, names=[t for t in trials if (t, pool, sc, a1) in E and (t, pool, sc, a2) in E])
+    return dict(trials=len(pairs), est=est, bs=bs, names=keep)
 
 
 def boot_d(Bt, pool, tgt, a2, a1, only=None):
@@ -145,8 +147,10 @@ def main():
 
     def pl_diff(p1, p2, sc, cn):
         a2, a1 = {c: (x, y) for c, x, y in CON}[cn]
-        t1 = {k[0] for k in E if k[1] == p1 and k[2] == sc and k[3] == a2}
-        t2 = {k[0] for k in E if k[1] == p2 and k[2] == sc and k[3] == a2}
+        good = lambda p, t: all(np.isfinite(E[(t, p, sc, a)]).mean() >= 0.8 for a in (a1, a2) if (t, p, sc, a) in E) and \
+            all((t, p, sc, a) in E for a in (a1, a2))
+        t1 = {k[0] for k in E if k[1] == p1 and k[2] == sc and k[3] == a2 and good(p1, k[0])}
+        t2 = {k[0] for k in E if k[1] == p2 and k[2] == sc and k[3] == a2 and good(p2, k[0])}
         common = sorted(t1 & t2)
         if not common:
             return None

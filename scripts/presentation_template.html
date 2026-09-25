@@ -484,8 +484,8 @@ document.getElementById('dtgt').onchange=drawDose; drawDose();
   const box=document.getElementById('v14box'), H=DATA.v14.hypotheses||[], PL=DATA.v14.plasmode||[], BT=DATA.v14.boot||[];
   if(!H.length){ box.innerHTML='<div class="note">v1.4 results are not available yet in this build — re-run <code>scripts/build_presentation.py</code> after <code>v14_summarize.py</code>.</div>'; document.getElementById('v14sum').textContent='pending'; return; }
   const sup=H.filter(h=>h.supported).length;
-  document.getElementById('v14sum').innerHTML = `<span class="pill ${sup? 'part':'no'}">${sup}/${H.length} tests supported</span> see section 8`;
-  let html = `<h3>Hypothesis tests</h3><table id="t-hyp"></table>`;
+  document.getElementById('v14sum').innerHTML = `<span class="pill part">yes, when codes are missing</span> Deleting 50–90% of coded data makes the ECG's gain grow and become detectable against the RCTs; natural data-poor, no-echo and HF-outcome settings show little. (${sup}/${H.length} pre-specified tests supported; section 8)`;
+  let html = `<h3>Key findings</h3>` + (DATA.v14.notes||[]).map(n=>`<div class="key">${n}</div>`).join('') + `<h3>Hypothesis tests</h3><table id="t-hyp"></table>`;
   html += `<h3>Plasmode bias reduction by setting</h3><div class="controls"><label>Contrast <select id="v14c"><option>C1</option><option>C2</option></select></label><label>Scenario <select id="v14s"></select></label></div><div id="v14pl"></div>`;
   html += `<h3>Real-data bootstrap by setting</h3><div class="controls"><label>Target <select id="v14t"><option value="R+">R+</option><option value="RCT">RCT</option></select></label></div><div id="v14bt"></div>`;
   box.innerHTML=html;

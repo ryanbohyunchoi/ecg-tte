@@ -96,3 +96,9 @@ v1.4 asks whether the ECG's contribution grows in the settings where it should m
 ## Deviation log
 
 (dated entries, before summaries)
+- **2026-09-25, deviation 1 (summaries).** In the small CAROLINA echo subgroups, the hdPS200 + ECG
+  Cox model failed in most replicates, because there were fewer than 5 events or no events in one
+  arm. The NaNs from that single trial made the cross-trial means undefined. Plasmode summaries
+  now exclude any trial–arm cell with fewer than 80% successful replicates, and the table reports
+  the number of trials each contrast used. Pool-vs-pool differences use only the trials valid in
+  both pools. This was decided before looking at the affected contrasts, which were blank.
