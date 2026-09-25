@@ -349,6 +349,17 @@ def main():
             rows.append(dict(contrast=lab, trials=int(d.notna().sum()), mean_d_sqerr=obs, p_signflip=p, loo_min=min(loo), loo_max=max(loo),
                              trials_ecg_closer=int((d < 0).sum())))
         print(md(pd.DataFrame(rows), 4) + "\n")
+        if S is not None:  # detectability: plasmode-expected gain vs between-trial noise of the paired |Δ| difference
+            print("**Detectability.** Trials needed to detect the plasmode-expected reduction in |log HR − RCT| (paired t, "
+                  "two-sided α = 0.05, 80% power), using the between-trial SD of the frozen phase-2 paired differences:\n")
+            dr = []
+            for lab, a2, a1 in CONTRASTS:
+                dabs = ((X[a2] - br).abs() - (X[a1] - br).abs()).dropna()
+                for scen in ("base", "phys_only", "strong"):
+                    dl = C[(C.scenario == scen) & (C.contrast == lab)].bias_reduction.iloc[0]
+                    k = ((1.96 + 0.84) * dabs.std(ddof=1) / dl) ** 2 if dl > 0 else np.inf
+                    dr.append(dict(contrast=lab, scenario=scen, expected_gain=dl, sd_paired_abs_diff=dabs.std(ddof=1), trials_needed=np.ceil(k)))
+            print(md(pd.DataFrame(dr), 3) + "\n")
         print("## I9 E-values for the disagreement with the RCT (HR ratio; rare-outcome approximation)\n")
         ev = []
         for arm in LAB:
