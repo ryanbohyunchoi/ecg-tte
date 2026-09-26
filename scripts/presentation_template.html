@@ -215,6 +215,10 @@ code { background:#f1f3f7; padding:1px 4px; border-radius:3px; font-size:12.5px;
   <h3>Paired comparisons with valid inference (exact sign-flip across trials)</h3>
   <table id="t-ptests"></table>
   <details><summary>Blinded closeness rating (RCT-DUPLICATE rubric)</summary><table id="t-close"></table></details>
+  <h3>Sensitivity analysis: CLMBR EHR-foundation-model embeddings (with and without ECG)</h3>
+  <p class="small">CLMBR-T code-only patient embeddings (64 PCs) — a representation of the full coded record, not new information. Full-cohort estimates, 18 trials; Pearson r with Fisher 95% CI as in RCT-DUPLICATE.</p>
+  <table id="t-clmbr"></table>
+  <table id="t-clmbr-p"></table>
   <div class="key"><b>How to read this.</b> RCT-DUPLICATE reported agreement descriptively across several metrics and found it depended mostly on how closely the design could be emulated (r 0.93 in close vs 0.53 in other emulations). Our panel shows the same: the clinical PS agrees very well in the 5 blinded-close trials. The ECG's measurable contribution is a reduction in <i>excess</i> disagreement for PSs lacking clinical detail — sparse φ 4.7 → 3.4 (sign-flip p = 0.024 on precision-standardised disagreement), ECG alone vs no adjustment p = 0.002 — concentrated in trials that are not closely emulated.</div>
 </section>
 
@@ -533,6 +537,15 @@ document.getElementById('dtgt').onchange=drawDose; drawDose();
   table('t-close',[{label:"Trial",val:r=>r.k},{label:"In-hospital start",val:r=>yn(r.in_hospital_start)},{label:"Responder run-in",val:r=>yn(r.responder_run_in)},
     {label:"Baseline therapy discontinued",val:r=>yn(r.baseline_therapy_discontinuation)},{label:"Delayed effect, long follow-up",val:r=>yn(r.delayed_effect_long_followup)},
     {label:"Comparator",val:r=>String(r.comparator_emulation)},{label:"Outcome",val:r=>String(r.outcome_emulation)},{label:"Close",val:r=>r.close_emulation?1:0,fmt:r=>`<span class="pill ${r.close_emulation?'yes':'no'}">${r.close_emulation?'close':'not close'}</span>`}], rows);
+})();
+
+// ---------- CLMBR
+(function(){ const c=DATA.clmbr||{};
+  table('t-clmbr',[{label:"PS",val:r=>r.arm},{label:"Pearson r (95% CI)",val:r=>r.pearson_r,fmt:r=>`${f2(r.pearson_r)} (${f2(r.r_lo)}–${f2(r.r_hi)})`,num:true},{label:"Spearman",val:r=>r.spearman,fmt:r=>f2(r.spearman),num:true},
+    {label:"Estimate agreement",val:r=>r.estimate_agreement,fmt:r=>pct(100*r.estimate_agreement),num:true},{label:"Std-difference agreement",val:r=>r.std_diff_agreement,fmt:r=>pct(100*r.std_diff_agreement),num:true},
+    {label:"Ratio of ratios",val:r=>r.ratio_of_ratios,fmt:r=>f2(r.ratio_of_ratios),num:true},{label:"Dispersion φ",val:r=>r.dispersion_phi,fmt:r=>f2(r.dispersion_phi),num:true},{label:"Mean |Δlog HR|",val:r=>r.mean_abs_dlog,fmt:r=>f3(r.mean_abs_dlog),num:true}], (c.panel||[]).slice());
+  table('t-clmbr-p',[{label:"Comparison",val:r=>r.comparison},{label:"Closer",val:r=>r.closer},{label:"Mean Δ|log HR| (sign-flip p)",val:r=>r.mean_diff_abs,fmt:r=>`${f3(r.mean_diff_abs)} (p=${f3(r.p_abs)})`,num:true},
+    {label:"Mean Δz² (sign-flip p)",val:r=>r.mean_diff_z2,fmt:r=>`${f2(r.mean_diff_z2)} (p=${f3(r.p_z2)})`,num:true},{label:"Δ Pearson r (95% CI, trial resampling)",val:r=>r.diff_pearson_r,fmt:r=>`${f2(r.diff_pearson_r)} (${f2(r.r_diff_lo)} to ${f2(r.r_diff_hi)})`,num:true}], (c.paired||[]).slice());
 })();
 
 // ---------- rules

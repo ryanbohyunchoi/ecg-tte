@@ -129,6 +129,7 @@ def main():
             nco=recs(csv(V13 / "nco_systematic_error_combined.csv")),
             rules=recs(csv(V13 / "decision_rules_combined.csv").rename(columns={"Unnamed: 0": "rule", "0": "met"})
                        if csv(V13 / "decision_rules_combined.csv") is not None else None)),
+        clmbr=dict(panel=recs(csv(V14 / "clmbr_panel.csv")), paired=recs(csv(V14 / "clmbr_paired.csv"))),
         paired_tests=pt, panel=dict(all=recs(csv(V14 / "panel_all.csv")), close=recs(csv(V14 / "panel_close.csv")), notclose=recs(csv(V14 / "panel_not.csv"))),
         closeness=json.load(open(V14 / "closeness_rating.json")) if (V14 / "closeness_rating.json").exists() else {},
         direction=recs(csv(V14 / "direction_differences.csv")),

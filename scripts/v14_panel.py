@@ -88,8 +88,11 @@ def panel(D):
         r = np.corrcoef(b, rb)[0, 1]
         loo = [np.corrcoef(np.delete(b, i), np.delete(rb, i))[0, 1] for i in range(len(b))]
         mu, se, Q, I2 = dl(b - rb, s ** 2 + rs ** 2)
+        from scipy.stats import spearmanr
+        zf, sef = np.arctanh(r), 1 / np.sqrt(max(len(b) - 3, 1))
         out.append(dict(arm=LAB[a], trials=len(g), significance_agreement=sig_agree, estimate_agreement=est, std_diff_agreement=np.mean(np.abs(z) < 1.96),
-                        pearson_r=r, r_loo_min=min(loo), r_loo_max=max(loo), kappa=kappa(ce, cr),
+                        pearson_r=r, r_fisher_lo=np.tanh(zf - 1.96 * sef), r_fisher_hi=np.tanh(zf + 1.96 * sef), spearman=spearmanr(b, rb).statistic,
+                        r_loo_min=min(loo), r_loo_max=max(loo), kappa=kappa(ce, cr),
                         ratio_of_ratios=np.exp(mu), ror_lo=np.exp(mu - 1.96 * se), ror_hi=np.exp(mu + 1.96 * se), I2=I2,
                         dispersion_phi=Q / (len(g) - 1), mean_abs_dlog=np.mean(np.abs(b - rb))))
     return pd.DataFrame(out)
