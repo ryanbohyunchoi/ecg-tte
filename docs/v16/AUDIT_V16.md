@@ -248,3 +248,24 @@ The per-trial fold-seed SD of the C-statistic (~0.003) is of the same order as t
 5. State the trial dependence explicitly. Rosters overlap by up to 82%, and there are 10 comparator clusters. Give cluster-level p-values for headline cells, and call halves "within-trial split halves", not replication.
 6. Note the minor held-out residual overlaps (pool-B ICD roots; clinical EF/eGFR/BMI proxies) and the demo-PS tie-breaking nondeterminism (\|Δlog HR\| ≤ 0.006).
 7. Audit S2 once `docs/v16/S2_DROPOUT.md` exists. It needs the same checks: its placebos, halves and seeds, plus the shuffled-benchmark and cluster tests.
+
+## Addendum (2026-09-26): S2 dropout checks run by the coordinating session
+
+Method: benchmark-shuffle permutation (RCT HRs permuted across trials, 5,000 draws), comparator-clustered sign-flip (10 clusters, `audit_v16.CLUSTER`), and leave-one-trial-out. The statistic is ECG − base |Δlog HR|, averaged over the 3 degradation seeds, full cohort.
+
+| Base | p dropped | d \|Δ\| | Mean d with shuffled RCTs | Shuffle p | Trial sign-flip p | Clustered p (better) | LOO max p |
+|---|---|---|---|---|---|---|---|
+| sparse | 0 | −0.020 | −0.018 | 0.42 | — | — | — |
+| sparse | 0.25 | −0.047 | −0.025 | 0.001 | 0.002 | 0.012 (8/10) | 0.004 |
+| sparse | 0.5 | −0.039 | −0.020 | 0.009 | 0.019 | 0.035 (8/10) | 0.038 |
+| sparse | 0.75 | −0.047 | −0.026 | 0.019 | 0.033 | 0.19 (6/10) | 0.067 |
+| sparse | 1.0 | −0.057 | −0.027 | 0.043 | 0.034 | 0.24 (6/10) | 0.066 |
+| hdPS200 | 0.5 | −0.019 | −0.014 | 0.19 | 0.039 | 0.17 | 0.077 |
+| hdPS200 | 0.75 | −0.035 | −0.018 | 0.011 | 0.010 | 0.008 (9/10) | 0.020 |
+
+**Reading.** When coded data are thinned, roughly half of the ECG |Δ| gain is specific to each trial's own RCT; the other half is generic shrinkage toward typical RCT effects. The strongest cells (sparse p = 0.25–0.5 and hdPS p = 0.75) survive both clustering and leave-one-out. However:
+- they are selected from 12 cells;
+- the S2 placebo contrasts for |Δ| are not p < 0.05;
+- the within-family BH q minimum is 0.058.
+
+So this is a dose-response signal, not a confirmed effect. At p = 0 (real data as recorded), the sparse gain is not benchmark-specific.
