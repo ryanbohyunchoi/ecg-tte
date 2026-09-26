@@ -33,8 +33,11 @@ def sup(n):
     return "<11" if 0 < n < 11 else n
 
 
+MODE = dict(elig=False)  # --elig: audit sensitivity (trials' own eligibility), separate dirs
+
+
 def outdir(trial):
-    d = Path(AUDIT) / f"claude-v15-ukb-{trial}"
+    d = Path(AUDIT) / (f"claude-v15s-ukb-{trial}-elig" if MODE["elig"] else f"claude-v15-ukb-{trial}")
     d.mkdir(mode=0o700, exist_ok=True)
     return d
 
@@ -163,6 +166,9 @@ def cohort(trials):
             prior = pre[pre.code.str.startswith(c)].eid.unique()
             elig &= ~b.index.isin(prior)
             att.append((f"no prior {c}", n(elig)))
+        if MODE["elig"]:
+            elig &= elig_sensitivity(trial, b, pre, medw)
+            att.append((f"trial eligibility sensitivity: {ELIG_TEXT[trial]}", n(elig)))
         coh = b[elig].copy()
         coh["treated"] = inA[elig].astype(int)
         nA, nB = int(coh.treated.sum()), int((1 - coh.treated).sum())
@@ -209,7 +215,8 @@ def cohort(trials):
         summ.update(missingness_pct=miss, panel_features=dict(dx=int((dic.domain == "dx").sum()), rx=int((dic.domain == "rx").sum())),
                     age_mean_by_arm=[round(coh.age[coh.treated == 1].mean(), 1), round(coh.age[coh.treated == 0].mean(), 1)],
                     index_year_range=[int(coh.index_year.min()), int(coh.index_year.max())],
-                    notes=cohort_notes(trial))
+                    notes=cohort_notes(trial) + ([f"AUDIT SENSITIVITY (claude-v15s): trial eligibility applied: {ELIG_TEXT[trial]}"]
+                                                 if MODE["elig"] else []) + [ECG_ON_TREATMENT])
         json.dump(summ, open(d / "summary.json", "w"), indent=1, default=str)
         (d / "READY_COHORT").write_text("ok\n")
         print(json.dumps({k: summ[k] for k in ("trial", "attrition", "n_arm", "n_arm_with_ecg", "feasible_200_with_ecg", "new_user_screen")}, indent=1, default=str))
@@ -241,6 +248,50 @@ def infeasible_note(trial):
                 "so no DOAC arm exists at the imaging visit; the processed ukb_meds table has no DOAC records either. "
                 "Warfarin-only users counted in attrition.")
     return "INFEASIBLE: an arm is empty"
+
+
+ECG_ON_TREATMENT = ("UKB ECG (20205 instance 2) is recorded on treatment: same visit as the self-reported prevalent exposure, "
+                    "so it partly reflects drug effects (e.g. beta-blocker heart rate/PR) and is an on-treatment covariate")
+ELIG_TEXT = {"ontarget": "age >= 55 and prior CVD (IHD/MI I20-I25 or 42000; stroke/TIA I60/I61/I63/I64/G45 or 42006; "
+                         "PAD I70/I739) or diabetes (E10-E14 or self-reported glucose-lowering drug at i2)",
+             "allhat": "age >= 55",
+             "ascot": "age 40-79 and no prior CHD/MI (I20-I25 before index, or 42000 dated before index/unknown); prior HF already excluded"}
+
+
+def elig_sensitivity(trial, b, pre, medw):
+    age = b.age
+    prior_mi_alg = (b.mi_alg_date < b.index_date) | (b.mi_alg_unknown == 1)
+    prior_st_alg = (b.stroke_alg_date < b.index_date) | (b.stroke_alg_unknown == 1)
+    has = lambda codes: b.index.isin(pre[pre.code.str.startswith(tuple(codes))].eid.unique())
+    if trial == "ontarget":
+        w = medw.reindex(b.index).fillna(0)
+        dm_rx = w[[c for c in ("insulin", "metformin", "sulfonylurea", "other_oral_dm") if c in w]].sum(axis=1) > 0
+        cvd = has(["I20", "I21", "I22", "I23", "I24", "I25", "I60", "I61", "I63", "I64", "G45", "I70", "I739"]) | prior_mi_alg | prior_st_alg
+        return (age >= 55) & (cvd | has(["E10", "E11", "E12", "E13", "E14"]) | dm_rx)
+    if trial == "allhat":
+        return age >= 55
+    if trial == "ascot":
+        return (age >= 40) & (age <= 79) & ~has(["I20", "I21", "I22", "I23", "I24", "I25"]) & ~prior_mi_alg
+    raise KeyError(trial)
+
+
+def link_ecg(trials):
+    """Link BCL instance-2 embeddings into ecg_embedding.parquet (pid, embedding, lag_days=0) and write READY_ECG."""
+    src = Path(AUDIT) / "claude-v15-ukb-bcl" / "restricted_ukb_bcl_embeddings.parquet"
+    emb = pd.read_parquet(src)
+    emb = emb[emb.instance == 2].drop_duplicates("eid").assign(pid=lambda x: x.eid.astype(str)).set_index("pid")
+    for trial in trials:
+        d = outdir(trial)
+        if not (d / "READY_COHORT").exists():
+            continue
+        coh = pd.read_parquet(d / "cohort.parquet")
+        m = coh[coh.pid.isin(emb.index)]
+        res = pd.DataFrame({"pid": m.pid.values, "embedding": [list(map(float, emb.embedding[p])) for p in m.pid], "lag_days": 0.0})
+        res.to_parquet(d / "ecg_embedding.parquet", index=False)
+        info = dict(n_cohort=len(coh), n_with_ecg=len(res), with_ecg_by_treated={str(k): int(v) for k, v in m.treated.value_counts().items()},
+                    source=f"{src.name} (UKB 20205 instance 2, BCL); lag 0; on-treatment ECG")
+        (d / "READY_ECG").write_text(json.dumps(info) + "\n")
+        print(d.name, json.dumps(info))
 
 
 def cohort_notes(trial):
@@ -490,6 +541,10 @@ def clmbr(trials):
 
 
 if __name__ == "__main__":
-    stage = sys.argv[1]
-    trials = sys.argv[2:] or list(COMPARISONS)
-    dict(cohort=cohort, outcomes=outcomes, clmbr=clmbr)[stage](trials)
+    args = sys.argv[1:]
+    if "--elig" in args:
+        MODE["elig"] = True
+        args.remove("--elig")
+    stage = args[0]
+    trials = args[1:] or (list(ELIG_TEXT) if MODE["elig"] else list(COMPARISONS))
+    dict(cohort=cohort, outcomes=outcomes, clmbr=clmbr, ecg=link_ecg)[stage](trials)
