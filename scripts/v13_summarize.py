@@ -230,7 +230,7 @@ def sign_flip(d):
     d = np.asarray(d, float)
     d = d[~np.isnan(d)]
     obs = d.mean()
-    flips = np.array(list(itertools.product([-1, 1], repeat=len(d)))) if len(d) <= 16 else \
+    flips = np.array(list(itertools.product([-1, 1], repeat=len(d))), dtype=np.int8) if len(d) <= 20 else \
         np.random.default_rng(0).choice([-1, 1], size=(20000, len(d)))
     null = (flips * np.abs(d)).mean(1)
     return float(obs), float(np.mean(np.abs(null) >= abs(obs) - 1e-12))

@@ -158,3 +158,58 @@ Matching and estimation:
   - **CLMBR embeddings** are usable: the ID is the eid and the censor date is the imaging visit.
     They cover about 67% of each cohort, so CLMBR arms are analysed within the covered subset, and
     the main arms are re-run in that same subset for like-for-like comparison.
+- **2026-09-26 (MIMIC negative controls v2), recorded before any NCO result was analysed.**
+  Approved by Ryan via the coordinator. Eight hospital-coded negative-control outcomes are added
+  alongside the original three, because those three have very few events:
+  UTI (N39.0 / 599.0), osteoarthritis (M15–M19 / 715), diverticular disease (K57 / 562),
+  hypothyroidism (E03 / 244), cataract (H25–H26 / 366), benign prostatic hyperplasia (N40 / 600;
+  men only), glaucoma (H40 / 365) and dorsalgia/back pain (M54 / 724).
+  - **Definition:** same as the original three. Any-position diagnosis in a later admission,
+    dated to the admission start. Death censors. Truncated at `horizon_days`. NaN if the code
+    occurred in the index admission or in an admission in the prior 365 days.
+  - **Files:** the columns are added to `outcomes.parquet`; the primary `t` and `e` are
+    unchanged. The previous file is kept as `outcomes_preNCO.parquet`.
+  - **Diverticular disease made bleeding-free (same day, coordinator decision, before any NCO
+    analysis).** The with-bleeding codes, checked against `d_icd_diagnoses`, no longer count as
+    events: K57.01, K57.11, K57.13, K57.21, K57.31, K57.33, K57.41, K57.51, K57.53, K57.81, K57.91,
+    K57.93 and ICD-9 562.02, 562.03, 562.12, 562.13. Any K57 or 562 code, bleeding ones included,
+    still sets the prior/index exclusion to NaN. Only `t_nco_diverticular` and
+    `e_nco_diverticular` were overwritten. The previous file is kept as
+    `outcomes_preDIVfix.parquet`.
+
+## Independent audit of v1.5, 2026-09-26: corrections
+
+The audit report is in `docs/AUDIT_V15_2026_09_26.md`. Each correction below was decided before
+the corrected results were seen.
+
+1. **Pooled inference.**
+   - **Headline:** pool per RCT (average within each RCT across cohorts, 18 RCTs), then run an
+     exactly enumerated sign-flip test.
+   - **Reported descriptively only:** the 26-emulation count, which treats emulations as
+     independent although they share RCT benchmarks.
+   - **Mechanics:** `sign_flip` now enumerates exactly up to 20 units. Before, it used a
+     20,000-draw Monte Carlo above 16.
+2. **MIMIC baseline.**
+   - **The problem:** index-admission discharge diagnoses were included in the baseline and in
+     the hdPS panel. Some are consequences of treatment or post-time-zero events: E93x
+     anticoagulant adverse effects, abnormal INR 790.9x, long-term anticoagulant use V58.6x,
+     cardiac arrest I46, shock R57, palliative care Z51.
+   - **New primary:** diagnoses from earlier admissions only. The gate diagnosis is still allowed
+     from the index admission, to define eligibility.
+   - **Sensitivity:** the original specification.
+3. **MIMIC outcomes.** An MI or stroke readmission within 28 days of the index discharge counts
+   only if it is a new event: I22, or the primary diagnosis position (`seq_num` = 1). This
+   mirrors the Yale v1.2 rule. It stops the index event's codes, which are carried forward for
+   4 weeks, being counted again.
+4. **UK Biobank ECG and exposure.**
+   - The ECG is recorded at the same visit that defines prevalent exposure, so it partly reflects
+     the drug's effect (e.g. beta-blockers). This is labelled as an on-treatment covariate.
+   - **Sensitivity:** the trials' own eligibility criteria (ASCOT: no prior CHD or MI; ALLHAT:
+     age 55 or older; ONTARGET: age 55 or older with CVD or diabetes). This also reduces the
+     problem that MI can be detected only once per person.
+5. **Engine validation.** The LIFE validation reproduces the unmatched estimate exactly. The
+   matched arms differ by up to 0.55 SE, which is design-related. The claim is reworded and
+   re-validated with Yale's exact design.
+6. **Yale implication.** Yale in-hospital-initiation trials may share the problem in item 2:
+   inpatient billing diagnoses are dated at admission, before the order. This is flagged for a
+   Yale sensitivity analysis.

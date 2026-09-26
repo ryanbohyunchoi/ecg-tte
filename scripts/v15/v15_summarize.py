@@ -29,7 +29,7 @@ import pandas as pd
 from scipy.stats import norm
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from v13_summarize import md, sign_flip  # noqa: E402
+from v13_summarize import fit_syserr, md, sign_flip  # noqa: E402
 from v14_panel import cat, dl, kappa  # noqa: E402
 
 A = Path("/mnt/raid0/rbc58/ecg-tte/audits")
@@ -62,7 +62,7 @@ def bench(r):
 def load(pattern):
     dirs = sorted(Path(p) for p in glob.glob(pattern)
                   if Path(p).is_dir() and ((Path(p) / "rct.json").exists() or (Path(p) / "READY_COHORT").exists()))  # trial dirs only
-    status, E, BAL, PR, PT, SEC = [], [], [], [], [], []
+    status, E, BAL, PR, PT, SEC, NC = [], [], [], [], [], [], []
     for d in dirs:
         marks = [m for m in ("READY_COHORT", "READY_ECG", "READY_OUTCOMES", "READY_INFEASIBLE") if (d / m).exists() or (m == "READY_INFEASIBLE" and (d / "INFEASIBLE").exists())]
         an = d / "analysis"
@@ -77,6 +77,16 @@ def load(pattern):
         e0 = pd.read_csv(an / "estimates.csv")
         e = e0[e0.outcome == "primary"].assign(trial=name, rb=rb, rs=rs, rct=r.get("trial"))
         E.append(e)
+        n = e0[e0.outcome.astype(str).str.startswith("nco_")].copy()
+        if len(n):
+            if "nco_usable" in n and n.nco_usable.notna().any():
+                n["usable"] = n.nco_usable.astype(str).str.lower().isin(["true", "1", "1.0"])
+            else:  # older rows: total events >= 11 derived from the suppressed counts (conservative)
+                ev = lambda v: np.nan if str(v).startswith("<") else float(v)
+                et, ec = n.events_treated.map(ev), n.events_control.map(ev)
+                n["usable"] = (et.fillna(0) + ec.fillna(0)) >= 11
+            n["usable"] &= n.loghr.notna() & n.se.notna()
+            NC.append(n.assign(trial=name, cohort=name.split("-")[0]))
         for sb in r.get("secondary", []) or []:
             tc = str(sb.get("outcome_columns", "")).split("/")[0]
             g = e0[e0.outcome == f"sec_{tc[6:]}"]
@@ -94,7 +104,7 @@ def load(pattern):
                 PR.append(p.assign(trial=name))
                 PT.append(pd.read_csv(an / "plasmode_truth.csv").assign(trial=name))
     cc = lambda L: pd.concat(L, ignore_index=True) if L else pd.DataFrame()
-    return pd.DataFrame(status), cc(E), cc(BAL), cc(PR), cc(PT), cc(SEC)
+    return pd.DataFrame(status), cc(E), cc(BAL), cc(PR), cc(PT), cc(SEC), cc(NC)
 
 
 def panel(E):
@@ -199,6 +209,51 @@ def plasmode(PR, PT):
     return pd.DataFrame(bias_rows), pd.DataFrame(red_rows)
 
 
+MIN_NCO_TRIAL = 6
+
+
+def calibration(E, N):
+    """OHDSI-style empirical calibration (v13_summarize.fit_syserr): b_i ~ N(mu, sigma^2 + se_i^2) over usable NCO
+    estimates, per arm, pooled across the trials of each cohort, and per trial when >= MIN_NCO_TRIAL usable NCOs
+    (else the cohort-pooled fit is used). Calibrated primary estimate: b - mu, SE sqrt(se^2 + sigma^2)."""
+    N = N[N.usable]
+    pooled, sysr, cal = [], [], []
+    for (coh, a), g in N.groupby(["cohort", "arm"]):
+        mu, sd, k = fit_syserr(g.loghr, g.se)
+        pooled.append(dict(cohort=coh, arm=a, trials=g.trial.nunique(), nco_estimates=k, mu=mu, abs_mu=abs(mu), sigma=sd,
+                           share_ci_excl_1=float(np.mean(np.abs(g.loghr) > 1.96 * g.se))))
+    PO = pd.DataFrame(pooled)
+    for (tr, a), p in E.groupby(["trial", "arm"]):
+        coh = tr.split("-")[0]
+        g = N[(N.trial == tr) & (N.arm == a)]
+        mu, sd, k = fit_syserr(g.loghr, g.se) if len(g) >= MIN_NCO_TRIAL else (np.nan, np.nan, len(g))
+        src = "trial"
+        if np.isnan(mu):
+            q = PO[(PO.cohort == coh) & (PO.arm == a)]
+            mu, sd, src = (q.mu.iloc[0], q.sigma.iloc[0], "cohort-pooled") if len(q) else (np.nan, np.nan, "none")
+        sysr.append(dict(trial=tr, cohort=coh, arm=a, nco_usable=len(g), source=src, mu=mu, sigma=sd,
+                         share_ci_excl_1=float(np.mean(np.abs(g.loghr) > 1.96 * g.se)) if len(g) else np.nan))
+        if not np.isnan(mu):
+            r = p.iloc[0]
+            b, se = r.loghr - mu, np.sqrt(r.se ** 2 + sd ** 2)
+            cal.append(dict(trial=tr, arm=a, loghr=b, se=se, hr=np.exp(b), lo=np.exp(b - 1.96 * se), hi=np.exp(b + 1.96 * se),
+                            pairs=r.pairs, rb=r.rb, rs=r.rs, calib_source=src))
+    SY = pd.DataFrame(sysr)
+    rows = []
+    for lab, a2, a1 in CMP:
+        x = SY[(SY.arm == a2) & (SY.source == "trial")].set_index("trial")
+        y = SY[(SY.arm == a1) & (SY.source == "trial")].set_index("trial")
+        tt = x.index.intersection(y.index)
+        if not len(tt):
+            continue
+        dmu = x.mu.loc[tt].abs() - y.mu.loc[tt].abs()
+        dsd = x.sigma.loc[tt] - y.sigma.loc[tt]
+        rows.append(dict(contrast=lab, first=a2, second=a1, trials=len(tt), lower_abs_mu=f"{int((dmu < 0).sum())}/{len(tt)}",
+                         mean_d_abs_mu=dmu.mean(), p_signflip_abs_mu=sign_flip(dmu.to_numpy())[1],
+                         mean_d_sigma=dsd.mean(), p_signflip_sigma=sign_flip(dsd.to_numpy())[1]))
+    return PO, SY, pd.DataFrame(rows), pd.DataFrame(cal)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--cohort", choices=["mimic", "ukb", "all"], required=True)
@@ -211,7 +266,7 @@ def main():
     out = Path(a.out_dir)
     out.mkdir(parents=True, exist_ok=True)
     pre = a.cohort
-    status, E, BAL, PR, PT, SEC = load(pat)
+    status, E, BAL, PR, PT, SEC, NC = load(pat)
     if a.cohort == "all" and not a.glob and len(status):
         status = status[status.trial.str.match(r"^(mimic|ukb)-")]
         keep = set(status.trial)
@@ -270,6 +325,44 @@ def main():
     print(md(Cp, 3) + "\n")
     print("Across trials (exact sign-flip; descriptive):\n")
     print(md(Ca, 3) + "\n")
+    if len(NC):
+        if a.cohort == "all" and not a.glob:
+            NC = NC[NC.trial.isin(set(status.trial))]
+        NC.drop(columns=["trial_dir"], errors="ignore").to_csv(out / f"{pre}_nco_estimates.csv", index=False)
+        PO, SY, SC, CAL = calibration(E, NC)
+        PO.to_csv(out / f"{pre}_nco_systematic_error_pooled.csv", index=False)
+        SY.to_csv(out / f"{pre}_nco_systematic_error_by_trial.csv", index=False)
+        SC.to_csv(out / f"{pre}_nco_contrasts.csv", index=False)
+        CAL.to_csv(out / f"{pre}_calibrated_estimates.csv", index=False)
+        print("## Negative-control outcomes and empirical calibration (OHDSI style)\n")
+        print(f"Usable NCO estimate = NaN rows dropped per NCO, >= 11 NCO events in the arm's analysed sample. Systematic-error model "
+              f"b ~ N(mu, sigma^2 + se^2) (v13 fit_syserr); per trial when >= {MIN_NCO_TRIAL} usable NCOs, else the cohort-pooled fit.\n")
+        u = NC[NC.usable].groupby(["trial"]).outcome.nunique().rename("usable_NCOs (any arm)")
+        print("Usable NCOs per trial: " + ", ".join(f"{k} {v}" for k, v in u.items()) + "\n")
+        print("### Systematic error pooled across the cohort's trials, per arm\n")
+        print(md(PO, 3) + "\n")
+        est = SY[SY.source == "trial"]
+        if len(est):
+            T2 = est.groupby(["cohort", "arm"]).agg(trials_estimable=("trial", "nunique"), mean_abs_mu=("mu", lambda x: np.mean(np.abs(x))),
+                                                    mean_sigma=("sigma", "mean"), mean_share_ci_excl_1=("share_ci_excl_1", "mean")).reset_index()
+            print(f"### Per-trial fits (trials with >= {MIN_NCO_TRIAL} usable NCOs), summarised per arm\n")
+            print(md(T2, 3) + "\n")
+            W = est.pivot_table(index="trial", columns="arm", values="mu")
+            W = W[[x for x in ARMS if x in W]]
+            print("Per-trial mu (NCO log HR bias):\n")
+            print(md(W.reset_index(), 3) + "\n")
+        if len(SC):
+            print("### Does adding ECG (or CLMBR) reduce systematic error? (per-trial fits; negative = first arm lower; exact sign-flip)\n")
+            print(md(SC, 3) + "\n")
+        if len(CAL):
+            print("### RCT agreement after calibration of the primary estimates\n")
+            CP = panel(CAL)
+            CP.to_csv(out / f"{pre}_panel_calibrated.csv", index=False)
+            print(md(CP, 2) + "\n")
+            Cp2, Ca2 = contrasts(CAL)
+            Ca2.to_csv(out / f"{pre}_contrasts_calibrated.csv", index=False)
+            print("Paired contrasts after calibration:\n")
+            print(md(Ca2, 3) + "\n")
     Bb, Br = plasmode(PR, PT)
     if len(Bb):
         Bb.to_csv(out / f"{pre}_plasmode_bias.csv", index=False)

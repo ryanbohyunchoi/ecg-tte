@@ -257,27 +257,38 @@ def fit_matches(X, t):
     return M
 
 
-def estimates(D: TrialData, M):
+def estimates(D: TrialData, M, which=("primary", "nco", "sec")):
+    """Rows per outcome x arm. NCOs: NaN rows dropped per outcome (e.g. sex-specific NCOs); an NCO estimate is
+    not fitted (loghr NaN, nco_usable False) when the arm's analysed sample has < 11 NCO events in total."""
     rows = []
-    outs = {"primary": (D.T, D.E.astype(float))}
-    outs.update({k: v for k, v in D.nco.items()})
-    outs.update({k: v for k, v in D.sec.items()})
+    outs = {}
+    if "primary" in which:
+        outs["primary"] = (D.T, D.E.astype(float))
+    if "nco" in which:
+        outs.update({k: v for k, v in D.nco.items()})
+    if "sec" in which:
+        outs.update({k: v for k, v in D.sec.items()})
     for oname, (T, E) in outs.items():
         ok = ~np.isnan(T) & ~np.isnan(E)
+        is_nco = oname.startswith("nco_")
         for a, (idx, cl, auc) in M.items():
             if idx is None:
-                i = np.where(ok)[0]
-                b, se = cox(T[i], E[i].astype(int), D.t[i])
+                i, c = np.where(ok)[0], None
                 npairs = np.nan
             else:
                 m = ok[idx]
                 i, c = idx[m], cl[m]
-                b, se = cox(T[i], E[i].astype(int), D.t[i], cluster=c)
                 npairs = len(idx) // 2
+            usable = not (is_nco and E[i].sum() < SUPPRESS)
+            if usable:
+                b, se = cox(T[i], E[i].astype(int), D.t[i]) if c is None else cox(T[i], E[i].astype(int), D.t[i], cluster=c)
+            else:
+                b, se = np.nan, np.nan
             it, ic = split(i, D.t)
             rows.append(dict(population=D.population, outcome=oname, arm=a, loghr=b, se=se, hr=np.exp(b), lo=np.exp(b - 1.96 * se), hi=np.exp(b + 1.96 * se),
                              pairs=npairs, n_treated=len(it), n_control=len(ic), events_treated=sup(E[it].sum()),
-                             events_control=sup(E[ic].sum()), ps_auc=auc))
+                             events_control=sup(E[ic].sum()), ps_auc=auc,
+                             nco_usable=bool(usable and not np.isnan(b)) if is_nco else np.nan))
     return pd.DataFrame(rows)
 
 
@@ -398,13 +409,52 @@ def plasmode(V: TrialData, M, model, reps, workers, fr=0.8):
     return R, pd.DataFrame(tr)
 
 
+def nco_only(Dd: Path, sub="analysis"):
+    os.umask(0o077)
+    out = Dd / sub
+    old = pd.read_csv(out / "estimates.csv")
+    D = TrialData(Dd)
+    V = D.clmbr_view()
+    pops = [D] + ([V] if V is not None else [])
+    new = []
+    for P_ in pops:
+        M = fit_matches(P_.designs(), P_.t)
+        chk = estimates(P_, M, which=("primary",))
+        o = old[(old.outcome == "primary") & (old.population.fillna("full") == P_.population)].set_index("arm")
+        c = chk.set_index("arm")
+        dmax = float(np.nanmax(np.abs(c.loghr - o.loghr.reindex(c.index)))) if len(o) else np.nan
+        dp = float(np.nanmax(np.abs(c.pairs - o.pairs.reindex(c.index)))) if len(o) else np.nan
+        if not (dmax < 1e-8 and (np.isnan(dp) or dp == 0)):
+            raise SystemExit(f"{Dd.name} {P_.population}: refit does not reproduce saved primary rows (max |dlogHR| {dmax}, pairs {dp}); run fully")
+        new.append(estimates(P_, M, which=("nco",)))
+    N = pd.concat(new, ignore_index=True)
+    N.insert(0, "trial_dir", Dd.name)
+    keep = old[~old.outcome.astype(str).str.startswith("nco_")]
+    E = pd.concat([keep, N], ignore_index=True)
+    E.to_csv(out / "estimates.csv", index=False)
+    mf = out / "meta.json"
+    if mf.exists():
+        m = json.load(open(mf))
+        m["nco"] = list(D.nco)
+        m["nco_only_rerun"] = time.strftime("%Y-%m-%d %H:%M:%S")
+        json.dump(m, open(mf, "w"), indent=2, default=str)
+    (out / "DONE").write_text(time.strftime("%Y-%m-%d %H:%M:%S nco-only\n"))
+    u = N.groupby("outcome").nco_usable.sum().astype(int).to_dict()
+    print(json.dumps(dict(trial=Dd.name, primary_check="reproduced", nco_arms_usable=u)))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--trial-dir", required=True)
     ap.add_argument("--plasmode-reps", type=int, default=200)
     ap.add_argument("--workers", type=int, default=24)
     ap.add_argument("--out-subdir", default="analysis")
+    ap.add_argument("--nco-only", action="store_true",
+                    help="recompute only the negative-control rows of an existing estimates.csv, with the same PS/matched sets "
+                         "(deterministic refit, checked against the saved primary rows); primary, balance and plasmode untouched")
     a = ap.parse_args()
+    if a.nco_only:
+        return nco_only(Path(a.trial_dir), a.out_subdir)
     os.umask(0o077)
     t0 = time.time()
     Dd = Path(a.trial_dir)
