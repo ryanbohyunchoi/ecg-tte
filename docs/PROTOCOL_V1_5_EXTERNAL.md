@@ -213,3 +213,15 @@ the corrected results were seen.
 6. **Yale implication.** Yale in-hospital-initiation trials may share the problem in item 2:
    inpatient billing diagnoses are dated at admission, before the order. This is flagged for a
    Yale sensitivity analysis.
+- **2026-09-26: UKB CV-death sensitivity.** Ryan confirmed permission to use
+  `/mnt/nfs_yale_ecg/biobank/ukb_working_file.csv`.
+  - **Linkage:** the file uses the same eid space as `data.csv` and the ECGs (84,105/84,107 ECG
+    participants link), and its death dates are identical.
+  - **Flags:** derived CV-death flags `cv_death_all`, `cv_death_primary` and `cv_death_secondary`.
+    The derivation is undocumented; likely I00–I99 as underlying or contributory cause.
+  - **Coverage:** deaths to 2020.
+  - **Sensitivity dirs:** `claude-v15s-ukb-<trial>-cvd`, for the main and the eligibility cohorts.
+    - Outcomes follow the trial's composite with CV death: ONTARGET = CV death, MI, stroke or HF;
+      ALLHAT and ASCOT = CV death (a proxy for CHD death) or MI.
+    - Follow-up is censored at 2020-12-31, because cause of death is unavailable afterwards.
+  - The main analyses keep all-cause death to 2022-10-31.
