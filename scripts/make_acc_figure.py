@@ -165,7 +165,7 @@ def main():
     axC.bar(x - 0.2, sd, 0.38, color=[COL[a] for a in arms], edgecolor="white")
     for xi, v in zip(x, sd):
         axC.text(xi - 0.2, v + 1.5, f"{v:.0f}%", ha="center", fontsize=8)
-    axC.set_ylabel("Standardized-difference agreement (%)")
+    axC.set_ylabel("Trials statistically consistent with RCT (%)")
     axC.set_ylim(0, 100)
     axC2 = axC.twinx()
     axC2.plot(x + 0.2, phi, "o", color="black", ms=7)
@@ -198,7 +198,7 @@ def main():
         lines.append(cells)
         bold.append(2 + cols.index(best))
     summ = [["Mean |Δlog HR| vs RCT", ""] + [f"{(T[a] - T.rb).abs().mean():.2f}" for a in cols],
-            ["Std-difference agreement", ""] + [f"{100 * pan.loc[pl[a], 'std_diff_agreement']:.0f}%" for a in cols],
+            ["Consistent with RCT", ""] + [f"{100 * pan.loc[pl[a], 'std_diff_agreement']:.0f}%" for a in cols],
             ["Estimate agreement", ""] + [f"{100 * pan.loc[pl[a], 'estimate_agreement']:.0f}%" for a in cols],
             ["Excess disagreement φ", ""] + [f"{pan.loc[pl[a], 'dispersion_phi']:.1f}" for a in cols]]
     mdl = ["| " + " | ".join(hdr) + " |", "|" + "---|" * len(hdr)]

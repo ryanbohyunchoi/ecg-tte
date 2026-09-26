@@ -21,6 +21,6 @@ Emulated vs RCT hazard ratios (95% CI), 18 Yale emulations. Bold = PS closest to
 | TRANSFORM-HF | 1.02 (0.89–1.17) | 0.94 (0.73–1.19) | 0.93 (0.73–1.19) | 1.14 (0.87–1.49) | 1.14 (0.87–1.48) | **0.98 (0.76–1.27)** |
 | VALUE | 1.04 (0.94–1.15) | 0.79 (0.73–0.85) | 0.82 (0.76–0.89) | 0.84 (0.78–0.91) | **0.86 (0.79–0.93)** | 0.85 (0.78–0.92) |
 | Mean |Δlog HR| vs RCT |  | 0.18 | 0.16 | 0.16 | 0.16 | 0.14 |
-| Std-difference agreement |  | 61% | 78% | 56% | 72% | 72% |
+| Consistent with RCT |  | 61% | 78% | 56% | 72% | 72% |
 | Estimate agreement |  | 56% | 56% | 50% | 50% | 56% |
 | Excess disagreement φ |  | 4.7 | 3.4 | 3.3 | 2.7 | 2.7 |
