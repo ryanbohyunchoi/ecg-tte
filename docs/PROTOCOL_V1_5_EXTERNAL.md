@@ -124,3 +124,19 @@ Matching and estimation:
 ## Deviation log
 
 (dated entries)
+- **2026-09-26 (MIMIC cohorts), recorded before any outcome was analysed.**
+  - **Cohort rebuild.** The cohorts were rebuilt once to exclude orders dated after discharge. The
+    new cohorts are strict subsets of the old ones, with identical time zero and arm for every
+    retained patient. Outcomes were extracted after the rebuild.
+  - **Time zero:** the first oral or enteral order that starts before discharge.
+  - **TRANSFORM-HF:** IV loop diuretic before time zero in the index admission is allowed and
+    recorded as a covariate (`iv_loop_before_index`).
+  - **Calendar and age:** `index_year` = anchor-year-group midpoint plus the within-patient year
+    offset; age uses the same offset.
+  - **Gates:**
+    - ACS and HF (TRANSFORM-HF): in the index admission, or in an admission discharged within
+      30 days.
+    - AF, and HF for COMET: in the index admission or any earlier one.
+  - **ICD-9 codes** are kept as separate panel features, because no GEMs mapping table is on disk.
+  - **Negative controls** (appendicitis, inguinal hernia, cholelithiasis) have very few events and
+    are uninformative; this is noted.
