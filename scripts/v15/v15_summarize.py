@@ -83,11 +83,11 @@ def load(pattern, sub="analysis"):
         marks = [m for m in ("READY_COHORT", "READY_ECG", "READY_OUTCOMES", "READY_INFEASIBLE") if (d / m).exists() or (m == "READY_INFEASIBLE" and (d / "INFEASIBLE").exists())]
         an = d / sub
         done = (an / "estimates.csv").exists()
-        status.append(dict(trial=re.sub(r"^claude-v15s?-", "", d.name), markers=",".join(m.split("_")[1].lower() for m in marks),
+        status.append(dict(trial=re.sub(r"-death$", "", re.sub(r"^claude-v15[sd]?-", "", d.name)), markers=",".join(m.split("_")[1].lower() for m in marks),
                            analysed=done, plasmode=(an / "plasmode_reps.csv").exists()))
         if not done:
             continue
-        name = re.sub(r"^claude-v15s?-", "", d.name)
+        name = re.sub(r"-death$", "", re.sub(r"^claude-v15[sd]?-", "", d.name))
         r = json.load(open(d / "rct.json"))
         rb, rs = bench(r)
         e0 = pd.read_csv(an / "estimates.csv")
@@ -229,10 +229,12 @@ def plasmode(PR, PT):
 POOL_CMP = [("C1", "sparse+ECG", "sparse"), ("C2", "hdPS200+ECG", "hdPS200"), ("ECGonly", "ECGonly", "unmatched")]
 
 
-def yale_rows():
+def yale_rows(only=None):
     """Yale phase-2 point estimates (imputation 1, bootstrap rep 0) for the 18 v1.3/v1.4 trials, v13_common.bench."""
     rows = []
     for n, (k, _) in {**PRIMARY, **EXTRA}.items():
+        if only is not None and n not in only:
+            continue
         fs = [A / "claude-v13-bootstrap" / f"bs_{n}.csv", A / "claude-v14-ecgonly" / f"bs_{n}.csv"]
         if not fs[0].exists():
             continue
@@ -245,10 +247,10 @@ def yale_rows():
     return pd.DataFrame(rows)
 
 
-def pooled_rct(E):
+def pooled_rct(E, yale_only=None, with_yale=True):
     """Yale + external emulations; headline = RCT-clustered (mean paired difference within each RCT key, then
     sign-flip across RCTs); the per-emulation count is descriptive only (emulations share RCT benchmarks)."""
-    Y = yale_rows()
+    Y = yale_rows(yale_only) if with_yale else pd.DataFrame(columns=["source", "trial", "key", "arm", "loghr", "se", "rb", "rs"])
     X = E[E.arm.isin(FULL_ARMS)].assign(source=lambda d: d.trial.str.split("-").str[0])[["source", "trial", "key", "arm", "loghr", "se", "rb", "rs"]]
     D = pd.concat([Y, X], ignore_index=True)
     per, head, desc, rep_ = [], [], [], []
@@ -389,7 +391,7 @@ def calibration(E, N):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--cohort", choices=["mimic", "ukb", "all", "sensitivity"], required=True)
+    ap.add_argument("--cohort", choices=["mimic", "ukb", "all", "sensitivity", "death"], required=True)
     ap.add_argument("--glob", default=None, help="override trial-dir glob (testing)")
     ap.add_argument("--out-dir", default=str(OUT))
     a = ap.parse_args()
@@ -398,6 +400,8 @@ def main():
         o.mkdir(parents=True, exist_ok=True)
         return sensitivity(o)
     pat = a.glob or str(A / f"claude-v15-{'*' if a.cohort == 'all' else a.cohort}-*")
+    if a.cohort == "death" and not a.glob:  # all-cause death co-primary amendment: separate dirs, never mixed with composites
+        pat = str(A / "claude-v15d-*-death")
     if a.cohort == "all" and not a.glob:
         pat = str(A / "claude-v15-[mu][ik][mb]*-*")
     out = Path(a.out_dir)
@@ -465,6 +469,32 @@ def main():
     print(md(Cp, 3) + "\n")
     print("Across trials (sign-flip: exact enumeration up to 20 trials, else MC; descriptive):\n")
     print(md(Ca, 3) + "\n")
+    if a.cohort == "death":
+        print("## Death outcome — RCT-clustered pooled analyses (exact sign-flip; negative = first arm closer to the RCT)\n")
+        print("External = the 8 death emulations (one per RCT). Combined = external + Yale phase-2 estimates for the trials whose "
+              "RCT benchmark is all-cause death (COMET, TRANSFORM-HF, ELITE II; imputation 1, rep 0), averaged within RCT.\n")
+        for lab_, kw in (("external death only", dict(with_yale=False)),
+                         ("combined external death + Yale death-benchmark trials", dict(yale_only=("comet", "transform-hf", "elite-ii")))):
+            Pp, Hd, Ds, Rp = pooled_rct(E, **kw)
+            tag = lab_.split()[0]
+            Pp.to_csv(out / f"death_pooled_{tag}_emulations.csv", index=False)
+            Hd.to_csv(out / f"death_pooled_{tag}_rct_clustered.csv", index=False)
+            print(f"### {lab_}\n")
+            print(md(Hd, 3) + "\n")
+            if len(Rp):
+                Rp.to_csv(out / f"death_pooled_{tag}_yale_external_replication.csv", index=False)
+                print("Yale vs external direction per shared RCT:\n")
+                print(md(Rp, 3) + "\n")
+        if len(BAL) and (BAL.group == "calendar_index_year").any():
+            cy = BAL[(BAL.group == "calendar_index_year") & BAL.trial.str.startswith("ukb-")]
+            cy.to_csv(out / "death_calendar_year_balance.csv", index=False)
+            W = cy.pivot_table(index="trial", columns="arm", values="mean_abs_smd")
+            W = W[[x for x in ARMS if x in W]]
+            print("## Calendar-year balance, UKB (|SMD| of index_year per arm)\n")
+            print(md(W.reset_index(), 3) + "\n")
+            M_ = cy[cy.arm == "unmatched"][["trial", "mean_year_treated", "mean_year_control"]]
+            print("Unmatched mean index year (treated vs control): " + "; ".join(
+                f"{r.trial} {r.mean_year_treated:.2f} vs {r.mean_year_control:.2f}" for r in M_.itertuples()) + "\n")
     if a.cohort == "all" and not a.glob:
         Pp, Hd, Ds, Rp = pooled_rct(E)
         Pp.to_csv(out / "pooled_emulation_contrasts.csv", index=False)

@@ -304,6 +304,13 @@ def balance(D: TrialData, M):
         for j, name in enumerate(D.lv_names):
             cols.append(dict(population=D.population, arm=a, column=name, phys=name in D.phys, abs_smd=s[j], chance=c[j], excess=s[j] - c[j],
                              measured_frac=float(np.mean(~np.isnan(D.lv_obs[:, j])))))
+    if "index_year" in D.cov:  # calendar-year balance (death amendment): |SMD| of index_year per arm
+        yv = D.cov[["index_year"]].to_numpy(float)
+        for a, (idx, _, _) in M.items():
+            mt, mc = split(idx_all if idx is None else idx, D.t)
+            rows.append(dict(population=D.population, group="calendar_index_year", arm=a, k=1,
+                             mean_abs_smd=float(smd_vector(yv, D.t, mt, mc)[0]),
+                             mean_year_treated=float(yv[mt].mean()), mean_year_control=float(yv[mc].mean())))
     for gname, names in (("labs_vitals", D.lv_names), ("phys", D.phys)):
         j = [D.lv_names.index(n) for n in names]
         if not j:
@@ -501,7 +508,11 @@ def main():
                 hdps_top_by_level=pd.Series([c.rsplit("__", 1)[1] for c in top]).value_counts().to_dict(),
                 features_not_in_dictionary=int(D.n_undictionaried),
                 ecg_lag_days_median=None if D.lag is None else float(np.nanmedian(D.lag)),
-                clmbr=V is not None, nco=list(D.nco), plasmode=pm, notes=D.notes,
+                clmbr=V is not None, nco=list(D.nco),
+                index_year_by_arm=None if "index_year" not in D.cov else {
+                    str(int(y)): {"treated": sup(((D.cov.index_year.round() == y) & (D.t == 1)).sum()),
+                                  "control": sup(((D.cov.index_year.round() == y) & (D.t == 0)).sum())}
+                    for y in sorted(D.cov.index_year.round().unique())}, plasmode=pm, notes=D.notes,
                 seconds_estimates=round(t1 - t0, 1), seconds_plasmode=round(time.time() - t1, 1),
                 imputation="sklearn IterativeImputer(BayesianRidge, max_iter=10, random_state=0), covariates only, bounded to observed range",
                 hdps="all panel features are candidates (no pool split); lab_ = single 'ordered' level")
