@@ -225,3 +225,25 @@ the corrected results were seen.
       ALLHAT and ASCOT = CV death (a proxy for CHD death) or MI.
     - Follow-up is censored at 2020-12-31, because cause of death is unavailable afterwards.
   - The main analyses keep all-cause death to 2022-10-31.
+
+## v1.5 amendment, 2026-09-26: death outcome and reporting role (registered before any death-outcome result)
+
+1. **Co-primary external outcome: all-cause death.**
+   - **Why:** MIMIC and UK Biobank capture death completely, but capture MI and stroke
+     readmissions and first-occurrence hospital codes incompletely.
+   - **MIMIC:** death within 12 months of time zero (`patients.dod`; complete to 365 days, per
+     the audit).
+   - **UK Biobank:** death from the national registry (field 40000, recorded to about 2024-07),
+     within the trial horizon. Follow-up is no longer cut at the hospital data end of 2022-10-31.
+   - **Benchmark:** each RCT's published all-cause mortality HR, verified from the primary papers
+     and stored in `rct_death.json`. For COMET and TRANSFORM-HF death is already the primary
+     endpoint, so their benchmarks are unchanged.
+   - **Analysis:** trial dirs `claude-v15d-{mimic,ukb}-<trial>-death`, with the same cohorts,
+     covariates and ECG embeddings as the corrected main dirs. Only the outcome and the benchmark
+     change. Same engine: estimates, the RCT-DUPLICATE panel, plasmode and negative controls.
+     Pooling is by RCT with an exact sign-flip test.
+2. **Reporting role, fixed now.**
+   - The main results of the paper are the Yale analyses.
+   - MIMIC-IV and UK Biobank are reported as external validation (secondary/supplementary),
+     **whatever their results.** That covers the original composites and the death outcome.
+   - Whether external results are shown is not conditional on their statistical significance.
