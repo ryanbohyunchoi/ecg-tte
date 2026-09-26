@@ -4,7 +4,114 @@ Trials: comet, paradigm-hf-seq, transform-hf, elite-ii, life, plato, aristotle, 
 
 All analyses are exploratory (registered 2026-09-25 after phase 2; tag protocol-v1.3).
 
-## I1 Plasmode simulation — resampled cohort, PS and matching refitted per replicate (deviation 6; decides rule 1)
+## I1 Plasmode simulation — 80% subsample without replacement, PS and matching refitted per replicate (audit fix; decides rule 1)
+
+**Scenario base** (true conditional HR 0.8; bias vs the arm's marginal truth; log-HR scale)
+
+| arm | trials | mean_bias | mean_abs_bias | mean_rmse | mean_coverage |
+|---|---|---|---|---|---|
+| R+ physiology ref | 10 | -0.006 | 0.020 | 0.113 | 0.961 |
+| R clinical | 10 | -0.009 | 0.019 | 0.112 | 0.952 |
+| M3 hdPS200 | 10 | -0.008 | 0.039 | 0.118 | 0.947 |
+| M4 hdPS200+ECG | 10 | -0.006 | 0.036 | 0.121 | 0.937 |
+| M1 sparse | 10 | -0.021 | 0.048 | 0.125 | 0.897 |
+| M2 sparse+ECG | 10 | -0.015 | 0.045 | 0.124 | 0.907 |
+| M0 unadjusted | 10 | -0.089 | 0.193 | 0.222 | 0.386 |
+
+**Scenario phys_only** (true conditional HR 0.8; bias vs the arm's marginal truth; log-HR scale)
+
+| arm | trials | mean_bias | mean_abs_bias | mean_rmse | mean_coverage |
+|---|---|---|---|---|---|
+| R+ physiology ref | 10 | -0.014 | 0.017 | 0.116 | 0.946 |
+| R clinical | 10 | -0.014 | 0.018 | 0.115 | 0.948 |
+| M3 hdPS200 | 10 | -0.024 | 0.027 | 0.119 | 0.943 |
+| M4 hdPS200+ECG | 10 | -0.021 | 0.028 | 0.120 | 0.945 |
+| M1 sparse | 10 | -0.038 | 0.044 | 0.123 | 0.920 |
+| M2 sparse+ECG | 10 | -0.034 | 0.038 | 0.121 | 0.917 |
+| M0 unadjusted | 10 | -0.097 | 0.159 | 0.192 | 0.548 |
+
+**Scenario strong** (true conditional HR 0.8; bias vs the arm's marginal truth; log-HR scale)
+
+| arm | trials | mean_bias | mean_abs_bias | mean_rmse | mean_coverage |
+|---|---|---|---|---|---|
+| R+ physiology ref | 10 | -0.013 | 0.023 | 0.114 | 0.947 |
+| R clinical | 10 | -0.015 | 0.022 | 0.110 | 0.953 |
+| M3 hdPS200 | 10 | -0.021 | 0.041 | 0.121 | 0.928 |
+| M4 hdPS200+ECG | 10 | -0.017 | 0.040 | 0.122 | 0.930 |
+| M1 sparse | 10 | -0.043 | 0.066 | 0.131 | 0.860 |
+| M2 sparse+ECG | 10 | -0.036 | 0.061 | 0.130 | 0.870 |
+| M0 unadjusted | 10 | -0.112 | 0.210 | 0.238 | 0.369 |
+
+**Scenario none** (true conditional HR 0.8; bias vs the arm's marginal truth; log-HR scale)
+
+| arm | trials | mean_bias | mean_abs_bias | mean_rmse | mean_coverage |
+|---|---|---|---|---|---|
+| R+ physiology ref | 10 | -0.010 | 0.016 | 0.114 | 0.957 |
+| R clinical | 10 | -0.010 | 0.018 | 0.111 | 0.954 |
+| M3 hdPS200 | 10 | -0.004 | 0.025 | 0.119 | 0.939 |
+| M4 hdPS200+ECG | 10 | -0.003 | 0.024 | 0.120 | 0.939 |
+| M1 sparse | 10 | -0.008 | 0.038 | 0.117 | 0.920 |
+| M2 sparse+ECG | 10 | -0.006 | 0.037 | 0.118 | 0.921 |
+| M0 unadjusted | 10 | -0.074 | 0.179 | 0.209 | 0.445 |
+
+**Scenario null** (true conditional HR 1.0; bias vs the arm's marginal truth; log-HR scale)
+
+| arm | trials | mean_bias | mean_abs_bias | mean_rmse | mean_coverage |
+|---|---|---|---|---|---|
+| R+ physiology ref | 10 | -0.010 | 0.014 | 0.106 | 0.950 |
+| R clinical | 10 | -0.009 | 0.016 | 0.107 | 0.948 |
+| M3 hdPS200 | 10 | -0.007 | 0.036 | 0.112 | 0.933 |
+| M4 hdPS200+ECG | 10 | -0.007 | 0.030 | 0.113 | 0.934 |
+| M1 sparse | 10 | -0.023 | 0.050 | 0.119 | 0.895 |
+| M2 sparse+ECG | 10 | -0.020 | 0.043 | 0.118 | 0.897 |
+| M0 unadjusted | 10 | -0.088 | 0.192 | 0.218 | 0.382 |
+
+Reduction in |bias| (positive = the first arm is less biased), mean over trials, Monte Carlo 95% CI:
+
+| scenario | contrast | trials | bias_reduction | lo | hi | relative_reduction |
+|---|---|---|---|---|---|---|
+| base | C1 | 10 | 0.003 | -0.001 | 0.007 | 0.061 |
+| base | C2 | 10 | 0.003 | -0.001 | 0.005 | 0.071 |
+| base | sparse+noise32-vs-sparse | 10 | -0.003 | -0.006 | 0.002 | -0.058 |
+| base | sparse+shufECG-vs-sparse | 10 | -0.003 | -0.007 | 0.000 | -0.061 |
+| base | sparse+ECG-vs-sparse+shufECG | 10 | 0.006 | 0.002 | 0.010 | 0.115 |
+| base | hdPS200+noise32-vs-hdPS200 | 10 | 0.001 | -0.003 | 0.003 | 0.015 |
+| base | hdPS200+shufECG-vs-hdPS200 | 10 | 0.002 | -0.002 | 0.005 | 0.050 |
+| base | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.001 | -0.002 | 0.004 | 0.022 |
+| none | C1 | 10 | 0.001 | -0.003 | 0.005 | 0.027 |
+| none | C2 | 10 | 0.001 | -0.003 | 0.004 | 0.038 |
+| none | sparse+noise32-vs-sparse | 10 | -0.000 | -0.004 | 0.003 | -0.011 |
+| none | sparse+shufECG-vs-sparse | 10 | -0.004 | -0.008 | -0.001 | -0.111 |
+| none | sparse+ECG-vs-sparse+shufECG | 10 | 0.005 | 0.001 | 0.009 | 0.124 |
+| none | hdPS200+noise32-vs-hdPS200 | 10 | -0.002 | -0.006 | 0.001 | -0.076 |
+| none | hdPS200+shufECG-vs-hdPS200 | 10 | -0.002 | -0.005 | 0.002 | -0.061 |
+| none | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.003 | -0.001 | 0.006 | 0.094 |
+| null | C1 | 10 | 0.007 | 0.002 | 0.010 | 0.146 |
+| null | C2 | 10 | 0.005 | 0.001 | 0.008 | 0.153 |
+| null | sparse+noise32-vs-sparse | 10 | -0.000 | -0.004 | 0.003 | -0.002 |
+| null | sparse+shufECG-vs-sparse | 10 | -0.001 | -0.006 | 0.002 | -0.011 |
+| null | sparse+ECG-vs-sparse+shufECG | 10 | 0.008 | 0.004 | 0.012 | 0.155 |
+| null | hdPS200+noise32-vs-hdPS200 | 10 | 0.003 | -0.001 | 0.006 | 0.083 |
+| null | hdPS200+shufECG-vs-hdPS200 | 10 | 0.002 | -0.002 | 0.005 | 0.061 |
+| null | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.003 | -0.001 | 0.007 | 0.098 |
+| phys_only | C1 | 10 | 0.006 | 0.002 | 0.010 | 0.142 |
+| phys_only | C2 | 10 | -0.001 | -0.004 | 0.004 | -0.047 |
+| phys_only | sparse+noise32-vs-sparse | 10 | 0.011 | 0.007 | 0.015 | 0.253 |
+| phys_only | sparse+shufECG-vs-sparse | 10 | 0.004 | -0.001 | 0.007 | 0.084 |
+| phys_only | sparse+ECG-vs-sparse+shufECG | 10 | 0.003 | -0.001 | 0.008 | 0.063 |
+| phys_only | hdPS200+noise32-vs-hdPS200 | 10 | -0.001 | -0.004 | 0.003 | -0.036 |
+| phys_only | hdPS200+shufECG-vs-hdPS200 | 10 | -0.002 | -0.006 | 0.001 | -0.086 |
+| phys_only | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.001 | -0.002 | 0.007 | 0.036 |
+| strong | C1 | 10 | 0.004 | -0.001 | 0.009 | 0.067 |
+| strong | C2 | 10 | 0.001 | -0.002 | 0.004 | 0.019 |
+| strong | sparse+noise32-vs-sparse | 10 | 0.002 | -0.003 | 0.005 | 0.034 |
+| strong | sparse+shufECG-vs-sparse | 10 | -0.000 | -0.005 | 0.003 | -0.007 |
+| strong | sparse+ECG-vs-sparse+shufECG | 10 | 0.005 | 0.002 | 0.009 | 0.074 |
+| strong | hdPS200+noise32-vs-hdPS200 | 10 | -0.003 | -0.006 | 0.001 | -0.063 |
+| strong | hdPS200+shufECG-vs-hdPS200 | 10 | -0.007 | -0.010 | -0.003 | -0.165 |
+| strong | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.008 | 0.004 | 0.011 | 0.158 |
+
+## I1 Plasmode simulation — bootstrap resample with replacement (deviation 6; duplicates distort matching — superseded)
 
 **Scenario base** (true conditional HR 0.8; bias vs the arm's marginal truth; log-HR scale)
 
@@ -71,11 +178,11 @@ Reduction in |bias| (positive = the first arm is less biased), mean over trials,
 | scenario | contrast | trials | bias_reduction | lo | hi | relative_reduction |
 |---|---|---|---|---|---|---|
 | base | C1 | 10 | 0.005 | 0.000 | 0.008 | 0.098 |
-| base | C2 | 10 | -0.000 | -0.004 | 0.002 | -0.012 |
+| base | C2 | 10 | -0.000 | -0.004 | 0.003 | -0.012 |
 | base | sparse+noise32-vs-sparse | 10 | -0.001 | -0.004 | 0.003 | -0.025 |
 | base | sparse+shufECG-vs-sparse | 10 | -0.004 | -0.007 | -0.000 | -0.077 |
 | base | sparse+ECG-vs-sparse+shufECG | 10 | 0.008 | 0.004 | 0.011 | 0.162 |
-| base | hdPS200+noise32-vs-hdPS200 | 10 | -0.003 | -0.006 | 0.001 | -0.072 |
+| base | hdPS200+noise32-vs-hdPS200 | 10 | -0.003 | -0.006 | 0.000 | -0.072 |
 | base | hdPS200+shufECG-vs-hdPS200 | 10 | -0.000 | -0.004 | 0.003 | -0.001 |
 | base | hdPS200+ECG-vs-hdPS200+shufECG | 10 | -0.000 | -0.003 | 0.003 | -0.010 |
 | none | C1 | 10 | 0.005 | 0.001 | 0.008 | 0.129 |
@@ -85,30 +192,30 @@ Reduction in |bias| (positive = the first arm is less biased), mean over trials,
 | none | sparse+ECG-vs-sparse+shufECG | 10 | 0.009 | 0.005 | 0.012 | 0.207 |
 | none | hdPS200+noise32-vs-hdPS200 | 10 | -0.003 | -0.006 | 0.001 | -0.100 |
 | none | hdPS200+shufECG-vs-hdPS200 | 10 | -0.003 | -0.007 | 0.002 | -0.129 |
-| none | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.000 | -0.005 | 0.003 | 0.000 |
+| none | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.000 | -0.004 | 0.004 | 0.000 |
 | null | C1 | 10 | 0.010 | 0.006 | 0.013 | 0.178 |
-| null | C2 | 10 | 0.001 | -0.001 | 0.004 | 0.034 |
+| null | C2 | 10 | 0.001 | -0.002 | 0.004 | 0.034 |
 | null | sparse+noise32-vs-sparse | 10 | -0.002 | -0.005 | 0.002 | -0.029 |
-| null | sparse+shufECG-vs-sparse | 10 | -0.001 | -0.004 | 0.002 | -0.018 |
-| null | sparse+ECG-vs-sparse+shufECG | 10 | 0.011 | 0.007 | 0.013 | 0.192 |
+| null | sparse+shufECG-vs-sparse | 10 | -0.001 | -0.005 | 0.002 | -0.018 |
+| null | sparse+ECG-vs-sparse+shufECG | 10 | 0.011 | 0.007 | 0.014 | 0.192 |
 | null | hdPS200+noise32-vs-hdPS200 | 10 | -0.001 | -0.004 | 0.002 | -0.019 |
-| null | hdPS200+shufECG-vs-hdPS200 | 10 | 0.001 | -0.002 | 0.004 | 0.036 |
+| null | hdPS200+shufECG-vs-hdPS200 | 10 | 0.001 | -0.001 | 0.004 | 0.036 |
 | null | hdPS200+ECG-vs-hdPS200+shufECG | 10 | -0.000 | -0.003 | 0.003 | -0.002 |
-| phys_only | C1 | 10 | 0.000 | -0.003 | 0.004 | 0.000 |
-| phys_only | C2 | 10 | 0.007 | 0.003 | 0.010 | 0.188 |
-| phys_only | sparse+noise32-vs-sparse | 10 | 0.001 | -0.002 | 0.006 | 0.039 |
+| phys_only | C1 | 10 | 0.000 | -0.003 | 0.005 | 0.000 |
+| phys_only | C2 | 10 | 0.007 | 0.002 | 0.010 | 0.188 |
+| phys_only | sparse+noise32-vs-sparse | 10 | 0.001 | -0.002 | 0.005 | 0.039 |
 | phys_only | sparse+shufECG-vs-sparse | 10 | 0.001 | -0.003 | 0.004 | 0.014 |
 | phys_only | sparse+ECG-vs-sparse+shufECG | 10 | -0.001 | -0.004 | 0.003 | -0.014 |
 | phys_only | hdPS200+noise32-vs-hdPS200 | 10 | 0.000 | -0.004 | 0.004 | 0.001 |
-| phys_only | hdPS200+shufECG-vs-hdPS200 | 10 | 0.003 | -0.001 | 0.006 | 0.089 |
-| phys_only | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.004 | -0.000 | 0.007 | 0.109 |
+| phys_only | hdPS200+shufECG-vs-hdPS200 | 10 | 0.003 | -0.001 | 0.007 | 0.089 |
+| phys_only | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.004 | 0.000 | 0.007 | 0.109 |
 | strong | C1 | 10 | 0.008 | 0.004 | 0.011 | 0.115 |
 | strong | C2 | 10 | 0.001 | -0.002 | 0.004 | 0.021 |
 | strong | sparse+noise32-vs-sparse | 10 | 0.003 | -0.002 | 0.005 | 0.044 |
-| strong | sparse+shufECG-vs-sparse | 10 | -0.002 | -0.005 | 0.001 | -0.035 |
+| strong | sparse+shufECG-vs-sparse | 10 | -0.002 | -0.006 | 0.001 | -0.035 |
 | strong | sparse+ECG-vs-sparse+shufECG | 10 | 0.010 | 0.006 | 0.013 | 0.146 |
-| strong | hdPS200+noise32-vs-hdPS200 | 10 | -0.002 | -0.005 | 0.002 | -0.037 |
-| strong | hdPS200+shufECG-vs-hdPS200 | 10 | -0.006 | -0.008 | -0.003 | -0.126 |
+| strong | hdPS200+noise32-vs-hdPS200 | 10 | -0.002 | -0.005 | 0.001 | -0.037 |
+| strong | hdPS200+shufECG-vs-hdPS200 | 10 | -0.006 | -0.009 | -0.003 | -0.126 |
 | strong | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.007 | 0.003 | 0.010 | 0.130 |
 
 ## I1 Plasmode simulation — fixed matched sets, as registered (flawed: conflates chance imbalance with bias)
@@ -182,22 +289,22 @@ Reduction in |bias| (positive = the first arm is less biased), mean over trials,
 | base | sparse+noise32-vs-sparse | 10 | -0.008 | -0.012 | -0.003 | -0.146 |
 | base | sparse+shufECG-vs-sparse | 10 | -0.007 | -0.010 | -0.005 | -0.140 |
 | base | sparse+ECG-vs-sparse+shufECG | 10 | 0.018 | 0.014 | 0.021 | 0.300 |
-| base | hdPS200+noise32-vs-hdPS200 | 10 | -0.000 | -0.006 | 0.005 | -0.011 |
-| base | hdPS200+shufECG-vs-hdPS200 | 10 | 0.003 | -0.003 | 0.007 | 0.073 |
+| base | hdPS200+noise32-vs-hdPS200 | 10 | -0.000 | -0.007 | 0.006 | -0.011 |
+| base | hdPS200+shufECG-vs-hdPS200 | 10 | 0.003 | -0.002 | 0.008 | 0.073 |
 | base | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.007 | 0.003 | 0.009 | 0.188 |
 | none | C1 | 10 | 0.000 | -0.002 | 0.004 | 0.012 |
 | none | C2 | 10 | 0.010 | 0.005 | 0.014 | 0.285 |
 | none | sparse+noise32-vs-sparse | 10 | -0.002 | -0.008 | 0.002 | -0.063 |
 | none | sparse+shufECG-vs-sparse | 10 | -0.005 | -0.010 | -0.001 | -0.130 |
 | none | sparse+ECG-vs-sparse+shufECG | 10 | 0.006 | 0.001 | 0.010 | 0.125 |
-| none | hdPS200+noise32-vs-hdPS200 | 10 | 0.002 | -0.004 | 0.008 | 0.053 |
-| none | hdPS200+shufECG-vs-hdPS200 | 10 | -0.000 | -0.006 | 0.005 | -0.010 |
+| none | hdPS200+noise32-vs-hdPS200 | 10 | 0.002 | -0.004 | 0.007 | 0.053 |
+| none | hdPS200+shufECG-vs-hdPS200 | 10 | -0.000 | -0.006 | 0.006 | -0.010 |
 | none | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.010 | 0.006 | 0.013 | 0.292 |
 | null | C1 | 10 | 0.009 | 0.005 | 0.012 | 0.168 |
-| null | C2 | 10 | 0.013 | 0.008 | 0.015 | 0.287 |
+| null | C2 | 10 | 0.013 | 0.008 | 0.016 | 0.287 |
 | null | sparse+noise32-vs-sparse | 10 | -0.006 | -0.011 | -0.001 | -0.107 |
-| null | sparse+shufECG-vs-sparse | 10 | -0.008 | -0.011 | -0.005 | -0.156 |
-| null | sparse+ECG-vs-sparse+shufECG | 10 | 0.017 | 0.012 | 0.020 | 0.280 |
+| null | sparse+shufECG-vs-sparse | 10 | -0.008 | -0.012 | -0.005 | -0.156 |
+| null | sparse+ECG-vs-sparse+shufECG | 10 | 0.017 | 0.013 | 0.021 | 0.280 |
 | null | hdPS200+noise32-vs-hdPS200 | 10 | 0.003 | -0.002 | 0.008 | 0.068 |
 | null | hdPS200+shufECG-vs-hdPS200 | 10 | 0.006 | 0.001 | 0.009 | 0.127 |
 | null | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.007 | 0.004 | 0.010 | 0.184 |
@@ -208,99 +315,101 @@ Reduction in |bias| (positive = the first arm is less biased), mean over trials,
 | phys_only | sparse+ECG-vs-sparse+shufECG | 10 | 0.009 | 0.007 | 0.013 | 0.235 |
 | phys_only | hdPS200+noise32-vs-hdPS200 | 10 | 0.007 | 0.002 | 0.013 | 0.187 |
 | phys_only | hdPS200+shufECG-vs-hdPS200 | 10 | 0.004 | -0.001 | 0.009 | 0.103 |
-| phys_only | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.007 | 0.002 | 0.012 | 0.206 |
+| phys_only | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.007 | 0.002 | 0.013 | 0.206 |
 | strong | C1 | 10 | 0.016 | 0.013 | 0.019 | 0.244 |
-| strong | C2 | 10 | 0.012 | 0.009 | 0.014 | 0.218 |
-| strong | sparse+noise32-vs-sparse | 10 | -0.005 | -0.010 | -0.001 | -0.071 |
-| strong | sparse+shufECG-vs-sparse | 10 | -0.007 | -0.011 | -0.005 | -0.108 |
+| strong | C2 | 10 | 0.012 | 0.008 | 0.014 | 0.218 |
+| strong | sparse+noise32-vs-sparse | 10 | -0.005 | -0.011 | -0.002 | -0.071 |
+| strong | sparse+shufECG-vs-sparse | 10 | -0.007 | -0.011 | -0.004 | -0.108 |
 | strong | sparse+ECG-vs-sparse+shufECG | 10 | 0.023 | 0.020 | 0.027 | 0.318 |
-| strong | hdPS200+noise32-vs-hdPS200 | 10 | 0.005 | 0.000 | 0.011 | 0.098 |
-| strong | hdPS200+shufECG-vs-hdPS200 | 10 | 0.004 | -0.002 | 0.008 | 0.078 |
-| strong | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.007 | 0.003 | 0.013 | 0.151 |
+| strong | hdPS200+noise32-vs-hdPS200 | 10 | 0.005 | -0.001 | 0.010 | 0.098 |
+| strong | hdPS200+shufECG-vs-hdPS200 | 10 | 0.004 | -0.001 | 0.008 | 0.078 |
+| strong | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.007 | 0.004 | 0.013 | 0.151 |
 
 ## I3 Within-trial paired bootstrap (200 replicates per trial)
 
 Mean over trials of err(arm)² − err(comparator)² (negative = the first arm is closer to the target); 95% CI across bootstrap replicates; leave-one-trial-out range of the point estimate.
 
-| target | contrast | trials | mean_d_sqerr | lo | hi | share_trials_closer | loo_min | loo_max |
-|---|---|---|---|---|---|---|---|---|
-| RCT | C1 | 10 | 0.0058 | -0.0372 | 0.0292 | 0.7000 | -0.0062 | 0.0093 |
-| RCT | C2 | 10 | 0.0040 | -0.0441 | 0.0523 | 0.6000 | -0.0128 | 0.0118 |
-| RCT | sparse+noise32-vs-sparse | 10 | 0.0062 | -0.0331 | 0.0282 | 0.4000 | 0.0038 | 0.0082 |
-| RCT | sparse+shufECG-vs-sparse | 10 | 0.0039 | -0.0420 | 0.0350 | 0.4000 | 0.0008 | 0.0055 |
-| RCT | sparse+ECG-vs-sparse+shufECG | 10 | 0.0020 | -0.0367 | 0.0324 | 0.6000 | -0.0070 | 0.0065 |
-| RCT | hdPS200+noise32-vs-hdPS200 | 10 | -0.0220 | -0.0423 | 0.0243 | 0.8000 | -0.0254 | -0.0106 |
-| RCT | hdPS200+shufECG-vs-hdPS200 | 10 | -0.0144 | -0.0363 | 0.0376 | 0.4000 | -0.0184 | -0.0026 |
-| RCT | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.0185 | -0.0306 | 0.0479 | 0.5000 | -0.0101 | 0.0270 |
-| RCT | sparse+ECG8-vs-sparse | 10 | 0.0107 | -0.0397 | 0.0255 | 0.5000 | -0.0020 | 0.0155 |
-| RCT | sparse+ECG16-vs-sparse | 10 | 0.0026 | -0.0376 | 0.0316 | 0.5000 | -0.0021 | 0.0062 |
-| RCT | sparse+ECG-vs-sparse | 10 | 0.0058 | -0.0372 | 0.0292 | 0.7000 | -0.0062 | 0.0093 |
-| RCT | sparse+ECG64-vs-sparse | 10 | -0.0004 | -0.0356 | 0.0236 | 0.5000 | -0.0037 | 0.0036 |
-| RCT | sparse+ECGpheno-vs-sparse | 10 | -0.0041 | -0.0430 | 0.0235 | 0.7000 | -0.0062 | 0.0003 |
-| RCT | hdPS200+ECG8-vs-hdPS200 | 10 | -0.0180 | -0.0439 | 0.0293 | 0.8000 | -0.0204 | -0.0115 |
-| RCT | hdPS200+ECG16-vs-hdPS200 | 10 | -0.0187 | -0.0320 | 0.0405 | 0.7000 | -0.0224 | -0.0121 |
-| RCT | hdPS200+ECG-vs-hdPS200 | 10 | 0.0040 | -0.0441 | 0.0523 | 0.6000 | -0.0128 | 0.0118 |
-| RCT | hdPS200+ECG64-vs-hdPS200 | 10 | -0.0082 | -0.0381 | 0.0302 | 0.6000 | -0.0141 | -0.0037 |
-| RCT | hdPS200+ECGpheno-vs-hdPS200 | 10 | -0.0052 | -0.0451 | 0.0345 | 0.7000 | -0.0134 | 0.0009 |
-| R | C1 | 10 | 0.0102 | -0.0174 | 0.0172 | 0.4000 | 0.0011 | 0.0122 |
-| R | C2 | 10 | 0.0150 | -0.0251 | 0.0295 | 0.3000 | 0.0014 | 0.0176 |
-| R | sparse+noise32-vs-sparse | 10 | 0.0041 | -0.0150 | 0.0157 | 0.3000 | 0.0029 | 0.0053 |
-| R | sparse+shufECG-vs-sparse | 10 | 0.0011 | -0.0121 | 0.0222 | 0.5000 | -0.0014 | 0.0022 |
-| R | sparse+ECG-vs-sparse+shufECG | 10 | 0.0091 | -0.0220 | 0.0164 | 0.2000 | 0.0025 | 0.0105 |
-| R | hdPS200+noise32-vs-hdPS200 | 10 | -0.0099 | -0.0279 | 0.0191 | 0.7000 | -0.0131 | 0.0006 |
-| R | hdPS200+shufECG-vs-hdPS200 | 10 | -0.0038 | -0.0224 | 0.0261 | 0.3000 | -0.0093 | 0.0070 |
-| R | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.0189 | -0.0207 | 0.0297 | 0.5000 | -0.0056 | 0.0252 |
-| R | sparse+ECG8-vs-sparse | 10 | 0.0107 | -0.0140 | 0.0174 | 0.3000 | 0.0006 | 0.0124 |
-| R | sparse+ECG16-vs-sparse | 10 | 0.0080 | -0.0136 | 0.0183 | 0.3000 | 0.0051 | 0.0096 |
-| R | sparse+ECG-vs-sparse | 10 | 0.0102 | -0.0174 | 0.0172 | 0.4000 | 0.0011 | 0.0122 |
-| R | sparse+ECG64-vs-sparse | 10 | 0.0009 | -0.0161 | 0.0160 | 0.5000 | -0.0005 | 0.0019 |
-| R | sparse+ECGpheno-vs-sparse | 10 | -0.0005 | -0.0199 | 0.0135 | 0.4000 | -0.0017 | 0.0022 |
-| R | hdPS200+ECG8-vs-hdPS200 | 10 | -0.0043 | -0.0320 | 0.0224 | 0.5000 | -0.0071 | 0.0024 |
-| R | hdPS200+ECG16-vs-hdPS200 | 10 | -0.0033 | -0.0219 | 0.0327 | 0.4000 | -0.0058 | 0.0023 |
-| R | hdPS200+ECG-vs-hdPS200 | 10 | 0.0150 | -0.0251 | 0.0295 | 0.3000 | 0.0014 | 0.0176 |
-| R | hdPS200+ECG64-vs-hdPS200 | 10 | 0.0042 | -0.0246 | 0.0268 | 0.3000 | -0.0014 | 0.0093 |
-| R | hdPS200+ECGpheno-vs-hdPS200 | 10 | 0.0064 | -0.0272 | 0.0276 | 0.4000 | 0.0005 | 0.0092 |
-| R+ | C1 | 10 | -0.0016 | -0.0182 | 0.0178 | 0.5000 | -0.0034 | 0.0005 |
-| R+ | C2 | 10 | 0.0037 | -0.0297 | 0.0230 | 0.6000 | -0.0011 | 0.0070 |
-| R+ | sparse+noise32-vs-sparse | 10 | -0.0001 | -0.0132 | 0.0189 | 0.6000 | -0.0018 | 0.0011 |
-| R+ | sparse+shufECG-vs-sparse | 10 | 0.0002 | -0.0157 | 0.0221 | 0.4000 | -0.0008 | 0.0019 |
-| R+ | sparse+ECG-vs-sparse+shufECG | 10 | -0.0019 | -0.0206 | 0.0177 | 0.6000 | -0.0035 | -0.0002 |
-| R+ | hdPS200+noise32-vs-hdPS200 | 10 | -0.0010 | -0.0257 | 0.0189 | 0.5000 | -0.0030 | 0.0017 |
-| R+ | hdPS200+shufECG-vs-hdPS200 | 10 | 0.0067 | -0.0277 | 0.0241 | 0.4000 | 0.0036 | 0.0079 |
-| R+ | hdPS200+ECG-vs-hdPS200+shufECG | 10 | -0.0030 | -0.0249 | 0.0228 | 0.8000 | -0.0087 | 0.0001 |
-| R+ | sparse+ECG8-vs-sparse | 10 | -0.0005 | -0.0150 | 0.0171 | 0.5000 | -0.0022 | 0.0016 |
-| R+ | sparse+ECG16-vs-sparse | 10 | -0.0024 | -0.0171 | 0.0205 | 0.6000 | -0.0039 | -0.0006 |
-| R+ | sparse+ECG-vs-sparse | 10 | -0.0016 | -0.0182 | 0.0178 | 0.5000 | -0.0034 | 0.0005 |
-| R+ | sparse+ECG64-vs-sparse | 10 | -0.0034 | -0.0174 | 0.0129 | 0.7000 | -0.0043 | -0.0024 |
-| R+ | sparse+ECGpheno-vs-sparse | 10 | 0.0066 | -0.0197 | 0.0169 | 0.5000 | -0.0013 | 0.0084 |
-| R+ | hdPS200+ECG8-vs-hdPS200 | 10 | -0.0003 | -0.0251 | 0.0206 | 0.7000 | -0.0020 | 0.0024 |
-| R+ | hdPS200+ECG16-vs-hdPS200 | 10 | -0.0032 | -0.0275 | 0.0279 | 0.6000 | -0.0051 | -0.0008 |
-| R+ | hdPS200+ECG-vs-hdPS200 | 10 | 0.0037 | -0.0297 | 0.0230 | 0.6000 | -0.0011 | 0.0070 |
-| R+ | hdPS200+ECG64-vs-hdPS200 | 10 | 0.0089 | -0.0252 | 0.0233 | 0.5000 | -0.0003 | 0.0121 |
-| R+ | hdPS200+ECGpheno-vs-hdPS200 | 10 | -0.0074 | -0.0275 | 0.0236 | 0.6000 | -0.0101 | 0.0006 |
+**Inference:** the exact sign-flip test across trials (p_signflip) is the valid test; the bootstrap CI (lo, hi) re-matches on resamples with duplicate patients, which is not valid for matching estimators (audit), and is shown for description only.
+
+| target | contrast | trials | mean_d_sqerr | p_signflip | lo | hi | share_trials_closer | loo_min | loo_max | without_cabana |
+|---|---|---|---|---|---|---|---|---|---|---|
+| RCT | C1 | 10 | 0.0058 | 0.9414 | -0.0372 | 0.0292 | 0.7000 | -0.0062 | 0.0093 | 0.0058 |
+| RCT | C2 | 10 | 0.0040 | 0.9531 | -0.0441 | 0.0523 | 0.6000 | -0.0128 | 0.0118 | 0.0040 |
+| RCT | sparse+noise32-vs-sparse | 10 | 0.0062 | 0.1562 | -0.0331 | 0.0282 | 0.4000 | 0.0038 | 0.0082 | 0.0062 |
+| RCT | sparse+shufECG-vs-sparse | 10 | 0.0039 | 0.3633 | -0.0420 | 0.0350 | 0.4000 | 0.0008 | 0.0055 | 0.0039 |
+| RCT | sparse+ECG-vs-sparse+shufECG | 10 | 0.0020 | 0.9004 | -0.0367 | 0.0324 | 0.6000 | -0.0070 | 0.0065 | 0.0020 |
+| RCT | hdPS200+noise32-vs-hdPS200 | 10 | -0.0220 | 0.0332 | -0.0423 | 0.0243 | 0.8000 | -0.0254 | -0.0106 | -0.0220 |
+| RCT | hdPS200+shufECG-vs-hdPS200 | 10 | -0.0144 | 0.3203 | -0.0363 | 0.0376 | 0.4000 | -0.0184 | -0.0026 | -0.0144 |
+| RCT | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.0185 | 0.8867 | -0.0306 | 0.0479 | 0.5000 | -0.0101 | 0.0270 | 0.0185 |
+| RCT | sparse+ECG8-vs-sparse | 10 | 0.0107 | 0.6406 | -0.0397 | 0.0255 | 0.5000 | -0.0020 | 0.0155 | 0.0107 |
+| RCT | sparse+ECG16-vs-sparse | 10 | 0.0026 | 0.7441 | -0.0376 | 0.0316 | 0.5000 | -0.0021 | 0.0062 | 0.0026 |
+| RCT | sparse+ECG-vs-sparse | 10 | 0.0058 | 0.9414 | -0.0372 | 0.0292 | 0.7000 | -0.0062 | 0.0093 | 0.0058 |
+| RCT | sparse+ECG64-vs-sparse | 10 | -0.0004 | 0.9512 | -0.0356 | 0.0236 | 0.5000 | -0.0037 | 0.0036 | -0.0004 |
+| RCT | sparse+ECGpheno-vs-sparse | 10 | -0.0041 | 0.5215 | -0.0430 | 0.0235 | 0.7000 | -0.0062 | 0.0003 | -0.0041 |
+| RCT | hdPS200+ECG8-vs-hdPS200 | 10 | -0.0180 | 0.0605 | -0.0439 | 0.0293 | 0.8000 | -0.0204 | -0.0115 | -0.0180 |
+| RCT | hdPS200+ECG16-vs-hdPS200 | 10 | -0.0187 | 0.0625 | -0.0320 | 0.0405 | 0.7000 | -0.0224 | -0.0121 | -0.0187 |
+| RCT | hdPS200+ECG-vs-hdPS200 | 10 | 0.0040 | 0.9531 | -0.0441 | 0.0523 | 0.6000 | -0.0128 | 0.0118 | 0.0040 |
+| RCT | hdPS200+ECG64-vs-hdPS200 | 10 | -0.0082 | 0.3477 | -0.0381 | 0.0302 | 0.6000 | -0.0141 | -0.0037 | -0.0082 |
+| RCT | hdPS200+ECGpheno-vs-hdPS200 | 10 | -0.0052 | 0.6113 | -0.0451 | 0.0345 | 0.7000 | -0.0134 | 0.0009 | -0.0052 |
+| R | C1 | 10 | 0.0102 | 0.3203 | -0.0174 | 0.0172 | 0.4000 | 0.0011 | 0.0122 | 0.0102 |
+| R | C2 | 10 | 0.0150 | 0.2266 | -0.0251 | 0.0295 | 0.3000 | 0.0014 | 0.0176 | 0.0150 |
+| R | sparse+noise32-vs-sparse | 10 | 0.0041 | 0.0820 | -0.0150 | 0.0157 | 0.3000 | 0.0029 | 0.0053 | 0.0041 |
+| R | sparse+shufECG-vs-sparse | 10 | 0.0011 | 0.8379 | -0.0121 | 0.0222 | 0.5000 | -0.0014 | 0.0022 | 0.0011 |
+| R | sparse+ECG-vs-sparse+shufECG | 10 | 0.0091 | 0.1426 | -0.0220 | 0.0164 | 0.2000 | 0.0025 | 0.0105 | 0.0091 |
+| R | hdPS200+noise32-vs-hdPS200 | 10 | -0.0099 | 0.5254 | -0.0279 | 0.0191 | 0.7000 | -0.0131 | 0.0006 | -0.0099 |
+| R | hdPS200+shufECG-vs-hdPS200 | 10 | -0.0038 | 0.9219 | -0.0224 | 0.0261 | 0.3000 | -0.0093 | 0.0070 | -0.0038 |
+| R | hdPS200+ECG-vs-hdPS200+shufECG | 10 | 0.0189 | 0.9434 | -0.0207 | 0.0297 | 0.5000 | -0.0056 | 0.0252 | 0.0189 |
+| R | sparse+ECG8-vs-sparse | 10 | 0.0107 | 0.3047 | -0.0140 | 0.0174 | 0.3000 | 0.0006 | 0.0124 | 0.0107 |
+| R | sparse+ECG16-vs-sparse | 10 | 0.0080 | 0.0469 | -0.0136 | 0.0183 | 0.3000 | 0.0051 | 0.0096 | 0.0080 |
+| R | sparse+ECG-vs-sparse | 10 | 0.0102 | 0.3203 | -0.0174 | 0.0172 | 0.4000 | 0.0011 | 0.0122 | 0.0102 |
+| R | sparse+ECG64-vs-sparse | 10 | 0.0009 | 0.6543 | -0.0161 | 0.0160 | 0.5000 | -0.0005 | 0.0019 | 0.0009 |
+| R | sparse+ECGpheno-vs-sparse | 10 | -0.0005 | 0.9492 | -0.0199 | 0.0135 | 0.4000 | -0.0017 | 0.0022 | -0.0005 |
+| R | hdPS200+ECG8-vs-hdPS200 | 10 | -0.0043 | 0.7754 | -0.0320 | 0.0224 | 0.5000 | -0.0071 | 0.0024 | -0.0043 |
+| R | hdPS200+ECG16-vs-hdPS200 | 10 | -0.0033 | 0.7910 | -0.0219 | 0.0327 | 0.4000 | -0.0058 | 0.0023 | -0.0033 |
+| R | hdPS200+ECG-vs-hdPS200 | 10 | 0.0150 | 0.2266 | -0.0251 | 0.0295 | 0.3000 | 0.0014 | 0.0176 | 0.0150 |
+| R | hdPS200+ECG64-vs-hdPS200 | 10 | 0.0042 | 0.6074 | -0.0246 | 0.0268 | 0.3000 | -0.0014 | 0.0093 | 0.0042 |
+| R | hdPS200+ECGpheno-vs-hdPS200 | 10 | 0.0064 | 0.4336 | -0.0272 | 0.0276 | 0.4000 | 0.0005 | 0.0092 | 0.0064 |
+| R+ | C1 | 10 | -0.0016 | 0.6328 | -0.0182 | 0.0178 | 0.5000 | -0.0034 | 0.0005 | -0.0016 |
+| R+ | C2 | 10 | 0.0037 | 0.6465 | -0.0297 | 0.0230 | 0.6000 | -0.0011 | 0.0070 | 0.0037 |
+| R+ | sparse+noise32-vs-sparse | 10 | -0.0001 | 0.9570 | -0.0132 | 0.0189 | 0.6000 | -0.0018 | 0.0011 | -0.0001 |
+| R+ | sparse+shufECG-vs-sparse | 10 | 0.0002 | 0.9121 | -0.0157 | 0.0221 | 0.4000 | -0.0008 | 0.0019 | 0.0002 |
+| R+ | sparse+ECG-vs-sparse+shufECG | 10 | -0.0019 | 0.5176 | -0.0206 | 0.0177 | 0.6000 | -0.0035 | -0.0002 | -0.0019 |
+| R+ | hdPS200+noise32-vs-hdPS200 | 10 | -0.0010 | 0.8008 | -0.0257 | 0.0189 | 0.5000 | -0.0030 | 0.0017 | -0.0010 |
+| R+ | hdPS200+shufECG-vs-hdPS200 | 10 | 0.0067 | 0.1328 | -0.0277 | 0.0241 | 0.4000 | 0.0036 | 0.0079 | 0.0067 |
+| R+ | hdPS200+ECG-vs-hdPS200+shufECG | 10 | -0.0030 | 0.6758 | -0.0249 | 0.0228 | 0.8000 | -0.0087 | 0.0001 | -0.0030 |
+| R+ | sparse+ECG8-vs-sparse | 10 | -0.0005 | 0.8730 | -0.0150 | 0.0171 | 0.5000 | -0.0022 | 0.0016 | -0.0005 |
+| R+ | sparse+ECG16-vs-sparse | 10 | -0.0024 | 0.4414 | -0.0171 | 0.0205 | 0.6000 | -0.0039 | -0.0006 | -0.0024 |
+| R+ | sparse+ECG-vs-sparse | 10 | -0.0016 | 0.6328 | -0.0182 | 0.0178 | 0.5000 | -0.0034 | 0.0005 | -0.0016 |
+| R+ | sparse+ECG64-vs-sparse | 10 | -0.0034 | 0.1250 | -0.0174 | 0.0129 | 0.7000 | -0.0043 | -0.0024 | -0.0034 |
+| R+ | sparse+ECGpheno-vs-sparse | 10 | 0.0066 | 0.7637 | -0.0197 | 0.0169 | 0.5000 | -0.0013 | 0.0084 | 0.0066 |
+| R+ | hdPS200+ECG8-vs-hdPS200 | 10 | -0.0003 | 0.9434 | -0.0251 | 0.0206 | 0.7000 | -0.0020 | 0.0024 | -0.0003 |
+| R+ | hdPS200+ECG16-vs-hdPS200 | 10 | -0.0032 | 0.4023 | -0.0275 | 0.0279 | 0.6000 | -0.0051 | -0.0008 | -0.0032 |
+| R+ | hdPS200+ECG-vs-hdPS200 | 10 | 0.0037 | 0.6465 | -0.0297 | 0.0230 | 0.6000 | -0.0011 | 0.0070 | 0.0037 |
+| R+ | hdPS200+ECG64-vs-hdPS200 | 10 | 0.0089 | 0.5527 | -0.0252 | 0.0233 | 0.5000 | -0.0003 | 0.0121 | 0.0089 |
+| R+ | hdPS200+ECGpheno-vs-hdPS200 | 10 | -0.0074 | 0.5547 | -0.0275 | 0.0236 | 0.6000 | -0.0101 | 0.0006 | -0.0074 |
 
 ## I5 Supervised SHD logits and second ECG encoder (PRESENT-SHD LVEF<40 CNN penultimate layer, 32 PCs); SHD-scored cohort
 
-| target | contrast | trials | mean_d_sqerr | lo | hi | share_trials_closer | loo_min | loo_max |
-|---|---|---|---|---|---|---|---|---|
-| RCT | C1 | 10 | 0.0058 | -0.0372 | 0.0292 | 0.7000 | -0.0062 | 0.0093 |
-| RCT | C2 | 10 | 0.0040 | -0.0441 | 0.0523 | 0.6000 | -0.0128 | 0.0118 |
-| RCT | sparse+SHD-vs-sparse | 10 | -0.0068 | -0.0443 | 0.0226 | 0.7000 | -0.0094 | -0.0027 |
-| RCT | sparse+ENC2-vs-sparse | 10 | 0.0075 | -0.0390 | 0.0264 | 0.2000 | 0.0025 | 0.0130 |
-| RCT | hdPS200+SHD-vs-hdPS200 | 10 | -0.0202 | -0.0423 | 0.0327 | 0.7000 | -0.0227 | -0.0144 |
-| RCT | hdPS200+ENC2-vs-hdPS200 | 10 | 0.0130 | -0.0384 | 0.0222 | 0.7000 | -0.0087 | 0.0189 |
-| R | C1 | 10 | 0.0102 | -0.0174 | 0.0172 | 0.4000 | 0.0011 | 0.0122 |
-| R | C2 | 10 | 0.0150 | -0.0251 | 0.0295 | 0.3000 | 0.0014 | 0.0176 |
-| R | sparse+SHD-vs-sparse | 10 | -0.0004 | -0.0149 | 0.0137 | 0.5000 | -0.0013 | 0.0012 |
-| R | sparse+ENC2-vs-sparse | 10 | 0.0058 | -0.0176 | 0.0143 | 0.5000 | 0.0019 | 0.0071 |
-| R | hdPS200+SHD-vs-hdPS200 | 10 | 0.0042 | -0.0212 | 0.0325 | 0.4000 | -0.0024 | 0.0096 |
-| R | hdPS200+ENC2-vs-hdPS200 | 10 | 0.0214 | -0.0272 | 0.0214 | 0.3000 | 0.0032 | 0.0249 |
-| R+ | C1 | 10 | -0.0016 | -0.0182 | 0.0178 | 0.5000 | -0.0034 | 0.0005 |
-| R+ | C2 | 10 | 0.0037 | -0.0297 | 0.0230 | 0.6000 | -0.0011 | 0.0070 |
-| R+ | sparse+SHD-vs-sparse | 10 | 0.0017 | -0.0184 | 0.0152 | 0.6000 | -0.0005 | 0.0034 |
-| R+ | sparse+ENC2-vs-sparse | 10 | -0.0032 | -0.0163 | 0.0150 | 0.8000 | -0.0048 | -0.0013 |
-| R+ | hdPS200+SHD-vs-hdPS200 | 10 | 0.0058 | -0.0232 | 0.0258 | 0.5000 | 0.0008 | 0.0094 |
-| R+ | hdPS200+ENC2-vs-hdPS200 | 10 | 0.0074 | -0.0267 | 0.0186 | 0.5000 | 0.0006 | 0.0104 |
+| target | contrast | trials | mean_d_sqerr | p_signflip | share_trials_closer | loo_min | loo_max |
+|---|---|---|---|---|---|---|---|
+| RCT | C1 | 10 | 0.0058 | 0.9414 | 0.7000 | -0.0062 | 0.0093 |
+| RCT | C2 | 10 | 0.0040 | 0.9531 | 0.6000 | -0.0128 | 0.0118 |
+| RCT | sparse+SHD-vs-sparse | 10 | -0.0068 | 0.2559 | 0.7000 | -0.0094 | -0.0027 |
+| RCT | sparse+ENC2-vs-sparse | 10 | 0.0075 | 0.3770 | 0.2000 | 0.0025 | 0.0130 |
+| RCT | hdPS200+SHD-vs-hdPS200 | 10 | -0.0202 | 0.0176 | 0.7000 | -0.0227 | -0.0144 |
+| RCT | hdPS200+ENC2-vs-hdPS200 | 10 | 0.0130 | 0.9941 | 0.7000 | -0.0087 | 0.0189 |
+| R | C1 | 10 | 0.0102 | 0.3203 | 0.4000 | 0.0011 | 0.0122 |
+| R | C2 | 10 | 0.0150 | 0.2266 | 0.3000 | 0.0014 | 0.0176 |
+| R | sparse+SHD-vs-sparse | 10 | -0.0004 | 0.8594 | 0.5000 | -0.0013 | 0.0012 |
+| R | sparse+ENC2-vs-sparse | 10 | 0.0058 | 0.2383 | 0.5000 | 0.0019 | 0.0071 |
+| R | hdPS200+SHD-vs-hdPS200 | 10 | 0.0042 | 0.5430 | 0.4000 | -0.0024 | 0.0096 |
+| R | hdPS200+ENC2-vs-hdPS200 | 10 | 0.0214 | 0.4082 | 0.3000 | 0.0032 | 0.0249 |
+| R+ | C1 | 10 | -0.0016 | 0.6328 | 0.5000 | -0.0034 | 0.0005 |
+| R+ | C2 | 10 | 0.0037 | 0.6465 | 0.6000 | -0.0011 | 0.0070 |
+| R+ | sparse+SHD-vs-sparse | 10 | 0.0017 | 0.6055 | 0.6000 | -0.0005 | 0.0034 |
+| R+ | sparse+ENC2-vs-sparse | 10 | -0.0032 | 0.2559 | 0.8000 | -0.0048 | -0.0013 |
+| R+ | hdPS200+SHD-vs-hdPS200 | 10 | 0.0058 | 0.4648 | 0.5000 | 0.0008 | 0.0094 |
+| R+ | hdPS200+ENC2-vs-hdPS200 | 10 | 0.0074 | 0.4473 | 0.5000 | 0.0006 | 0.0104 |
 
 ## I6 Multiverse (4 PS models × 5 hdPS split seeds × 10 estimators = 200 specifications; imputation 1)
 
@@ -352,12 +461,12 @@ Per specification: mean over trials of |log HR − target|; difference first arm
 
 | contrast | scenario | expected_gain | sd_paired_abs_diff | trials_needed |
 |---|---|---|---|---|
-| C1 | base | 0.005 | 0.076 | 2057.000 |
-| C1 | phys_only | 0.000 | 0.076 | 49715294270.000 |
-| C1 | strong | 0.008 | 0.076 | 769.000 |
-| C2 | base | -0.000 | 0.083 | inf |
-| C2 | phys_only | 0.007 | 0.083 | 1060.000 |
-| C2 | strong | 0.001 | 0.083 | 64134.000 |
+| C1 | base | 0.003 | 0.076 | 5341.000 |
+| C1 | phys_only | 0.006 | 0.076 | 1163.000 |
+| C1 | strong | 0.004 | 0.076 | 2345.000 |
+| C2 | base | 0.003 | 0.083 | 7256.000 |
+| C2 | phys_only | -0.001 | 0.083 | inf |
+| C2 | strong | 0.001 | 0.083 | 88713.000 |
 
 ## I9 E-values for the disagreement with the RCT (HR ratio; rare-outcome approximation)
 
@@ -485,28 +594,28 @@ Agreement with the RCT after empirical calibration of the primary estimates:
 
 ## Stratified by trial role (physiology vs control)
 
-| role | trials | contrast | plasmode_rs_bias_reduction | pl_lo | pl_hi | boot_RCT_d | boot_RCT_lo | boot_RCT_hi | boot_R+_d | boot_R+_lo | boot_R+_hi | multiverse_share_rct |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| physiology | 5 | C1 | 0.0104 | 0.0029 | 0.0130 | -0.0055 | -0.0452 | 0.0199 | 0.0014 | -0.0241 | 0.0164 | 0.9750 |
-| physiology | 5 | C2 | -0.0068 | -0.0110 | -0.0021 | -0.0026 | -0.0389 | 0.0162 | -0.0022 | -0.0431 | 0.0219 | 0.8650 |
-| control | 5 | C1 | -0.0010 | -0.0062 | 0.0068 | 0.0171 | -0.0515 | 0.0631 | -0.0047 | -0.0259 | 0.0298 | 0.5000 |
-| control | 5 | C2 | 0.0059 | -0.0002 | 0.0099 | 0.0106 | -0.0712 | 0.1058 | 0.0096 | -0.0332 | 0.0476 | 0.5900 |
+| role | trials | contrast | plasmode_rs_bias_reduction | pl_lo | pl_hi | RCT_d | RCT_p_signflip | R+_d | R+_p_signflip | multiverse_share_rct |
+|---|---|---|---|---|---|---|---|---|---|---|
+| physiology | 5 | C1 | 0.0054 | -0.0014 | 0.0094 | -0.0055 | 0.4375 | 0.0014 | 0.6875 | 0.9750 |
+| physiology | 5 | C2 | -0.0024 | -0.0064 | 0.0017 | -0.0026 | 0.4375 | -0.0022 | 0.0625 | 0.8650 |
+| control | 5 | C1 | 0.0004 | -0.0050 | 0.0077 | 0.0171 | 1.0000 | -0.0047 | 0.5000 | 0.5000 |
+| control | 5 | C2 | 0.0078 | 0.0013 | 0.0123 | 0.0106 | 0.9375 | 0.0096 | 0.5000 | 0.5900 |
 
 ## Pre-specified decision rules
 
-- C1 rule 1 (plasmode [rs] base: bias-reduction CI excludes 0, > 0): **met**
-- C1 rule 1b (plasmode [rs] phys_only, supportive): **not met**
-- C1 rule 3 (plasmode [rs] base: less biased than shuffled-ECG placebo): **met**
-- C2 rule 1 (plasmode [rs] base: bias-reduction CI excludes 0, > 0): **not met**
-- C2 rule 1b (plasmode [rs] phys_only, supportive): **met**
-- C2 rule 3 (plasmode [rs] base: less biased than shuffled-ECG placebo): **not met**
-- C1 rule 2 (bootstrap vs RCT: CI < 0): **not met**
-- C1 rule 2 (bootstrap vs R+: CI < 0): **not met**
-- C1 rule 3 (beats shuffled-ECG placebo vs R+: CI < 0): **not met**
+- C1 rule 1 (plasmode [ss] base: bias-reduction CI excludes 0, > 0): **not met**
+- C1 rule 1b (plasmode [ss] phys_only, supportive): **met**
+- C1 rule 3 (plasmode [ss] base: less biased than shuffled-ECG placebo): **met**
+- C2 rule 1 (plasmode [ss] base: bias-reduction CI excludes 0, > 0): **not met**
+- C2 rule 1b (plasmode [ss] phys_only, supportive): **not met**
+- C2 rule 3 (plasmode [ss] base: less biased than shuffled-ECG placebo): **not met**
+- C1 rule 2 (vs RCT: mean Δ squared error < 0, exact sign-flip p < 0.05; audit fix): **not met**
+- C1 rule 2 (vs R+: mean Δ squared error < 0, exact sign-flip p < 0.05; audit fix): **not met**
+- C1 rule 3 (beats shuffled-ECG placebo vs R+: sign-flip p < 0.05): **not met**
 - C1 rule 4b (leave-one-out: sign holds in every set vs R+): **not met**
-- C2 rule 2 (bootstrap vs RCT: CI < 0): **not met**
-- C2 rule 2 (bootstrap vs R+: CI < 0): **not met**
-- C2 rule 3 (beats shuffled-ECG placebo vs R+: CI < 0): **not met**
+- C2 rule 2 (vs RCT: mean Δ squared error < 0, exact sign-flip p < 0.05; audit fix): **not met**
+- C2 rule 2 (vs R+: mean Δ squared error < 0, exact sign-flip p < 0.05; audit fix): **not met**
+- C2 rule 3 (beats shuffled-ECG placebo vs R+: sign-flip p < 0.05): **not met**
 - C2 rule 4b (leave-one-out: sign holds in every set vs R+): **not met**
 - C1 rule 4a (multiverse vs rct, mean_abs: >= 80% of specifications favour ECG): **met**
 - C1 rule 4a (multiverse vs rct, mean_sq: >= 80% of specifications favour ECG): **not met**

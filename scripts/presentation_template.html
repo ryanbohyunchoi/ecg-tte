@@ -66,6 +66,7 @@ code { background:#f1f3f7; padding:1px 4px; border-radius:3px; font-size:12.5px;
   <a class="sub" href="#s-designfid">Closer to the trial</a>
   <a class="sub" href="#s-nco">Negative controls</a>
   <a href="#s-v14">8. Where does ECG add? (v1.4)</a>
+  <a href="#s-panel">8b. RCT-DUPLICATE panel (corrected)</a>
   <a href="#s-rules">9. Decision-rule scoreboard</a>
   <a href="#s-limits">10. Limitations & next steps</a>
   <a href="#s-files">11. Files & provenance</a>
@@ -171,15 +172,16 @@ code { background:#f1f3f7; padding:1px 4px; border-radius:3px; font-size:12.5px;
 <section id="s-v13">
   <h2>7. Robustness program (protocol v1.3)</h2>
   <h3 id="s-plasmode">Plasmode: bias with a known true effect</h3>
-  <p>Real cohorts, real treatment assignment, simulated outcomes (true conditional HR 0.8, or 1.0 in "null"). Each replicate resamples patients and refits PS + matching (the corrected design; the registered fixed-matched-set version overstated the ECG's benefit — toggle to compare). Bars: reduction in |bias| when the ECG is added (positive = ECG arm less biased), with 95% Monte Carlo CI.</p>
-  <div class="controls"><label>Version <select id="plver"><option value="rs">resampled (correct)</option><option value="fixed">fixed matched sets (registered, flawed)</option></select></label></div>
+  <p>Real cohorts, real treatment assignment, simulated outcomes (true conditional HR 0.8, or 1.0 in "null"). Each replicate takes an 80% subsample of patients without replacement and refits PS + matching (valid for matching estimators; primary after the audit). The registered fixed-matched-set version and the bootstrap-resampled version are shown for comparison. Bars: reduction in |bias| when the ECG is added (positive = ECG arm less biased), with 95% Monte Carlo CI.</p>
+  <div class="controls"><label>Version <select id="plver"><option value="rs">80% subsample (valid; primary after audit)</option><option value="boot">bootstrap resample (superseded)</option><option value="fixed">fixed matched sets (registered, flawed)</option></select></label></div>
   <div id="plasmode"></div>
   <details><summary>Scenario definitions</summary><ul>
     <li><b>base</b>: outcome depends on all clinical covariates as fitted to the real outcome.</li>
     <li><b>phys_only</b>: only demographics, diagnoses and core-9 physiology drive the outcome (medications and utilisation switched off).</li>
     <li><b>strong</b>: physiology coefficients doubled. <b>none</b>: physiology switched off. <b>null</b>: true HR 1.0.</li></ul></details>
   <h3 id="s-boot">Paired bootstrap on real data</h3>
-  <p>For each trial, 200 bootstrap replicates; statistic = mean over trials of [error(ECG arm)² − error(comparator)²] against the chosen target. Negative = ECG arm closer. Intervals that cross zero = not demonstrated.</p>
+  <div class="bad"><b>Audit note.</b> These intervals come from a within-trial bootstrap that re-matches on resamples containing duplicate patients, which is not valid for matching estimators. They are shown for description only; the valid tests are the exact across-trial sign-flip tests in section 8b (hover a row for its sign-flip p).</div>
+  <p>Statistic = mean over trials of [error(ECG arm)² − error(comparator)²] against the chosen target. Negative = ECG arm closer.</p>
   <div class="controls"><label>Target <select id="btgt"><option value="RCT">RCT result</option><option value="R+">R+ (same-data physiology reference)</option><option value="R">R (clinical PS)</option></select></label></div>
   <div id="boot"></div>
   <h3 id="s-mv">Multiverse (200 analysis specifications)</h3>
@@ -203,6 +205,17 @@ code { background:#f1f3f7; padding:1px 4px; border-radius:3px; font-size:12.5px;
   <h2>8. Where does the ECG add information? (protocol v1.4)</h2>
   <p class="lede">Pre-registered tests of the settings where the ECG should matter most: thin coded records, codes deliberately deleted, no echo available, echo physiology as the hidden confounder, and a physiology-driven outcome.</p>
   <div id="v14box"></div>
+</section>
+
+<section id="s-panel">
+  <h2>8b. RCT-DUPLICATE metric panel, blinded closeness, and valid tests (after the audit)</h2>
+  <p class="lede">The metrics RCT-DUPLICATE (Wang, JAMA 2023) reports, per PS specification, plus the ratio of ratios and Heyard's dispersion φ (excess disagreement over what sampling error predicts; 1 = none). Closeness was rated with the published rubric by a rater who saw only the trial protocols and our emulation specifications, not our results.</p>
+  <div class="controls"><label>Trials <select id="pnset"><option value="all">all 18</option><option value="close">close (blinded rubric, 5)</option><option value="notclose">not close (13)</option></select></label></div>
+  <table id="t-panel"></table>
+  <h3>Paired comparisons with valid inference (exact sign-flip across trials)</h3>
+  <table id="t-ptests"></table>
+  <details><summary>Blinded closeness rating (RCT-DUPLICATE rubric)</summary><table id="t-close"></table></details>
+  <div class="key"><b>How to read this.</b> RCT-DUPLICATE reported agreement descriptively across several metrics and found it depended mostly on how closely the design could be emulated (r 0.93 in close vs 0.53 in other emulations). Our panel shows the same: the clinical PS agrees very well in the 5 blinded-close trials. The ECG's measurable contribution is a reduction in <i>excess</i> disagreement for PSs lacking clinical detail — sparse φ 4.7 → 3.4 (sign-flip p = 0.024 on precision-standardised disagreement), ECG alone vs no adjustment p = 0.002 — concentrated in trials that are not closely emulated.</div>
 </section>
 
 <section id="s-rules">
@@ -271,14 +284,15 @@ const rolePill = r => `<span class="pill ${r==='physiology'?'phys':'ctrl'}">${r}
     ["LV-structure balance, sparse → +ECG", `${pct(cap('sparse','LVSTRUCT'))} → ${pct(cap('sparse+ECG','LVSTRUCT'))}`, "median capture, physiology trials (phase 1)"],
     ["Plasmode bias reduction, C1", `${(p1.bias_reduction>=0?'+':'')}${f3(p1.bias_reduction)}`, `log HR (95% CI ${f3(p1.lo)} to ${f3(p1.hi)}); ≈${pct(100*p1.relative_reduction)} of sparse's bias`],
     ["Plasmode bias reduction, C2", `${(p2.bias_reduction>=0?'+':'')}${f3(p2.bias_reduction)}`, `CI ${f3(p2.lo)} to ${f3(p2.hi)} — no gain on top of hdPS`],
-    ["RCT agreement improved?", "not demonstrated", "consistent direction for C1, CIs include 0 on registered tests"],
+    ["Excess disagreement with RCTs (Heyard φ)", "4.7 → 3.4", "sparse → sparse+ECG; clinical PS 2.7; sign-flip p = 0.024 on precision-standardised disagreement"],
+    ["Registered RCT test (squared error)", "not significant", "C1 closer in 14/18 trials; exact sign-flip p = 0.50"],
   ];
   document.getElementById('cards').innerHTML = cards.map(c=>`<div class="card"><div class="lbl">${c[0]}</div><div class="big">${c[1]}</div><div class="lbl">${c[2]}</div></div>`).join('');
   const rows = [
     {part:"Phase 1 — balance", q:"Does the ECG balance characteristics the PS didn't use?", a:"<span class='pill yes'>yes</span> Large gains for echo LV structure/function and measured physiology; not for valves."},
     {part:"Phase 2 — effect estimates", q:"Does the ECG make HRs agree better with the RCTs?", a:"<span class='pill no'>not demonstrated</span> Mean error slightly lower with ECG, but within noise (H5 not supported)."},
     {part:"v1.3 plasmode", q:"With a known truth, does the ECG reduce bias?", a:"<span class='pill part'>small</span> C1: yes, ≈8% (≈20% in physiology trials). C2: no."},
-    {part:"v1.3 bootstrap / permutation", q:"Is the improvement vs the RCT distinguishable from chance?", a:"<span class='pill no'>no</span> except physiology trials C1 (exploratory subgroup); not vs R+."},
+    {part:"v1.3/v1.4 across-trial tests (after audit)", q:"Is the improvement vs the RCT distinguishable from chance?", a:"<span class='pill part'>partly</span> Registered squared-error test: no (p = 0.50). Precision-standardised disagreement (RCT-DUPLICATE/Heyard-style): sparse+ECG vs sparse p = 0.024; ECG alone vs unadjusted p = 0.002. Nothing on top of hdPS."},
     {part:"v1.3 multiverse", q:"Is the direction robust to analysis choices?", a:"<span class='pill yes'>direction yes</span> C1 favoured in all 200 specifications vs RCT (not a significance test)."},
     {part:"v1.3 design fidelity", q:"Does emulating the trial more closely help?", a:"<span class='pill no'>no</span> None of transport, per-protocol, run-in, strict outcomes improved overall agreement."},
     {part:"v1.4 mechanism", q:"Does the ECG help more where data are thin, echo is missing, or echo physiology confounds?", a:"<span id='v14sum'>see section 8</span>"},
@@ -412,7 +426,7 @@ function ciplot(el, rows, opts){
 
 // ---------- plasmode
 function drawPlasmode(){
-  const v=document.getElementById('plver').value, arr = v==='rs'? DATA.v13.plasmode_rs : DATA.v13.plasmode_fixed;
+  const v=document.getElementById('plver').value, arr = v==='rs'? DATA.v13.plasmode_rs : v==='boot'? DATA.v13.plasmode_boot : DATA.v13.plasmode_fixed;
   const scen=["base","phys_only","strong","none","null"], rows=[];
   scen.forEach(s=>["C1","C2"].forEach(c=>{ const r=(arr||[]).find(x=>x.scenario===s&&x.contrast===c); if(r) rows.push({label:`${s} · ${c==='C1'?'sparse→+ECG':'hdPS→+ECG'}`, est:r.bias_reduction, lo:r.lo, hi:r.hi, color:c==='C1'?COL['sparse+ECG']:COL['hdPS200+ECG'], extra:`relative to comparator's |bias|: ${pct(100*r.relative_reduction)}; ${r.trials} trials`}); }));
   scen.forEach(s=>{ const r=(arr||[]).find(x=>x.scenario===s&&x.contrast==='sparse+ECG-vs-sparse+shufECG'); if(r) rows.push({label:`${s} · real ECG vs shuffled ECG (sparse)`, est:r.bias_reduction, lo:r.lo, hi:r.hi, color:'#888'}); });
@@ -424,7 +438,7 @@ document.getElementById('plver').onchange=drawPlasmode; drawPlasmode();
 function drawBoot(){
   const tg=document.getElementById('btgt').value, bc=DATA.v13.boot_cross||[];
   const want=[["C1","C1: sparse+ECG vs sparse"],["C2","C2: hdPS200+ECG vs hdPS200"],["sparse+noise32-vs-sparse","placebo: sparse+noise vs sparse"],["sparse+shufECG-vs-sparse","placebo: sparse+shuffled ECG vs sparse"],["sparse+ECG-vs-sparse+shufECG","real vs shuffled ECG (sparse)"],["hdPS200+ECG-vs-hdPS200+shufECG","real vs shuffled ECG (hdPS)"]];
-  const rows=want.map(([k,lab])=>{ const r=bc.find(x=>x.target===tg&&x.contrast===k); return r? {label:lab, est:r.mean_d_sqerr, lo:r.lo, hi:r.hi, color:k.startsWith('C1')?COL['sparse+ECG']:k.startsWith('C2')?COL['hdPS200+ECG']:'#888', extra:`ECG arm closer in ${pct(100*r.share_trials_closer)} of trials; leave-one-out ${f4(r.loo_min)} to ${f4(r.loo_max)}`} : null; }).filter(x=>x);
+  const rows=want.map(([k,lab])=>{ const r=bc.find(x=>x.target===tg&&x.contrast===k); return r? {label:lab, est:r.mean_d_sqerr, lo:r.lo, hi:r.hi, color:k.startsWith('C1')?COL['sparse+ECG']:k.startsWith('C2')?COL['hdPS200+ECG']:'#888', extra:`exact sign-flip p = ${f3(r.p_signflip)}; ECG arm closer in ${pct(100*r.share_trials_closer)} of trials; leave-one-out ${f4(r.loo_min)} to ${f4(r.loo_max)}`} : null; }).filter(x=>x);
   ciplot(document.getElementById('boot'), rows, {left:'first arm closer', right:'first arm farther', leftGood:true, x0:300});
 }
 document.getElementById('btgt').onchange=drawBoot; drawBoot();
@@ -500,6 +514,25 @@ document.getElementById('dtgt').onchange=drawDose; drawDose();
     const rb=order.map(p=>{ const r=BT.find(x=>x.pool===p&&x.contrast===c&&x.target===tg); return r? {label:plab[p]||p, est:r.mean_d_sqerr, lo:r.lo, hi:r.hi, color:c==='C1'?COL['sparse+ECG']:COL['hdPS200+ECG'], extra:`${r.trials} trials`}:null; }).filter(x=>x);
     ciplot(document.getElementById('v14bt'), rb, {left:'ECG arm closer', right:'ECG arm farther', leftGood:true, x0:320}); }
   ['v14c','v14s','v14t'].forEach(i=>document.getElementById(i).onchange=draw); if(scen.includes('base')) ss.value='base'; draw();
+})();
+
+// ---------- panel (8b)
+(function(){
+  const pn=DATA.panel||{}; const sel=document.getElementById('pnset');
+  function draw(){ const rows=(pn[sel.value]||[]); table('t-panel',[{label:"PS",val:r=>r.arm},{label:"Trials",val:r=>r.trials,num:true},
+    {label:"Significance agreement",val:r=>r.significance_agreement,fmt:r=>pct(100*r.significance_agreement),num:true},{label:"Estimate agreement",val:r=>r.estimate_agreement,fmt:r=>pct(100*r.estimate_agreement),num:true},
+    {label:"Std-difference agreement",val:r=>r.std_diff_agreement,fmt:r=>pct(100*r.std_diff_agreement),num:true},{label:"Pearson r (LOO range)",val:r=>r.pearson_r,fmt:r=>`${f2(r.pearson_r)} (${f2(r.r_loo_min)}–${f2(r.r_loo_max)})`,num:true},
+    {label:"Ratio of ratios (95% CI)",val:r=>r.ratio_of_ratios,fmt:r=>`${f2(r.ratio_of_ratios)} (${f2(r.ror_lo)}–${f2(r.ror_hi)})`,num:true},{label:"I²",val:r=>r.I2,fmt:r=>pct(100*r.I2),num:true},
+    {label:"Dispersion φ",val:r=>r.dispersion_phi,fmt:r=>f2(r.dispersion_phi),num:true},{label:"Mean |Δlog HR|",val:r=>r.mean_abs_dlog,fmt:r=>f3(r.mean_abs_dlog),num:true}], rows.slice()); }
+  sel.onchange=draw; draw();
+  table('t-ptests',[{label:"Trial set",val:r=>r.subset},{label:"Comparison",val:r=>r.comparison},{label:"Trials",val:r=>+r.trials,num:true},{label:"Closer to RCT",val:r=>r.closer},
+    {label:"Mean Δ|log HR|",val:r=>+r.mean_diff_abs,fmt:r=>r.mean_diff_abs,num:true},{label:"sign-flip p",val:r=>+r.p_abs,fmt:r=>r.p_abs,num:true},
+    {label:"Mean Δ precision-standardised z²",val:r=>+r.mean_diff_z2,fmt:r=>r.mean_diff_z2,num:true},{label:"sign-flip p",val:r=>+r.p_z2,fmt:r=>(+r.p_z2<0.05?`<b>${r.p_z2}</b>`:r.p_z2),num:true}], (DATA.paired_tests||[]).slice());
+  const c=DATA.closeness||{}; const rows=Object.entries(c).filter(([k,v])=>typeof v==='object').map(([k,v])=>({k, ...v}));
+  const yn=x=>x===true?'yes':x===false?'no':String(x);
+  table('t-close',[{label:"Trial",val:r=>r.k},{label:"In-hospital start",val:r=>yn(r.in_hospital_start)},{label:"Responder run-in",val:r=>yn(r.responder_run_in)},
+    {label:"Baseline therapy discontinued",val:r=>yn(r.baseline_therapy_discontinuation)},{label:"Delayed effect, long follow-up",val:r=>yn(r.delayed_effect_long_followup)},
+    {label:"Comparator",val:r=>String(r.comparator_emulation)},{label:"Outcome",val:r=>String(r.outcome_emulation)},{label:"Close",val:r=>r.close_emulation?1:0,fmt:r=>`<span class="pill ${r.close_emulation?'yes':'no'}">${r.close_emulation?'close':'not close'}</span>`}], rows);
 })();
 
 // ---------- rules

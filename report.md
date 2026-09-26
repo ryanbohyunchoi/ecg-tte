@@ -283,6 +283,8 @@ there is little power. Script: `scripts/summarize_phase2_se.py`. Tables:
 
 ## 5b. Exploratory robustness program (protocol v1.3, 2026-09-25)
 
+> **Correction (independent audit, 2026-09-25):** several numbers and claims in this section are superseded by §5d (valid across-trial tests, subsampled plasmode, rebuilt EMPEROR-Preserved and CABANA). Read §5d first.
+
 **Status.** Registered in `docs/PROTOCOL_V1_3_AMENDMENT.md` (tag `protocol-v1.3`) after phase 2 and
 before any of these analyses ran. Seven deviations are dated and logged in that file. The frozen
 phase-2 results in §5 are unchanged. Everything here is exploratory. CIPHER-EHR was deferred (Ryan).
@@ -397,7 +399,7 @@ the PS and matching in every replicate (Franklin 2014). Only the corrected versi
 
 **Bottom line of v1.3.**
 1. **Measurable, but small.** Where the truth is known, adding the ECG to a sparse PS removes a
-   small but real amount of bias, about 8% overall and about 20% in physiology trials. It does
+   small but real amount of bias, about 7% overall and about 14% in physiology trials (corrected in §5d). It does
    nothing on top of hdPS.
 2. **Consistent in direction, not significant on the registered tests.** Against the RCTs, sparse
    + ECG moves estimates in the right direction consistently:
@@ -421,6 +423,8 @@ the PS and matching in every replicate (Franklin 2014). Only the corrected versi
    gain is unresolved.
 
 ## 5c. Where does the ECG add information? (protocol v1.4, 2026-09-25, exploratory)
+
+> **Correction (independent audit, 2026-09-25):** the "significantly closer" statements below relied on a within-trial bootstrap that is not valid for matching estimators; they are re-tested in §5d with exact across-trial tests.
 
 **Status.** Registered in `docs/PROTOCOL_V1_4_AMENDMENT.md` (tag `protocol-v1.4`) before running.
 Covers all 18 trials. One deviation is logged: trial–arm cells with fewer than 80% successful
@@ -469,6 +473,174 @@ When the coded record is intact, as in this large, data-rich health system, it h
 When much of the record is missing, the ECG's contribution is large enough to show up against the
 RCTs. The natural settings to test next are external or data-poor sites: new patients, claims-poor
 systems, or cross-system transport.
+
+## 5d. Audit, corrected results, and framing against RCT-DUPLICATE (2026-09-25)
+
+### What the independent audit changed
+
+An independent audit covered the code, the numbers and the claims. It found no critical bug, but
+six major issues. All fixes are logged in `docs/PROTOCOL_V1_4_AMENDMENT.md` ("Independent audit")
+before re-summarising.
+
+1. **The within-trial paired bootstrap is invalid for matched estimators.**
+   - It re-matches on resamples that contain duplicate patients (Abadie & Imbens 2008). The shift
+     in the paired C1 difference had an SD of about 0.06 across trials.
+   - **Fix:**
+     - Real-data claims now use the exact sign-flip test across trials, with leave-one-out and
+       without-CABANA ranges; binary metrics use exact McNemar tests.
+     - The plasmode now uses 80% subsampling without replacement.
+     - Bootstrap intervals are shown for description only.
+   - **Withdrawn claims:**
+     - the precision-weighted p = 0.02, whose variances came from the bootstrap;
+     - "the physiology-trial CI excludes 0" (the sign-flip p is 0.086);
+     - "significantly closer vs R+ under dropout".
+2. **EMPEROR-Preserved had no type 2 diabetes gate for its DPP-4i comparator.** Rebuilt as v2.
+3. **CABANA's ablation arm was selected, and its bleeding definition was far too broad** (a 39%
+   event rate). Rebuilt as v2. CABANA remains heavily confounded (unadjusted HR 0.20 against the
+   RCT's 0.86).
+4. **The per-protocol analyses were invalid for CABANA and EAST-AFNET 4.** Fixed.
+5. **The "about 20% in physiology trials" figure was wrong;** it is about 14%. Other minor wording
+   issues are corrected.
+
+### Corrected results, 18 trials
+
+Comparisons are with EMPEROR-Preserved v2 and CABANA v2 in place.
+
+**Mean |Δlog HR| vs RCT (frozen phase-2 analysis):**
+
+| PS | Mean \|Δlog HR\| |
+|---|---|
+| Sparse | 0.182 |
+| Sparse + ECG | 0.162 |
+| hdPS200 | 0.162 |
+| hdPS200 + ECG | 0.160 |
+| Clinical PS | 0.144 |
+
+**The RCT-DUPLICATE metric panel** (full-cohort estimates, imputation 1; `docs/V14_PANEL.md`):
+
+| PS | Significance agreement | Estimate agreement | Std-difference agreement | Pearson r | Ratio of ratios (95% CI) | Heyard dispersion φ* |
+|---|---|---|---|---|---|---|
+| Unadjusted | 56% | 33% | 50% | 0.31 | 0.87 (0.74–1.02) | 13.8 |
+| Demographics | 50% | 44% | 56% | 0.27 | 0.88 (0.76–1.01) | 9.8 |
+| ECG only | 50% | 44% | 67% | 0.34 | 0.89 (0.79–1.00) | 6.9 |
+| Demographics + ECG | 50% | 44% | 61% | 0.42 | 0.91 (0.81–1.02) | 6.1 |
+| Sparse | 44% | 56% | 61% | 0.30 | 0.93 (0.84–1.03) | 4.7 |
+| **Sparse + ECG** | 44% | 56% | **78%** | 0.28 | **0.95 (0.87–1.04)** | **3.4** |
+| hdPS200 | 28% | 50% | 56% | 0.24 | 0.99 (0.90–1.08) | 3.3 |
+| hdPS200 + ECG | 39% | 50% | 72% | 0.13 | 1.00 (0.92–1.08) | 2.7 |
+| Clinical PS | 39% | 56% | 72% | 0.54 | 0.96 (0.88–1.04) | 2.7 |
+
+*φ = excess disagreement over what the two estimates' sampling error predicts; 1 means none.
+Heyard 2024 found about 2 across RCT-DUPLICATE.
+
+**Tests with valid across-trial inference.** Each ECG arm is compared with its non-ECG counterpart.
+
+| Contrast | Trials closer to RCT | Mean \|Δ\| difference (sign-flip p) | Precision-standardised disagreement z² (sign-flip p) |
+|---|---|---|---|
+| **Sparse + ECG vs sparse** | **14/18** | −0.020 (p = 0.27) | **−1.40 (p = 0.024)** |
+| hdPS200 + ECG vs hdPS200 | 10/18 | −0.002 (p = 0.92) | −0.57 (p = 0.24) |
+| **ECG only vs unadjusted** | 14/18 | **−0.057 (p = 0.031)** | **−6.40 (p = 0.002)** |
+| **Demographics + ECG vs demographics** | 14/18 | **−0.058 (p = 0.034)** | **−3.67 (p = 0.006)** |
+
+Additional results:
+- **By blinded closeness rating.** Among the 13 trials rated not closely emulated, sparse + ECG
+  vs sparse gives z² p = 0.010, closer in 10/13, with φ falling from 6.3 to 4.3.
+- **Among the 5 close emulations,** every adjusted PS already agrees well (sparse φ 0.9; clinical
+  PS φ 0.25, r 0.88), leaving the ECG nothing to add.
+- **Directional consistency** among the 9 RCTs with significant results (`docs/V14_DIRECTION.md`):
+
+  | PS | Same direction as RCT |
+  |---|---|
+  | Sparse + ECG | 9/9 |
+  | Sparse | 8/9 |
+  | Demographics + ECG | 9/9 |
+  | Demographics | 7/9 |
+  | Clinical PS | 9/9 |
+
+  Differences in these counts are not significant (McNemar).
+
+**Plasmode, subsampled (valid for matching).**
+- **Sparse + ECG vs sparse, all trials:** bias reduction +0.004 (95% CI 0.001–0.006, about 7%).
+  It beats the shuffled-ECG placebo (+0.006).
+- **Physiology trials:** +0.009 (0.005–0.012). **Control trials:** about 0.
+- **hdPS + ECG vs hdPS:** 0.000 (−0.002 to 0.002).
+- **ECG alone** removes 20% of confounding bias, against 13% for demographics.
+
+**Code dropout (subsampled plasmode).**
+- **Sparse + ECG vs sparse, bias reduction as codes are deleted:**
+
+  | Codes deleted | Bias reduction (log HR) |
+  |---|---|
+  | 0% (intact) | +0.004 |
+  | 50% | +0.010 |
+  | 75% | +0.018 |
+  | 90% | +0.021 |
+
+  The difference from intact has a 95% CI above 0 at every level.
+- **Real data vs RCT (exact sign-flip, 18 trials):**
+
+  | Codes deleted | Mean Δ squared error | Trials closer | p |
+  |---|---|---|---|
+  | 50% | −0.031 | 13/18 | 0.15 |
+  | **75%** | **−0.045** | **15/18** | **0.010** |
+  | 90% | −0.058 | 10/18 | 0.28 |
+
+  Against R+, none is significant.
+
+**HF-hospitalisation outcome** (no RCT benchmark). Against R+, sparse + ECG moves closer in 16/18
+trials (mean Δ squared error −0.0047; sign-flip p = 0.0006). The plasmode gain for this outcome is
+small (+0.001).
+
+**Pre-specified decision rules for "ECG improves", C1:**
+- **Met:**
+  - rule 1, plasmode bias reduction (subsampled);
+  - rule 3, beats the placebo in the plasmode;
+  - rule 4a, the multiverse direction;
+  - rule 4b, the sign holds when any one trial is left out, vs R+.
+- **Not met:** rule 2, significance against the RCT or R+ on the registered squared-error
+  sign-flip test (vs RCT: −0.017, p = 0.50).
+
+For C2 (ECG on top of hdPS), essentially nothing is met.
+
+### How this compares with RCT-DUPLICATE, and how to frame the paper
+
+- **Our overall agreement is in the RCT-DUPLICATE range.**
+  - RCT-DUPLICATE (Wang, JAMA 2023, 32 trials): significance agreement 75%, estimate agreement
+    66%, standardised-difference agreement 75%, r 0.82.
+  - Ours, best arm: standardised-difference agreement 72–78%, which matches theirs. Estimate
+    agreement is 56%, lower.
+  - Our r is lower (0.3–0.5) because the true effects span a narrow range.
+- **Closeness explains agreement, as it did for them.** RCT-DUPLICATE found r 0.93 in its 16
+  closely emulated trials. In our 5 blinded-close trials, the clinical PS reaches r 0.88 and φ 0.25.
+  Most disagreement comes from design mismatch, not confounding (Heyard 2024). No PS can fix that.
+- **Where the ECG helps.** Its measurable contribution is reducing excess, precision-standardised
+  disagreement for PSs that lack clinical detail:
+  - sparse φ 4.7 → 3.4 (p = 0.024);
+  - ECG alone vs no adjustment, p = 0.002;
+  - most of it in trials that are *not* closely emulated, where the coded record captures
+    confounding least well;
+  - and when coded data are missing (dropout), in both the known-truth simulation and the real
+    data.
+- **Wording to use.** Following the literature's norm (Wyss 2025: "improved balance and may provide
+  a modest benefit"; Wang 2023: conditional on close emulation):
+
+  > "ECG embeddings improved balance on unmeasured cardiac structure, reduced simulated confounding
+  > bias (most when coded data were sparse), and reduced excess disagreement with RCT results for
+  > sparse propensity scores; they added little to high-dimensional PS in a data-rich health
+  > system."
+- **Novelty.** The literature search found no published use of ECG waveforms or embeddings for
+  confounding adjustment.
+- **Don't overclaim.**
+  - The headline registered squared-error test against RCTs is not significant.
+  - Everything in §5b–5d is exploratory and post hoc relative to phase 2.
+  - Many tests were run, with no correction for multiplicity.
+
+**Remaining next steps, each with a precedent** (`docs/` literature notes):
+1. Stratify by predicted EHR continuity (Lin 2018).
+2. Vary the look-back period (Nakasian 2017; Conover 2018).
+3. Select ECG features with outcome-adaptive methods (Veitch 2020; Weckstein 2026).
+4. Negative controls chosen to be confounded by cardiac physiology (ReClaim 2026).
+5. A pre-registered prospective prediction for an ongoing trial (BenchExCal).
 
 ## 6. Interpretation and limitations
 

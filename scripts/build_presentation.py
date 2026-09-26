@@ -27,13 +27,14 @@ DOMAINS = [("phys_obs", "Core-9 physiology (measured)"), ("LVSTRUCT", "Echo: LV 
            ("AORTA", "Echo: aortic root"), ("BNP", "NT-proBNP"), ("LAB", "Other labs"), ("meds", "Medications"),
            ("util", "Healthcare use"), ("poolB", "Rest of coded record"), ("prog_full", "Prognostic score")]
 V14_NOTES = [
-    "<b>Thin coded record → the ECG helps, and it shows up against the RCTs (hypothesis B supported).</b> When 50–90% of each patient's recorded codes are deleted at random (same patients, same ECGs), the plasmode bias reduction from adding the ECG to sparse grows from +0.004 (codes intact) to +0.013, +0.016 and +0.022 log HR, and on the <i>real</i> data sparse+ECG moves significantly closer to both the RCTs (e.g. 75% dropout: −0.056, 95% CI −0.079 to −0.016) and the physiology reference R+ (−0.018, −0.034 to −0.005). On top of hdPS the gain is smaller (plasmode +0.005 to +0.010; real-data CIs include 0).",
-    "<b>Naturally data-poor patients (hypothesis A) did not show it.</b> The lowest code-density tertile had no larger ECG gain for sparse; for hdPS the plasmode gain was larger in the low tertile (+0.010, CI 0.0005–0.019) but not in the real-data bootstrap. Patients with few codes also tend to be less confounded, so natural thinness is not the same as losing information.",
-    "<b>No echo vs echo (hypothesis C): no difference.</b> The sparse+ECG gain is similar whether or not the patient had an echo (+0.011 vs +0.009).",
-    "<b>Echo physiology as the hidden confounder (hypothesis D): little confounding to remove.</b> When only demographics, diagnoses and measured echo physiology drive the outcome, sparse is already about as unbiased as the clinical PS (|bias| 0.033 vs 0.036), so there is nothing for the ECG to fix. Conditional on coded diagnoses, the cardiac structure the ECG captures is a weak confounder in these cohorts — which explains why large balance gains (phase 1) translate into small bias reductions.",
-    "<b>HF-hospitalisation outcome (hypothesis E): small.</b> Plasmode gains of +0.001 to +0.005; real-data bootstrap vs R+ not significant.",
+    "<b>Codes missing → the ECG's contribution grows (hypothesis B supported; subsampled plasmode after the audit).</b> Randomly deleting 50/75/90% of each patient's recorded codes raises the bias reduction from adding the ECG to sparse from +0.004 (codes intact) to +0.010, +0.018 and +0.021 log HR. On the real data, at 75% deletion sparse+ECG is closer to the RCT in 15/18 trials (exact sign-flip p = 0.010); at 50% and 90% p = 0.15 and 0.28; versus R+ not significant.",
+    "<b>Naturally data-poor patients (A) and patients without an echo (C): no larger gain.</b> Patients with few codes are also less confounded, so natural thinness is not the same as losing information.",
+    "<b>Echo physiology as the hidden confounder (D): little to remove.</b> When only demographics, diagnoses and measured echo drive the outcome, sparse is already about as unbiased as the clinical PS; the cardiac structure the ECG captures is a weak confounder once diagnoses are adjusted for — why large balance gains give small bias reductions.",
+    "<b>HF-hospitalisation outcome (E).</b> Versus the same-data physiology reference R+, sparse+ECG is closer in 16/18 trials (sign-flip p = 0.0006); the plasmode gain for this outcome is small (+0.001).",
+    "<b>Audit correction.</b> Earlier versions of this page reported bootstrap-based significance (dropout vs R+, physiology trials, precision-weighted p = 0.02). The within-trial bootstrap re-matches on resamples with duplicates and is not valid for matching estimators; all real-data tests are now exact across-trial sign-flip tests.",
 ]
-FAILED = {"castle_af": "ablation arm 149 at cohort", "engage_af": "edoxaban arm 70 at cohort", "dcp": "smaller arm with ECG 255",
+FAILED = {"emperor_preserved (v1)": "replaced by v2 after audit (no type 2 diabetes gate for the DPP-4i comparator)",
+          "cabana (v1)": "replaced by v2 after audit (selected ablation arm; bleeding definition too broad)", "castle_af": "ablation arm 149 at cohort", "engage_af": "edoxaban arm 70 at cohort", "dcp": "smaller arm with ECG 255",
           "invest": "smaller arm with ECG 224", "paradise_mi": "smaller arm with ECG 296",
           "dionysos": "not emulable (outcome); balance only", "paradigm_hf": "new-user design; sensitivity only (sequential design used)"}
 
@@ -90,6 +91,17 @@ def main():
                 phase2[r.trial].setdefault("trial|matched", {})["R+"] = dict(hr=float(np.exp(r.loghr)), lo=float(np.exp(r.loghr - 1.96 * r.se)),
                                                                             hi=float(np.exp(r.loghr + 1.96 * r.se)), loghr=r.loghr, se=r.se)
     failed = [dict(key=k, name=TRIALS[k]["name"].replace(" (adapted)", "") if k in TRIALS else k, reason=v) for k, v in FAILED.items()]
+    # paired tests from the metric panel (exact sign-flip / McNemar), recomputed here from the panel script output
+    import re
+    pt = []
+    txt = (ROOT / "docs" / "V14_PANEL.md").read_text() if (ROOT / "docs" / "V14_PANEL.md").exists() else ""
+    for sec in re.split(r"^## ", txt, flags=re.M)[1:]:
+        title = sec.split("\n", 1)[0].strip()
+        for line in sec.splitlines():
+            m = line.split("|")
+            if len(m) > 10 and " vs " in m[1] and "comparison" not in m[1]:
+                pt.append(dict(subset=title, comparison=m[1].strip(), trials=m[2].strip(), mean_diff_abs=m[3].strip(), p_abs=m[4].strip(),
+                               closer=m[5].strip(), mean_diff_z2=m[6].strip(), p_z2=m[7].strip()))
     # v1.3 multiverse per specification diffs
     mv = csv(V13 / "multiverse_specs_combined.csv")
     mvd = []
@@ -105,7 +117,8 @@ def main():
         meta=dict(generated=datetime.now().strftime("%Y-%m-%d %H:%M"), commit=commit),
         labels=LAB, domains=DOMAINS, trials=trials, failed=failed, capture=capture, phase2=phase2,
         v13=dict(
-            plasmode_rs=recs(csv(V13 / "plasmode_rs_contrasts_combined.csv")),
+            plasmode_rs=recs(csv(V13 / "plasmode_ss_contrasts_combined.csv")),
+            plasmode_boot=recs(csv(V13 / "plasmode_rs_contrasts_combined.csv")),
             plasmode_fixed=recs(csv(V13 / "plasmode_fixed_contrasts_combined.csv")),
             plasmode_rs_trial=recs(csv(V13 / "plasmode_rs_by_trial_combined.csv")),
             boot_cross=recs(csv(V13 / "bootstrap_cross_combined.csv")),
@@ -116,6 +129,9 @@ def main():
             nco=recs(csv(V13 / "nco_systematic_error_combined.csv")),
             rules=recs(csv(V13 / "decision_rules_combined.csv").rename(columns={"Unnamed: 0": "rule", "0": "met"})
                        if csv(V13 / "decision_rules_combined.csv") is not None else None)),
+        paired_tests=pt, panel=dict(all=recs(csv(V14 / "panel_all.csv")), close=recs(csv(V14 / "panel_close.csv")), notclose=recs(csv(V14 / "panel_not.csv"))),
+        closeness=json.load(open(V14 / "closeness_rating.json")) if (V14 / "closeness_rating.json").exists() else {},
+        direction=recs(csv(V14 / "direction_differences.csv")),
         v14=dict(notes=V14_NOTES, plasmode=recs(csv(V14 / "plasmode_contrasts.csv")), boot=recs(csv(V14 / "bootstrap_contrasts.csv")),
                  hypotheses=recs(csv(V14 / "hypotheses.csv")), strata=recs(csv(V14 / "strata.csv"))),
     )
