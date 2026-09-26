@@ -247,3 +247,11 @@ the corrected results were seen.
    - MIMIC-IV and UK Biobank are reported as external validation (secondary/supplementary),
      **whatever their results.** That covers the original composites and the death outcome.
    - Whether external results are shown is not conditional on their statistical significance.
+- **2026-09-26, death amendment detail (before any death result).**
+  - **The problem.** UKB death registration is incomplete in the last month: July 2024 has 79
+    deaths, against about 440–520 in each earlier month. The amlodipine arms are concentrated in
+    late imaging visits, so late incompleteness would bias them differentially.
+  - **The fix.** UKB death outcomes are censored at **2024-06-30**, the last complete month.
+    Index visits are allowed up to 2023-12-31, giving at least 180 days of possible follow-up.
+  - **Calendar overlap.** `index_year` is already in every PS. Calendar-year overlap between arms
+    is also reported.
