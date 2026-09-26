@@ -37,7 +37,10 @@ MODE = dict(elig=False)  # --elig: audit sensitivity (trials' own eligibility), 
 
 
 def outdir(trial):
-    d = Path(AUDIT) / (f"claude-v15s-ukb-{trial}-elig" if MODE["elig"] else f"claude-v15-ukb-{trial}")
+    if MODE.get("dir_fmt"):
+        d = Path(AUDIT) / MODE["dir_fmt"].format(trial=trial)
+    else:
+        d = Path(AUDIT) / (f"claude-v15s-ukb-{trial}-elig" if MODE["elig"] else f"claude-v15-ukb-{trial}")
     d.mkdir(mode=0o700, exist_ok=True)
     return d
 
@@ -141,8 +144,9 @@ def cohort(trials):
         n = lambda s: sup(int(s.sum()) if s.dtype == bool else len(s))
         elig = pd.Series(True, index=b.index)
         att.append(("imaging visit (instance 2) attended", n(elig)))
-        elig &= b.index_date < END
-        att.append((f"index before data end {DATA_END}", n(elig)))
+        index_end = MODE.get("index_end", END)
+        elig &= b.index_date < index_end
+        att.append((f"index before {index_end.date()}" + ("" if index_end == END else f" ({MODE.get('index_end_label', 'extended index window')})"), n(elig)))
         elig &= ~(b.death_date <= b.index_date)
         att.append(("alive at index", n(elig)))
         inA, inB, inEX = build_arms(trial, spec, b, medw)
