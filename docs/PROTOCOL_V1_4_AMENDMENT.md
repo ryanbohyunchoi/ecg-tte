@@ -187,3 +187,18 @@ correction below was made before the affected results were re-summarised.
    - v1.4 E did not add prior HF hospitalisation to R+; logged as a deviation.
    - The entropy-balancing docstring was wrong, and CABANA's Table-1 values are medians used as
      means; noted.
+- **2026-09-26, post-hoc addition I (Ryan): CLMBR sensitivity analysis, and correlation reporting.**
+  - **Arms.** CLMBR-T code-only embeddings, 64 PCs as in the phase-1 grid, which the rebuilt
+    design reproduces to within 1e-14. Arms:
+    - CLMBR alone;
+    - CLMBR + ECG;
+    - sparse + CLMBR, and sparse + CLMBR + ECG;
+    - hdPS200 + CLMBR, and hdPS200 + CLMBR + ECG;
+    - with the existing arms as comparators.
+  - **Analyses, all 18 trials:**
+    - real-data full-cohort estimates (imputation 1), with the RCT-DUPLICATE panel and exact
+      sign-flip tests;
+    - 80% subsampled plasmode, 200 replicates.
+  - **Correlation, reported as in RCT-DUPLICATE:** Pearson r of log HRs with a Fisher 95% CI,
+    and Spearman ρ. Differences between arms are tested by resampling trials, which is valid
+    because the trials are independent.

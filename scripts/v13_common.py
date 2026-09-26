@@ -86,6 +86,7 @@ class Trial:
         # the grid intersects with CLMBR embeddings too
         ehr = (f"{A}/comet-clmbr-full-NAyb4G2x/report/restricted_embeddings_part-*.parquet" if n == "comet"
                else f"{A}/claude-{n}-clmbr-codeonly/report/restricted_embeddings_part-*.parquet")
+        self._ehr_glob = ehr
         clm_keys = pd.concat([pd.read_parquet(f, columns=["patient_key"]) for f in sorted(glob.glob(ehr))]).patient_key
         common = cov.index
         for idx in (ecg.index, pd.Index(clm_keys), ph.index, panel.index):
@@ -103,6 +104,7 @@ class Trial:
         self.ecg_raw = ecg.loc[common].to_numpy(float)
         self.ecg_pc64 = pcs(self.ecg_raw, 64)
         self.ecg_pc = self.ecg_pc64[:, :32]
+        self._clm_pc = None  # CLMBR-T 64 PCs, loaded lazily (post-hoc addition I)
         self.ph = ph.loc[common].to_numpy(float)
         if with_shd:
             self.shd = S.loc[common].to_numpy(float)
@@ -181,6 +183,14 @@ class Trial:
         D.lv_np = D.lv.to_numpy(float)
         return D
 
+    @property
+    def clm_pc(self):
+        if self._clm_pc is None:
+            C = emb(self._ehr_glob)
+            C = C[~C.index.duplicated()].reindex(self.keys)
+            self._clm_pc = pcs(C.to_numpy(float), 64)  # as in the phase-1 grid (eval_longtail_balance: clm_f)
+        return self._clm_pc
+
     # ---- design matrices ----
     def hd(self, k=200, t=None, rows=None):
         """hdPS top-k levels ranked on (possibly resampled) treatment vector."""
@@ -200,6 +210,8 @@ class Trial:
         E = {"ECG": pc, "ECG8": sel(self.ecg_pc64[:, :8]), "ECG16": sel(self.ecg_pc64[:, :16]), "ECG64": sel(self.ecg_pc64),
              "ECGpheno": np.hstack([sel(self.ph), pc]), "noise32": sel(self.noise32),
              "shufECG": sel(self.ecg_pc[self.shuffle_perm])}
+        if any("CLMBR" in a for a in which):
+            E["CLMBR"] = sel(self.clm_pc)
         if self.shd is not None:
             E["SHD"] = sel(self.shd)
         if getattr(self, "enc2", None) is not None:
@@ -212,6 +224,8 @@ class Trial:
                 out[a] = core
             elif a == "R+":
                 out[a] = np.hstack([core, sel(self.X_pp)])
+            elif a.startswith("CLMBR"):  # post-hoc addition I: CLMBR alone / CLMBR+ECG
+                out[a] = np.hstack([E[p] for p in a.split("+")])
             elif a == "ECGonly":  # post-hoc v1.4 addition: ECG PCs alone
                 out[a] = pc
             elif a == "demo":
