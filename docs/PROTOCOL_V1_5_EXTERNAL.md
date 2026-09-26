@@ -140,3 +140,21 @@ Matching and estimation:
   - **ICD-9 codes** are kept as separate panel features, because no GEMs mapping table is on disk.
   - **Negative controls** (appendicitis, inguinal hernia, cholelithiasis) have very few events and
     are uninformative; this is noted.
+- **2026-09-26 (UK Biobank cohorts), recorded before any outcome was analysed.**
+  - **Infeasible parts.**
+    - DOAC vs warfarin: UKB coding 4 (field 20003) has no DOAC entries.
+    - The GP new-user variant: the processed "meds" table is self-report mapped to RxNorm, not GP
+      prescribing, and no GP-scripts file is on disk.
+  - **Feasible comparisons:** ontarget (ARB vs ACEi, with ELITE II as a secondary benchmark on
+    all-cause death), allhat (amlodipine vs thiazide) and ascot (amlodipine vs beta-blocker).
+  - **Data end:** 2022-10-31, the latest hospital first-occurrence date. Visits after it are
+    excluded.
+  - **Outcomes.** All-cause death replaces CV/CHD death, because cause of death is not in the
+    extract. The trials' age and high-risk eligibility criteria are not applied; the looser cohorts
+    are counted only.
+  - **Code panel.** The dx panel uses all history before index, because the source records only
+    first occurrences.
+  - **Biomarkers** come from instance 1 or 0, 4–10 years before index.
+  - **CLMBR embeddings** are usable: the ID is the eid and the censor date is the imaging visit.
+    They cover about 67% of each cohort, so CLMBR arms are analysed within the covered subset, and
+    the main arms are re-run in that same subset for like-for-like comparison.
