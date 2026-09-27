@@ -1,0 +1,2310 @@
+[
+ {
+  "name": "age_at_index",
+  "domain": "demographics",
+  "definition": "Age in years at index (exact DOB)",
+  "codes": "person.birth_datetime",
+  "lookback_days": 0,
+  "priority": "core",
+  "source_refs": [
+   "KH1",
+   "KH3",
+   "KH7",
+   "KH8",
+   "RD3",
+   "RD4",
+   "SE1",
+   "OH2",
+   "UK1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-core",
+  "id": 1
+ },
+ {
+  "name": "sex",
+  "domain": "demographics",
+  "definition": "Recorded sex",
+  "codes": "person.gender_concept_id 8507/8532",
+  "lookback_days": 0,
+  "priority": "core",
+  "source_refs": [
+   "KH1",
+   "KH3",
+   "KH7",
+   "KH8",
+   "RD3",
+   "RD4",
+   "SE1",
+   "OH2",
+   "UK1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-core",
+  "id": 2
+ },
+ {
+  "name": "race",
+  "domain": "demographics",
+  "definition": "Race categories (White/Black/Asian/other/unknown)",
+  "codes": "Epic PATIENT_RACE_ALL",
+  "lookback_days": 0,
+  "priority": "core",
+  "source_refs": [
+   "KH1",
+   "KH3",
+   "KH8",
+   "RD4",
+   "OH2",
+   "UK1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "held-out v16",
+  "id": 3
+ },
+ {
+  "name": "ethnicity_hispanic",
+  "domain": "demographics",
+  "definition": "Hispanic ethnicity, with explicit unknown",
+  "codes": "Epic PATIENT_ETHNICITY",
+  "lookback_days": 0,
+  "priority": "core",
+  "source_refs": [
+   "KH3",
+   "KH8",
+   "RD4",
+   "OH2"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "held-out v16",
+  "id": 4
+ },
+ {
+  "name": "index_year",
+  "domain": "calendar",
+  "definition": "Calendar year (or quarter) of index",
+  "codes": "index_date",
+  "lookback_days": 0,
+  "priority": "core",
+  "source_refs": [
+   "KH3",
+   "RD3",
+   "RD4",
+   "OH2",
+   "UK1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-core",
+  "id": 5
+ },
+ {
+  "name": "prior_observation_days",
+  "domain": "administrative",
+  "definition": "Days from first recorded YNHHS visit to index (length of health-system engagement). OMOP observation_period is unusable, so derive it from the first visit",
+  "codes": "visit_occurrence min(visit_start_date)",
+  "lookback_days": null,
+  "priority": "common",
+  "source_refs": [
+   "OH2",
+   "KH2"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 6
+ },
+ {
+  "name": "care_site_campus",
+  "domain": "administrative",
+  "definition": "Site of the most recent pre-index encounter (YNHH York St/St Raphael, Bridgeport, Greenwich, L+M, community practice). Analogue of claims 'region'",
+  "codes": "Epic hosp_enc HOSPITAL_AREA_NAME / outpatient DEPARTMENT_NAME",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "KH8",
+   "RD3",
+   "RD4",
+   "OH2",
+   "UK1"
+  ],
+  "yale_availability": "partial",
+  "current_panel": "none",
+  "id": 7
+ },
+ {
+  "name": "index_setting_inpatient",
+  "domain": "administrative",
+  "definition": "Drug initiated during or at discharge from an inpatient stay vs outpatient (index-day visit type)",
+  "codes": "visit_occurrence 9201/9203/9202 on index date",
+  "lookback_days": 0,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "KH8"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 8
+ },
+ {
+  "name": "insurance_type",
+  "domain": "SES",
+  "definition": "Primary payer: Medicare / Medicaid / commercial / dual / self-pay",
+  "codes": "payer/coverage table (not in extract)",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "KH1",
+   "RD3",
+   "KH15"
+  ],
+  "yale_availability": "no",
+  "current_panel": "none",
+  "id": 9
+ },
+ {
+  "name": "low_income_or_dual",
+  "domain": "SES",
+  "definition": "Medicaid, dual eligibility or low-income subsidy indicator",
+  "codes": "payer table (not in extract)",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "no",
+  "current_panel": "none",
+  "id": 10
+ },
+ {
+  "name": "area_deprivation_index",
+  "domain": "SES",
+  "definition": "ADI national percentile / state decile of residence (Neighborhood Atlas). Only the current ZIP is available, so use a ZIP/ZCTA-level approximation",
+  "codes": "Epic Patients.ZIP + external ADI file",
+  "lookback_days": 0,
+  "priority": "common",
+  "source_refs": [
+   "IX9",
+   "UK1"
+  ],
+  "yale_availability": "partial",
+  "current_panel": "none",
+  "id": 11
+ },
+ {
+  "name": "area_ses_other",
+  "domain": "SES",
+  "definition": "CDC SVI or ZIP median household income (ACS). Khera-lab T2D registry used ZIP income",
+  "codes": "Epic Patients.ZIP + CDC SVI",
+  "lookback_days": 0,
+  "priority": "occasional",
+  "source_refs": [
+   "KH15"
+  ],
+  "yale_availability": "partial",
+  "current_panel": "none",
+  "id": 12
+ },
+ {
+  "name": "preferred_language_non_english",
+  "domain": "SES",
+  "definition": "Preferred language not English / interpreter needed",
+  "codes": "Epic PATIENT.LANGUAGE_C (not in extract)",
+  "lookback_days": 0,
+  "priority": "occasional",
+  "source_refs": [],
+  "yale_availability": "no",
+  "current_panel": "none",
+  "id": 13
+ },
+ {
+  "name": "smoking",
+  "domain": "lifestyle",
+  "definition": "Current tobacco use (dx proxy); ever-use adds history-of-dependence code",
+  "codes": "current F17, Z72.0; ever adds Z87.891",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "KH10",
+   "UK1",
+   "IX10"
+  ],
+  "yale_availability": "partial",
+  "current_panel": "held-out v16",
+  "id": 14
+ },
+ {
+  "name": "alcohol_use_disorder",
+  "domain": "lifestyle",
+  "definition": "Alcohol abuse/dependence or alcohol-related organ disease",
+  "codes": "F10, K70, G62.1, I42.6, Z71.41",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "IX1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 15
+ },
+ {
+  "name": "drug_use_disorder",
+  "domain": "lifestyle",
+  "definition": "Non-alcohol substance use disorder",
+  "codes": "F11-F16, F18, F19",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "IX1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 16
+ },
+ {
+  "name": "obesity_dx",
+  "domain": "lifestyle",
+  "definition": "Obesity diagnosis or BMI-code >= 30",
+  "codes": "E66.0/.1/.2/.8/.9, Z68.3x, Z68.4x",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "IX1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "held-out v16",
+  "id": 17
+ },
+ {
+  "name": "bmi",
+  "domain": "vitals",
+  "definition": "Latest BMI kg/m2",
+  "codes": "measurement 4245997",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "KH8",
+   "KH9",
+   "KH10",
+   "UK1",
+   "IX10"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "core (withheld from claims-like PS)",
+  "id": 18
+ },
+ {
+  "name": "heart_failure",
+  "domain": "CV history",
+  "definition": "Any HF diagnosis",
+  "codes": "I50, I11.0, I13.0, I13.2, I09.81",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "KH1",
+   "RD3",
+   "RD4",
+   "SE1",
+   "AF1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial (extra_dx in AF/ACS/DM trials)",
+  "id": 19
+ },
+ {
+  "name": "prior_hf_hospitalization",
+  "domain": "CV history",
+  "definition": "Inpatient stay ending before index with I50 (principal or any position); also the count of such stays",
+  "codes": "9201 visit + I50 in stay",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "RD4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "held-out v16",
+  "id": 20
+ },
+ {
+  "name": "ischemic_heart_disease",
+  "domain": "CV history",
+  "definition": "Any IHD (stable/unstable angina, ACS, chronic IHD, old MI)",
+  "codes": "I20-I25",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "KH7",
+   "RD3",
+   "RD4",
+   "UK1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-core",
+  "id": 21
+ },
+ {
+  "name": "prior_mi",
+  "domain": "CV history",
+  "definition": "Acute or old MI",
+  "codes": "I21, I22, I23, I25.2",
+  "lookback_days": "any prior",
+  "priority": "core",
+  "source_refs": [
+   "KH1",
+   "KH7",
+   "KH8",
+   "KH9",
+   "RD3",
+   "RD4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none (inside IHD)",
+  "id": 22
+ },
+ {
+  "name": "prior_pci",
+  "domain": "CV history",
+  "definition": "History of PCI (status code or procedure)",
+  "codes": "Z95.5, Z98.61; CPT 92920-92944, C9600-C9608",
+  "lookback_days": "any prior",
+  "priority": "core",
+  "source_refs": [
+   "KH8",
+   "RD3",
+   "RD4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial (Z codes, some trials)",
+  "id": 23
+ },
+ {
+  "name": "prior_cabg",
+  "domain": "CV history",
+  "definition": "History of CABG",
+  "codes": "Z95.1; CPT 33510-33536",
+  "lookback_days": "any prior",
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "RD4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial (Z codes, some trials)",
+  "id": 24
+ },
+ {
+  "name": "atrial_fibrillation_flutter",
+  "domain": "CV history",
+  "definition": "AF or atrial flutter",
+  "codes": "I48",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "KH8",
+   "RD3",
+   "SE1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-core",
+  "id": 25
+ },
+ {
+  "name": "other_arrhythmia",
+  "domain": "CV history",
+  "definition": "SVT / other arrhythmia; separately VT/VF or cardiac arrest (any prior)",
+  "codes": "I47.1, I49.1-I49.9; VT/VF/arrest I47.2, I49.0, I46",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 26
+ },
+ {
+  "name": "conduction_disorder",
+  "domain": "CV history",
+  "definition": "AV block / bundle branch block. ECG-proximal: expect the embedding to capture it",
+  "codes": "I44, I45",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 27
+ },
+ {
+  "name": "cardiac_device",
+  "domain": "CV history",
+  "definition": "PPM / ICD / CRT present or implanted",
+  "codes": "Z95.0, Z95.81x, Z45.0x; CPT 33206-33249, 33224-33226",
+  "lookback_days": "any prior",
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 28
+ },
+ {
+  "name": "valve_disease",
+  "domain": "CV history",
+  "definition": "Valvular heart disease",
+  "codes": "I05-I08, I34-I37",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "KH11"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-core",
+  "id": 29
+ },
+ {
+  "name": "prior_valve_procedure",
+  "domain": "CV history",
+  "definition": "Prosthetic valve / TAVR / surgical valve",
+  "codes": "Z95.2-Z95.4; CPT 33361-33369, 33405-33430",
+  "lookback_days": "any prior",
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "exclusion only (AF trials)",
+  "id": 30
+ },
+ {
+  "name": "cardiomyopathy",
+  "domain": "CV history",
+  "definition": "Cardiomyopathy (dilated, hypertrophic, other)",
+  "codes": "I42, I43",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "KH12",
+   "KH17"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 31
+ },
+ {
+  "name": "hypertension",
+  "domain": "CV history",
+  "definition": "Hypertension",
+  "codes": "I10-I16",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "KH7",
+   "RD3",
+   "RD4",
+   "UK1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-core",
+  "id": 32
+ },
+ {
+  "name": "pulmonary_hypertension",
+  "domain": "CV history",
+  "definition": "Pulmonary hypertension / pulmonary heart disease",
+  "codes": "I27",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 33
+ },
+ {
+  "name": "hyperlipidemia",
+  "domain": "CV history",
+  "definition": "Hyperlipidemia",
+  "codes": "E78.0-E78.5",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "KH14"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "held-out v16",
+  "id": 34
+ },
+ {
+  "name": "ischemic_stroke",
+  "domain": "CV history",
+  "definition": "Ischemic stroke or sequelae",
+  "codes": "I63, I69.3",
+  "lookback_days": "any prior",
+  "priority": "core",
+  "source_refs": [
+   "KH7",
+   "RD3",
+   "RD4",
+   "IX3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-core (pooled stroke_history)",
+  "id": 35
+ },
+ {
+  "name": "intracranial_hemorrhage",
+  "domain": "CV history",
+  "definition": "Hemorrhagic stroke / ICH",
+  "codes": "I60-I62, I69.0-I69.2",
+  "lookback_days": "any prior",
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "IX4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-core (pooled) / exclusion PLATO",
+  "id": 36
+ },
+ {
+  "name": "tia",
+  "domain": "CV history",
+  "definition": "Transient ischemic attack",
+  "codes": "G45 (excl G45.4)",
+  "lookback_days": "any prior",
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "IX3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial (AF trials)",
+  "id": 37
+ },
+ {
+  "name": "peripheral_arterial_disease",
+  "domain": "CV history",
+  "definition": "PAD / atherosclerosis of extremities / PAD procedures",
+  "codes": "I70.2-I70.7, I73.9, I74.2-I74.4, Z89.4-Z89.6; CPT 37220-37235",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "IX3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-core (narrow: I702, I739)",
+  "id": 38
+ },
+ {
+  "name": "vte_history",
+  "domain": "CV history",
+  "definition": "DVT/PE history",
+  "codes": "I26, I80.1-I80.2, I82.4, Z86.71",
+  "lookback_days": "any prior",
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 39
+ },
+ {
+  "name": "cha2ds2_vasc",
+  "domain": "risk score",
+  "definition": "CHA2DS2-VASc (and CHADS2) computed from age, sex, HF, HTN, DM, stroke/TIA/embolism, vascular disease",
+  "codes": "components above",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "OH2",
+   "KH2",
+   "AF1",
+   "IX3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 40
+ },
+ {
+  "name": "has_bled_modified",
+  "domain": "risk score",
+  "definition": "Claims-modified HAS-BLED (HTN, renal/liver disease, stroke, bleeding, age>65, antiplatelet/NSAID, alcohol; labile INR from INR variability if on warfarin)",
+  "codes": "components above + INR 3022217",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "AF1",
+   "IX4"
+  ],
+  "yale_availability": "partial",
+  "current_panel": "none",
+  "id": 41
+ },
+ {
+  "name": "diabetes_any",
+  "domain": "metabolic",
+  "definition": "Diabetes mellitus (any type); T1D (E10) as sub-flag",
+  "codes": "E08-E11, E13",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "KH1",
+   "KH7",
+   "RD3",
+   "RD4",
+   "UK1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-core",
+  "id": 42
+ },
+ {
+  "name": "t2d",
+  "domain": "metabolic",
+  "definition": "Type 2 diabetes",
+  "codes": "E11",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "RD4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "held-out v16",
+  "id": 43
+ },
+ {
+  "name": "diabetes_complications_dcsi",
+  "domain": "metabolic",
+  "definition": "Diabetes complications: retinopathy, nephropathy, neuropathy, PVD, metabolic (DKA/HHS); DCSI score",
+  "codes": "E08-E13 .2/.3/.4/.5/.0/.1, H36, G63.2, E11.51; DCSI map",
+  "lookback_days": "any prior",
+  "priority": "common",
+  "source_refs": [
+   "OH2",
+   "KH2",
+   "RD4",
+   "IX8"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 44
+ },
+ {
+  "name": "hypoglycemia",
+  "domain": "metabolic",
+  "definition": "Hypoglycemia events",
+  "codes": "E16.0-E16.2, E11.64x, E13.64x",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 45
+ },
+ {
+  "name": "ckd_any",
+  "domain": "renal",
+  "definition": "Chronic kidney disease",
+  "codes": "N18, I12, I13",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "KH1",
+   "RD3",
+   "RD4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-core (N18 only)",
+  "id": 46
+ },
+ {
+  "name": "ckd_stage",
+  "domain": "renal",
+  "definition": "CKD stage 1-2 / 3 / 4 / 5 (N18.1-N18.5; N18.30-32)",
+  "codes": "N18.1-N18.5",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "RD4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 47
+ },
+ {
+  "name": "eskd_dialysis_transplant",
+  "domain": "renal",
+  "definition": "ESKD, chronic dialysis or kidney transplant",
+  "codes": "N18.6, Z99.2, Z49, Z94.0; CPT 90935-90999",
+  "lookback_days": "any prior",
+  "priority": "core",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 48
+ },
+ {
+  "name": "acute_kidney_injury",
+  "domain": "renal",
+  "definition": "AKI",
+  "codes": "N17",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "RD4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 49
+ },
+ {
+  "name": "hyperkalemia",
+  "domain": "renal",
+  "definition": "Hyperkalemia diagnosis",
+  "codes": "E87.5",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 50
+ },
+ {
+  "name": "fluid_electrolyte_disorder",
+  "domain": "renal",
+  "definition": "Fluid/electrolyte/acid-base disorders (Elixhauser)",
+  "codes": "E86, E87",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD4",
+   "IX1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 51
+ },
+ {
+  "name": "thyroid_disease",
+  "domain": "endocrine",
+  "definition": "Hypothyroidism or hyperthyroidism",
+  "codes": "E00-E03, E89.0; E05",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "UK1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 52
+ },
+ {
+  "name": "obstructive_sleep_apnea",
+  "domain": "pulmonary",
+  "definition": "OSA",
+  "codes": "G47.33",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "RD4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 53
+ },
+ {
+  "name": "copd",
+  "domain": "pulmonary",
+  "definition": "COPD / emphysema / chronic bronchitis",
+  "codes": "J41-J44",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "UK1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-core (pooled with asthma)",
+  "id": 54
+ },
+ {
+  "name": "asthma",
+  "domain": "pulmonary",
+  "definition": "Asthma",
+  "codes": "J45",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-core (pooled)",
+  "id": 55
+ },
+ {
+  "name": "pneumonia_recent",
+  "domain": "pulmonary",
+  "definition": "Pneumonia (acute illness marker)",
+  "codes": "J12-J18",
+  "lookback_days": 180,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 56
+ },
+ {
+  "name": "liver_disease",
+  "domain": "hepatic",
+  "definition": "Chronic liver disease incl. cirrhosis (Charlson mild/severe)",
+  "codes": "K70-K77, I85, B18",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "IX1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial (AF, some HF)",
+  "id": 57
+ },
+ {
+  "name": "gi_bleed",
+  "domain": "bleeding",
+  "definition": "GI hemorrhage / bleeding peptic ulcer; peptic ulcer disease (Charlson) as a sub-flag",
+  "codes": "K92.0-K92.2, K25-K28, K62.5, K55.21",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "AF1",
+   "IX4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial (ACS)",
+  "id": 58
+ },
+ {
+  "name": "major_bleed_other",
+  "domain": "bleeding",
+  "definition": "Other major bleeding: hemorrhage NOS, hematuria, acute posthemorrhagic anemia, hemoptysis, hemarthrosis",
+  "codes": "R58, R31, D62, R04.2, M25.0, N93",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "AF1",
+   "IX4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial (AF)",
+  "id": 59
+ },
+ {
+  "name": "anemia",
+  "domain": "hematologic",
+  "definition": "Anemia diagnosis",
+  "codes": "D50-D64",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "IX1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 60
+ },
+ {
+  "name": "coagulopathy_thrombocytopenia",
+  "domain": "hematologic",
+  "definition": "Coagulation defects / thrombocytopenia (Elixhauser)",
+  "codes": "D65-D69",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "IX1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 61
+ },
+ {
+  "name": "dementia",
+  "domain": "neuro-psych",
+  "definition": "Dementia / Alzheimer disease",
+  "codes": "F01-F03, G30, G31.0, G31.1, G31.83",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "IX1",
+   "IX5"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "frailty_count component only",
+  "id": 62
+ },
+ {
+  "name": "depression",
+  "domain": "neuro-psych",
+  "definition": "Depressive disorder",
+  "codes": "F32, F33, F34.1",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "IX1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "frailty_count component only",
+  "id": 63
+ },
+ {
+  "name": "anxiety",
+  "domain": "neuro-psych",
+  "definition": "Anxiety disorders",
+  "codes": "F40, F41",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 64
+ },
+ {
+  "name": "serious_mental_illness",
+  "domain": "neuro-psych",
+  "definition": "Psychosis / schizophrenia / bipolar",
+  "codes": "F20-F29, F30, F31",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "IX1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 65
+ },
+ {
+  "name": "falls",
+  "domain": "frailty",
+  "definition": "Falls",
+  "codes": "W00-W19, R29.6, Z91.81",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "IX5"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "frailty_count component only",
+  "id": 66
+ },
+ {
+  "name": "gait_mobility_weakness",
+  "domain": "frailty",
+  "definition": "Gait abnormality, weakness, debility",
+  "codes": "R26, R53, M62.81",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "IX5",
+   "IX6"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "frailty_count component only",
+  "id": 67
+ },
+ {
+  "name": "malnutrition_weight_loss",
+  "domain": "frailty",
+  "definition": "Malnutrition / abnormal weight loss / cachexia",
+  "codes": "E40-E46, R63.4, R63.6, R64",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "IX1",
+   "IX5"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "frailty_count component only",
+  "id": 68
+ },
+ {
+  "name": "osteoporosis_fracture",
+  "domain": "frailty",
+  "definition": "Osteoporosis or fragility fracture",
+  "codes": "M80, M81, S72, S22, S32",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "IX5"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "frailty_count component only",
+  "id": 69
+ },
+ {
+  "name": "cancer_any",
+  "domain": "oncology",
+  "definition": "Any malignancy excluding non-melanoma skin",
+  "codes": "C00-C43, C45-C97, Z85 (history), D00-D09 excluded",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "IX1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 70
+ },
+ {
+  "name": "metastatic_cancer",
+  "domain": "oncology",
+  "definition": "Metastatic solid tumor (Charlson)",
+  "codes": "C77-C80",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "IX1",
+   "IX2"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 71
+ },
+ {
+  "name": "rheumatologic_disease",
+  "domain": "systemic",
+  "definition": "Connective tissue / inflammatory arthritis (Charlson)",
+  "codes": "M05, M06, M32-M35, M45",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "IX1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 72
+ },
+ {
+  "name": "charlson_index",
+  "domain": "index",
+  "definition": "Charlson comorbidity index (Quan ICD-10 coding, 17 conditions)",
+  "codes": "Quan 2005 ICD-10 map",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "KH1",
+   "OH2",
+   "KH2",
+   "AF1",
+   "IX1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 73
+ },
+ {
+  "name": "elixhauser_index",
+  "domain": "index",
+  "definition": "Elixhauser comorbidities (AHRQ refined, 31-38 categories) or van Walraven score",
+  "codes": "AHRQ Elixhauser ICD-10 map",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "IX1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 74
+ },
+ {
+  "name": "combined_comorbidity_score",
+  "domain": "index",
+  "definition": "Gagne combined Charlson-Elixhauser score (standard in RCT-DUPLICATE and Sentinel)",
+  "codes": "Gagne 2011 map",
+  "lookback_days": 180,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "RD5",
+   "SE1",
+   "IX2"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 75
+ },
+ {
+  "name": "claims_frailty_index_kim",
+  "domain": "index",
+  "definition": "Kim claims-based frailty index (93 items: 52 ICD, 25 CPT, 16 HCPCS). Segal indicator as an alternative",
+  "codes": "Kim 2018 / Segal 2017 code lists",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "RD5",
+   "IX5",
+   "IX6"
+  ],
+  "yale_availability": "partial",
+  "current_panel": "approximated by v16 frailty_count (dx-only, 13 domains)",
+  "id": 76
+ },
+ {
+  "name": "hospital_frailty_risk_score",
+  "domain": "index",
+  "definition": "Gilbert Hospital Frailty Risk Score (109 ICD-10 codes). OHDSI FeatureExtraction analysis 926",
+  "codes": "Gilbert 2018 map",
+  "lookback_days": 730,
+  "priority": "occasional",
+  "source_refs": [
+   "IX7",
+   "OH2"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 77
+ },
+ {
+  "name": "cardiovascular_risk_equation",
+  "domain": "index",
+  "definition": "PREVENT / PCE / PCP-HF 10-y risk from age, sex, SBP, BP treatment, DM, smoking, lipids, eGFR, BMI",
+  "codes": "component labs/vitals/dx",
+  "lookback_days": 365,
+  "priority": "occasional",
+  "source_refs": [
+   "KH10",
+   "KH14",
+   "IX10"
+  ],
+  "yale_availability": "partial",
+  "current_panel": "none",
+  "id": 78
+ },
+ {
+  "name": "acei",
+  "domain": "medication",
+  "definition": "Any order of ACE inhibitor in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "captopril, enalapril, lisinopril, ramipril, benazepril, fosinopril, quinapril, perindopril, trandolapril, moexipril + brands",
+  "lookback_days": 90,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "KH1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial",
+  "id": 79
+ },
+ {
+  "name": "arb",
+  "domain": "medication",
+  "definition": "Any order of ARB in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "losartan, valsartan, candesartan, irbesartan, olmesartan, telmisartan, eprosartan, azilsartan",
+  "lookback_days": 90,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "KH1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial",
+  "id": 80
+ },
+ {
+  "name": "arni",
+  "domain": "medication",
+  "definition": "Any order of ARNI in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "sacubitril, entresto",
+  "lookback_days": 90,
+  "priority": "core",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial (HF)",
+  "id": 81
+ },
+ {
+  "name": "beta_blocker",
+  "domain": "medication",
+  "definition": "Any order of beta-blocker in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "carvedilol, metoprolol, bisoprolol, atenolol, nebivolol, propranolol, labetalol, nadolol",
+  "lookback_days": 90,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "KH8"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial",
+  "id": 82
+ },
+ {
+  "name": "mra",
+  "domain": "medication",
+  "definition": "Any order of MRA in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "spironolactone, eplerenone, finerenone",
+  "lookback_days": 90,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "RD4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial (HF)",
+  "id": 83
+ },
+ {
+  "name": "loop_diuretic",
+  "domain": "medication",
+  "definition": "Any order of loop diuretic in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "furosemide, bumetanide, torsemide, ethacrynic",
+  "lookback_days": 90,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "RD4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial",
+  "id": 84
+ },
+ {
+  "name": "thiazide",
+  "domain": "medication",
+  "definition": "Any order of thiazide/thiazide-like in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "hydrochlorothiazide, chlorthalidone, indapamide, metolazone",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "RD4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial (some)",
+  "id": 85
+ },
+ {
+  "name": "ccb_dhp",
+  "domain": "medication",
+  "definition": "Any order of dihydropyridine CCB in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "amlodipine, nifedipine, felodipine, isradipine, nicardipine",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial (some)",
+  "id": 86
+ },
+ {
+  "name": "ccb_nondhp",
+  "domain": "medication",
+  "definition": "Any order of non-DHP CCB in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "diltiazem, verapamil",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial (AF)",
+  "id": 87
+ },
+ {
+  "name": "other_antihypertensive",
+  "domain": "medication",
+  "definition": "Any order of other antihypertensive in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "hydralazine, clonidine, minoxidil, doxazosin, terazosin, prazosin, methyldopa, aliskiren",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 88
+ },
+ {
+  "name": "nitrate",
+  "domain": "medication",
+  "definition": "Any order of nitrate in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "nitroglycerin, isosorbide",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 89
+ },
+ {
+  "name": "digoxin",
+  "domain": "medication",
+  "definition": "Any order of digoxin in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "digoxin, lanoxin",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial (HF)",
+  "id": 90
+ },
+ {
+  "name": "antiarrhythmic",
+  "domain": "medication",
+  "definition": "Any order of antiarrhythmic in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "amiodarone, dronedarone, sotalol, flecainide, propafenone, dofetilide",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial (AF, HF amiodarone)",
+  "id": 91
+ },
+ {
+  "name": "statin",
+  "domain": "medication",
+  "definition": "Any order of statin in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "atorvastatin, rosuvastatin, simvastatin, pravastatin, lovastatin, pitavastatin, fluvastatin + brands",
+  "lookback_days": 90,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "KH9",
+   "KH14"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial (some) / held-out v16",
+  "id": 92
+ },
+ {
+  "name": "nonstatin_lipid",
+  "domain": "medication",
+  "definition": "Any order of non-statin lipid-lowering in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "ezetimibe, evolocumab, alirocumab, inclisiran, fenofibrate, gemfibrozil, icosapent, bempedoic",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "RD4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 93
+ },
+ {
+  "name": "aspirin",
+  "domain": "medication",
+  "definition": "Any order of aspirin in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "aspirin (OTC under-recorded)",
+  "lookback_days": 90,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "SE1"
+  ],
+  "yale_availability": "partial",
+  "current_panel": "PS-trial (some)",
+  "id": 94
+ },
+ {
+  "name": "p2y12",
+  "domain": "medication",
+  "definition": "Any order of P2Y12 inhibitor in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "clopidogrel, prasugrel, ticagrelor",
+  "lookback_days": 90,
+  "priority": "core",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial (AF)",
+  "id": 95
+ },
+ {
+  "name": "oral_anticoagulant",
+  "domain": "medication",
+  "definition": "Any order of oral anticoagulant in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "warfarin, apixaban, rivaroxaban, dabigatran, edoxaban",
+  "lookback_days": 90,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "RD4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial (some)",
+  "id": 96
+ },
+ {
+  "name": "metformin",
+  "domain": "medication",
+  "definition": "Any order of metformin in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "metformin",
+  "lookback_days": 90,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "KH3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial (DM)",
+  "id": 97
+ },
+ {
+  "name": "sulfonylurea",
+  "domain": "medication",
+  "definition": "Any order of sulfonylurea in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "glipizide, glimepiride, glyburide",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "RD4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial (DM)",
+  "id": 98
+ },
+ {
+  "name": "dpp4i",
+  "domain": "medication",
+  "definition": "Any order of DPP-4 inhibitor in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "sitagliptin, linagliptin, saxagliptin, alogliptin",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "RD4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "arm in some trials",
+  "id": 99
+ },
+ {
+  "name": "glp1ra",
+  "domain": "medication",
+  "definition": "Any order of GLP-1 RA / GIP-GLP-1 in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "semaglutide, liraglutide, dulaglutide, exenatide, tirzepatide",
+  "lookback_days": 90,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "KH3",
+   "KH5"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 100
+ },
+ {
+  "name": "sglt2i",
+  "domain": "medication",
+  "definition": "Any order of SGLT2 inhibitor in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "empagliflozin, dapagliflozin, canagliflozin, ertugliflozin, sotagliflozin",
+  "lookback_days": 90,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "KH3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial (HF)",
+  "id": 101
+ },
+ {
+  "name": "insulin",
+  "domain": "medication",
+  "definition": "Any order of insulin in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "insulin + brands",
+  "lookback_days": 90,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "RD4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial (ACS, DM)",
+  "id": 102
+ },
+ {
+  "name": "nsaid",
+  "domain": "medication",
+  "definition": "Any order of NSAID in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "ibuprofen, naproxen, meloxicam, diclofenac, celecoxib, ketorolac, indomethacin",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "SE1",
+   "IX4"
+  ],
+  "yale_availability": "partial",
+  "current_panel": "PS-trial (AF)",
+  "id": 103
+ },
+ {
+  "name": "ppi",
+  "domain": "medication",
+  "definition": "Any order of proton-pump inhibitor in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "omeprazole, pantoprazole, esomeprazole, lansoprazole, rabeprazole",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-trial (ACS)",
+  "id": 104
+ },
+ {
+  "name": "oral_corticosteroid",
+  "domain": "medication",
+  "definition": "Any order of systemic corticosteroid in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "prednisone, methylprednisolone, dexamethasone, hydrocortisone",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "RD4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 105
+ },
+ {
+  "name": "opioid",
+  "domain": "medication",
+  "definition": "Any order of opioid in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "oxycodone, hydrocodone, morphine, tramadol, hydromorphone, fentanyl, methadone",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "RD4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 106
+ },
+ {
+  "name": "antidepressant",
+  "domain": "medication",
+  "definition": "Any order of antidepressant in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "sertraline, citalopram, escitalopram, fluoxetine, paroxetine, venlafaxine, duloxetine, bupropion, mirtazapine, trazodone",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 107
+ },
+ {
+  "name": "antipsychotic_or_hypnotic",
+  "domain": "medication",
+  "definition": "Any order of antipsychotic, benzodiazepine or hypnotic in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "quetiapine, olanzapine, risperidone, haloperidol, aripiprazole, lorazepam, alprazolam, clonazepam, diazepam, zolpidem",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 108
+ },
+ {
+  "name": "copd_asthma_inhaler",
+  "domain": "medication",
+  "definition": "Any order of inhaled bronchodilator / ICS in window (drug_exposure token match (first word of order), orders only)",
+  "codes": "albuterol, tiotropium, fluticasone, budesonide, salmeterol, formoterol, umeclidinium",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 109
+ },
+ {
+  "name": "n_distinct_drug_ingredients",
+  "domain": "polypharmacy",
+  "definition": "Number of distinct drug ingredients (tokens) ordered",
+  "codes": "drug_exposure token match (first word of order), orders only",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "SE1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 110
+ },
+ {
+  "name": "n_inpatient_admissions",
+  "domain": "utilisation",
+  "definition": "Number of inpatient admissions",
+  "codes": "visit 9201",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "SE1",
+   "KH2"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-core",
+  "id": 111
+ },
+ {
+  "name": "inpatient_days",
+  "domain": "utilisation",
+  "definition": "Inpatient days / LOS",
+  "codes": "visit 9201 stays",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "RD4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "held-out v16",
+  "id": 112
+ },
+ {
+  "name": "recent_hospitalization_30d",
+  "domain": "utilisation",
+  "definition": "Any hospitalization in the 30 days before index (vs 31-180)",
+  "codes": "visit 9201",
+  "lookback_days": 30,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 113
+ },
+ {
+  "name": "n_ed_visits",
+  "domain": "utilisation",
+  "definition": "Number of ED visits",
+  "codes": "visit 9203",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "SE1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-core",
+  "id": 114
+ },
+ {
+  "name": "n_outpatient_visits",
+  "domain": "utilisation",
+  "definition": "Number of outpatient visits",
+  "codes": "visit 9202",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "SE1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS-core",
+  "id": 115
+ },
+ {
+  "name": "n_cardiology_visits",
+  "domain": "utilisation",
+  "definition": "Cardiology visits (specialist engagement)",
+  "codes": "Epic outpatient_enc DEPARTMENT_NAME / VISIT_PROV_TYPE",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "RD4"
+  ],
+  "yale_availability": "partial",
+  "current_panel": "none",
+  "id": 116
+ },
+ {
+  "name": "n_pcp_visits",
+  "domain": "utilisation",
+  "definition": "Internal/family medicine visits",
+  "codes": "Epic outpatient_enc DEPARTMENT_NAME",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "RD4"
+  ],
+  "yale_availability": "partial",
+  "current_panel": "none",
+  "id": 117
+ },
+ {
+  "name": "n_ecgs",
+  "domain": "diagnostic testing",
+  "definition": "Number of ECGs (ECG-proximal)",
+  "codes": "MUSE ECG metadata; CPT 93000-93010",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 118
+ },
+ {
+  "name": "n_echos",
+  "domain": "diagnostic testing",
+  "definition": "Number of echocardiograms",
+  "codes": "echo metadata; CPT 93303-93356",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "held-out phys (echo_done only)",
+  "id": 119
+ },
+ {
+  "name": "ischemia_testing_or_cath",
+  "domain": "diagnostic testing",
+  "definition": "Stress test, nuclear MPI, coronary CTA, diagnostic cath",
+  "codes": "CPT 93015-93018, 78451-78454, 75574, 93454-93461",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 120
+ },
+ {
+  "name": "lab_test_intensity",
+  "domain": "diagnostic testing",
+  "definition": "Number of distinct lab tests / HbA1c or lipid panel ordered (surveillance intensity)",
+  "codes": "measurement concept counts",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "OH2",
+   "RD4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 121
+ },
+ {
+  "name": "influenza_vaccination",
+  "domain": "healthy user",
+  "definition": "Influenza vaccine (healthy-adherer proxy)",
+  "codes": "CPT 90653-90689, 90756; Z23; drug token influenza/fluzone",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "RD5"
+  ],
+  "yale_availability": "partial",
+  "current_panel": "none",
+  "id": 122
+ },
+ {
+  "name": "cancer_screening",
+  "domain": "healthy user",
+  "definition": "Colonoscopy, mammography, PSA, bone densitometry",
+  "codes": "CPT 45378-45398, 77065-77067, 84152-84154, 77080",
+  "lookback_days": 730,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 123
+ },
+ {
+  "name": "discharge_to_facility_or_home_health",
+  "domain": "utilisation",
+  "definition": "Most recent discharge to SNF / rehab / home health (functional dependence proxy)",
+  "codes": "Epic hosp_enc DISCH_DISP",
+  "lookback_days": 365,
+  "priority": "occasional",
+  "source_refs": [],
+  "yale_availability": "partial",
+  "current_panel": "none",
+  "id": 124
+ },
+ {
+  "name": "durable_medical_equipment",
+  "domain": "frailty",
+  "definition": "Wheelchair, hospital bed, walker, home oxygen (Kim CFI HCPCS items)",
+  "codes": "HCPCS E0100-E0159, E0250-E0304, E1130-E1161, E1390",
+  "lookback_days": 365,
+  "priority": "occasional",
+  "source_refs": [
+   "IX5"
+  ],
+  "yale_availability": "partial",
+  "current_panel": "none (DME HCPCS sparse in gold)",
+  "id": 125
+ },
+ {
+  "name": "sbp",
+  "domain": "vitals",
+  "definition": "Latest systolic BP",
+  "codes": "measurement 4152194",
+  "lookback_days": 90,
+  "priority": "core",
+  "source_refs": [
+   "KH8",
+   "KH9",
+   "KH10",
+   "UK1",
+   "IX10"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "core (withheld from claims-like PS)",
+  "id": 126
+ },
+ {
+  "name": "dbp",
+  "domain": "vitals",
+  "definition": "Latest diastolic BP",
+  "codes": "measurement 3012888",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "KH8"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "core (withheld from claims-like PS)",
+  "id": 127
+ },
+ {
+  "name": "heart_rate",
+  "domain": "vitals",
+  "definition": "Latest heart rate (ECG-proximal)",
+  "codes": "measurement 3027018",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "KH8",
+   "KH9"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "core (withheld from claims-like PS)",
+  "id": 128
+ },
+ {
+  "name": "creatinine",
+  "domain": "laboratory",
+  "definition": "Serum creatinine (latest value in window, index day excluded; OMOP measurement concept)",
+  "codes": "3016723",
+  "lookback_days": 90,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "UK1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "core (withheld from claims-like PS)",
+  "id": 129
+ },
+ {
+  "name": "egfr",
+  "domain": "laboratory",
+  "definition": "eGFR CKD-EPI (latest value in window, index day excluded; OMOP measurement concept)",
+  "codes": "40764999",
+  "lookback_days": 90,
+  "priority": "core",
+  "source_refs": [
+   "KH8",
+   "KH9",
+   "RD4",
+   "UK1",
+   "IX10"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "held-out phys",
+  "id": 130
+ },
+ {
+  "name": "potassium",
+  "domain": "laboratory",
+  "definition": "Potassium (latest value in window, index day excluded; OMOP measurement concept)",
+  "codes": "3023103",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "core (withheld from claims-like PS)",
+  "id": 131
+ },
+ {
+  "name": "sodium",
+  "domain": "laboratory",
+  "definition": "Sodium (latest value in window, index day excluded; OMOP measurement concept)",
+  "codes": "3019550",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "core (withheld from claims-like PS)",
+  "id": 132
+ },
+ {
+  "name": "bun",
+  "domain": "laboratory",
+  "definition": "BUN (latest value in window, index day excluded; OMOP measurement concept)",
+  "codes": "3013682",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "held-out phys",
+  "id": 133
+ },
+ {
+  "name": "hemoglobin",
+  "domain": "laboratory",
+  "definition": "Hemoglobin (latest value in window, index day excluded; OMOP measurement concept)",
+  "codes": "3000963",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "KH8"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "core (withheld from claims-like PS)",
+  "id": 134
+ },
+ {
+  "name": "hba1c",
+  "domain": "laboratory",
+  "definition": "HbA1c (latest value in window, index day excluded; OMOP measurement concept)",
+  "codes": "3004410",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "RD6",
+   "IX10"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "held-out phys",
+  "id": 135
+ },
+ {
+  "name": "glucose",
+  "domain": "laboratory",
+  "definition": "Glucose (latest value in window, index day excluded; OMOP measurement concept)",
+  "codes": "3004501",
+  "lookback_days": 90,
+  "priority": "occasional",
+  "source_refs": [
+   "RD3",
+   "KH10"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "held-out phys",
+  "id": 136
+ },
+ {
+  "name": "ldl_c",
+  "domain": "laboratory",
+  "definition": "LDL-C (latest value in window, index day excluded; OMOP measurement concept)",
+  "codes": "3028288",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "KH14"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "held-out phys",
+  "id": 137
+ },
+ {
+  "name": "hdl_tc_tg",
+  "domain": "laboratory",
+  "definition": "HDL-C, total cholesterol, triglycerides (latest value in window, index day excluded; OMOP measurement concept)",
+  "codes": "3007070, 3027114, 3022192",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD3",
+   "RD4",
+   "KH14",
+   "UK1"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 138
+ },
+ {
+  "name": "natriuretic_peptide",
+  "domain": "laboratory",
+  "definition": "NT-proBNP (BNP separately, do not pool) (latest value in window, index day excluded; OMOP measurement concept)",
+  "codes": "3029187; BNP 3011960",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "RD3",
+   "KH8"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "held-out phys (NT-proBNP)",
+  "id": 139
+ },
+ {
+  "name": "troponin",
+  "domain": "laboratory",
+  "definition": "hs-TnT / TnI (latest value in window, index day excluded; OMOP measurement concept)",
+  "codes": "40769783, 3021337, 3019800",
+  "lookback_days": 90,
+  "priority": "occasional",
+  "source_refs": [
+   "KH8"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "held-out phys (hs-TnT)",
+  "id": 140
+ },
+ {
+  "name": "albumin",
+  "domain": "laboratory",
+  "definition": "Serum albumin (latest value in window, index day excluded; OMOP measurement concept)",
+  "codes": "3024561",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "held-out phys",
+  "id": 141
+ },
+ {
+  "name": "liver_panel",
+  "domain": "laboratory",
+  "definition": "ALT, AST, total bilirubin, alkaline phosphatase (latest value in window, index day excluded; OMOP measurement concept)",
+  "codes": "3006923, 3013721, 3024128, 3035995",
+  "lookback_days": 180,
+  "priority": "occasional",
+  "source_refs": [
+   "KH8"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 142
+ },
+ {
+  "name": "platelets_wbc",
+  "domain": "laboratory",
+  "definition": "Platelets, WBC (latest value in window, index day excluded; OMOP measurement concept)",
+  "codes": "3024929, 3000905",
+  "lookback_days": 90,
+  "priority": "occasional",
+  "source_refs": [
+   "KH8"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "held-out phys",
+  "id": 143
+ },
+ {
+  "name": "inr",
+  "domain": "laboratory",
+  "definition": "INR (arm-leaking for warfarin comparisons; use only as a pre-exposure value or as HAS-BLED labile INR) (latest value in window, index day excluded; OMOP measurement concept)",
+  "codes": "3022217",
+  "lookback_days": 90,
+  "priority": "common",
+  "source_refs": [
+   "AF1",
+   "IX4"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 144
+ },
+ {
+  "name": "uacr",
+  "domain": "laboratory",
+  "definition": "Urine albumin-creatinine ratio (latest value in window, index day excluded; OMOP measurement concept)",
+  "codes": "not in the 83 gold measurement concepts",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "RD4",
+   "IX10"
+  ],
+  "yale_availability": "no",
+  "current_panel": "none",
+  "id": 145
+ },
+ {
+  "name": "lab_measured_flags",
+  "domain": "laboratory",
+  "definition": "Indicator that each key lab (NT-proBNP, HbA1c, lipids, TSH, INR, troponin) was measured in the window. LEGEND-T2DM enters measurements as status, not value",
+  "codes": "measurement concept presence",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "KH4",
+   "OH2",
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "none",
+  "id": 146
+ },
+ {
+  "name": "lvef",
+  "domain": "cardiac structure",
+  "definition": "Latest echo LVEF",
+  "codes": "echo metadata EF 5-90",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "KH7",
+   "KH8",
+   "RD3"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "core (withheld from claims-like PS)",
+  "id": 147
+ },
+ {
+  "name": "echo_structure_panel",
+  "domain": "cardiac structure",
+  "definition": "LV wall thickness/mass, LA volume, diastolic grade, RVSP, TAPSE, valve grades",
+  "codes": "echo_metadata_2026_06_12 structured columns",
+  "lookback_days": 365,
+  "priority": "occasional",
+  "source_refs": [
+   "KH8"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "held-out phys",
+  "id": 148
+ },
+ {
+  "name": "nyha_class",
+  "domain": "functional status",
+  "definition": "NYHA class from notes (NLP)",
+  "codes": "clinical notes (NLP; notes 2021+ only)",
+  "lookback_days": 365,
+  "priority": "core",
+  "source_refs": [
+   "KH13",
+   "RD3"
+  ],
+  "yale_availability": "partial",
+  "current_panel": "none",
+  "id": 149
+ },
+ {
+  "name": "empirical_hdps_codes",
+  "domain": "empirical",
+  "definition": "Top-k empirical codes per data dimension (dx, procedures, drugs, labs) ranked by Bross bias. Not a single covariate; a balance-panel family",
+  "codes": "hdPS dimensions",
+  "lookback_days": 365,
+  "priority": "common",
+  "source_refs": [
+   "HD1",
+   "HD2",
+   "OH2",
+   "KH2",
+   "RD4",
+   "RD7"
+  ],
+  "yale_availability": "yes",
+  "current_panel": "PS (hdPS arms)",
+  "id": 150
+ }
+]
