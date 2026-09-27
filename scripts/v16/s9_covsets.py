@@ -279,6 +279,7 @@ def load_var(halves):
 def load_res(halves):
     df = pd.concat([pd.read_csv(f) for f in sorted(OUT.glob("results_*.csv"))], ignore_index=True)
     df = df[df.half.isin(halves)].drop_duplicates(["cell", "trial", "half", "arm_role"])
+    df["seed"] = 0  # (S8.audit_checks groups by seed)
     df["absd"] = (df.loghr - df.rb).abs()
     df["z2"] = (df.loghr - df.rb) ** 2 / (df.se ** 2 + df.rs ** 2)
     return df
@@ -544,49 +545,61 @@ def loveplot_set(V, cell, sub, sname, vs, fname, title, p_txt):
     ne, _, me = love(Me)
     _, _, mu = love(Mu)
     order = [v for v in vs if np.isfinite(me.get(v, np.nan)) and np.isfinite(mb.get(v, np.nan))]
-    order.sort(key=lambda v: (domain_of(v, dic, pr), -mb[v]))
-    y = dict(zip(order, np.arange(len(order))[::-1]))
-    fig, ax = plt.subplots(figsize=(7.6, max(3.5, 0.16 * len(order) + 1.6)))
-    for i, v in enumerate(order):
-        if i % 2 == 0:
-            ax.axhspan(y[v] - 0.5, y[v] + 0.5, color="#f4f5f7", zorder=0)
-        ax.plot([mb[v], me[v]], [y[v]] * 2, color=C_GOOD if me[v] < mb[v] else C_BAD, lw=1.5, alpha=0.8, zorder=2)
-    ax.scatter([mu[v] for v in order], [y[v] for v in order], marker="x", color=C_UNM, s=18, lw=1, zorder=3, label="Unmatched")
-    ax.scatter([mb[v] for v in order], [y[v] for v in order], color=C_BASE, s=22, ec="white", lw=0.4, zorder=4, label="Without ECG")
-    ax.scatter([me[v] for v in order], [y[v] for v in order], color=C_ECG, s=22, ec="white", lw=0.4, zorder=5, label="With ECG")
-    ax.axvline(0.1, color="#777", ls="--", lw=0.9)
-    ax.set_yticks(list(y.values()))
-    ax.set_yticklabels([_pretty(v) for v in order], fontsize=6.5)
+    order.sort(key=lambda v: (not domain_of(v, dic, pr).startswith("58"), domain_of(v, dic, pr), -mb[v]))
+    # rows: a bold header row per domain, then its variables
+    rows_ = []
     for g in dict.fromkeys(domain_of(v, dic, pr) for v in order):
-        ys = [y[v] for v in order if domain_of(v, dic, pr) == g]
-        ax.axhline(min(ys) - 0.5, color="#bbb", lw=0.6)
-        ax.annotate(textwrap.shorten(g.replace("expanded: ", "").replace("58: ", ""), 26), xy=(1.0, np.mean(ys)),
-                    xycoords=("axes fraction", "data"), xytext=(3, 0), textcoords="offset points", rotation=270, va="center",
-                    fontsize=5.8, fontweight="bold", color="#444")
+        rows_.append(("H", g))
+        rows_ += [("V", v) for v in order if domain_of(v, dic, pr) == g]
+    n = len(rows_)
+    ypos = {k: n - 1 - i for i, k in enumerate(rows_)}
+    fig, ax = plt.subplots(figsize=(7.6, max(3.8, 0.15 * n + 1.9)))
+    ticks, labs = [], []
+    k = 0
+    for kind, v in rows_:
+        yy = ypos[(kind, v)]
+        if kind == "H":
+            ax.axhline(yy + 0.5, color="#bbb", lw=0.6)
+            ax.text(0.003, yy, v.replace("expanded: ", "expanded covariates: ").replace("58: ", "58-panel: "), fontsize=6.6,
+                    fontweight="bold", color="#333", va="center", ha="left", transform=ax.get_yaxis_transform())
+            continue
+        if k % 2 == 0:
+            ax.axhspan(yy - 0.5, yy + 0.5, color="#f4f5f7", zorder=0)
+        k += 1
+        ax.plot([mb[v], me[v]], [yy] * 2, color=C_GOOD if me[v] < mb[v] else C_BAD, lw=1.5, alpha=0.8, zorder=2)
+        ticks.append(yy)
+        labs.append(_pretty(v))
+    vy = [ypos[("V", v)] for v in order]
+    ax.scatter([mu[v] for v in order], vy, marker="x", color=C_UNM, s=18, lw=1, zorder=3, label="Unmatched")
+    ax.scatter([mb[v] for v in order], vy, color=C_BASE, s=22, ec="white", lw=0.4, zorder=4, label="Without ECG")
+    ax.scatter([me[v] for v in order], vy, color=C_ECG, s=22, ec="white", lw=0.4, zorder=5, label="With ECG")
+    ax.axvline(0.1, color="#777", ls="--", lw=0.9)
+    ax.set_yticks(ticks)
+    ax.set_yticklabels(labs, fontsize=6.3)
     xmax = max(0.3, float(np.nanmax([mu[v] for v in order if np.isfinite(mu.get(v, np.nan))] + [mb[v] for v in order])) * 1.05)
     ax.set_xlim(0, min(xmax, 0.8))
-    ax.set_ylim(-0.7, len(order) - 0.3)
-    ax.text(0.98, 1.0, f"variables < 0.1: {nb} → {ne} of {nv}\n(per-trial % p={p_txt})", transform=ax.transAxes, ha="right", va="top",
-            fontsize=7.5, bbox=dict(fc="white", ec="#ccc", boxstyle="round,pad=0.3"))
+    ax.set_ylim(-0.7, n - 0.3)
     ax.set_xlabel(f"|SMD| after PS adjustment (median across {len(trs)} trials, full cohort)")
-    ax.legend(loc="lower right", fontsize=7, frameon=True, framealpha=0.9)
-    fig.suptitle("\n".join(textwrap.wrap(title, 80)), x=0.01, ha="left", fontweight="bold", fontsize=8.5)
+    ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=3, fontsize=7, frameon=False)
+    ax.set_title(f"variables with median |SMD| < 0.1: {nb} → {ne} of {nv}  (per-trial % < 0.1, sign-flip p = {p_txt})",
+                 fontsize=7.5, loc="left", pad=20)
+    fig.suptitle("\n".join(textwrap.wrap(title, 85, break_on_hyphens=False)), x=0.01, ha="left", fontweight="bold", fontsize=8.5)
     fig.tight_layout()
-    fig.savefig(DOCS / fname, dpi=180, bbox_inches="tight")
+    fig.savefig(DOCS / fname, dpi=180 if n < 120 else 110, bbox_inches="tight")
     plt.close(fig)
 
 
 def domain_plot(D, title, fname):
     plt = _plt()
     D = D.iloc[::-1].reset_index(drop=True)
-    fig, ax = plt.subplots(figsize=(8.2, 0.3 * len(D) + 1.8))
+    fig, ax = plt.subplots(figsize=(8.6, 0.3 * len(D) + 1.6))
     y = np.arange(len(D))
     for i, r in D.iterrows():
         if i % 2 == 0:
             ax.axhspan(i - 0.5, i + 0.5, color="#f4f5f7", zorder=0)
         ax.plot([r.base_mean, r.ECG_mean], [i, i], color=C_GOOD if r.ECG_mean < r.base_mean else C_BAD, lw=1.6, zorder=2)
         st = "**" if r.q < 0.05 else ("*" if r.p < 0.05 else "")
-        ax.annotate(f"{r.love_base}→{r.love_ECG}/{r.n_vars}  p={r.p:.3f}{st}", xy=(1.0, i), xycoords=("axes fraction", "data"),
+        ax.annotate(f"{r.love_base}→{r.love_ECG} of {r.n_vars}   p={_p(r.p)}{st}", xy=(1.0, i), xycoords=("axes fraction", "data"),
                     xytext=(4, 0), textcoords="offset points", va="center", fontsize=6.3, color="#333")
     ax.scatter(D.unmatched_mean, y, marker="x", color=C_UNM, s=18, lw=1, zorder=3, label="Unmatched")
     ax.scatter(D.base_mean, y, color=C_BASE, s=24, ec="white", lw=0.4, zorder=4, label="Without ECG")
@@ -594,11 +607,12 @@ def domain_plot(D, title, fname):
     ax.axvline(0.1, color="#777", ls="--", lw=0.9)
     ax.set_yticks(y)
     ax.set_yticklabels([f"{d} ({n})" for d, n in zip(D.domain, D.n_vars)], fontsize=6.5)
+    ax.set_ylim(-0.6, len(D) - 0.4)
     ax.set_xlim(0, max(0.2, float(np.nanmax(D[["unmatched_mean", "base_mean"]].to_numpy())) * 1.08))
     ax.set_xlabel("domain mean |SMD| (mean over the domain's variables per trial, then over trials; full cohort)")
-    ax.legend(loc="lower right", fontsize=7, frameon=True, framealpha=0.9)
-    fig.suptitle("\n".join(textwrap.wrap(title, 95)) + "\nright: love count <0.1 base→ECG / variables; p = sign-flip on domain mean "
-                 "(* p<0.05, ** BH q<0.05 over domains)", x=0.01, ha="left", fontsize=8, fontweight="bold")
+    ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=3, fontsize=7, frameon=False)
+    fig.suptitle("\n".join(textwrap.wrap(title, 95, break_on_hyphens=False)) + "\nright: love count < 0.1 (base → ECG, of domain variables); p = sign-flip on the "
+                 "per-trial domain mean (* p<0.05, ** BH q<0.05 over domains)", x=0.01, ha="left", fontsize=8, fontweight="bold")
     fig.tight_layout()
     fig.savefig(DOCS / fname, dpi=180, bbox_inches="tight")
     plt.close(fig)
@@ -686,9 +700,12 @@ def report():
     J = json.loads(SELFILE.read_text())
     V = load_var(["full", "A", "B"])
     df = load_res(["full", "A", "B"])
-    G, PT = summarize_sets(V, J)
-    G.to_csv(OUT / "set_summary.csv", index=False)
-    PT.to_csv(OUT / "set_per_trial.csv", index=False)
+    if os.environ.get("S9_REUSE") and (OUT / "set_summary.csv").exists():  # re-render from the saved set summary
+        G, PT = pd.read_csv(OUT / "set_summary.csv"), pd.read_csv(OUT / "set_per_trial.csv")
+    else:
+        G, PT = summarize_sets(V, J)
+        G.to_csv(OUT / "set_summary.csv", index=False)
+        PT.to_csv(OUT / "set_per_trial.csv", index=False)
     # engine summary
     S = []
     eng = df[df.cell != "unmatched"].rename(columns={"arm_role": "arm"})
@@ -827,9 +844,9 @@ def write_md(G, SB, S, DH, DS, J, df, figs):
     L += ["## Engine metrics (standard sweep summary; ECG vs base, 18 trials)\n",
           "E.summarize_pairs; negative d = ECG better; q = BH over the 6 cells (full). Heat map `docs/v16/S9_COVSETS_heatmap.png` "
           "(left: these metrics; right: set % < 0.1 across scenarios × sets × halves).\n", md(pd.DataFrame(rows)) + "\n"]
-    L += ["## Figures\n"] + [f"- `docs/v16/{f}`\n" for f in figs]
+    L += ["## Figures\n", "".join(f"- `docs/v16/{f}`\n" for f in figs)]
     af = OUT / "audit.md"
-    L += ["## Audit\n", S8.audit_checks(df.rename(columns={})), af.read_text() if af.exists() else ""]
+    L += ["## Audit\n", S8.audit_checks(df).replace("|S8 − ENGINE", "|S9 − ENGINE"), af.read_text() if af.exists() else ""]
     g = G[(G.half == "full") & G.family]
     L += [f"**Placebo − base over the {len(g)} family rows** (full, % < 0.1): shufECG − base mean {g.d_shufbase_pct_lt10.mean():+.2f} pp "
           f"(p<0.05: better {int(((g.p_shufbase_pct_lt10 < 0.05) & (g.d_shufbase_pct_lt10 > 0)).sum())}, worse "
