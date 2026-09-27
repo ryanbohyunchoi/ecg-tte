@@ -1262,6 +1262,7 @@ def main():
     ap.add_argument("--threads", type=int, default=28)
     ap.add_argument("--trials", nargs="*")
     ap.add_argument("--out", default=str(OUT), help="output dir (v2b default claude-v16-covars2b; never overwrite a READY dir)")
+    ap.add_argument("--blind", action="store_true", help="v1.7: no by-arm summary / SMD (blinded new trials); implies no --doc")
     ap.add_argument("--doc", action="store_true", help="regenerate docs/v16/COVARIATES2.md (off by default since v2b)")
     a = ap.parse_args()
     os.umask(0o077)
@@ -1310,6 +1311,9 @@ def main():
             st_rows.append(dict(trial=n, variable=v, **s))
         cover[n] = dict(roster=int(len(d)), trial_keys=int(len(keys)), trial_keys_covered=int(keys.isin(d.index).sum()),
                         n_vars=int(d.shape[1] - 1), arms={int(t): str(x) for t, x in r.groupby("treated").treatment_arm.agg(lambda s: s.mode().iloc[0]).items()})
+        if a.blind:
+            print(n, cover[n], flush=True)
+            continue
         g = d.loc[d.index.intersection(keys)]
         g1, g0 = g[g.treated == 1], g[g.treated == 0]
         for v in d.columns[1:]:
@@ -1329,7 +1333,8 @@ def main():
             rows.append(row)
         print(n, cover[n], flush=True)
     S = pd.DataFrame(rows)
-    S.to_csv(OUT / "summary_by_arm.csv", index=False)
+    if not a.blind:
+        S.to_csv(OUT / "summary_by_arm.csv", index=False)
     ST = pd.DataFrame(st_rows)
     ST["exposure_leak"] = ST["exposure_leak"].fillna("")
     ST.to_csv(OUT / "trial_variable_status.csv", index=False)
@@ -1342,7 +1347,7 @@ def main():
     dic.to_csv(OUT / "dictionary.csv", index=False)
     json.dump(dict(coverage=cover, n_registry=len(VARS), script_sha256=sha256(Path(__file__)), version="v2b"),
               open(OUT / "summary.json", "w"), indent=2)
-    if a.doc:
+    if a.doc and not a.blind:
         write_md(S, ST, dic, cover)
     (OUT / "READY").write_text(pd.Timestamp.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ") + "\n")
 

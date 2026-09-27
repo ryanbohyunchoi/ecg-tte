@@ -100,7 +100,11 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--trials", default=",".join(TRIALS))
     ap.add_argument("--threads", type=int, default=16)
+    ap.add_argument("--out", default=None, help="v1.7: output dir (default claude-v16-s5-nco/extract)")
     a = ap.parse_args()
+    global OUT
+    if a.out:
+        OUT = Path(a.out)
     os.umask(0o077)
     OUT.mkdir(parents=True, exist_ok=True)
     for n in a.trials.split(","):

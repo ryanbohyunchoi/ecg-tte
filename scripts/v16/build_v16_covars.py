@@ -266,11 +266,17 @@ def smd(a, b):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--threads", type=int, default=24)
+    ap.add_argument("--trials", nargs="*", help="v1.7: trial names (default: the 18 v1.6 trials)")
+    ap.add_argument("--out", default=None, help="v1.7: output dir (default claude-v16-covars)")
+    ap.add_argument("--blind", action="store_true", help="v1.7: no by-arm summary / SMD, no markdown (blinded new trials)")
     a = ap.parse_args()
+    global OUT
+    if a.out:
+        OUT = Path(a.out)
     os.umask(0o077)
     OUT.mkdir(parents=True, exist_ok=True, mode=0o700)
     names = {**PRIMARY, **EXTRA}
-    trials = trial_list()
+    trials = a.trials or trial_list()
     ros = []
     for n in trials:
         r = pd.read_parquet(f"{A}/{names[n][1]}/restricted_cohort.parquet")[["patient_key", "person_id", "treated", "treatment_arm", "index_date"]]
@@ -296,6 +302,8 @@ def main():
         cover[n] = dict(roster=int(len(d)), trial_keys=int(len(keys)), trial_keys_covered=int(keys.isin(d.index).sum()),
                         v11_keys_covered=round(float(obs.index.isin(d.index).mean()), 4),
                         arms={int(t): str(a) for t, a in r.groupby("treated").treatment_arm.agg(lambda x: x.mode().iloc[0]).items()})
+        if a.blind:
+            continue
         g = d.loc[d.index.intersection(keys)]
         g1, g0 = g[g.treated == 1], g[g.treated == 0]
         for v in BIN_REPORT + NUM_REPORT:
@@ -308,10 +316,11 @@ def main():
                 row["treated"] = f"{g1[v].mean():.2f} (sd {g1[v].std():.2f})"
                 row["control"] = f"{g0[v].mean():.2f} (sd {g0[v].std():.2f})"
             rows.append(row)
-    S = pd.DataFrame(rows)
-    S.to_csv(OUT / "summary_by_arm.csv", index=False)
-    json.dump(dict(coverage=cover, linkage=agree, script_sha256=sha256(Path(__file__))), open(OUT / "summary.json", "w"), indent=2)
-    write_md(S, cover, agree)
+    json.dump(dict(coverage=cover, linkage=agree, script_sha256=sha256(Path(__file__)), blind=a.blind), open(OUT / "summary.json", "w"), indent=2)
+    if not a.blind:
+        S = pd.DataFrame(rows)
+        S.to_csv(OUT / "summary_by_arm.csv", index=False)
+        write_md(S, cover, agree)
     print(json.dumps(dict(coverage=cover, linkage=agree), indent=1))
 
 

@@ -23,10 +23,11 @@ def main():
     ap.add_argument("--roster", required=True)
     ap.add_argument("--omop-dir", default="/mnt/raid0/rbc58/omop/gold")
     ap.add_argument("--output-dir", required=True)
+    ap.add_argument("--threads", type=int, default=32)  # v1.7: CPU cap (default unchanged)
     a = ap.parse_args()
     out = new_private_dir(a.output_dir)
     G = a.omop_dir
-    con = connect(32)
+    con = connect(a.threads)
     r = pd.read_parquet(a.roster)[["patient_key", "person_id", "index_date"]]
     con.register("r0", r)
     con.execute("CREATE TEMP TABLE r AS SELECT patient_key, CAST(person_id AS BIGINT) person_id, CAST(index_date AS DATE) idx FROM r0")
