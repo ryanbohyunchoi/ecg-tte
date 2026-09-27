@@ -32,3 +32,41 @@ Code: `scripts/v16/s10_demo6.py` and `s10_summarize.py`. Aggregates are in `clau
 ## Reading
 - **Balance.** With this 6-diagnosis PS, ECG significantly increases the share of held-out covariates below 0.1 (+3.6 pp; love plot 42 → 47). It is robust to placebos, clustering and leave-one-out, and significant in both halves. The gain is smaller than with demographics alone (+6.4 pp) and larger than with the full sparse PS (+0.7 pp, null).
 - **RCT agreement.** \|Δlog HR\| falls from 0.233 to 0.201. This is significant, benchmark-specific, and survives clustering and leave-one-out. However, **shuffled ECG gives the same improvement** (d_shufECG −0.030; ECG vs shufECG p = 0.96), and the gain is not significant in either half. It is therefore not attributable to ECG information. Adding 32 extra PS dimensions of any kind changes the matched sets in a way that happens to help. It must not be reported as an ECG effect.
+
+## Per-trial balance and emulation (caliper 0.2, full cohort)
+
+**Emulation quality** comes from the blinded RCT-DUPLICATE-style rating (`docs/v14/closeness_rating.json`), which was made without viewing results:
+- **Flags:** in-hospital start, responder run-in, baseline-therapy switch, and delayed effect.
+- **Comparator and outcome:** each rated for how faithfully the emulation reproduces the trial's.
+
+**Balance** is the % of the 58 held-out covariates with |SMD| < 0.1.
+
+**Consistent** means |z| < 1.96 vs the RCT, using both SEs.
+
+| Trial | Close emulation | Design flags | Comparator | Outcome | Balance −ECG → +ECG | RCT HR (95% CI) | HR −ECG | HR +ECG | \|Δlog HR\| −ECG → +ECG | Consistent −/+ |
+|---|---|---|---|---|---|---|---|---|---|---|
+| EAST-AFNET 4 | no | 1 | moderate | moderate | 75.9 → 87.9 | 0.79 (0.67–0.94) | 0.96 | 0.87 | 0.19 → 0.10 | N → Y |
+| VALUE | no | 1 | moderate | moderate | 65.5 → 75.9 | 1.04 (0.94–1.15) | 0.74 | 0.77 | 0.35 → 0.31 | N → N |
+| PARADIGM-HF | no | 1 | moderate | moderate | 65.5 → 74.1 | 0.80 (0.73–0.87) | 0.99 | 0.95 | 0.22 → 0.17 | N → N |
+| TRANSFORM-HF | no | 2 | good | good | 39.7 → 48.3 | 1.02 (0.89–1.17) | 0.89 | 0.91 | 0.13 → 0.12 | Y → Y |
+| ROCKET-AF | yes | 0 | good | good | 50.0 → 56.9 | 0.88 (0.75–1.04) | 0.58 | 0.54 | 0.41 → 0.48 | N → N |
+| CAROLINA | yes | 0 | good | moderate | 43.1 → 50.0 | 0.98 (0.84–1.14) | 0.89 | 0.92 | 0.09 → 0.06 | Y → Y |
+| ELITE II | yes | 0 | moderate | good | 67.2 → 74.1 | 1.13 (0.95–1.34) | 0.90 | 0.95 | 0.23 → 0.18 | Y → Y |
+| LIFE | no | 2 | moderate | moderate | 51.7 → 56.9 | 0.87 (0.77–0.98) | 0.78 | 0.88 | 0.10 → 0.01 | Y → Y |
+| PLATO | no | 1 | good | moderate | 79.3 → 84.5 | 0.84 (0.77–0.92) | 0.84 | 0.85 | 0.00 → 0.01 | Y → Y |
+| ASCOT-BPLA | no | 1 | moderate | moderate | 70.7 → 74.1 | 0.90 (0.79–1.02) | 0.79 | 0.78 | 0.13 → 0.14 | Y → Y |
+| ALLHAT | no | 1 | moderate | moderate | 87.9 → 89.7 | 0.98 (0.90–1.07) | 1.20 | 1.23 | 0.20 → 0.23 | N → N |
+| ONTARGET | no | 2 | moderate | moderate | 70.7 → 72.4 | 1.01 (0.94–1.09) | 0.84 | 0.85 | 0.19 → 0.17 | N → N |
+| CABANA | no | 0 | moderate | moderate | 50.0 → 51.7 | 0.86 (0.65–1.14) | 0.34 | 0.37 | 0.94 → 0.84 | N → N |
+| EMPA-REG OUTCOME | no | 0 | moderate | moderate | 46.6 → 48.3 | 0.86 (0.74–0.99) | 0.66 | 0.72 | 0.26 → 0.17 | N → Y |
+| RE-LY | yes | 0 | moderate | good | 42.1 → 42.1 | 0.66 (0.53–0.82) | 0.97 | 0.98 | 0.38 → 0.39 | Y → Y |
+| COMET | no | 1 | poor | good | 55.2 → 55.2 | 1.21 (1.07–1.35) | 1.18 | 1.21 | 0.02 → 0.00 | Y → Y |
+| EMPEROR-Preserved | no | 0 | moderate | moderate | 62.1 → 56.9 | 0.79 (0.69–0.90) | 0.72 | 0.73 | 0.09 → 0.07 | Y → Y |
+| ARISTOTLE | yes | 0 | good | good | 63.8 → 53.4 | 0.79 (0.66–0.95) | 0.62 | 0.67 | 0.24 → 0.16 | Y → Y |
+
+**Summary**
+- **Closer to the RCT with ECG:** 13 of 18 trials.
+- **Consistency with the RCT:** 11/18 without ECG → 13/18 with ECG. EAST-AFNET 4 and EMPA-REG become consistent; none is lost.
+- **Balance gain by emulation quality:** mean +2.1 pp in the 5 "close" emulations and +4.2 pp in the 13 not close.
+- **Balance gain vs gain in |Δ|:** not correlated across trials (Spearman ρ = 0.12, p = 0.63).
+- **Reminder (placebo):** the |Δ| improvement is reproduced by shuffled ECG (ECG vs shufECG p = 0.96), so the per-trial movement toward the RCT is not attributable to ECG information.
