@@ -637,3 +637,13 @@ Heat map: `docs/v16/S8_HEADLINE_heatmap.png`.
 - "keyphys_all" (all available key physiology variables < 0.1) is almost never met in any arm, so it is uninformative.
 
 **(3) Placebo − base across the 34 cells** (full, 18 trials, % < 0.1, 58-panel): shufECG − base mean +0.15 pp (p<0.05 better in 1, worse in 2); noise − base mean +0.08 pp (better 0, worse 1); ECG − base mean +5.19 pp (better 29, worse 0).
+
+## Round-3 audit corrections (2026-09-27; see AUDIT_V16_ROUND3.md §7)
+These supersede the wording above where they conflict.
+1. **18-trial analogues.** They are post hoc. Demo / caliper 0.1 was eligible in half A (rank 3) and was excluded only by the one-per-base rule. They are significant in both halves; this is not a pre-selected replication.
+2. **Preferred headline cell.** The preferred cell is demo PS, 1:1 caliper 0.2 (the default estimator, pre-planned S1 rung), 18 trials:
+   - 54% → 60% of 58 held-out covariates at |SMD| < 0.1 (+6.4 pp, 14/18, p = 0.0002, significant in both halves, placebos null);
+   - love count 32 → 43.
+   
+   With ECG, 1–2 pp fewer patients were matched in the smaller arm. On the population matched in both arms, the gain is +5.1 pp at caliper 0.2 and +5.7 pp at 0.1.
+3. **Expanded panel.** Recomputed on the corrected covars2b, the expanded-panel rows are unchanged (differences ≤ 0.1 pp).

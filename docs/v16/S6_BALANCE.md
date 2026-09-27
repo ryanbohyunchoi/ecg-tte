@@ -1093,3 +1093,6 @@ Checks run before and after the full run. All numbers are trial-level aggregates
 ## Limitations
 
 Exploratory; measures chosen post hoc. One imputation, one pool split; halves are within-trial patient splits, not independent replication. 18 overlapping trials (10 comparator clusters); per-trial measures are strongly correlated across measures (they all read the same matched sets), so the families are not independent evidence. Outcome model is logistic on the event indicator by horizon (ignores censoring before horizon). Energy distance is subsampled (≤ 5,000 per arm; seeded, same seed for every arm of a trial/half). Echo-done is masked before the echo data start, so it also reflects index year. External confirmation deferred.
+
+## Round-3 audit correction (2026-09-27)
+Wherever the sparse v2b non-proximal result (0.0758 → 0.0689, p = 0.0009) is quoted, note that it is **not significant in half B (p = 0.14)**.

@@ -700,3 +700,10 @@ The placebo arms' mean per-variable |SMD| was within ±0.007 of base.
    - The engine metrics (|Δlog HR|, z², 58-variable mean |SMD|, C) are reported in their own table and heat map, with BH over the 6 cells.
 8. **hdPS200 exclusion.** At hdPS200, the corrected S6 rule is applied: drop extra variables whose codes overlap the top-200 hdPS codes. The claude-v16-covars dx variables (tobacco, obesity, hyperlipidemia, t2d, frailty_count) use hand-coded ICD prefixes (`V1_KEYS`).
 9. **Audit test run.** The 2-trial pre-run check used half A only (LIFE, CAROLINA), not the full cohort, so that no half-B rows were computed before the Set-3 commit. The engine-validation reproduction (full cohort) is therefore reported after the full run (Audit section).
+
+## Round-3 audit corrections (2026-09-27; see AUDIT_V16_ROUND3.md §7)
+1. **FDR family.** BH-FDR is applied over 144 tests (36 scenario × set rows × 4 metrics) within each half.
+2. **Replication wording.** "Replicates in both halves" means significant in half B on % < 0.1; for Set 3, half A is the selection half. The love count is not significant in half B for Set 1 (p = 0.14) or Set 3 (p = 0.31). The Set 1 love count "8 → 16" is not robust to leave-one-trial-out (max p 0.15). Love counts are descriptive; the per-trial % < 0.1 is the inferential metric.
+3. **Additional deviations.**
+   - The Set 3 / FULL candidate pool excludes the `v1:` covariates (race, tobacco, etc. from claude-v16-covars).
+   - The 18-trial scenarios were fixed after the S8 full-cohort results were known.
