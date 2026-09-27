@@ -41,3 +41,35 @@
 - The gains are smallest in diabetes, hypertension, statin and NSAID comparisons. There, treatment choice is driven by non-cardiac factors.
 - The blinded, pre-specified "high ECG relevance" class shows significantly larger gap reduction (P1) and ECG-specific balance gain (P2).
 - This is effect-modification analysis with ~12 tests and no correction, so it is hypothesis-generating.
+
+## Trial emulation by clinical category (exploratory)
+
+**Source.** `claude-v17-confirm/emulation_by_category.csv`.
+
+**Tests.** All tests are one-sided exact sign-flip across the trials in each category.
+- The shuffled-RCT test draws benchmarks from all 33 RCTs, 10,000 draws.
+- "Consistent" means |z| < 1.96 vs the RCT, using both SEs.
+
+| PS | Category | n | Gap −ECG → +ECG | Closer | p | vs shufECG p | Shuffled-RCT p | z² p | Consistent −→+ |
+|---|---|---|---|---|---|---|---|---|---|
+| P1 | **AF** (5 old + AFFIRM, AF-CHF) | 7 | **0.437 → 0.317** | **7/7** | **0.008** | **0.016** | **0.035** | **0.008** | **2 → 5** |
+| P1 | HTN | 5 | 0.288 → 0.183 | 5/5 | 0.031 | 0.031 | 0.24 | 0.031 | 2 → 3 |
+| P1 | HF | 5 | 0.157 → 0.114 | 3/5 | 0.22 | 0.31 | 0.10 | 0.22 | 4 → 4 |
+| P1 | Diabetes | 9 | 0.213 → 0.215 | 2/9 | 0.51 | 0.32 | 0.90 | 0.43 | 6 → 6 |
+| P1 | ACS/post-MI | 2 | 0.115 → 0.122 | 1/2 | 0.75 | — | 0.70 | — | 2 → 2 |
+| P1 | Other (statin, NSAID, VTE, vascular) | 5 | 0.218 → 0.196 | 4/5 | 0.28 | 0.062 | 0.81 | 0.16 | 2 → 4 |
+| P1 | Blinded ECG relevance high | 8 | 0.329 → 0.215 | 7/8 | 0.012 | 0.012 | 0.43 | 0.012 | 4 → 6 |
+| P2 | AF | 7 | 0.344 → 0.317 | 4/7 | 0.17 | 0.63 | 0.71 | 0.16 | 4 → 5 |
+| P2 | HF | 5 | 0.138 → 0.107 | 5/5 | 0.031 | 0.34 | 0.002 | 0.031 | 4 → 4 |
+| P2 | Blinded ECG relevance high | 8 | 0.225 → 0.179 | 7/8 | 0.027 | 0.027 | 0.38 | 0.035 | 5 → 6 |
+
+**Reading**
+- **AF with a demographics PS.** This is the only category that passes all four checks: significant gap reduction, beats shuffled ECG, trial-specific, and significant z². Every AF emulation moves closer to its RCT, including both new AF trials (AFFIRM 0.16 → 0.04, AF-CHF 0.29 → 0.17). Consistency with the RCT rises from 2/7 to 5/7.
+- **Caveats for AF:**
+  - The AF grouping is post hoc.
+  - There are 7 trials in 2 comparator clusters (anticoagulation, rhythm control).
+  - AFFIRM overlaps EAST-AFNET 4.
+  - With the 6-diagnosis PS, which includes an AF flag, the AF gain disappears.
+- **HTN (P1) and blinded high relevance.** The gains are significant and beat placebo, but they are not trial-specific, i.e. generic shrinkage.
+- **HF (P2).** The gain is trial-specific but not placebo-specific.
+- **Diabetes and ACS.** No emulation gain.
