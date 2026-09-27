@@ -1,0 +1,138 @@
+# v1.7 blinded trial-selection rule (no results viewed)
+
+Rater: independent blinded agent, 2026-09-27. The rule text below was fixed before any trial was scored.
+
+## 1. Rule (defined before scoring)
+
+```
+BLINDED v1.7 TRIAL-SELECTION RULE (written before scoring any trial; design-level information only).
+Layer 1, emulation fidelity. Core design flags, each 0/1:
+F1 in-hospital start not mirrored: the RCT randomizes during, or at discharge from, an index hospitalisation at a fixed protocol moment, and the emulation's time zero for at least one arm is plausibly moved from that moment, by more than 7 days or by setting (e.g. an inpatient IV order vs an oral discharge strategy). EHR inpatient orders are visible, so this is not flagged when standard care starts both arms' drugs within the index admission (P2Y12 inhibitors in ACS/PCI).
+F2 responder/tolerability run-in: an active run-in on a study drug removed intolerant or non-responding patients before randomization. Placebo-only, adherence or washout run-ins are not flagged.
+F3 randomization combined with discontinuation or switching of baseline therapy, not mirrored: the RCT protocol had a substantial share of patients stop or replace an ongoing drug of the same therapeutic purpose at randomization, and the emulation's new-user/washout design neither reproduces nor requires that switch. Sequential switch designs that mirror it are not flagged.
+F4 delayed effect over long follow-up: the trial-matched horizon (HORIZON_MONTHS) is >= 48 months. The initiator (ITT-like) estimand is then diluted by real-world discontinuation, and effects that accrue over years cannot be reproduced.
+F5 other time-zero misalignment: the comparator's time zero needs future information or is otherwise undefined (e.g. prevalent 'continuer' comparators with no sampled time zero). Hernan & Robins; Franklin 2021.
+Comparator fidelity: good = the same agent(s) or procedure as the RCT. Moderate = class adaptation of one or both arms, a strategy approximated by initiation of its first drug, or formulation/dose not identifiable where the RCT hypothesis does not hinge on it. Poor = a placebo-controlled RCT emulated with an active-comparator proxy (the estimand changes from X vs placebo to X vs Y), or an agent/formulation/strategy mismatch widely held to change the tested hypothesis.
+Outcome fidelity: good = all-cause death and/or hard events with high-PPV inpatient codes (stroke/systemic embolism, MI), with no cause-of-death attribution needed. Moderate = composites needing CV/CHD death from listed causes and/or HF hospitalisation from any-position codes, or with a minor component not capturable. Poor = the primary endpoint is not ascertainable in the EHR (e.g. AF recurrence needing rhythm monitoring), or a dominant component is missing.
+Record-only items (do not enter the rule): dose titration protocol (forced titration to target doses) and placebo proxy (already scored through comparator = poor).
+INCLUSION: fidelity_include = (F1+F2+F3+F4+F5 <= 1) AND comparator >= moderate AND outcome >= moderate.
+Strict sensitivity (S_fid_strict) = zero flags AND the same comparator and outcome conditions (the RCT-DUPLICATE 'close emulation' notion).
+The rater viewed no counts, so no feasibility or precision threshold is applied here. The pipeline's pre-registered design-stage sufficiency rule (>= 400 clinical-PS pairs, protocol v1 4c) is applied separately and mechanically.
+Layer 2, ECG-mechanism relevance (a priori). Two questions:
+(T) Is treatment assignment between the two arms in practice plausibly driven by cardiac structure, function or rhythm that a 12-lead ECG reflects (LV dysfunction/QRS, LVH, atrial disease/AF, conduction/heart rate, ischemic burden/STEMI/Q waves)?
+(P) Is the population defined by a cardiac substrate (HF, AF, ACS/established CAD, LVH, valve disease), so that prognosis for the primary endpoint is plausibly ECG-reflected?
+high = T and P; medium = exactly one of T or P; low = neither. Hypertension or diabetes primary-prevention populations do not count as a cardiac substrate for P.
+Subsets: S_fid = fidelity_include; S_ecg = relevance high or medium; S_both = S_fid AND S_ecg. Also reported: S_fid_strict and S_both_high (S_fid AND relevance high).
+```
+
+## 2. Threshold justification
+
+Why these thresholds:
+- The items and their weight come from RCT-DUPLICATE. Wang et al. (JAMA 2023;329:1376) found that agreement between RWE and RCT was much stronger in the subset of trials that could be emulated closely. The emulation differences that degraded agreement were in-hospital start, run-in, discontinuation of baseline therapy at randomization, delayed effect over long follow-up, and placebo-comparator proxies.
+- Heyard et al. (BMJ Med 2024) re-analysed the same 32 pairs. They showed that the design differences act roughly additively on disagreement. Allowing at most one flag is therefore a pragmatic cut: it keeps enough trials for a sign-flip test while excluding trials with compounded design deviation. The zero-flag cut is reported as a strict sensitivity.
+- Franklin et al. (Circulation 2021;143:1002) showed that emulations with poor comparator or outcome proxies (placebo-to-active proxies, soft outcomes) agreed worst. That is why comparator and outcome each need to be at least moderate, and a placebo proxy is disqualifying.
+- The 48-month horizon cut marks when a large majority of real-world initiators have discontinued or switched. Beyond it, an ITT-like initiator estimate can no longer represent an adherent RCT arm's long-run effect.
+
+## 3. Per-trial scores
+
+Flags: F1 in-hospital start, F2 responder run-in, F3 discontinuation/switch, F4 delayed effect (horizon >= 48 mo), F5 other time-zero problem. Tit = dose-titration protocol (recorded only).
+
+| Trial | F1 | F2 | F3 | F4 | F5 | n flags | Comparator | Outcome | Tit | Fidelity | Strict | ECG relevance |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| comet | 0 | 0 | 0 | 1 | 0 | 1 | poor | good | 1 | **exclude** | exclude | high |
+| paradigm_hf | 0 | 1 | 1 | 0 | 0 | 2 | moderate | moderate | 1 | **exclude** | exclude | high |
+| paradigm_hf_switch | 0 | 1 | 0 | 0 | 1 | 2 | moderate | moderate | 1 | **exclude** | exclude | high |
+| paradigm_hf_seq | 0 | 1 | 0 | 0 | 0 | 1 | moderate | moderate | 1 | **include** | exclude | high |
+| paragon_hf | 0 | 1 | 1 | 0 | 0 | 2 | good | moderate | 1 | **exclude** | exclude | high |
+| paragon_hf_switch | 0 | 1 | 0 | 0 | 1 | 2 | good | moderate | 1 | **exclude** | exclude | high |
+| transform_hf | 1 | 0 | 1 | 0 | 0 | 2 | moderate | good | 0 | **exclude** | exclude | medium |
+| elite_ii | 0 | 0 | 0 | 0 | 0 | 0 | moderate | good | 1 | **include** | include | medium |
+| life | 0 | 0 | 1 | 1 | 0 | 2 | moderate | moderate | 0 | **exclude** | exclude | high |
+| dionysos | 0 | 0 | 0 | 0 | 0 | 0 | good | poor | 0 | **exclude** | exclude | high |
+| allhat | 0 | 0 | 1 | 1 | 0 | 2 | moderate | moderate | 0 | **exclude** | exclude | low |
+| plato | 0 | 0 | 1 | 0 | 0 | 1 | good | moderate | 0 | **include** | exclude | medium |
+| triton | 0 | 0 | 0 | 0 | 0 | 0 | good | moderate | 0 | **include** | include | medium |
+| aristotle | 0 | 0 | 0 | 0 | 0 | 0 | good | good | 0 | **include** | include | medium |
+| rocket_af | 0 | 0 | 0 | 0 | 0 | 0 | good | good | 0 | **include** | include | medium |
+| rely | 0 | 0 | 0 | 0 | 0 | 0 | good | good | 0 | **include** | include | medium |
+| dapa_hf | 0 | 0 | 0 | 0 | 0 | 0 | poor | moderate | 0 | **exclude** | exclude | high |
+| partner | 0 | 0 | 0 | 0 | 0 | 0 | good | moderate | 0 | **include** | include | medium |
+| emperor_preserved | 0 | 0 | 0 | 0 | 0 | 0 | poor | moderate | 0 | **exclude** | exclude | high |
+| east_afnet4 | 0 | 0 | 0 | 1 | 0 | 1 | moderate | moderate | 0 | **include** | exclude | high |
+| cabana | 0 | 0 | 0 | 1 | 0 | 1 | moderate | moderate | 0 | **include** | exclude | high |
+| castle_af | 0 | 0 | 0 | 0 | 0 | 0 | poor | moderate | 0 | **exclude** | exclude | high |
+| paradise_mi | 1 | 0 | 1 | 0 | 0 | 2 | moderate | moderate | 1 | **exclude** | exclude | high |
+| dcp | 0 | 0 | 0 | 0 | 0 | 0 | good | moderate | 0 | **include** | include | low |
+| ontarget | 0 | 1 | 1 | 1 | 0 | 3 | moderate | moderate | 1 | **exclude** | exclude | medium |
+| value | 0 | 0 | 1 | 1 | 0 | 2 | moderate | moderate | 0 | **exclude** | exclude | low |
+| ascot | 0 | 0 | 1 | 1 | 0 | 2 | moderate | moderate | 0 | **exclude** | exclude | medium |
+| empa_reg | 0 | 0 | 0 | 0 | 0 | 0 | poor | moderate | 0 | **exclude** | exclude | medium |
+| carolina | 0 | 0 | 0 | 1 | 0 | 1 | good | moderate | 0 | **include** | exclude | low |
+| invest | 0 | 0 | 1 | 0 | 0 | 1 | moderate | good | 0 | **include** | exclude | high |
+| engage_af | 0 | 0 | 0 | 0 | 0 | 0 | good | good | 0 | **include** | include | medium |
+
+## 4. Rationale and sources
+
+- **comet**. Fidelity: 58-mo horizon (F4). The metoprolol token cannot separate tartrate (the RCT arm) from succinate, the dominant US HF formulation, and COMET's hypothesis hinges on tartrate at 50 mg bid. Comparator poor. ECG: HFrEF. The beta-blocker choice depends on heart rate/conduction and LV dysfunction severity; prognosis is LV-driven. *Source: Poole-Wilson Lancet 2003.*
+- **paradigm_hf**. Fidelity: Sequential enalapril-then-ARNI active run-in (F2). All RCT patients switched from ACEi/ARB, whereas the new-user design compares ARNI starters (often ARB switchers) with ACEi-naive starters (F3). ACEi class for enalapril. ECG: HFrEF. ARNI vs ACEi choice follows HF severity/EF and specialist care (QRS, LBBB, LV dysfunction); prognosis is LV-driven. *Source: McMurray NEJM 2014; EJHF 2014 baseline.*
+- **paradigm_hf_switch**. Fidelity: Active run-in (F2). The prevalent 'continuer' comparator has no time zero defined without future information (F5; this design was superseded by the sequential one). ECG: As PARADIGM-HF. *Source: McMurray NEJM 2014.*
+- **paradigm_hf_seq**. Fidelity: Active run-in (F2). The ACEi/ARB-to-ARNI switch is mirrored by sequential sampling at the switch date. ACEi class for enalapril. ECG: As PARADIGM-HF. *Source: McMurray NEJM 2014.*
+- **paragon_hf**. Fidelity: Valsartan-then-ARNI active run-in (F2). RCT patients switched from ACEi/ARB; the new-user design does not mirror this (F3). The endpoint is total events vs first event in the emulation. ECG: HFpEF. ARNI use concentrates in the lower-EF/more structurally abnormal range (LVH, LA enlargement, AF); prognosis is structure-driven. *Source: Solomon NEJM 2019.*
+- **paragon_hf_switch**. Fidelity: Active run-in (F2). The continuer comparator has no future-free time zero (F5). ECG: As PARAGON-HF. *Source: Solomon NEJM 2019.*
+- **transform_hf**. Fidelity: Randomized in hospital to an oral discharge strategy. The furosemide token also captures inpatient IV diuresis, which moves time zero (F1). Most RCT patients were on a prior loop diuretic replaced at randomization; the emulation requires first-ever use with a washout of the other arm (F3). ECG: Prognosis is LV-driven (HF), but the torsemide/furosemide choice is formulary, insurance and renal/diuretic-resistance driven, not cardiac-structural. *Source: Mentz JAMA 2023.*
+- **elite_ii**. Fidelity: ACEi-naive population, so the new-user design is mirrored. Class adaptation (losartan vs captopril). All-cause death. ECG: Prognosis is LV-driven (HFrEF, age >= 60), but ARB vs ACEi choice is driven by cough/angioedema intolerance, not cardiac structure. *Source: Pitt Lancet 2000.*
+- **life**. Fidelity: Prior antihypertensives were withdrawn (placebo run-in) and replaced by the study drug; emulated initiators often add on (F3). 58-mo horizon (F4). Class adaptation of both arms (v2). ECG: ECG-LVH is itself the entry criterion. Beta-blocker vs ARB choice depends on heart rate/conduction/AF; prognosis is LVH-driven. *Source: Dahlof Lancet 2002.*
+- **dionysos**. Fidelity: Same agents and no design flag. The endpoint (AF recurrence or drug discontinuation) needs rhythm monitoring and is not emulable (protocol v1 4b). Outcome poor. ECG: Dronedarone is contraindicated in HFrEF/permanent AF and guided by QT/conduction/structural disease, all ECG-reflected; AF population. *Source: Le Heuzey JCE 2010.*
+- **allhat**. Fidelity: About 90% were previously treated, and prior antihypertensives were stopped and replaced by the step-1 drug (F3). 59-mo horizon (F4). Thiazide class for chlorthalidone. CHD death needs cause of death. ECG: Hypertension primary prevention. The CCB vs thiazide choice is driven by electrolytes, gout, oedema and cost; the population is not cardiac-substrate defined. *Source: ALLHAT JAMA 2002.*
+- **plato**. Fidelity: Inpatient start is captured by EHR orders for both arms. A substantial share of RCT patients were pre-treated with open-label clopidogrel and switched at randomization; the other-arm washout excludes such switchers (F3). Vascular death needs cause of death. ECG: ACS population (ischemic burden/infarct size, ECG-reflected prognosis). Choice is mainly bleeding risk, age, PCI, OAC and cost; STEMI status contributes only partly. *Source: Wallentin NEJM 2009; PLATO angiographic substudy.*
+- **triton**. Fidelity: Clopidogrel-naive at randomization before PCI; same agents; inpatient start visible. Note: no OUTCOMES/HORIZON entry is registered in trial_specs (not analysed at v1 feasibility). ECG: ACS-PCI population. Prasugrel choice is by age, weight, prior stroke and bleeding risk (non-ECG); prognosis is ischemic-burden driven. *Source: Wiviott NEJM 2007.*
+- **aristotle**. Fidelity: Same agents; stroke/SE from inpatient codes. VKA experience is a population difference, not a switching-strategy flag. ECG: AF population (atrial cardiopathy, LV function, ECG-reflected stroke risk). DOAC vs warfarin choice is renal, cost/insurance, valve and bleeding driven. *Source: Granger NEJM 2011.*
+- **rocket_af**. Fidelity: As ARISTOTLE. ECG: As ARISTOTLE. *Source: Patel NEJM 2011.*
+- **rely**. Fidelity: Same agents. The 150 mg benchmark arm is the dominant US dose (110 mg is not US-approved for AF), so the unidentifiable dose is accepted as good. ECG: As ARISTOTLE. *Source: Connolly NEJM 2009.*
+- **dapa_hf**. Fidelity: Placebo-controlled RCT emulated with a DPP-4i active-comparator proxy restricted to T2D. Comparator poor. ECG: HFrEF (+T2D). SGLT2i use in HF is cardiology/LV-dysfunction driven; prognosis is LV-driven. *Source: McMurray NEJM 2019; Packer NEJM 2020.*
+- **partner**. Fidelity: Procedure vs procedure with time zero at the procedure. 'Disabling' stroke is not identifiable. Strong risk-based channelling is a confounding problem, not a design flag. ECG: Aortic stenosis (LVH, LV function, AF, conduction; ECG-reflected prognosis). TAVR vs SAVR choice is dominated by age, frailty and surgical risk. *Source: Leon NEJM 2016; Mack NEJM 2019.*
+- **emperor_preserved**. Fidelity: Placebo-controlled RCT emulated with a DPP-4i proxy (T2D). Comparator poor. ECG: HFpEF (+T2D). SGLT2i choice in HF is cardiac-driven; prognosis is structure-driven (LVH, AF). *Source: Anker NEJM 2021.*
+- **east_afnet4**. Fidelity: Add-on rhythm control vs continued rate control, mirrored by the sequential design; early AF (<= 1 y) mirrored. 61-mo horizon with late-diverging benefit (F4). Ablation-first rhythm control not captured. ECG: Rhythm vs rate choice depends on AF pattern, heart rate, QT/conduction and structural disease; AF prognosis. *Source: Kirchhof NEJM 2020.*
+- **cabana**. Fidelity: 49-mo horizon (F4). The drug arm is approximated by antiarrhythmic initiators (most RCT drug-arm patients received rhythm-control drugs). Bleeding/cardiac-arrest components approximated. ECG: Ablation vs AAD choice depends on AF type/burden, atrial size and LV function; AF prognosis. *Source: Packer JAMA 2019.*
+- **castle_af**. Fidelity: The RCT control was conventional therapy, about 70% rate control and 30% rhythm control (mostly amiodarone). Emulating it with AAD initiators changes the tested hypothesis. Comparator poor. ECG: HFrEF + AF. The choice depends on LV function, AF burden and conduction/device; prognosis is LV-driven. *Source: Marrouche NEJM 2018.*
+- **paradise_mi**. Fidelity: Randomized in hospital 0.5-7 d post-MI (mean 4.3 d). Post-MI ARNI starts are off-label and plausibly delayed or outpatient within the 30-d window, while ACEi starts early (F1). Prior ACEi/ARB was stopped at randomization, which the ACEi washout does not mirror (F3). The endpoint includes outpatient incident HF. ECG: Post-MI LV dysfunction. ARNI vs ACEi choice follows EF/congestion; prognosis tracks infarct size/LV function. *Source: Pfeffer NEJM 2021; Jering EJHF 2021.*
+- **dcp**. Fidelity: Pragmatic switch from HCTZ vs continuation, mirrored by the sequential design; same agents. Urgent revascularisation not captured; non-cancer death approximated by all-cause death. ECG: Hypertension. The choice is thiazide preference/potassium; the population is not cardiac-substrate defined. *Source: Ishani NEJM 2022.*
+- **ontarget**. Fidelity: 3-week single-blind active run-in (ramipril, telmisartan, combination; 11.7% excluded) (F2). Prior ACEi/ARB was stopped for run-in, not mirrored (F3). 56-mo horizon (F4). Class adaptation. ECG: Established vascular disease population (ischemic burden, ECG-reflected prognosis). ARB vs ACEi choice is cough/intolerance driven. *Source: ONTARGET NEJM 2008.*
+- **value**. Fidelity: Prior antihypertensives were replaced by the study drug at randomization (F3). 50-mo horizon (F4). ARB class for valsartan. Emergency-procedure component not captured. ECG: Emulated gate is hypertension only. ARB vs CCB choice follows DM/CKD/oedema, not cardiac structure. *Source: Julius Lancet 2004.*
+- **ascot**. Fidelity: Previously treated patients were switched to the randomized regimen (F3). 66-mo horizon (F4). Beta-blocker class for atenolol, with add-on strategy. Silent MI is not captured. ECG: Hypertension without CAD, so prognosis is not substrate-driven. Beta-blocker vs CCB choice is plausibly heart-rate/AF/palpitation driven. *Source: Dahlof Lancet 2005.*
+- **empa_reg**. Fidelity: Placebo-controlled RCT emulated with a DPP-4i proxy. Comparator poor. ECG: T2D + established CVD (ischemic burden). SGLT2i vs DPP-4i choice is glycaemic, renal and cost driven (and HF labels), not subclinical structure. *Source: Zinman NEJM 2015.*
+- **carolina**. Fidelity: Same agents, add-on to background therapy. 76-mo horizon (F4). ECG: T2D. DPP-4i vs SU choice is hypoglycaemia/cost driven; the high-CV-risk criterion is not applied, so the population is not cardiac-substrate defined. *Source: Rosenstock JAMA 2019.*
+- **invest**. Fidelity: Previously treated hypertensive CAD patients were moved to the assigned strategy (F3). The strategy is approximated by initiation of its first drug. Death/MI/stroke. ECG: CAD. Verapamil vs atenolol choice depends on LV dysfunction/prior MI (favour BB), conduction and heart rate; ischemic-burden prognosis. *Source: Pepine JAMA 2003.*
+- **engage_af**. Fidelity: Same agents. The 60 mg arm with label dose-halving matches US labelling. ECG: As ARISTOTLE. *Source: Giugliano NEJM 2013.*
+
+## 5. Subsets
+
+- **S_fid** (14): paradigm_hf_seq, elite_ii, plato, triton, aristotle, rocket_af, rely, partner, east_afnet4, cabana, dcp, carolina, invest, engage_af
+- **S_fid_strict** (8): elite_ii, triton, aristotle, rocket_af, rely, partner, dcp, engage_af
+- **S_ecg** (27): comet, paradigm_hf, paradigm_hf_switch, paradigm_hf_seq, paragon_hf, paragon_hf_switch, transform_hf, elite_ii, life, dionysos, plato, triton, aristotle, rocket_af, rely, dapa_hf, partner, emperor_preserved, east_afnet4, cabana, castle_af, paradise_mi, ontarget, ascot, empa_reg, invest, engage_af
+- **S_both** (12): paradigm_hf_seq, elite_ii, plato, triton, aristotle, rocket_af, rely, partner, east_afnet4, cabana, invest, engage_af
+- **S_both_high** (4): paradigm_hf_seq, east_afnet4, cabana, invest
+
+Trials rated: 31 (every key in `scripts/trial_specs.py` TRIALS, including the EXT set with paradise_mi, dcp and invest).
+
+Caveats for use:
+- The subsets include design variants of the same RCT (e.g. paradigm_hf_seq). Apply the project's one-per-RCT convention downstream.
+- TRITON has no registered outcome or horizon in trial_specs and did not pass v1 feasibility.
+- Feasibility (>= 400 clinical-PS pairs) is applied separately by the pipeline.
+
+## 6. New candidates
+
+docs/v17/candidates.json was absent at rating time (checked at start and end, after git pull). No candidate trials were rated; they must be rated by the same rule before any of their metrics are computed.
+
+## 7. Blinding attestation
+
+- scripts/trial_specs.py (full file)
+- docs/v16/V17_CONFIRMATION_PLAN.md (full file, 34 lines)
+- docs/v13/rct_facts.json (notes; per-trial design fields and value_notes, truncated print)
+- docs/PROTOCOL_V1.md lines 44-147 (sections 3, 4, 4b, 4c: trial designs, PICOT, sufficiency rule; these contain design-stage pair counts for DAPA-HF/PARTNER/PARAGON and emulation-rating labels, not used)
+- docs/v14/closeness_rating.json: only the 'method' string was printed (plus the list of top-level keys, which printing the method exposed); no ratings viewed
+- CLAUDE.md (auto-loaded)
+- Web searches: CASTLE-AF control-arm composition, PLATO clopidogrel pretreatment, ONTARGET run-in, PARADISE-MI design, TRANSFORM-HF design
+- Directory listings: docs/v16 and docs/v17 (file names only)
+
+No file under /mnt/raid0, no audit/summary/panel/headline/result file, no report.md, presentation or abstract, and no git log/show/diff of results was opened. No HR/SMD/balance numbers from any emulation were seen. The RATING_ITEMS tuples in trial_specs.py (an earlier design rating) were visible in the allowed file; the ratings here were derived independently from the rule above.
