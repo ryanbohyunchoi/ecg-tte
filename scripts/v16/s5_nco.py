@@ -15,7 +15,7 @@ caliper 0.2; v13_common.ps_logit / match): the primary Cox is re-estimated on th
 S1's run_cell output (n_pairs, log HR).  NCO Cox exactly as v13_design (pair-clustered robust SE, time from index,
 capped at the trial horizon, rows with the NCO in the prior 365 d removed, primary-outcome exclusions applied).
 
-Usage: s5_nco.py run [--trials a,b] [--workers 40] [--out DIR]
+Usage: s5_nco.py run [--trials a,b] [--workers 32] [--out DIR]
        s5_nco.py summarize [--out DIR]          (tables, figure, markdown; includes OUT/audit.md)
        s5_nco.py audit [--out DIR]              (checks -> OUT/audit.md; needs summarize outputs; re-run summarize after)
 Aggregates only (event counts 1-10 suppressed in every written file).
@@ -60,7 +60,7 @@ MIN_POOLED, MIN_ARM = 30, 20
 # drug classes of the two arms
 CLASSES = {"comet": ["BB"], "paradigm-hf-seq": ["ARNI", "ACEi"], "transform-hf": ["LOOP"], "elite-ii": ["ARB", "ACEi"],
            "life": ["ARB", "BB"], "plato": ["P2Y12"], "aristotle": ["OAC"], "rocket-af": ["OAC"], "rely": ["OAC"],
-           "allhat": ["CCB", "THZ"], "emperor-preserved-v2": ["SGLT2", "DPP4"], "east-afnet4": ["AAD", "BB"],
+           "allhat": ["CCB", "THZ"], "emperor-preserved-v2": ["SGLT2", "DPP4"], "east-afnet4": ["AAD", "BB", "NDCCB"],
            "cabana-v2": ["ABL", "AAD"], "ontarget": ["ARB", "ACEi"], "value": ["ARB", "CCB"], "ascot": ["CCB", "BB"],
            "empa-reg": ["SGLT2", "DPP4"], "carolina": ["DPP4", "SU"]}
 # hard exclusions (plausible drug effect on the NCO or its ascertainment)
@@ -90,8 +90,18 @@ CAUTION_CLASS = {
               "nco_knee_oa": "weight loss", "nco_hip_oa": "weight loss"},
     "LOOP": {"nco_skin_cancer": "furosemide photosensitivity (weak)", "nco_actinic_keratosis": "furosemide photosensitivity (weak)"},
     "SU": {"nco_skin_cancer": "sulfonylurea photosensitivity (rare)", "nco_actinic_keratosis": "sulfonylurea photosensitivity (rare)"},
-    "AAD": {"nco_conjunctivitis": "amiodarone ocular effects", "nco_carpal_tunnel": "amiodarone neuropathy"},
+    "AAD": {"nco_conjunctivitis": "amiodarone ocular effects", "nco_carpal_tunnel": "amiodarone neuropathy",
+            # v2b (AUDIT_V16_ROUND2 §3): amiodarone eye monitoring and dermatology surveillance (photosensitivity)
+            "nco_blepharitis": "amiodarone ophthalmic monitoring (ascertainment)", "nco_chalazion": "amiodarone ophthalmic monitoring (ascertainment)",
+            "nco_pterygium": "amiodarone ophthalmic monitoring (ascertainment)",
+            "nco_benign_skin_neoplasm": "dermatology surveillance under photosensitising amiodarone",
+            "nco_seborrheic_keratosis": "dermatology surveillance under photosensitising amiodarone"},
     "CCB": {"nco_plantar_fasciitis": "peripheral oedema (weak)"},
+    # v2b: EAST-AFNET4 rate control includes diltiazem / verapamil (trial_specs.RATE_CONTROL)
+    "NDCCB": {"nco_dental_caries": "non-DHP CCB gingival hyperplasia", "nco_plantar_fasciitis": "non-DHP CCB peripheral oedema",
+              "nco_carpal_tunnel": "non-DHP CCB peripheral oedema"},
+    "THZ": {"nco_benign_skin_neoplasm": "dermatology surveillance under photosensitising thiazide",
+            "nco_seborrheic_keratosis": "dermatology surveillance under photosensitising thiazide"},
 }
 
 
@@ -185,7 +195,7 @@ def run(trials, workers, out):
     tasks = [(n, h) for n in trials for h in ("full", "A", "B")]
     size = {n: len(E.load_trial(n).t) for n in trials}
     tasks.sort(key=lambda x: -size[x[0]])
-    with Pool(min(workers, len(tasks), 40)) as p:
+    with Pool(min(workers, len(tasks), 32)) as p:
         res = p.map(run_trial_half, tasks, chunksize=1)
     P = pd.DataFrame([r for rr in res for r in rr[0]])
     N = pd.DataFrame([r for rr in res for r in rr[1]])
@@ -869,7 +879,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("mode", choices=["run", "summarize", "audit"])
     ap.add_argument("--trials", default=",".join(E.TRIALS))
-    ap.add_argument("--workers", type=int, default=40)
+    ap.add_argument("--workers", type=int, default=32)
     ap.add_argument("--out", default=str(OUT))
     a = ap.parse_args()
     out = Path(a.out)

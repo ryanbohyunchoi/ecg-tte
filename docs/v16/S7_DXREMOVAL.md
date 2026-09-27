@@ -24,16 +24,16 @@ Central question: at how many (and which) removed diagnoses does the ECG gain be
    - **Held-out C-statistic:** 25/46 cells meet all four criteria (significance, placebo, FDR, both halves); 21 of them also survive clustering and leave-one-out.
    - **This is the robust S7 result.**
 2. **RCT agreement, |Δlog HR|: no cell meets every criterion, and no clean dose–response appears.**
-   - **Nominal results.** ECG − base |Δ| is nominally significant in 15/46 cells. **None passes within-sweep FDR** (minimum q = 0.063). Only 1 beats both placebos at p < 0.05, and only 3 reach p < 0.05 in both halves.
+   - **Nominal results.** ECG − base |Δ| is nominally significant in 15/46 cells. **None passes within-sweep FDR** (minimum q = 0.063). Only 1 beats both placebos at p < 0.05, and only 3 reach p < 0.05 in both halves (1 if full-cohort significance is also required; AUDIT_V16_ROUND2 §5).
    - **The best single cell: removing atrial fibrillation.** This is the most treatment-associated flag and also the one the ECG predicts best (cross-fitted AUC 0.71). Here:
      - d = −0.054 (14/18 trials, p = 0.006);
-     - about 2/3 of it is trial-specific: shuffled-RCT mean −0.020, specific share −0.034, benchmark-shuffle p = 0.003, and BH over the 46 cells q = 0.049;
+     - about 2/3 of it is trial-specific: shuffled-RCT mean −0.020, specific share −0.034, benchmark-shuffle p = 0.003, and BH over the 46 cells q = 0.049 (0.055 over the 42 distinct designs; 0.18 under the global S1–S7 BH, AUDIT_V16_ROUND2);
      - it survives comparator clustering (p = 0.025, 10 clusters) and leave-one-trial-out (max p = 0.012).
    - **The AF cell still fails three criteria:**
      - FDR on the sign-flip (q = 0.063);
      - shufECG, which it beats in direction only (p = 0.34);
      - the split halves: A d = −0.014 (p = 0.52), B d = −0.056 (p = 0.10).
-   - **Mechanism.** The sparse−AF+ECG arm has the same |Δ| as sparse+ECG (0.162). The "gain" arises because the base worsens without AF (0.182 → 0.216) while ECG makes the AF flag redundant for the HR estimate.
+   - **Mechanism.** The sparse−AF+ECG arm has the same |Δ| as sparse+ECG (0.162). The "gain" arises because the base worsens without AF (0.182 → 0.216) while ECG makes the AF flag redundant for the HR estimate. The largest single trial (transform-hf) contributes 28% of Σ\|d\|.
    - **Other cells.** Of the other cells, those that are significant and benchmark-specific are cum k = 8, CKD, no-extras, demo and two random-order cells (rand0_k4, rand1_k3). They are scattered, show no monotone pattern, and none passes FDR or replicates in both halves.
    - **Across the cumulative path, the trial-specific share is not monotone in k** (curve figure). So there is no "threshold number of removed diagnoses" beyond which the |Δ| gain becomes trial-specific.
 3. **RCT agreement, z²: the gain is significant almost everywhere but almost never trial-specific.**
@@ -55,7 +55,7 @@ Central question: at how many (and which) removed diagnoses does the ECG gain be
    - Removing only the extras raises the ECG |Δ| gain from −0.020 to −0.033 (p = 0.021; shuffle p = 0.023; cluster p = 0.025; LOO max p = 0.042). This fails FDR (q = 0.095), the placebo tests (p = 0.18/0.08) and the halves (A p = 0.37, B d = +0.015).
    - Going from cum k = 9 (demo + extras) to demo only raises the balance gain from −0.014 to −0.023.
 
-**Bottom line.** Stripping diagnoses from the sparse PS makes ECG's **balance** contribution larger and robust (ECG-specific, FDR, both halves, clustering, leave-one-out) from about 3 removed diagnoses onward. The contribution depends on the number removed, not on which. For **RCT agreement**, no number of removed diagnoses gives a gain that is significant, placebo-beating, FDR-surviving, replicated in both halves and benchmark-specific. The only cell that is significant, benchmark-specific and cluster/LOO-robust is **removing AF** (|Δ| −0.054, 2/3 trial-specific), and it fails FDR, the shufECG test and half replication. It is consistent with ECG encoding AF, but with only 18 trials and post-hoc selection among 46 cells it is hypothesis-generating. The z² gain grows with removal, but so does its shuffled-benchmark null. It is shrinkage toward the null, not agreement with each trial's RCT.
+**Bottom line.** Stripping diagnoses from the sparse PS makes ECG's **balance** contribution larger and robust (ECG-specific, FDR, both halves, clustering, leave-one-out) from about 3 removed diagnoses onward. The contribution depends on the number removed, not on which. For **RCT agreement**, no number of removed diagnoses gives a gain that is significant, placebo-beating, FDR-surviving, replicated in both halves and benchmark-specific. The only cell that is significant, benchmark-specific and cluster/LOO-robust is **removing AF** (|Δ| −0.054, 2/3 trial-specific), and it fails FDR, the shufECG test and half replication. The mechanism is that the base worsens when AF is dropped (+0.035, p = 0.10) while the ECG arm does not (+0.0007). ECG rebalances the AF flag itself by only 8.5% (p = 0.27), so this is not direct evidence that the ECG encodes AF. With only 18 trials and post-hoc selection among 46 cells it is hypothesis-generating. The z² gain grows with removal, but so does its shuffled-benchmark null. It is shrinkage toward the null, not agreement with each trial's RCT.
 
 ![S7 curve](S7_DXREMOVAL_curve.png)
 
@@ -132,8 +132,8 @@ Additional per-arm output: the |SMD| in the matched sample of every sparse flag 
 
 | metric | p<0.05 & ECG better | + FDR q<0.05 | + both placebos p<0.05 | p<0.05 in both halves | all four | all four + cluster p<0.05 + LOO max p<0.05 | significant & benchmark-shuffle p<0.05 | ... + cluster + LOO |
 |---|---|---|---|---|---|---|---|---|
-| \|Δlog HR\| | 15 | 0 | 1 | 3 | 0 | 0 | 9 | 5 (loo_AF = cum_k1, noextras, rand0_k4, rand1_k3) |
-| z² | 40 | 37 | 23 | 8 | 5 | 4 | 5 | 2 (loo_PAD, cum_k1) |
+| \|Δlog HR\| | 15 | 0 | 1 | 3 | 0 | 0 | 9 | 5 cells = 4 distinct designs (loo_AF ≡ cum_k1, noextras, rand0_k4, rand1_k3) |
+| z² | 40 | 37 | 23 | 8 | 5 | 4 | 5 | 2 cells = 2 distinct designs (loo_PAD, cum_k1; cum_k1 ≡ loo_AF, whose own shuffle p is 0.052 vs 0.050 by Monte-Carlo error) |
 | mean \|SMD\| | 45 | 45 | 44 | 20 | 19 | 19 | – | – |
 | C-statistic | 42 | 41 | 40 | 26 | 25 | 21 | – | – |
 

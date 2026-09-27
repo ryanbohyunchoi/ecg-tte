@@ -22,7 +22,7 @@ Balance: engine 58-variable panel (mean_smd, cstat) plus
 Matched sets for the extra balance metrics are obtained by replicating run_cell's PS fit + match
 (v13_common.ps_logit / match; deterministic, checked against run_cell's n_pairs).
 
-Usage: s1_ladder.py run [--trials a,b] [--workers 36] [--out DIR]   (writes DIR/results.csv)
+Usage: s1_ladder.py run [--trials a,b] [--workers 32] [--out DIR]   (writes DIR/results.csv)
        s1_ladder.py summarize [--out DIR] [--doc]                   (summaries, heat map, curve, markdown)
 Aggregates only.
 """
@@ -191,7 +191,7 @@ def run(trials, workers, out):
     # biggest trials first for load balance
     size = {n: len(E.load_trial(n).t) for n in trials}
     tasks.sort(key=lambda x: -size[x[0]])
-    with Pool(min(workers, len(tasks), 40)) as p:
+    with Pool(min(workers, len(tasks), 32)) as p:
         res = p.map(run_trial_half, tasks, chunksize=1)
     df = pd.DataFrame([r for rr in res for r in rr])
     df.to_csv(out / "results.csv", index=False)
@@ -513,7 +513,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("mode", choices=["run", "summarize"])
     ap.add_argument("--trials", default=",".join(E.TRIALS))
-    ap.add_argument("--workers", type=int, default=36)
+    ap.add_argument("--workers", type=int, default=32)
     ap.add_argument("--out", default=str(OUT))
     ap.add_argument("--doc", action="store_true")
     a = ap.parse_args()

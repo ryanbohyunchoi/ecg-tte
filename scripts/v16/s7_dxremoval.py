@@ -20,7 +20,7 @@ Estimator: engine default (1:1 caliper-0.2 matching, L2 C=1 PS); balance on the 
 Extra per arm: |SMD| of every sparse flag in the matched sample (smdflag:<flag>), from the matched set captured
 from run_cell (v16_engine.match wrapped; identical call).
 
-Usage: s7_dxremoval.py run [--trials a,b] [--workers 40]
+Usage: s7_dxremoval.py run [--trials a,b] [--workers 32]
        s7_dxremoval.py summarize
 Aggregates only.
 """
@@ -239,7 +239,7 @@ def run(trials, workers, outf="results.csv"):
     jobs = sorted([(n, cid, c) for n in trials for cid, c in C.items()], key=lambda j: size.get(j[0], 99))
     t0 = time.time()
     res = []
-    with Pool(min(workers, 40)) as pool:
+    with Pool(min(workers, 32)) as pool:
         for i, r in enumerate(pool.imap_unordered(job, jobs, chunksize=1)):
             res.extend(r)
             if (i + 1) % 50 == 0 or i + 1 == len(jobs):
@@ -554,7 +554,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("mode", choices=["run", "summarize"])
     ap.add_argument("--trials", default=",".join(E.TRIALS))
-    ap.add_argument("--workers", type=int, default=40)
+    ap.add_argument("--workers", type=int, default=32)
     ap.add_argument("--out", default="results.csv")
     a = ap.parse_args()
     if a.mode == "run":

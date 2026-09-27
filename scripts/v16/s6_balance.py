@@ -19,6 +19,11 @@ Held-out panel: the engine matrix T.H (58 variables) and optionally an EXTRA hel
 patient_key, numeric columns; `--extra DIR` reads DIR/<trial>.parquet). Extra columns are added as components
 "X::<col>"; per cell, any extra column that is in (or a named proxy of) that cell's PS is dropped (PS_NAMES,
 PROXY). Output column `panel` = "p58" or "x<name>".
+v2b (AUDIT_V16_ROUND2, 2026-09-26): with claude-v16-covars2b, variables whose dictionary `timing` is not
+pre_index are dropped (index_setting_*, zip_*); at hdPS200 any extra variable whose codes (dictionary `hdps_keys`:
+ICD / procedure prefixes, drug tokens, lab concepts, incl. all components of composite scores) overlap a code behind
+the trial/half's top-200 hdPS levels is also dropped (column n_extra_dropped_hdps); the heat map goes to --out unless
+--doc; label "sparse, 50% code dropout" renamed "sparse-drop50"; worker cap 32.
 
 Measures (matched sample, lower = better):
  a. outcome-weighted imbalance. Ridge logistic model of the primary event by horizon (T.y_e, rows with T.y_ok)
@@ -45,7 +50,7 @@ Inference (summarize): paired exact sign-flip over trials (E.summarize_pairs) fo
 comparator-clustered sign-flip (audit_v16.CLUSTER), leave-one-trial-out max p, halves, placebo rule,
 BH-FDR per metric over rungs and within measure family (metrics × rungs).
 
-Usage: s6_balance.py run [--trials a,b] [--workers 40] [--extra DIR --panel NAME] [--out DIR]
+Usage: s6_balance.py run [--trials a,b] [--workers 32] [--extra DIR --panel NAME] [--out DIR]
        s6_balance.py summarize [--out DIR] [--doc]
 Aggregates only.
 """
@@ -70,7 +75,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import v16_engine as E  # noqa: E402
 from audit_v16 import CLUSTER  # noqa: E402
-from v13_common import match, ps_logit, weights  # noqa: E402
+from v13_common import hdps_rank, match, ps_logit, weights  # noqa: E402
 from v13_summarize import md  # noqa: E402
 from v13_summarize import sign_flip as _sign_flip_ref  # noqa: E402
 from functools import lru_cache  # noqa: E402
@@ -99,10 +104,10 @@ SWEEP = "s6-balance"
 OUT = Path("/mnt/raid0/rbc58/ecg-tte/audits/claude-v16-s6-balance")
 DOCS = HERE.parent.parent / "docs" / "v16"
 COV = Path("/mnt/raid0/rbc58/ecg-tte/audits/claude-v16-covars")
-COV2 = Path("/mnt/raid0/rbc58/ecg-tte/audits/claude-v16-covars2")
+COV2 = Path("/mnt/raid0/rbc58/ecg-tte/audits/claude-v16-covars2b")  # v2b (AUDIT_V16_ROUND2); v2 = claude-v16-covars2
 RACE = ["race_black", "race_asian", "race_other_unknown", "hispanic", "ethnicity_unknown"]
 MIN7 = ["t2d", "cad_ihd", "hypertension_v11", "hyperlipidemia"]
-CELLS = [("demo", "demo"), ("min7", "minimal-7"), ("sparse", "sparse"), ("sparse_drop50", "sparse, 50% code dropout"),
+CELLS = [("demo", "demo"), ("min7", "minimal-7"), ("sparse", "sparse"), ("sparse_drop50", "sparse-drop50"),
          ("hdPS200", "hdPS200"), ("clinical", "clinical")]
 CELL_LAB = dict(CELLS)
 CELL_POS = {c: i for i, (c, _) in enumerate(CELLS)}
@@ -161,6 +166,9 @@ def _split(x):
     return {v.strip() for v in str(x).replace(";", ",").split(",") if v.strip()} if isinstance(x, str) else set()
 
 
+HDPS_KEYS: dict = {}  # (trial, extra dir) -> {col: set of hdPS code keys}; filled by load_extra (signature kept for S8)
+
+
 def load_extra(T, d: Path):
     """Extra held-out panel for T.keys from d/<trial>.parquet (numeric columns except ids / treatment).
     If d has dictionary.csv / trial_variable_status.csv (claude-v16-covars2): keep only status 'kept*' for this
@@ -179,6 +187,7 @@ def load_extra(T, d: Path):
     X = X.drop(columns=drop).astype(float)
     overlap = {c: set() for c in X.columns}
     block = {c: "other" for c in X.columns}
+    hkeys = {c: set() for c in X.columns}
     if (d / "trial_variable_status.csv").exists():
         st = pd.read_csv(d / "trial_variable_status.csv")
         st = st[st.trial == T.n]
@@ -202,13 +211,47 @@ def load_extra(T, d: Path):
                     overlap[v] |= _split(dic.loc[v, "ps_overlap_candidates"])
                 if "block" in dic and isinstance(dic.loc[v, "block"], str):
                     block[v] = dic.loc[v, "block"]
+                if "hdps_keys" in dic and isinstance(dic.loc[v, "hdps_keys"], str):
+                    hkeys[v] = set(dic.loc[v, "hdps_keys"].split())
+                if "timing" in dic and str(dic.loc[v, "timing"]) not in ("pre_index", "nan"):  # v2b: not strictly pre-index
+                    X = X.drop(columns=[v])
+                    continue
                 for lc in [c for c in dic.columns if "leak" in c.lower()]:  # optional per-trial leak tag
                     if T.n in _split(dic.loc[v, lc]) or str(dic.loc[v, lc]).lower() in ("true", "1", "all"):
                         X = X.drop(columns=[v])
                         break
     overlap = {c: overlap[c] for c in X.columns}
     block = {c: block[c] for c in X.columns}
+    HDPS_KEYS[(T.n, str(d))] = {c: hkeys[c] for c in X.columns}
     return X, overlap, block
+
+
+def hdps_selected(T, rows, t, k=200):
+    """(domain, code) of the codes behind the top-k hdPS levels of T.hd(k, t, rows) (same ranking call)."""
+    lv = T.lv.iloc[rows]
+    names = hdps_rank(lv.reset_index(drop=True), t)[:k]
+    out = set()
+    for f in names:
+        base = f.rsplit("__", 1)[0]
+        dom, code = base.split("_", 1)
+        out.add(("lab" if dom == "labn" else dom, code.upper() if dom in ("dx", "px") else code.lower()))
+    return out
+
+
+def hdps_overlap(keys, sel):
+    """True if any covars2 hdPS key (dx:<ICD prefix>, px:<code prefix>, rx:<token>, lab:<concept>) overlaps a selected
+    hdPS code: ICD / procedure prefixes overlap when either is a prefix of the other; rx tokens and lab concepts by equality."""
+    for k in keys:
+        dom, code = k.split(":", 1)
+        for d, c in sel:
+            if d != dom:
+                continue
+            if dom in ("dx", "px"):
+                if c.startswith(code.upper()) or code.upper().startswith(c):
+                    return True
+            elif (code.lower() if dom == "rx" else code) == c:
+                return True
+    return False
 
 
 # ---------------------------------------------------------------- designs
@@ -504,12 +547,18 @@ def task(args):
     vc = E.var_components(Hf)
     drop = {x for c in ex58 for x in vc[c]}
     Hc = Hf[[c for c in Hf.columns if c not in drop]]
-    xcols, xdrop = [], []
+    xcols, xdrop, xdrop_hd = [], [], []
     if extra_dir is not None:
         Xe, ovl, blk = load_extra(T, Path(extra_dir))
         if drop_block:
             Xe = Xe[[c for c in Xe.columns if blk[c] != drop_block]]
         xdrop = excluded_extra(ps_names, list(Xe.columns), ovl)
+        if cell == "hdPS200":
+            # v2b: also drop held-out variables whose codes can enter the hdPS selection of this (trial, half)
+            sel = hdps_selected(T, rows, t, 200)
+            hk = HDPS_KEYS.get((T.n, str(Path(extra_dir))), {})
+            xdrop_hd = [c for c in Xe.columns if c not in xdrop and hdps_overlap(hk.get(c, set()), sel)]
+            xdrop = xdrop + xdrop_hd
         Xe = Xe.drop(columns=xdrop)
         Xe = Xe.loc[:, Xe.notna().any() & (Xe.nunique() > 1)]
         xcols = list(Xe.columns)
@@ -542,7 +591,7 @@ def task(args):
         m = measures(P, s_idx, s_w, perm=perm)
         out.append(dict(sweep=SWEEP, cell=cell, rung=CELL_POS.get(cell, -1), panel=panel, trial=n, half=half, arm_role=role,
                         arm_label=label, **r, **m, rep_npairs=npairs, rep_dev_mean_smd=rep_dev, n_extra=len(xcols),
-                        n_extra_dropped=len(xdrop), n_Zall=P.Zall.shape[1], n_Zcore=P.Zcore.shape[1], rb=T.rb, rs=T.rs))
+                        n_extra_dropped=len(xdrop), n_extra_dropped_hdps=len(xdrop_hd), n_Zall=P.Zall.shape[1], n_Zcore=P.Zcore.shape[1], rb=T.rb, rs=T.rs))
     print(f"{n} {half} {cell} {panel} done {time.time() - t0:.0f}s", flush=True)
     return out
 
@@ -556,7 +605,7 @@ def run(trials, workers, out, extra_dir, panel, drop_block=None):
     tasks.sort(key=lambda x: -size[x[0]])
     res = []
     t0 = time.time()
-    with Pool(min(workers, len(tasks), 40)) as p:
+    with Pool(min(workers, len(tasks), 32)) as p:
         for k, r in enumerate(p.imap_unordered(task, tasks, chunksize=1)):
             res.extend(r)
             if (k + 1) % 25 == 0 or k + 1 == len(tasks):
@@ -649,12 +698,12 @@ def summarize(out, doc):
     S.to_csv(out / "summary_pairs.csv", index=False)
     V.to_csv(out / "verdicts.csv", index=False)
     L.to_csv(out / "levels.csv", index=False)
-    heatmap(V, panels)
+    heatmap(V, panels, DOCS / "S6_BALANCE_heatmap.png" if doc else out / "S6_BALANCE_heatmap.png")
     if doc:
         write_md(df, V, L, panels, out)
 
 
-def heatmap(V, panels):
+def heatmap(V, panels, dest):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -689,7 +738,7 @@ def heatmap(V, panels):
                      "LOO max p<0.05, same direction in both halves)", fontsize=8.5)
         fig.colorbar(im, ax=ax, shrink=0.8, label="signed −log10 p")
     fig.tight_layout()
-    fig.savefig(DOCS / "S6_BALANCE_heatmap.png", dpi=130)
+    fig.savefig(dest, dpi=130)
     plt.close(fig)
 
 
@@ -717,7 +766,8 @@ def write_md(df, V, L, panels, out):
            "same 18 trials, not independent replication). Panels: `p58` = engine 58-variable panel only; `x2all` = 58 + "
            "claude-v16-covars2 (per trial: status kept, exposure-leak variables removed; per cell: PS duplicates removed); "
            "`x2np` = as x2all but without the dictionary `ecg_proximal` block (HF, cardiomyopathy, arrhythmia, conduction, "
-           "devices, rate/rhythm drugs, ECG counts, CHA2DS2-VASc; 48 registered). Missingness measures (family c) use the 58-panel "
+           "devices, rate/rhythm drugs, ECG counts, CHA2DS2-VASc; 48 registered in covars2 v2; 67 in v2b, adding MI/ACS, BNP, "
+           "ARNI/MRA/loop, HF hospitalisation and the disease composites). Missingness measures (family c) use the 58-panel "
            "labs/echo only, so they are identical across panels.\n"]
     for p in panels:
         v = V[V.panel == p]
@@ -794,7 +844,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("mode", choices=["run", "summarize"])
     ap.add_argument("--trials", default=",".join(E.TRIALS))
-    ap.add_argument("--workers", type=int, default=40)
+    ap.add_argument("--workers", type=int, default=32)
     ap.add_argument("--out", default=str(OUT))
     ap.add_argument("--extra", default=None, help="dir with <trial>.parquet extra held-out panel")
     ap.add_argument("--panel", default="p58")

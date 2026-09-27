@@ -11,8 +11,8 @@ Arms per cell: base, base+ECG, base+shufECG (ECG rows permuted with T.shuffle_pe
 same dimension as the ECG variant; noise32 = T.noise32). Unmatched once per trial/half. Halves: full, A, B
 (rng = default_rng(16060 + trial_index), split stratified by treatment). Held-out C-statistic: engine default.
 
-  python s3_repr.py --run [--trials a,b] [--workers 40] [--out results.csv]
-  python s3_repr.py --summarize [--workers 40]
+  python s3_repr.py --run [--trials a,b] [--workers 32] [--out results.csv]
+  python s3_repr.py --summarize [--workers 32]
 Outputs (aggregates only): /mnt/raid0/rbc58/ecg-tte/audits/claude-v16-s3-repr/, docs/v16/S3_REPR*.{md,png}.
 """
 from __future__ import annotations
@@ -147,7 +147,7 @@ def run(trials, workers, fname):
     size = {t: len(E.load_trial(t).t) for t in trials}
     tasks.sort(key=lambda x: -(size[x[0]] * (3 if x[2] == "3b" else 2 if x[2] == "3a" else 1 if x[2] == "3c" else 0.1) * (1 if x[1] == "full" else 0.5)))
     rows, t0 = [], time.time()
-    with Pool(min(workers, 40, len(tasks))) as p:
+    with Pool(min(workers, 32, len(tasks))) as p:
         for i, res in enumerate(p.imap_unordered(_task, tasks, chunksize=1)):
             rows += res
             print(f"[{time.time() - t0:7.0f}s] {i + 1}/{len(tasks)} {res[0]['trial']} {res[0]['half']} {res[0]['family']}", flush=True)
@@ -172,7 +172,7 @@ def summarize(workers, fname="results.csv"):
     ref = df[df.family == "ref"]
     R = df[df.family != "ref"]
     jobs = [(g, a, b) for (_, _), g in R.groupby(["cell", "half"]) for a, b in COMPS]
-    with Pool(min(workers, 40)) as p:
+    with Pool(min(workers, 32)) as p:
         S = pd.concat(p.map(_sum_one, jobs, chunksize=4), ignore_index=True)
     meta = R.drop_duplicates("cell").set_index("cell")[["family", "base", "rep", "dim", "ps_model", "C", "estimator", "caliper", "ratio"]]
     S = S.join(meta, on="cell")
@@ -425,7 +425,7 @@ def main():
     ap.add_argument("--run", action="store_true")
     ap.add_argument("--summarize", action="store_true")
     ap.add_argument("--trials", default=",".join(E.TRIALS))
-    ap.add_argument("--workers", type=int, default=40)
+    ap.add_argument("--workers", type=int, default=32)
     ap.add_argument("--out", default="results.csv")
     a = ap.parse_args()
     os.umask(0o077)

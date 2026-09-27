@@ -11,7 +11,7 @@ Halves: full, A, B (rng 16060 + trial index, stratified by treatment). Estimator
 Held-out balance is ALWAYS evaluated on the TRUE (undegraded) held-out matrix of the original trial:
 run_cell(..., heldout=T.H) with T the undegraded trial (the degraded copy's cov meds are not used).
 
-Usage:  s2_dropout.py run [--trials a,b] [--workers 40] [--out results.csv]
+Usage:  s2_dropout.py run [--trials a,b] [--workers 32] [--out results.csv]
         s2_dropout.py summarize
 Aggregates only.
 """
@@ -102,7 +102,7 @@ def run(trials, workers, outf):
     # biggest trials first
     t0 = time.time()
     res = []
-    with Pool(min(workers, 40)) as pool:
+    with Pool(min(workers, 32)) as pool:
         for i, r in enumerate(pool.imap_unordered(job, jobs, chunksize=1)):
             res.extend(r)
             if (i + 1) % 20 == 0 or i + 1 == len(jobs):
@@ -393,7 +393,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("mode", choices=["run", "summarize"])
     ap.add_argument("--trials", default=",".join(E.TRIALS))
-    ap.add_argument("--workers", type=int, default=40)
+    ap.add_argument("--workers", type=int, default=32)
     ap.add_argument("--out", default="results.csv")
     a = ap.parse_args()
     if a.mode == "run":

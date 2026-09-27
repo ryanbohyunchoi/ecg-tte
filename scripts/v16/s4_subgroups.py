@@ -15,7 +15,7 @@ Trial-level strata (no re-run; subsets of the 18 trials at stratum 'all'): role,
 unmatched confounding tertile, trial-size tertile. Plus a trial-level meta-regression.
 
 Usage:  python s4_subgroups.py prep            # restricted per-trial flags (lag, inpatient) in OUT
-        python s4_subgroups.py run [--trials a,b] [--workers 40] [--tag audit]
+        python s4_subgroups.py run [--trials a,b] [--workers 32] [--tag audit]
         python s4_subgroups.py summarize [--tag ...]
 Aggregates only in results/summaries; counts 1-10 suppressed.
 """
@@ -171,7 +171,7 @@ def run(trials, workers, tag):
     OUT.mkdir(parents=True, exist_ok=True)
     jobs = [(n, E.TRIALS.index(n), s) for n in trials for _, s in ROW_STRATA]
     jobs.sort(key=lambda j: (-os.path.getsize(E.CACHE / f"restricted_trial_{j[0]}_v{E.CACHE_VERSION}.pkl"), j[2]))
-    with Pool(min(workers, len(jobs))) as p:
+    with Pool(min(workers, len(jobs), 32)) as p:
         res = p.map(run_trial, jobs, chunksize=1)
     R = pd.DataFrame([r for x in res for r in x[0]])
     for c in ("n", "n_t", "n_c", "n_pairs"):  # suppress 1-10
@@ -509,7 +509,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("cmd", choices=["prep", "run", "summarize"])
     ap.add_argument("--trials", default=",".join(E.TRIALS))
-    ap.add_argument("--workers", type=int, default=40)
+    ap.add_argument("--workers", type=int, default=32)
     ap.add_argument("--tag", default="")
     a = ap.parse_args()
     tr = a.trials.split(",")

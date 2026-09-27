@@ -5,15 +5,80 @@ Built by `scripts/v16/build_v16_covars2.py`; extends `docs/v16/COVARIATES.md` (`
 ## Conventions
 - All windows end at index−1 (index day excluded). Default lookback 365 d; `_ever` = all prior history; a few preventive items use 730 d / 3650 d (stated in the definition).
 - Diagnoses: ICD-10-CM prefix (dots removed) in OMOP gold `condition_occurrence` + `observation` (as covars v1). Procedures: upper(`procedure_source_value`) prefix (CPT/HCPCS/ICD-10-PCS; 88% of gold procedure concept ids are 0). Medications: '-'-split lowercase `drug_source_value` token match (generic + brand + common combination-brand tokens; a combination brand counts for every component class). Labs/vitals: OMOP gold `measurement` concept ids, latest plausible value in 365 d plus a `_missing` flag; weight source unit is ounces, height inches.
+- Labs: troponin_hs = hs-TnT (LOINC 67151-1). HSCRP values (median about 11 mg/L) are standard-range CRP, not cardiovascular-risk hs-CRP. PT is available only inside concept 3020630 (source LABPROT) and is not used. TROPONINI 9999999 sentinels are removed by the plausibility cap.
 - Epic (Yale clinical-sources-v1 snapshot: outpatient_enc, hosp_enc, patients; 2025-04-03 and 2026-04-15 deliveries deduplicated on `PAT_ENC_CSN_ID`) linked by `person.person_source_value` = `PAT_MRN_ID` (digits, leading zeros stripped).
 - **Exposure-defining drugs removed:** a medication class containing a single-ingredient token listed in the trial's `roles.json` `exposure_features` is removed for that trial (e.g. `rx_beta_blocker_365` for COMET/EAST-AFNET4/ASCOT/LIFE, `rx_oral_anticoagulant_365` for the warfarin trials). If only combination-brand tokens overlap (e.g. janumet in the SGLT2i/DPP4i trials), the class is recomputed without those tokens (`kept_exposure_tokens_removed`, `exposure_leak = possible`). `n_med_classes_365` counts only retained classes; `n_distinct_drugs_365` drops exposure tokens and every token of a removed class.
+- Medication: prior use of the exposure class cannot be described, because the class is dropped (acceptable for new-user designs). rx_arni_365 is kept in ELITE-II/ONTARGET (valsartan-containing; tag it; **tagged `kept_exposure_leak` in v2b**). Known minor gaps, unchanged in v2b: sotalol stays in `rx_antiarrhythmic_365` in COMET; fluticasone is missing from `rx_inhaled_respiratory_365`; the influenza-vaccine rx tokens barely fire (CPT carries `flu_vaccine_365`).
 - **Exposure-leak tag:** non-drug variables tied to the exposure (INR, anticoagulation-clinic visits and Z79.01 in the warfarin trials; Z79.02 / `hasbled` drug item in PLATO; Z79.84 in the DM trials; prior ablation in CABANA) are kept but tagged `exposure_leak = yes` in `trial_variable_status.csv` so balance analyses can exclude or separate them.
 - **Blocks:** `dictionary.csv` column `block` = `ecg_proximal` for variables an ECG is expected to encode directly (rhythm/AF/flutter, conduction disease, devices/pacing, ablation/cardioversion, ventricular arrhythmia/arrest, cardiomyopathy/HF, rate-control and antiarrhythmic drugs, prior ECG count, CHA2DS2-VASc/CHADS2 via CHF, hyperkalaemia) and `other` otherwise.
-- **Index context:** `index_setting_inpatient/ed/outpatient` describe the index day (setting of initiation) and are the only non-pre-index variables (domain `index_context`); exclude them where strictly pre-index covariates are required.
-- **PS overlap:** kept variables that partly duplicate a PS core variable of that trial (e.g. `rx_statin_365` vs `statin_order` (90 d), Charlson CHF vs `heart_failure`) are listed in `trial_variable_status.csv` (column `ps_overlap`) so they can be excluded per cell. They are longer-window / finer versions, not identical copies.
+- **Index context:** `index_setting_inpatient/ed/outpatient` describe the index day (setting of initiation; domain `index_context`). `recent_hosp_30d` and `n_inpatient_stays_365` also count an index admission in progress (to be fixed: require discharge before index). `zip_*` reflect the current, extract-date address. All of these must be excluded where strictly pre-index covariates are required (S6 v1 did not). **Fixed in v2b (see below).**
+- **PS overlap:** kept variables that partly duplicate a PS core variable of that trial (e.g. `rx_statin_365` vs `statin_order` (90 d), Charlson CHF vs `heart_failure`) are listed in `trial_variable_status.csv` (column `ps_overlap`) so they can be excluded per cell. They are longer-window / finer versions, not identical copies. Composite scores (Charlson, Elixhauser, Gagne, CHA2DS2-VASc, CHADS2, HAS-BLED, DCSI) and lab/vital summaries (SBP mean, Hb < 10, eGFR < 30, weight/height) are not yet tagged and partly duplicate PS inputs. hdPS-selected ICD codes are not matched by name. **Tagged in v2b (see below).**
 - **Dropping:** per trial, binary variables with prevalence < 1% or > 99% in the analysis population (v13_common.Trial keys) and numeric variables observed in < 1% or with zero variance are removed from that trial's parquet (listed below).
-- Nothing is derived from the index ECG (no machine intervals, no index-ECG text). ECG counts use prior ECG CPT dates only.
+- Nothing is derived from the index ECG (no machine intervals, no index-ECG text). ECG counts use prior ECG CPT dates only (but see the index-encounter variables above; index-day ECGs are allowed by design).
 - Suppression: `<11` = count or complement in 1–10; percentages derived from such cells are blanked.
+
+## v2b corrections (2026-09-27; AUDIT_V16_ROUND2 §2)
+
+The v2 files in `claude-v16-covars2/` are frozen and unchanged. The corrected set was built by the same script (`build_v16_covars2.py`, now defaulting to `--out claude-v16-covars2b`; the script refuses to overwrite a directory with a READY marker). It is in `/mnt/raid0/rbc58/ecg-tte/audits/claude-v16-covars2b/` (umask 077, `READY`) and has the same roster keys and the same 431 registered variables. The tables below this section (coverage, per-trial drops, prevalence by arm, definitions) are still the v2 build, except for the definitions edited above. The v2b per-variable values are in `claude-v16-covars2b/summary_by_arm.csv`, `trial_variable_status.csv` and `dictionary.csv`.
+
+1. **Index-encounter utilisation.**
+   - What changed: every OMOP `visit_occurrence` variable now counts only visits *completed* before index, i.e. `coalesce(visit_end_date, visit_start_date) < index`. The affected variables are `n_inpatient_stays_365`, `recent_hosp_30d`, `n_outpatient_days_365`, `n_office_visits_365`, `n_telemedicine_365`, `n_anticoag_clinic_365`, `n_infusion_visits_365`, `n_ed_days_365`, `days_since_last_visit`, `ehr_history_days` and `no_prior_visit`.
+   - Why: v2 used `visit_start_date < index` alone. An admission or ED stay still in progress on the index day (the index encounter) therefore counted as a prior stay.
+   - Already correct in v2: `n_hf_hosp_365` and all Epic hospital-encounter variables (`disch_*`, `icu_stay_365`, `observation_stay_365`, `campus_*`) already required discharge ≤ index−1.
+   - Effect in the analysis population (share of rows whose value changed, range over 18 trials):
+     - `recent_hosp_30d`: 10–54%. Among index-inpatient patients, prevalence fell from 48–98% to 4–12%. Among other patients it is unchanged (2–16%). So it is no longer an index-setting proxy.
+     - `n_inpatient_stays_365`: 11–61%.
+     - `days_since_last_visit`: 14–58%.
+     - `n_outpatient_days_365`: 1–5%.
+     - `n_ed_days_365`: ≤ 0.3%.
+     - `ehr_history_days`: COMET only (12%).
+   - Diagnoses, labs and procedures dated inside an index admission but before the index day are still counted. They are pre-index clinical information, on the same convention as the PS covariates.
+2. **Not strictly pre-index: excluded.**
+   - `index_setting_inpatient/ed/outpatient` (dictionary `timing = index_day`) and `zip_out_of_state` / `zip_missing` (`timing = post_index_current_address`; domain renamed `social_current`) are still built.
+   - Their per-trial status is `excluded_not_preindex` (68 trial × variable rows). The S6 loader also drops any variable whose `timing` is not `pre_index`.
+3. **HFRS.** The continuous `hfrs_365` is the primary form. `hfrs_ge5` has status `excluded_uncalibrated_cutpoint` in all 18 trials, because the Gilbert cut-points are not calibrated for 365 d of all-setting codes.
+4. **PS-overlap tags for composites and summaries.**
+   - Each composite score now lists its components (dictionary column `components`). Its PS-overlap candidates are the union over those components, plus `age_at_index` / `male` where age or sex is a component.
+   - The component lists:
+     - `charlson_score`: the 17 Charlson components; `charlson_age_score` adds age.
+     - `elixhauser_count`, `elixhauser_vw`: the 31 Elixhauser components.
+     - `gagne_ccs`: the Elixhauser components plus Charlson dementia and malignancy.
+     - `cha2ds2vasc` / `_ge2`: CHF, HTN, DM, stroke/TIA/embolism, prior MI, PVD, age and sex.
+     - `chads2`: CHF, HTN, DM, stroke and age.
+     - `hasbled_nodrug`: HTN, dialysis/transplant/ESRD, creatinine, cirrhosis, bilirubin/AST/ALT, stroke, bleeding, alcohol and age. `hasbled` adds aspirin, P2Y12 and NSAID.
+     - `hfrs_365`: the 109 HFRS codes, mapped to PS names through the PS-tagged diagnosis variables whose ICD prefixes overlap.
+     - `dcsi_domains`: DM plus the DCSI prefixes.
+     - `n_med_classes_365` / `polypharmacy_ge5`: every retained medication class.
+   - Lab, vital and lab-defined summaries are tagged with the clinical-PS physiology they partly duplicate:
+     - `sbp_mean_365` → sbp;
+     - `hb_lt10`, `lab_hematocrit` and `anemia` → hemoglobin;
+     - `egfr_lt30` and `lab_bun_creatinine_ratio` → creatinine;
+     - `lab_weight_kg`, `lab_height_cm`, `elx_obesity`, `obesity_class*` and `overweight` → bmi;
+     - `hyperkalemia` → potassium;
+     - `hyponatremia` → sodium.
+   - The per-trial `ps_overlap` column carries these tags. The S6 per-cell exclusion (names ∩ that cell's PS) now removes, for example, CHA2DS2-VASc, CHADS2, HAS-BLED and the Charlson age score from the demo cell, and the composites from the sparse and clinical cells.
+   - Not tagged (intensity counts, not specific codes): `n_distinct_dx_365`, `n_distinct_procedures_365`, `n_distinct_drugs_365`, `n_lab_*` and `sbp_sd_365`.
+5. **hdPS code keys.** The dictionary column `hdps_keys` lists each variable's codes in hdPS form: `dx:<ICD prefix>`, `px:<code prefix>`, `rx:<token>` and `lab:<concept>`. Composites include all of their components' codes. The S6 hdPS200 cell uses these keys to drop held-out variables whose codes can enter the hdPS selection (S6_BALANCE.md, v2b re-run).
+6. **ECG-proximal block extended.** The block grows from 48 to 67 registered variables. Per trial, 36–64 proximal variables are kept (v2: 27–46), which leaves 320–342 non-proximal ones (v2: 338–364). The v2 block is kept in the dictionary column `block_v2`.
+   - Added:
+     - MI/ACS (Q waves, ST-T changes): `prior_mi_ever`, `cci_mi`, `acute_mi_365`, `acs_365`, `unstable_angina`;
+     - `lab_bnp`, `lab_bnp_missing`;
+     - HF drugs: `rx_arni_365`, `rx_mra_365`, `rx_loop_diuretic_365`;
+     - `n_hf_hosp_365`;
+     - disease composites with an ECG-proximal component: `charlson_score`, `charlson_age_score` (CHF, MI), `elixhauser_count`, `elixhauser_vw`, `gagne_ccs` (CHF, arrhythmia), `hfrs_365`, `hfrs_ge5` (R55 syncope, R00 abnormal heart beat) and `dcsi_domains` (I20–I25, I50).
+   - Not added (judgement):
+     - SGLT2i: mostly a diabetes indication in these years.
+     - Troponin: not directly ECG-encoded.
+     - Prior PCI/CABG.
+     - HAS-BLED: no proximal component.
+     - Intensity counts: `n_med_classes_365` contains 5 proximal classes among about 55.
+7. **Exposure tags.** `rx_arni_365` is `kept_exposure_leak` (`exposure_leak = possible`: sacubitril-valsartan contains valsartan) in ELITE-II. In ONTARGET it is dropped for low prevalence.
+8. **Deterministic latest-lab tie-break.**
+   - The v2 query `arg_max(value, datetime)` picks arbitrarily among results that share a timestamp. The v2 build and a first v2b build, with the lab code unchanged, differed in 0.02–2.7% of lab values.
+   - v2b takes the maximum value among the latest-timestamp results. Relative to v2, this changes up to 4% of `lab_hematocrit`, 1–10% of `lab_troponin_hs` (serial results with the same timestamp) and ≤ 1.6% of other lab values.
+   - `sbp_sd_365` differs only by floating-point summation (≤ 2e-14).
+   - Weight uses `arg_min` / `arg_max` over datetime as before; no weight value differed.
+9. **Unchanged:** the diagnosis, procedure and medication definitions, windows, exposure exclusions, Charlson/Elixhauser/HFRS weights and the total-protein source filter. All other columns are identical to v2, apart from the ties in item 8.
 
 ## Variables by domain
 
@@ -64,7 +129,7 @@ Registry total: 431 variables.
 - **Distinct prescribers:** `drug_exposure` and Epic medication orders carry no prescriber; distinct outpatient *visit* providers (`n_distinct_outpatient_providers_365`) is offered instead.
 - **Area deprivation:** as in covars v1, no ADI/SVI file; only `zip_out_of_state` (current address).
 - **Labile INR (HAS-BLED L):** not scored (time-in-range needs warfarin exposure periods; exposure-adjacent in the AF trials).
-- **HFRS** weights transcribed from Gilbert et al. 2018 (Lancet) table; F00/U80 do not exist in ICD-10-CM so never fire.
+- **HFRS** weights transcribed from Gilbert et al. 2018 (Lancet) table. F00, U80 and X59 do not exist in ICD-10-CM and never fire. The score uses 365 d of all-setting codes (Gilbert: 2 y of hospital records), so the 5/15 cut-points are not calibrated and `hfrs_ge5` is not 'intermediate/high frailty risk'. The continuous `hfrs_365` is the primary form; in v2b `hfrs_ge5` is excluded from balance panels.
 - Epic outpatient encounter coverage is narrower than OMOP 9202 visits (12.2 M + 2.6 M vs 29 M rows), so specialty-visit counts are lower bounds.
 
 ## Literature list cross-check (docs/v16/lit_covariates.json)
@@ -1119,10 +1184,10 @@ Cells: binary = treated % / comparator % (SMD); numeric = treated mean / compara
 | `observation_stay_365` | utilisation | bin | 365 d | Epic hospital encounter of class Observation (discharged <= index-1) in 365 d | Epic hosp_enc |
 | `charlson_score` | score | num |  | Charlson/Deyo weights on Quan 2005 ICD-10 components (hierarchies: severe>mild liver, complicated>uncomplicated DM, metastatic>malignancy); no age points |  |
 | `charlson_age_score` | score | num |  | charlson_score + age points (50-59 1, 60-69 2, 70-79 3, >=80 4; age from v1.1 baseline) |  |
-| `elixhauser_count` | score | num |  | number of 31 Elixhauser components (hierarchies: complicated>uncomplicated DM and HTN, metastatic>solid tumour) |  |
+| `elixhauser_count` | score | num |  | number of 30 Elixhauser components (hypertension complicated/uncomplicated merged; hierarchies: complicated>uncomplicated DM, metastatic>solid tumour) |  |
 | `elixhauser_vw` | score | num |  | van Walraven (2009) weighted Elixhauser score |  |
 | `hfrs_365` | score | num |  | Hospital Frailty Risk Score (Gilbert 2018): sum of weights of 109 3-character ICD-10 codes recorded in 365 d (original uses 2 y of inpatient codes; here all settings, 365 d) |  |
-| `hfrs_ge5` | score | bin |  | hfrs_365 >= 5 (intermediate/high frailty risk) |  |
+| `hfrs_ge5` | score | bin |  | hfrs_365 >= 5 (Gilbert cut-point, not calibrated here; not 'intermediate/high frailty risk'; excluded from balance panels in v2b) |  |
 | `cha2ds2vasc` | score | num |  | CHF (cci_chf) + HTN (I10-I16) + 2 x age>=75 + DM (E08-E13) + 2 x stroke/TIA/thromboembolism (I63, I64, G45, I74, Z86.73; I60-I64/I69 ever) + vascular (prior MI ever, I70, I73.9) + age 65-74 + female; age/sex from v1.1 baseline |  |
 | `cha2ds2vasc_ge2` | score | bin |  | cha2ds2vasc >= 2 (men) / >= 3 (women) |  |
 | `hasbled_nodrug` | score | num |  | HAS-BLED without the drug item and without labile INR: HTN dx + abnormal renal (dialysis, Z94.0, N18.6 or latest creatinine >= 2.26 mg/dL) + abnormal liver (cirrhosis or bilirubin > 2.4 with AST/ALT > 120) + stroke ever + bleeding 365 d (bleed_any_365) + age > 65 + alcohol (F10) |  |

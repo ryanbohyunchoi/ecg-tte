@@ -9,9 +9,16 @@ exposure-defining drugs), polypharmacy, healthcare use and testing intensity, ex
 exist in the Yale Epic extract.
 
 For each of the 18 trials (make_acc_figure.trials) writes
-  /mnt/raid0/rbc58/ecg-tte/audits/claude-v16-covars2/<trial>.parquet
+  /mnt/raid0/rbc58/ecg-tte/audits/claude-v16-covars2b/<trial>.parquet   (v2b; --out to change; v2 = claude-v16-covars2, frozen)
 keyed by patient_key (every row of the trial's cohort roster, the same key set as claude-v16-covars), plus
-dictionary.csv, trial_variable_status.csv, summary_by_arm.csv, summary.json and docs/v16/COVARIATES2.md.
+dictionary.csv, trial_variable_status.csv, summary_by_arm.csv, summary.json, READY (and docs/v16/COVARIATES2.md with --doc).
+
+v2b (2026-09-26, AUDIT_V16_ROUND2 §2): visit-based utilisation counts only visits completed before index (index
+admission no longer counted); index_setting_* / zip_* built but status excluded_not_preindex; hfrs_ge5 status
+excluded_uncalibrated_cutpoint; composite scores and lab/vital summaries tagged with PS-overlap candidates via their
+components; dictionary gains timing, components, hdps_keys (for the S6 hdPS200 exclusion) and block_v2; ECG-proximal
+block extended (MI/ACS, BNP, ARNI/MRA/loop, HF hospitalisation, composites with a proximal component); rx_arni_365
+tagged exposure_leak in valsartan-exposure trials.
 
 Conventions (match build_v16_covars.py / build_core_baseline.py): windows use the cohort index_date and exclude
 the index day; diagnoses = ICD-10-CM prefix (dots removed) in OMOP gold condition_occurrence + observation;
@@ -45,7 +52,7 @@ from build_v16_covars import analysis_keys, sup, smd, trial_list  # noqa: E402
 
 GOLD = "/mnt/raid0/rbc58/omop/gold"
 SNAP = "/mnt/raid0/rbc58/ecg-tte/shared/clinical-sources-v1-t9ZGomLT/snapshot"
-OUT = A / "claude-v16-covars2"
+OUT = A / "claude-v16-covars2b"  # v2b (2026-09-26); v2 output claude-v16-covars2 is frozen
 DOC = HERE.parent.parent / "docs" / "v16" / "COVARIATES2.md"
 LIT = HERE.parent.parent / "docs" / "v16" / "lit_covariates.json"
 ALL = 36500  # "all available history" window (days)
@@ -752,6 +759,129 @@ ECG_PROXIMAL = {
 add("zip_out_of_state", "social", "current Epic ZIP does not start with 06 (Connecticut); current address, not at index", source="Epic patients (ZIP)")
 add("zip_missing", "social", "no ZIP in Epic patient table (or unlinked)", source="Epic patients (ZIP)")
 
+# ---- v2b corrections (AUDIT_V16_ROUND2 §2, 2026-09-26) ----------------------------------------------------------
+# (1) timing: variables that are not strictly pre-index are built but get per-trial status 'excluded_not_preindex'
+#     (never 'kept', so the S6 loader drops them).
+for _v in VARS.values():
+    _v["timing"] = "pre_index"
+for _k in ("index_setting_inpatient", "index_setting_ed", "index_setting_outpatient"):
+    VARS[_k]["timing"] = "index_day"
+for _k in ("zip_out_of_state", "zip_missing"):
+    VARS[_k]["timing"] = "post_index_current_address"
+    VARS[_k]["domain"] = "social_current"
+# (2) utilisation: every OMOP visit_occurrence-based variable now counts only visits COMPLETED before index
+#     (coalesce(visit_end_date, visit_start_date) < index), so an admission/ED stay in progress on the index day
+#     (the index encounter) is not counted (see build_all 'visits').
+VARS["n_inpatient_stays_365"]["definition"] = "inpatient (9201) visits starting >= index-365 and ending <= index-1 (index admission excluded)"
+VARS["recent_hosp_30d"]["definition"] = ("inpatient (9201) visit starting >= index-30 and ending <= index-1 (an admission in progress on "
+                                         "the index day is not counted) [lit #142]")
+VISIT_VARS = ["n_outpatient_days_365", "n_office_visits_365", "n_telemedicine_365", "n_anticoag_clinic_365", "n_infusion_visits_365",
+              "n_ed_days_365", "n_inpatient_stays_365", "recent_hosp_30d", "days_since_last_visit", "ehr_history_days", "no_prior_visit"]
+for _k in VISIT_VARS:
+    if "ending <= index-1" not in VARS[_k]["definition"]:
+        VARS[_k]["definition"] += "; only visits ending <= index-1 (v2b)"
+# (3) HFRS cut-point: Gilbert's 5/15 cut-points were derived on 2 y of hospital codes; here 365 d all-setting codes.
+#     The continuous hfrs_365 is primary; hfrs_ge5 is built but excluded from balance panels.
+VARS["hfrs_ge5"]["definition"] = ("hfrs_365 >= 5 (Gilbert cut-point, NOT calibrated for 365-d all-setting codes; not 'intermediate/high "
+                                  "frailty risk'; excluded from balance panels, status excluded_uncalibrated_cutpoint)")
+VARS["elixhauser_count"]["definition"] = VARS["elixhauser_count"]["definition"].replace(
+    "number of 31 Elixhauser components (hierarchies: complicated>uncomplicated DM and HTN,",
+    "number of 30 Elixhauser components (hypertension complicated/uncomplicated merged; hierarchies: complicated>uncomplicated DM,")
+# (4) composite scores: components (covars2 variables) + extra codes, used for PS-overlap tags, hdPS-code overlap
+#     and the ECG-proximal rule (a disease score is ECG-proximal if any component is).
+_HTN = ["elx_htn_uncomplicated", "elx_htn_complicated"]
+_DM = ["cci_dm_uncomplicated", "cci_dm_complicated", "elx_dm_uncomplicated", "elx_dm_complicated"]
+_STROKE = ["ischemic_stroke_365", "stroke_tia_history_ever", "systemic_embolism"]
+_MEDCLS = [f"rx_{k}_365" for k in MED if k != "antibiotic_any"]
+COMPONENTS = {
+    "charlson_score": list(CCI), "charlson_age_score": list(CCI) + ["@age"],
+    "elixhauser_count": list(ELX), "elixhauser_vw": list(ELX),
+    "gagne_ccs": list(ELX) + ["cci_dementia", "cci_malignancy"],
+    "hfrs_365": ["@hfrs"], "hfrs_ge5": ["@hfrs"],
+    "cha2ds2vasc": ["cci_chf"] + _HTN + _DM + _STROKE + ["prior_mi_ever", "cci_pvd", "@age", "@sex"],
+    "cha2ds2vasc_ge2": ["cci_chf"] + _HTN + _DM + _STROKE + ["prior_mi_ever", "cci_pvd", "@age", "@sex"],
+    "chads2": ["cci_chf"] + _HTN + _DM + _STROKE + ["@age"],
+    "hasbled_nodrug": _HTN + ["dialysis_365", "kidney_transplant", "esrd", "@creatinine", "cirrhosis", "lab_bilirubin_total", "lab_ast",
+                              "lab_alt", "stroke_tia_history_ever", "bleed_any_365", "alcohol_use_disorder", "@age"],
+    "dcsi_domains": _DM + ["@dcsi"],
+    "n_med_classes_365": _MEDCLS, "polypharmacy_ge5": _MEDCLS,
+}
+COMPONENTS["hasbled"] = COMPONENTS["hasbled_nodrug"] + ["rx_aspirin_365", "rx_p2y12_inhibitor_365", "rx_nsaid_365"]
+_PSX = {"@age": ["age_at_index"], "@sex": ["male"], "@creatinine": ["creatinine"]}
+# lab / vital summaries and lab-defined diagnoses that partly duplicate clinical-PS physiology (roles heldout_physiology)
+for _k, _ps in {"sbp_mean_365": ["sbp"], "hb_lt10": ["hemoglobin"], "lab_hematocrit": ["hemoglobin"], "egfr_lt30": ["creatinine"],
+                "lab_bun_creatinine_ratio": ["creatinine"], "lab_weight_kg": ["bmi"], "lab_height_cm": ["bmi"],
+                "elx_obesity": ["bmi"], "obesity_class1_2_bmi30_39": ["bmi"], "obesity_class3": ["bmi"], "overweight": ["bmi"],
+                "hyperkalemia": ["potassium"], "hyponatremia": ["sodium"], "anemia": ["hemoglobin"]}.items():
+    if _k in VARS:
+        VARS[_k]["ps"] = sorted(set(VARS[_k]["ps"]) | set(_ps))
+_DXPS = [(tuple(v["dx"]), v["ps"]) for v in list(VARS.values()) if v["dx"] and v["ps"]]
+
+
+def _codes_ps(codes):
+    """PS candidates of the ps-tagged dx variables whose ICD prefixes overlap any of `codes` (either is a prefix of the other)."""
+    out = set()
+    for c in codes:
+        for pre, ps in _DXPS:
+            if any(p.startswith(c) or c.startswith(p) for p in pre):
+                out |= set(ps)
+    return out
+
+
+_PSX["@hfrs"] = sorted(_codes_ps(HFRS))
+_PSX["@dcsi"] = sorted(_codes_ps([x for pre in DCSI.values() for x in pre]))
+for _k, _comp in COMPONENTS.items():
+    _ps = set(VARS[_k]["ps"])
+    for _c in _comp:
+        _ps |= set(_PSX.get(_c, [])) | set(VARS[_c]["ps"] if _c in VARS else [])
+    VARS[_k]["ps"] = sorted(_ps)
+    VARS[_k]["components"] = list(_comp)
+# rx_arni_365 in valsartan-exposure trials (ELITE-II, ONTARGET): sacubitril-valsartan contains the exposure ingredient
+ARNI_LEAK_TOKENS = {"valsartan", "diovan"}
+# (5) hdPS code keys (for the S6 hdPS200 cell): dx:<ICD prefix>, px:<code prefix>, rx:<token>, lab:<concept id>
+_LABCID = {f"lab_{k}": t[0] for k, t in LABS.items()} | {f"lab_{k}_missing": t[0] for k, t in LABS.items()}
+_LABCID |= {"ldl_lt70": 3028288, "hba1c_ge9": 3004410, "hb_lt10": 3000963, "egfr_lt30": 40764999, "sbp_mean_365": 4152194,
+            "sbp_sd_365": 4152194, "n_bp_readings_365": 4152194, "weight_change_pct_365": 3025315, "weight_change_missing": 3025315,
+            "weight_loss_5pct_365": 3025315, "lipid_panel_measured_365": 3027114}
+_UTILPX = {"n_ecg_days_365": ["93000", "93005", "93010"], "n_echo_days_365": R("93303-93308", "93350-93351", "93312-93318"),
+           "n_venipuncture_days_365": ["36415"]}
+
+
+def hdps_keys(name, _seen=None):
+    v = VARS[name]
+    ks = {f"dx:{p}" for p in v["dx"]} | {f"px:{p.upper()}" for p in v["px"]} | {f"rx:{t}" for t in v["rx"]}
+    if name in _LABCID:
+        ks.add(f"lab:{_LABCID[name]}")
+    ks |= {f"px:{p}" for p in _UTILPX.get(name, [])}
+    if name == "n_hf_hosp_365":
+        ks.add("dx:I50")
+    for c in v.get("components", []):
+        if c == "@hfrs":
+            ks |= {f"dx:{x}" for x in HFRS}
+        elif c == "@dcsi":
+            ks |= {f"dx:{x}" for pre in DCSI.values() for x in pre}
+        elif c == "@creatinine":
+            ks.add("lab:3016723")
+        elif c in VARS:
+            ks |= hdps_keys(c)
+    return ks
+
+
+for _k in VARS:
+    VARS[_k]["hdps_keys"] = " ".join(sorted(hdps_keys(_k)))
+# (6) ECG-proximal block extended: MI/ACS (Q waves / ST-T changes), BNP, HF drugs (ARNI, MRA, loop diuretic),
+#     HF hospitalisation, and disease composites with an ECG-proximal component (CHF / arrhythmia / MI / syncope codes).
+#     Not added (documented): SGLT2i (mostly diabetes indication in these years), troponin (not directly ECG-encoded),
+#     prior PCI/CABG, intensity counts (n_med_classes_365 etc.) and HAS-BLED (no proximal component).
+ECG_PROXIMAL_V2 = set(ECG_PROXIMAL)  # the v2 block, kept for the dictionary column block_v2
+ECG_PROXIMAL_ADDED_V2B = {"prior_mi_ever", "cci_mi", "acute_mi_365", "acs_365", "unstable_angina", "lab_bnp", "lab_bnp_missing",
+                          "rx_arni_365", "rx_mra_365", "rx_loop_diuretic_365", "n_hf_hosp_365",
+                          # composites with an ECG-proximal component: Charlson (CHF, MI), Elixhauser / Gagne (CHF, arrhythmia),
+                          # HFRS (R55 syncope, R00 abnormal heart beat), DCSI (cardiovascular domain I20-I25, I50)
+                          "charlson_score", "charlson_age_score", "elixhauser_count", "elixhauser_vw", "gagne_ccs", "hfrs_365",
+                          "hfrs_ge5", "dcsi_domains"}
+ECG_PROXIMAL |= ECG_PROXIMAL_ADDED_V2B
+
 
 # ---------------------------------------------------------------------------------------------------------------
 def load_lit():
@@ -882,8 +1012,12 @@ def build_all(con, rosters):
                    coalesce(measurement_datetime, CAST(measurement_date AS TIMESTAMP)) dt, value_as_number v, measurement_source_value src
             FROM {rp(GOLD, 'measurement')} WHERE person_id IN (SELECT person_id FROM pp) AND measurement_date IS NOT NULL) m
         USING (person_id) WHERE m.d < r.idx AND m.d >= r.idx - 365""")
-    lat = con.execute("""SELECT w.trial, w.patient_key, l.name, arg_max(w.v * l.sc, w.dt) val FROM mw w JOIN lb0 l ON l.cid = w.cid
-        WHERE w.v * l.sc BETWEEN l.lo AND l.hi AND (l.src IS NULL OR w.src = l.src) GROUP BY 1, 2, 3""").df()
+    # latest plausible value; v2b: ties at the same timestamp resolved deterministically (maximum value) - v2 used
+    # arg_max(value, dt), whose pick among same-timestamp results is arbitrary (0.02-2.7% of values differed between runs)
+    lat = con.execute("""WITH x AS (SELECT w.trial, w.patient_key, l.name, w.v * l.sc val, w.dt FROM mw w JOIN lb0 l ON l.cid = w.cid
+                          WHERE w.v * l.sc BETWEEN l.lo AND l.hi AND (l.src IS NULL OR w.src = l.src)),
+             m AS (SELECT trial, patient_key, name, max(dt) dt FROM x GROUP BY 1, 2, 3)
+        SELECT x.trial, x.patient_key, x.name, max(x.val) val FROM x JOIN m USING (trial, patient_key, name, dt) GROUP BY 1, 2, 3""").df()
     LW = lat.pivot_table(index=K, columns="name", values="val", aggfunc="first")
     for k in LABS:
         feats[f"lab_{k}"] = LW[k] if k in LW else pd.Series(dtype=float)
@@ -921,9 +1055,12 @@ def build_all(con, rosters):
             count(CASE WHEN v.visit_concept_id = 9201 AND v.s >= r.idx - 365 THEN 1 END) n_inpatient_stays_365,
             CAST(count(CASE WHEN v.visit_concept_id = 9201 AND v.s >= r.idx - 30 THEN 1 END) > 0 AS DOUBLE) recent_hosp_30d,
             date_diff('day', max(v.s), r.idx) days_since_last_visit, date_diff('day', min(v.s), r.idx) ehr_history_days
-        FROM r JOIN (SELECT person_id, visit_concept_id, visit_start_date s, visit_source_value src FROM {rp(GOLD, 'visit_occurrence')}
+        FROM r JOIN (SELECT person_id, visit_concept_id, visit_start_date s, coalesce(visit_end_date, visit_start_date) e,
+                            visit_source_value src FROM {rp(GOLD, 'visit_occurrence')}
                      WHERE person_id IN (SELECT person_id FROM pp)) v USING (person_id)
-        WHERE v.s < r.idx GROUP BY r.trial, r.patient_key, r.idx""").df()
+        WHERE v.s < r.idx AND v.e < r.idx GROUP BY r.trial, r.patient_key, r.idx""").df()
+    # v2b (AUDIT_V16_ROUND2 §2a): only visits completed before the index date. v2 used v.s < idx alone, so an admission
+    # (or ED stay) in progress on the index day - the index encounter - counted as a prior stay / recent hospitalisation.
     for c in vis.columns[2:]:
         put(vis, c)
     ixs = con.execute(f"""SELECT r.trial, r.patient_key,
@@ -1098,8 +1235,18 @@ def finalize_trial(n, d, roles, obs, toks_n, index_date):
     tk = toks_n[~toks_n.tok.isin(bad)]
     d["n_distinct_drugs_365"] = tk.groupby("patient_key").tok.nunique().reindex(d.index).fillna(0).astype(float)
     d.drop(columns=[c for c in dropped_expo if c in d], inplace=True)
+    if "rx_arni_365" not in status and expo & ARNI_LEAK_TOKENS:
+        status["rx_arni_365"] = dict(status="kept_exposure_leak", note="sacubitril-valsartan contains the exposure ingredient valsartan",
+                                     exposure_leak="possible")
     for v in VARS.values():
         if v["name"] in status:
+            continue
+        if v.get("timing", "pre_index") != "pre_index":
+            status[v["name"]] = dict(status="excluded_not_preindex", note=f"timing {v['timing']}", exposure_leak="")
+            continue
+        if v["name"] == "hfrs_ge5":
+            status[v["name"]] = dict(status="excluded_uncalibrated_cutpoint", note="Gilbert cut-point not calibrated (365 d all-setting codes)",
+                                     exposure_leak="")
             continue
         ov = [p for p in v["ps"] if p in core]
         status[v["name"]] = dict(status="kept", note=("PS overlap: " + ",".join(ov)) if ov else "", exposure_leak="")
@@ -1110,11 +1257,17 @@ def finalize_trial(n, d, roles, obs, toks_n, index_date):
 
 
 def main():
+    global OUT
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--threads", type=int, default=28)
     ap.add_argument("--trials", nargs="*")
+    ap.add_argument("--out", default=str(OUT), help="output dir (v2b default claude-v16-covars2b; never overwrite a READY dir)")
+    ap.add_argument("--doc", action="store_true", help="regenerate docs/v16/COVARIATES2.md (off by default since v2b)")
     a = ap.parse_args()
     os.umask(0o077)
+    OUT = Path(a.out)
+    if (OUT / "READY").exists():
+        sys.exit(f"{OUT} has a READY marker; refusing to overwrite")
     OUT.mkdir(parents=True, exist_ok=True, mode=0o700)
     names = {**PRIMARY, **EXTRA}
     trials = a.trials or trial_list()
@@ -1182,11 +1335,16 @@ def main():
     ST.to_csv(OUT / "trial_variable_status.csv", index=False)
     dic = pd.DataFrame([dict(variable=v["name"], domain=v["domain"], type=v["type"], definition=v["definition"], source=v["source"],
                              window=wtxt(v["win"]) if v["domain"] not in ("score",) else "", ps_overlap_candidates=",".join(v["ps"]),
-                             block="ecg_proximal" if v["name"] in ECG_PROXIMAL else "other")
+                             block="ecg_proximal" if v["name"] in ECG_PROXIMAL else "other",
+                             block_v2="ecg_proximal" if v["name"] in ECG_PROXIMAL_V2 else "other", timing=v.get("timing", "pre_index"),
+                             components=",".join(v.get("components", [])), hdps_keys=v.get("hdps_keys", ""))
                         for v in VARS.values()])
     dic.to_csv(OUT / "dictionary.csv", index=False)
-    json.dump(dict(coverage=cover, n_registry=len(VARS), script_sha256=sha256(Path(__file__))), open(OUT / "summary.json", "w"), indent=2)
-    write_md(S, ST, dic, cover)
+    json.dump(dict(coverage=cover, n_registry=len(VARS), script_sha256=sha256(Path(__file__)), version="v2b"),
+              open(OUT / "summary.json", "w"), indent=2)
+    if a.doc:
+        write_md(S, ST, dic, cover)
+    (OUT / "READY").write_text(pd.Timestamp.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ") + "\n")
 
 
 def write_md(S, ST, dic, cover):
