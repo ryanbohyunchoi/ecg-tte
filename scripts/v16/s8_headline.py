@@ -84,6 +84,37 @@ MLAB = {"pct_lt10": "% |SMD|<0.1", "pct_lt05": "% |SMD|<0.05", "pct_gt20": "% |S
         "cstat": "held-out C"}
 
 
+# round-2 audit exclusions for the expanded panel
+NOT_PREINDEX = {"recent_hosp_30d", "n_inpatient_stays_365"}  # + index_context domain + zip_* (see trial())
+EXTRA_PROX = {"prior_mi_ever", "acute_mi_365", "acs_365", "cci_mi", "lab_bnp", "lab_bnp_missing", "rx_arni_365", "rx_mra_365",
+              "rx_loop_diuretic_365", "rx_digoxin_365", "rx_other_hf_drug_365"}
+_HTN = {"hypertension", "hypertension_v11"}
+_DM = {"diabetes", "t2d"}
+_IHD = {"ischemic_heart_disease_or_mi", "cad_ihd"}
+_CV = _IHD | {"heart_failure", "peripheral_arterial_disease", "stroke_history", "tia"}
+COMPOSITE = {  # composite score -> PS variables that are among its components
+    "cha2ds2vasc": {"age_at_index", "male", "heart_failure"} | _HTN | _DM | _IHD | {"stroke_history", "tia", "peripheral_arterial_disease"},
+    "chads2": {"age_at_index", "heart_failure", "stroke_history", "tia"} | _HTN | _DM,
+    "hasbled": {"age_at_index", "ckd", "stroke_history", "prior_bleed"} | _HTN,
+    "charlson_score": _CV | _DM | {"copd_or_asthma", "ckd"},
+    "charlson_age_score": _CV | _DM | {"copd_or_asthma", "ckd", "age_at_index"},
+    "elixhauser_count": {"heart_failure", "valve_disease", "peripheral_arterial_disease", "copd_or_asthma", "ckd", "atrial_fibrillation"} | _HTN | _DM,
+    "gagne_ccs": _CV | _DM | _HTN | {"copd_or_asthma", "ckd", "valve_disease", "atrial_fibrillation"},
+    "dcsi_domains": _CV | _DM | {"ckd"},
+}
+COMPOSITE["cha2ds2vasc_ge2"] = COMPOSITE["cha2ds2vasc"]
+COMPOSITE["hasbled_nodrug"] = COMPOSITE["hasbled"]
+COMPOSITE["elixhauser_vw"] = COMPOSITE["elixhauser_count"]
+_NONDX = {"age_at_index", "male", "index_year", "race_black", "race_asian", "race_other_unknown", "hispanic", "ethnicity_unknown", "hyperlipidemia"}
+
+
+def composite_overlap(c, psn):
+    """composite score c partly duplicates the PS if the PS has any of its components (HFRS: any diagnosis flag)."""
+    if c in ("hfrs_365", "hfrs_ge5"):
+        return bool(set(psn) - _NONDX)
+    return bool(COMPOSITE.get(c, set()) & set(psn))
+
+
 def cell_label(c):
     b, m = c.split("|")
     return BASE_LAB[b] + ("" if m == "default" else f" / {MOD_LAB[m]}")
@@ -117,7 +148,10 @@ def trial(n):
         T = E.load_trial(n)
         C = S6.load_new(T)
         Xe, ovl, blk = S6.load_extra(T, COV2)
-        Xe = Xe[[c for c in Xe.columns if blk[c] != "ecg_proximal"]]
+        dom = pd.read_csv(COV2 / "dictionary.csv").set_index("variable").domain
+        # round-2 audit (AUDIT_V16_ROUND2 §2): drop non-pre-index variables; extend the ECG-proximal block
+        Xe = Xe[[c for c in Xe.columns if blk[c] != "ecg_proximal" and c not in NOT_PREINDEX and not c.startswith("zip_")
+                 and dom.get(c, "") != "index_context" and c not in EXTRA_PROX]]
         _TC.clear()
         _TC[n] = (T, C, Xe, ovl)
     return _TC[n]
@@ -187,6 +221,7 @@ def task(args):
     X, psn = design(T, C, D, base, rows, t)
     dim, est = MODS[mod]["dim"], MODS[mod]["est"]
     xdrop = S6.excluded_extra(psn, list(Xe0.columns), ovl)
+    xdrop += [c for c in Xe0.columns if c not in xdrop and composite_overlap(c, psn)]
     Xe = Xe0.drop(columns=xdrop).iloc[rows]
     Xe = Xe.loc[:, Xe.notna().sum() > 0]
     Xe = Xe.loc[:, Xe.nunique() > 1]
@@ -246,7 +281,7 @@ def run(trials, halves, workers, tag):
     tk.sort(key=lambda x: (-size[x[0]], x[0]))  # same trial consecutive -> worker trial cache reuse
     res, xres = [], []
     t0 = time.time()
-    with Pool(min(workers, 40)) as p:
+    with Pool(min(workers, 32)) as p:
         for k, (r, x) in enumerate(p.imap(task, tk, chunksize=4)):
             res.extend(r)
             xres.extend(x)
@@ -548,7 +583,7 @@ def grid_heatmap(G):
                 ax.text(j, i, f"{M[i, j]:+.1f}{st}", ha="center", va="center", fontsize=6.8,
                         color="white" if abs(M[i, j]) > 0.6 * v else "#111", fontweight="bold" if st else "normal")
     ax.set_xticks(range(len(cols)))
-    ax.set_xticklabels([f"{'58-panel' if p == 'p58' else 'expanded non-ECG'}\n{'18 trials' if s == 'all' else '8 physiology'}\n{h}" for p, s, h in cols],
+    ax.set_xticklabels([f"{'58-panel' if p == 'p58' else 'expanded'}\n{'18 trials' if s == 'all' else '8 physiology'}\n{h}" for p, s, h in cols],
                        fontsize=6.5)
     ax.set_yticks(range(len(CELLS)))
     ax.set_yticklabels([cell_label(c) for c in CELLS], fontsize=7.5)
@@ -608,7 +643,7 @@ def audit_checks(df):
                             d_pairs=abs(g.loc[n, "n_pairs"] - s.n_pairs) if np.isfinite(s.n_pairs) else 0.0,
                             d_cstat=abs(g.loc[n, "cstat"] - s.cstat)))
     D = pd.DataFrame(dev).groupby("arm").max().reset_index()
-    L.append("**(1) Reproduction of engine validation** (full cohort, 18 trials; max |S8 − ENGINE_VALIDATION| over trials):\n")
+    L.append("**(1) Reproduction of engine validation** (full cohort, 18 trials; max |S8 − ENGINE_VALIDATION| over trials; the only non-zero row, sparse, is ALLHAT, the known floating-point near-tie in greedy matching documented in ENGINE_VALIDATION.md):\n")
     L.append(md(D, 8) + "\n")
     # pair counts
     pc = f[f.estimator.str.startswith("('match'")].copy()
@@ -627,6 +662,9 @@ def report():
     G.to_csv(OUT / "grid_summary.csv", index=False)
     sel = J["selected"]
     scen = sel + [dict(cell="sparse|default", subset="all", label="sparse (reference)")]
+    # sensitivity (NOT selected): the 18-trial analogue of any selected physiology-subset scenario
+    scen += [dict(cell=x["cell"], subset="all", label=cell_label(x["cell"]) + " (18 trials; sensitivity, not selected)")
+             for x in sel if x["subset"] == "phys"]
     P2, PT = part2(df, scen)
     P2.to_csv(OUT / "part2_emulation.csv", index=False)
     PT.to_csv(OUT / "part2_per_trial.csv", index=False)
@@ -635,7 +673,8 @@ def report():
     figs = []
     for sc in scen:
         r = G[(G.cell == sc["cell"]) & (G.subset == sc["subset"]) & (G.half == "full")].iloc[0]
-        slug = sc["cell"].replace("|default", "").replace("|", "_").replace(".", "") + ("_phys" if sc["subset"] == "phys" else "")
+        slug = sc["cell"].replace("|default", "").replace("|", "_").replace(".", "") + ("_phys" if sc["subset"] == "phys" else "") + \
+            ("_all18_sens" if "sensitivity" in sc["label"] else "")
         fn = f"S8_LOVEPLOT_{slug}.png"
         loveplot(df, sc, fn, _p(r.p_p58_pct_lt10))
         figs.append(fn)
@@ -780,7 +819,7 @@ def main():
     ap.add_argument("mode", choices=["run", "select", "summarize", "audit"])
     ap.add_argument("--halves", default="A")
     ap.add_argument("--trials", default=",".join(E.TRIALS))
-    ap.add_argument("--workers", type=int, default=40)
+    ap.add_argument("--workers", type=int, default=32)
     ap.add_argument("--tag", default=None)
     ap.add_argument("--cells", default=None)
     a = ap.parse_args()
