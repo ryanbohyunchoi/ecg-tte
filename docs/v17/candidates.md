@@ -114,3 +114,53 @@ They are therefore not candidates for v1.7.
 ## Previously analysed trials excluded
 PARAGON-HF, DAPA-HF/EMPEROR-Reduced (DPP-4i design), PARTNER and DIONYSOS were built on 2026-09-24. They have phase-1 balance results and, except DIONYSOS, phase-2 HRs. Their results have been seen, so they are not blind confirmation trials.
 
+
+## Build status (2026-09-27)
+All 15 selected trials were built after registration commit `b0c82e9`, with build plumbing from `830308c`. The queue is `scripts/v17/build_queue.sh`; the screen is `scripts/v17/run_screen.sh`.
+
+**Pipeline, per trial.** Each step was run to the state `v16_engine.load_trial` needs:
+- cohort v1;
+- core baseline v11 (5 imputations);
+- pre-index panel v2;
+- ECG selection, BCL embeddings (GPUs 2–5, checked idle) and link;
+- phenotype heads;
+- CLMBR code-only;
+- external prognostic reference and scores v3;
+- physiology panel v11;
+- outcomes v1 and v13 (with the NCOs);
+- HF v14;
+- the S5 extra NCOs.
+
+**Pipeline, across all 15 trials.** The covars v1 and covars2b builders ran once over all trials with `--blind`, which writes no by-arm summaries and no SMDs.
+
+**Not run.** None of the following were run: the phase-1 grid (`run_longtail_v2.sh`), `run_phase2.py`, `run_cell`, or any PS, matching, balance or HR computation.
+
+**Verification.** `scripts/v17/verify_ready.py` loads each trial with `E.load_trial(n, cache=False)`. It checks that the files cover every analysis key, then writes `/mnt/raid0/rbc58/ecg-tte/audits/claude-v17-trials/<trial>.READY`. All 15 are READY.
+
+| trial | analysis n | arm sizes (treated / comparator) | held-out VARS available |
+|---|---|---|---|
+| leader | 3,782 | 453 / 3,329 | 58/58 |
+| sustain6 | 3,727 | 1,701 / 2,026 | 58/58 |
+| rewind | 6,049 | 1,335 / 4,714 | 58/58 |
+| declare | 6,967 | 2,102 / 4,865 | 58/58 |
+| canvas | 6,037 | 485 / 5,552 | 58/58 |
+| tecos | 2,925 | 1,513 / 1,412 | 58/58 |
+| carmelina | 1,546 | 803 / 743 | 58/58 |
+| valiant | 2,096 | 669 / 1,427 | 58/58 |
+| insight | 8,847 | 397 / 8,450 | 58/58 |
+| affirm | 17,634 | 4,100 / 13,534 | 58/58 |
+| af-chf | 5,558 | 1,272 / 4,286 | 58/58 |
+| precision | 5,310 | 2,440 / 2,870 | 58/58 |
+| amplify | 5,080 | 4,068 / 1,012 | 58/58 |
+| lodestar | 22,277 | 10,954 / 11,323 | 58/58 |
+| prove-it | 4,379 | 3,848 / 531 | 58/58 |
+
+**Paths for the v1.7 runner.** The v1.6 scripts read three sets of files from fixed v1.6 directories. For the v1.7 trials, these files are in new directories:
+
+| Files | v1.6 directory | v1.7 directory |
+|---|---|---|
+| covars | `claude-v16-covars` | `audits/claude-v17-covars/<trial>.parquet` |
+| covars2b | `claude-v16-covars2b` | `audits/claude-v17-covars2b/<trial>.parquet` (same `dictionary.csv` registry) |
+| S5 NCOs | `claude-v16-s5-nco/extract` | `audits/claude-v17-s5-nco/extract/restricted_nco_<trial>.parquet` |
+
+All other inputs follow the v1.6 per-trial naming, `claude-<trial>-*`.
