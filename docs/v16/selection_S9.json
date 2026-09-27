@@ -1,0 +1,2494 @@
+{
+ "created": "2026-09-27 00:11:39 EDT",
+ "rule": "Half A only. For each scenario (cell x trial subset), candidates = 58-panel + claude-v16-covars2b non-ECG-proximal variables that are held out from that cell's PS and available (finite |SMD| in base and ECG) in at least half of the scenario's trials. Gain = trial-averaged |SMD| (base) - trial-averaged |SMD| (ECG) over the trials where the variable is available in both arms. Rank by gain (descending; ties by name); take the top 25.",
+ "halves_available_at_selection": [
+  "A"
+ ],
+ "n_pool": 405,
+ "scenarios": {
+  "demo|cal0.1@all": {
+   "n_candidates": 396,
+   "selected": [
+    "p58:pp_LVFUNC__ef",
+    "p58:smd_obs_lvef",
+    "p58:pp_LVSTRUCT__lvesvi",
+    "x:lab_weight_kg",
+    "x:n_distinct_procedures_365",
+    "x:n_distinct_dx_365",
+    "p58:pp_RVPULM__rv_sys_grade",
+    "x:elx_fluid_electrolyte",
+    "p58:pp_LVSTRUCT__lvidd",
+    "x:elx_htn_complicated",
+    "p58:pp_LVFUNC__lv_sys_grade",
+    "x:anemia",
+    "x:major_surgery_anesthesia_365",
+    "x:lab_ptt_missing",
+    "x:n_med_classes_365",
+    "p58:pp_DIAST__lavi",
+    "p58:pp_LVSTRUCT__lvedvi",
+    "x:n_echo_days_365",
+    "x:rx_potassium_supplement_365",
+    "x:bleed_any_365",
+    "x:lab_neutrophils_abs_missing",
+    "p58:smd_obs_bmi",
+    "p58:pp_DIAST__eprime_lat",
+    "x:lab_lymphocytes_abs_missing",
+    "x:rx_insulin_365"
+   ],
+   "detail": [
+    {
+     "var": "p58:pp_LVFUNC__ef",
+     "gain": 0.0785,
+     "base": 0.19277,
+     "ecg": 0.11426,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:smd_obs_lvef",
+     "gain": 0.07608,
+     "base": 0.19505,
+     "ecg": 0.11897,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__lvesvi",
+     "gain": 0.07373,
+     "base": 0.23696,
+     "ecg": 0.16323,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_weight_kg",
+     "gain": 0.06421,
+     "base": 0.13489,
+     "ecg": 0.07069,
+     "n_trials": 18
+    },
+    {
+     "var": "x:n_distinct_procedures_365",
+     "gain": 0.06416,
+     "base": 0.33375,
+     "ecg": 0.26959,
+     "n_trials": 18
+    },
+    {
+     "var": "x:n_distinct_dx_365",
+     "gain": 0.0611,
+     "base": 0.28994,
+     "ecg": 0.22883,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_RVPULM__rv_sys_grade",
+     "gain": 0.0598,
+     "base": 0.22864,
+     "ecg": 0.16883,
+     "n_trials": 18
+    },
+    {
+     "var": "x:elx_fluid_electrolyte",
+     "gain": 0.0592,
+     "base": 0.3022,
+     "ecg": 0.243,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__lvidd",
+     "gain": 0.059,
+     "base": 0.17063,
+     "ecg": 0.11163,
+     "n_trials": 18
+    },
+    {
+     "var": "x:elx_htn_complicated",
+     "gain": 0.05601,
+     "base": 0.20417,
+     "ecg": 0.14816,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LVFUNC__lv_sys_grade",
+     "gain": 0.0548,
+     "base": 0.23704,
+     "ecg": 0.18225,
+     "n_trials": 18
+    },
+    {
+     "var": "x:anemia",
+     "gain": 0.05273,
+     "base": 0.26592,
+     "ecg": 0.21319,
+     "n_trials": 18
+    },
+    {
+     "var": "x:major_surgery_anesthesia_365",
+     "gain": 0.05041,
+     "base": 0.23786,
+     "ecg": 0.18745,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_ptt_missing",
+     "gain": 0.04995,
+     "base": 0.27258,
+     "ecg": 0.22264,
+     "n_trials": 18
+    },
+    {
+     "var": "x:n_med_classes_365",
+     "gain": 0.04929,
+     "base": 0.20457,
+     "ecg": 0.15528,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_DIAST__lavi",
+     "gain": 0.04887,
+     "base": 0.15047,
+     "ecg": 0.1016,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__lvedvi",
+     "gain": 0.04864,
+     "base": 0.22585,
+     "ecg": 0.17721,
+     "n_trials": 18
+    },
+    {
+     "var": "x:n_echo_days_365",
+     "gain": 0.04842,
+     "base": 0.26006,
+     "ecg": 0.21163,
+     "n_trials": 18
+    },
+    {
+     "var": "x:rx_potassium_supplement_365",
+     "gain": 0.04823,
+     "base": 0.17982,
+     "ecg": 0.13159,
+     "n_trials": 18
+    },
+    {
+     "var": "x:bleed_any_365",
+     "gain": 0.04664,
+     "base": 0.2406,
+     "ecg": 0.19396,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_neutrophils_abs_missing",
+     "gain": 0.04622,
+     "base": 0.20701,
+     "ecg": 0.16079,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:smd_obs_bmi",
+     "gain": 0.04612,
+     "base": 0.11846,
+     "ecg": 0.07234,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_DIAST__eprime_lat",
+     "gain": 0.04548,
+     "base": 0.11257,
+     "ecg": 0.06709,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_lymphocytes_abs_missing",
+     "gain": 0.04541,
+     "base": 0.14306,
+     "ecg": 0.09765,
+     "n_trials": 18
+    },
+    {
+     "var": "x:rx_insulin_365",
+     "gain": 0.04505,
+     "base": 0.19708,
+     "ecg": 0.15203,
+     "n_trials": 17
+    }
+   ]
+  },
+  "demo|cal0.1@phys": {
+   "n_candidates": 397,
+   "selected": [
+    "x:lab_crp",
+    "p58:pp_VALVE__ar_grade",
+    "p58:pp_LVSTRUCT__lvidd",
+    "p58:smd_obs_lvef",
+    "p58:pp_LVFUNC__ef",
+    "x:lab_weight_kg",
+    "x:elx_fluid_electrolyte",
+    "x:n_distinct_dx_365",
+    "p58:pp_DIAST__eprime_lat",
+    "p58:pp_LVSTRUCT__lvesvi",
+    "x:n_distinct_procedures_365",
+    "p58:pp_LVFUNC__lv_sys_grade",
+    "x:rx_potassium_supplement_365",
+    "x:elx_htn_complicated",
+    "x:sepsis_365",
+    "p58:pp_DIAST__e_a",
+    "x:lab_hs_crp",
+    "x:pneumonia_365",
+    "p58:pp_RVPULM__rap",
+    "x:rx_antibiotic_any_365",
+    "x:rx_systemic_corticosteroid_365",
+    "x:elx_obesity",
+    "p58:pp_LVFUNC__gls",
+    "p58:smd_obs_bmi",
+    "p58:pp_RVPULM__rvsp"
+   ],
+   "detail": [
+    {
+     "var": "x:lab_crp",
+     "gain": 0.102,
+     "base": 0.3193,
+     "ecg": 0.2173,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_VALVE__ar_grade",
+     "gain": 0.09853,
+     "base": 0.23267,
+     "ecg": 0.13414,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__lvidd",
+     "gain": 0.09255,
+     "base": 0.16441,
+     "ecg": 0.07186,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:smd_obs_lvef",
+     "gain": 0.08863,
+     "base": 0.19554,
+     "ecg": 0.10691,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_LVFUNC__ef",
+     "gain": 0.08679,
+     "base": 0.1946,
+     "ecg": 0.10782,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_weight_kg",
+     "gain": 0.08439,
+     "base": 0.14275,
+     "ecg": 0.05837,
+     "n_trials": 8
+    },
+    {
+     "var": "x:elx_fluid_electrolyte",
+     "gain": 0.07888,
+     "base": 0.29256,
+     "ecg": 0.21368,
+     "n_trials": 8
+    },
+    {
+     "var": "x:n_distinct_dx_365",
+     "gain": 0.07691,
+     "base": 0.27068,
+     "ecg": 0.19377,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_DIAST__eprime_lat",
+     "gain": 0.07645,
+     "base": 0.15634,
+     "ecg": 0.07989,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__lvesvi",
+     "gain": 0.0729,
+     "base": 0.21491,
+     "ecg": 0.14202,
+     "n_trials": 8
+    },
+    {
+     "var": "x:n_distinct_procedures_365",
+     "gain": 0.07272,
+     "base": 0.30518,
+     "ecg": 0.23247,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_LVFUNC__lv_sys_grade",
+     "gain": 0.07113,
+     "base": 0.24241,
+     "ecg": 0.17128,
+     "n_trials": 8
+    },
+    {
+     "var": "x:rx_potassium_supplement_365",
+     "gain": 0.0703,
+     "base": 0.20417,
+     "ecg": 0.13387,
+     "n_trials": 8
+    },
+    {
+     "var": "x:elx_htn_complicated",
+     "gain": 0.06895,
+     "base": 0.19411,
+     "ecg": 0.12516,
+     "n_trials": 8
+    },
+    {
+     "var": "x:sepsis_365",
+     "gain": 0.0686,
+     "base": 0.2065,
+     "ecg": 0.1379,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_DIAST__e_a",
+     "gain": 0.06725,
+     "base": 0.16167,
+     "ecg": 0.09442,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_hs_crp",
+     "gain": 0.06608,
+     "base": 0.32374,
+     "ecg": 0.25766,
+     "n_trials": 8
+    },
+    {
+     "var": "x:pneumonia_365",
+     "gain": 0.06602,
+     "base": 0.17375,
+     "ecg": 0.10772,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_RVPULM__rap",
+     "gain": 0.0657,
+     "base": 0.18171,
+     "ecg": 0.11601,
+     "n_trials": 8
+    },
+    {
+     "var": "x:rx_antibiotic_any_365",
+     "gain": 0.06553,
+     "base": 0.22791,
+     "ecg": 0.16238,
+     "n_trials": 8
+    },
+    {
+     "var": "x:rx_systemic_corticosteroid_365",
+     "gain": 0.06508,
+     "base": 0.15999,
+     "ecg": 0.09491,
+     "n_trials": 8
+    },
+    {
+     "var": "x:elx_obesity",
+     "gain": 0.06484,
+     "base": 0.15473,
+     "ecg": 0.08989,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_LVFUNC__gls",
+     "gain": 0.06128,
+     "base": 0.27156,
+     "ecg": 0.21027,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:smd_obs_bmi",
+     "gain": 0.06119,
+     "base": 0.13575,
+     "ecg": 0.07456,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_RVPULM__rvsp",
+     "gain": 0.06095,
+     "base": 0.17578,
+     "ecg": 0.11484,
+     "n_trials": 8
+    }
+   ]
+  },
+  "min7|default@all": {
+   "n_candidates": 385,
+   "selected": [
+    "p58:pp_LVSTRUCT__lvesvi",
+    "p58:pp_LVSTRUCT__lvidd",
+    "p58:pp_DIAST__diastolic_grade",
+    "p58:pp_LVSTRUCT__lvedvi",
+    "p58:smd_obs_lvef",
+    "x:lab_hs_crp",
+    "p58:pp_LVSTRUCT__wall_thickness_grade",
+    "p58:pp_LVFUNC__ef",
+    "p58:pp_VALVE__modsev_mr",
+    "p58:pp_RVPULM__rvsp",
+    "p58:pp_VALVE__mr_grade",
+    "p58:pp_RVPULM__tapse",
+    "p58:pp_RVPULM__rap",
+    "p58:pp_RVPULM__rv_size_grade",
+    "x:pneumonia_365",
+    "p58:pp_VALVE__tr_grade",
+    "x:sepsis_365",
+    "p58:pp_DIAST__lvdd",
+    "x:elx_valvular",
+    "x:underweight_bmi_lt20",
+    "x:mitral_regurgitation",
+    "x:malnutrition",
+    "x:elx_weight_loss",
+    "p58:pp_VALVE__tv_peak_grad",
+    "x:lab_weight_kg"
+   ],
+   "detail": [
+    {
+     "var": "p58:pp_LVSTRUCT__lvesvi",
+     "gain": 0.07199,
+     "base": 0.21655,
+     "ecg": 0.14457,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__lvidd",
+     "gain": 0.06305,
+     "base": 0.17019,
+     "ecg": 0.10714,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_DIAST__diastolic_grade",
+     "gain": 0.06286,
+     "base": 0.20362,
+     "ecg": 0.14076,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__lvedvi",
+     "gain": 0.06253,
+     "base": 0.21424,
+     "ecg": 0.15171,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:smd_obs_lvef",
+     "gain": 0.05498,
+     "base": 0.17315,
+     "ecg": 0.11817,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_hs_crp",
+     "gain": 0.05365,
+     "base": 0.27927,
+     "ecg": 0.22562,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__wall_thickness_grade",
+     "gain": 0.05083,
+     "base": 0.14788,
+     "ecg": 0.09705,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LVFUNC__ef",
+     "gain": 0.04962,
+     "base": 0.16849,
+     "ecg": 0.11886,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_VALVE__modsev_mr",
+     "gain": 0.0476,
+     "base": 0.14478,
+     "ecg": 0.09718,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_RVPULM__rvsp",
+     "gain": 0.046,
+     "base": 0.1395,
+     "ecg": 0.0935,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_VALVE__mr_grade",
+     "gain": 0.04515,
+     "base": 0.19362,
+     "ecg": 0.14846,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_RVPULM__tapse",
+     "gain": 0.03649,
+     "base": 0.14079,
+     "ecg": 0.10429,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_RVPULM__rap",
+     "gain": 0.03596,
+     "base": 0.14618,
+     "ecg": 0.11023,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_RVPULM__rv_size_grade",
+     "gain": 0.03522,
+     "base": 0.13762,
+     "ecg": 0.1024,
+     "n_trials": 18
+    },
+    {
+     "var": "x:pneumonia_365",
+     "gain": 0.03477,
+     "base": 0.12414,
+     "ecg": 0.08937,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_VALVE__tr_grade",
+     "gain": 0.03366,
+     "base": 0.14136,
+     "ecg": 0.1077,
+     "n_trials": 18
+    },
+    {
+     "var": "x:sepsis_365",
+     "gain": 0.03359,
+     "base": 0.14527,
+     "ecg": 0.11168,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_DIAST__lvdd",
+     "gain": 0.03351,
+     "base": 0.1826,
+     "ecg": 0.1491,
+     "n_trials": 18
+    },
+    {
+     "var": "x:elx_valvular",
+     "gain": 0.03282,
+     "base": 0.17043,
+     "ecg": 0.1376,
+     "n_trials": 18
+    },
+    {
+     "var": "x:underweight_bmi_lt20",
+     "gain": 0.0321,
+     "base": 0.08692,
+     "ecg": 0.05482,
+     "n_trials": 18
+    },
+    {
+     "var": "x:mitral_regurgitation",
+     "gain": 0.03189,
+     "base": 0.12232,
+     "ecg": 0.09043,
+     "n_trials": 18
+    },
+    {
+     "var": "x:malnutrition",
+     "gain": 0.03142,
+     "base": 0.11551,
+     "ecg": 0.08409,
+     "n_trials": 18
+    },
+    {
+     "var": "x:elx_weight_loss",
+     "gain": 0.03125,
+     "base": 0.10284,
+     "ecg": 0.07158,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_VALVE__tv_peak_grad",
+     "gain": 0.03097,
+     "base": 0.14416,
+     "ecg": 0.11319,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_weight_kg",
+     "gain": 0.03001,
+     "base": 0.11122,
+     "ecg": 0.0812,
+     "n_trials": 18
+    }
+   ]
+  },
+  "min7|default@phys": {
+   "n_candidates": 386,
+   "selected": [
+    "x:lab_hs_crp",
+    "p58:pp_VALVE__as_grade",
+    "p58:pp_LVSTRUCT__lvidd",
+    "p58:pp_LVSTRUCT__lvedvi",
+    "p58:pp_LVSTRUCT__lvesvi",
+    "p58:pp_RVPULM__rv_size_grade",
+    "p58:pp_DIAST__diastolic_grade",
+    "x:lab_neutrophils_abs",
+    "p58:pp_VALVE__av_mean_grad",
+    "p58:pp_VALVE__modsev_mr",
+    "p58:pp_VALVE__tr_grade",
+    "x:n_distinct_drugs_365",
+    "x:sepsis_365",
+    "x:n_med_classes_365",
+    "x:lab_temperature",
+    "p58:pp_LVFUNC__lv_sys_grade",
+    "x:rx_systemic_corticosteroid_365",
+    "x:rx_sedating_antihistamine_365",
+    "x:elx_weight_loss",
+    "p58:smd_obs_lvef",
+    "x:pneumonia_365",
+    "x:rx_antipsychotic_365",
+    "p58:pp_VALVE__mr_grade",
+    "p58:pp_RVPULM__rvsp",
+    "x:underweight_bmi_lt20"
+   ],
+   "detail": [
+    {
+     "var": "x:lab_hs_crp",
+     "gain": 0.0953,
+     "base": 0.34551,
+     "ecg": 0.2502,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_VALVE__as_grade",
+     "gain": 0.0879,
+     "base": 0.54377,
+     "ecg": 0.45588,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__lvidd",
+     "gain": 0.08596,
+     "base": 0.16845,
+     "ecg": 0.0825,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__lvedvi",
+     "gain": 0.08583,
+     "base": 0.19383,
+     "ecg": 0.108,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__lvesvi",
+     "gain": 0.07793,
+     "base": 0.21954,
+     "ecg": 0.14161,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_RVPULM__rv_size_grade",
+     "gain": 0.07092,
+     "base": 0.13909,
+     "ecg": 0.06818,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_DIAST__diastolic_grade",
+     "gain": 0.07046,
+     "base": 0.19905,
+     "ecg": 0.12858,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_neutrophils_abs",
+     "gain": 0.06903,
+     "base": 0.28754,
+     "ecg": 0.21851,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_VALVE__av_mean_grad",
+     "gain": 0.06393,
+     "base": 0.2727,
+     "ecg": 0.20877,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_VALVE__modsev_mr",
+     "gain": 0.06296,
+     "base": 0.1552,
+     "ecg": 0.09224,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_VALVE__tr_grade",
+     "gain": 0.06125,
+     "base": 0.18238,
+     "ecg": 0.12113,
+     "n_trials": 8
+    },
+    {
+     "var": "x:n_distinct_drugs_365",
+     "gain": 0.05812,
+     "base": 0.25935,
+     "ecg": 0.20123,
+     "n_trials": 8
+    },
+    {
+     "var": "x:sepsis_365",
+     "gain": 0.0553,
+     "base": 0.1797,
+     "ecg": 0.12439,
+     "n_trials": 8
+    },
+    {
+     "var": "x:n_med_classes_365",
+     "gain": 0.05379,
+     "base": 0.2,
+     "ecg": 0.14622,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_temperature",
+     "gain": 0.05378,
+     "base": 0.1221,
+     "ecg": 0.06831,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_LVFUNC__lv_sys_grade",
+     "gain": 0.05022,
+     "base": 0.24555,
+     "ecg": 0.19533,
+     "n_trials": 8
+    },
+    {
+     "var": "x:rx_systemic_corticosteroid_365",
+     "gain": 0.04738,
+     "base": 0.12278,
+     "ecg": 0.07539,
+     "n_trials": 8
+    },
+    {
+     "var": "x:rx_sedating_antihistamine_365",
+     "gain": 0.04651,
+     "base": 0.10987,
+     "ecg": 0.06336,
+     "n_trials": 8
+    },
+    {
+     "var": "x:elx_weight_loss",
+     "gain": 0.0461,
+     "base": 0.12687,
+     "ecg": 0.08077,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:smd_obs_lvef",
+     "gain": 0.04594,
+     "base": 0.16312,
+     "ecg": 0.11718,
+     "n_trials": 8
+    },
+    {
+     "var": "x:pneumonia_365",
+     "gain": 0.04589,
+     "base": 0.15655,
+     "ecg": 0.11066,
+     "n_trials": 8
+    },
+    {
+     "var": "x:rx_antipsychotic_365",
+     "gain": 0.04565,
+     "base": 0.14055,
+     "ecg": 0.0949,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_VALVE__mr_grade",
+     "gain": 0.0436,
+     "base": 0.13363,
+     "ecg": 0.09004,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_RVPULM__rvsp",
+     "gain": 0.04309,
+     "base": 0.17672,
+     "ecg": 0.13362,
+     "n_trials": 8
+    },
+    {
+     "var": "x:underweight_bmi_lt20",
+     "gain": 0.0416,
+     "base": 0.11125,
+     "ecg": 0.06965,
+     "n_trials": 8
+    }
+   ]
+  },
+  "common10|default@all": {
+   "n_candidates": 371,
+   "selected": [
+    "x:lab_crp",
+    "x:lab_troponin_i",
+    "x:lab_hs_crp",
+    "p58:pp_LVSTRUCT__lvidd",
+    "p58:pp_LVFUNC__ef",
+    "p58:pp_LVFUNC__lv_sys_grade",
+    "p58:smd_obs_lvef",
+    "p58:smd_obs_bmi",
+    "p58:pp_LVSTRUCT__lvesvi",
+    "x:lab_weight_kg",
+    "x:pneumonia_365",
+    "p58:pp_LVSTRUCT__ivsd",
+    "p58:pp_LVSTRUCT__lvedvi",
+    "x:sepsis_365",
+    "p58:pp_LVSTRUCT__lvpwd",
+    "x:pressure_ulcer",
+    "x:elx_other_neuro",
+    "x:n_distinct_procedures_365",
+    "x:major_surgery_anesthesia_365",
+    "p58:pp_DIAST__diastolic_grade",
+    "p58:pp_BNP__ntprobnp",
+    "p58:pp_LVSTRUCT__wall_thickness_grade",
+    "x:bleed_any_365",
+    "x:n_distinct_drugs_365",
+    "p58:pp_RVPULM__rv_s"
+   ],
+   "detail": [
+    {
+     "var": "x:lab_crp",
+     "gain": 0.11762,
+     "base": 0.33721,
+     "ecg": 0.21959,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_troponin_i",
+     "gain": 0.0566,
+     "base": 0.12024,
+     "ecg": 0.06364,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_hs_crp",
+     "gain": 0.05409,
+     "base": 0.23448,
+     "ecg": 0.1804,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__lvidd",
+     "gain": 0.0529,
+     "base": 0.1641,
+     "ecg": 0.11119,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LVFUNC__ef",
+     "gain": 0.04831,
+     "base": 0.16277,
+     "ecg": 0.11447,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LVFUNC__lv_sys_grade",
+     "gain": 0.04665,
+     "base": 0.21225,
+     "ecg": 0.1656,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:smd_obs_lvef",
+     "gain": 0.04644,
+     "base": 0.16003,
+     "ecg": 0.11359,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:smd_obs_bmi",
+     "gain": 0.03981,
+     "base": 0.11837,
+     "ecg": 0.07857,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__lvesvi",
+     "gain": 0.03938,
+     "base": 0.19994,
+     "ecg": 0.16056,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_weight_kg",
+     "gain": 0.03883,
+     "base": 0.11712,
+     "ecg": 0.07829,
+     "n_trials": 18
+    },
+    {
+     "var": "x:pneumonia_365",
+     "gain": 0.03816,
+     "base": 0.1243,
+     "ecg": 0.08614,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__ivsd",
+     "gain": 0.03612,
+     "base": 0.08822,
+     "ecg": 0.0521,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__lvedvi",
+     "gain": 0.0353,
+     "base": 0.20364,
+     "ecg": 0.16834,
+     "n_trials": 18
+    },
+    {
+     "var": "x:sepsis_365",
+     "gain": 0.03382,
+     "base": 0.1503,
+     "ecg": 0.11648,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__lvpwd",
+     "gain": 0.0322,
+     "base": 0.09288,
+     "ecg": 0.06069,
+     "n_trials": 18
+    },
+    {
+     "var": "x:pressure_ulcer",
+     "gain": 0.03219,
+     "base": 0.07248,
+     "ecg": 0.04029,
+     "n_trials": 12
+    },
+    {
+     "var": "x:elx_other_neuro",
+     "gain": 0.03075,
+     "base": 0.13365,
+     "ecg": 0.1029,
+     "n_trials": 18
+    },
+    {
+     "var": "x:n_distinct_procedures_365",
+     "gain": 0.03032,
+     "base": 0.19595,
+     "ecg": 0.16563,
+     "n_trials": 18
+    },
+    {
+     "var": "x:major_surgery_anesthesia_365",
+     "gain": 0.03028,
+     "base": 0.14333,
+     "ecg": 0.11305,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_DIAST__diastolic_grade",
+     "gain": 0.02991,
+     "base": 0.17497,
+     "ecg": 0.14505,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_BNP__ntprobnp",
+     "gain": 0.02984,
+     "base": 0.09529,
+     "ecg": 0.06545,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__wall_thickness_grade",
+     "gain": 0.02968,
+     "base": 0.13416,
+     "ecg": 0.10448,
+     "n_trials": 18
+    },
+    {
+     "var": "x:bleed_any_365",
+     "gain": 0.0291,
+     "base": 0.1904,
+     "ecg": 0.1613,
+     "n_trials": 18
+    },
+    {
+     "var": "x:n_distinct_drugs_365",
+     "gain": 0.02818,
+     "base": 0.18541,
+     "ecg": 0.15723,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_RVPULM__rv_s",
+     "gain": 0.02814,
+     "base": 0.13939,
+     "ecg": 0.11125,
+     "n_trials": 18
+    }
+   ]
+  },
+  "common10|default@phys": {
+   "n_candidates": 372,
+   "selected": [
+    "x:lab_crp",
+    "x:lab_hs_crp",
+    "x:pneumonia_365",
+    "p58:pp_LVSTRUCT__lvidd",
+    "p58:pp_LAB__hs_troponin_t",
+    "x:sepsis_365",
+    "x:lab_total_protein",
+    "x:palliative_care",
+    "x:hb_lt10",
+    "x:lab_neutrophils_abs",
+    "p58:pp_RVPULM__rvidd",
+    "x:elx_other_neuro",
+    "p58:smd_obs_bmi",
+    "x:depression",
+    "x:elx_depression",
+    "x:dnr_status",
+    "x:pressure_ulcer",
+    "x:cognitive_symptoms",
+    "x:lab_globulin",
+    "p58:pp_RVPULM__rv_s",
+    "p58:pp_LVSTRUCT__lvpwd",
+    "p58:smd_obs_lvef",
+    "x:bleed_any_365",
+    "x:lab_weight_kg",
+    "x:rx_h2_blocker_365"
+   ],
+   "detail": [
+    {
+     "var": "x:lab_crp",
+     "gain": 0.21891,
+     "base": 0.43138,
+     "ecg": 0.21246,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_hs_crp",
+     "gain": 0.10653,
+     "base": 0.32447,
+     "ecg": 0.21794,
+     "n_trials": 8
+    },
+    {
+     "var": "x:pneumonia_365",
+     "gain": 0.07137,
+     "base": 0.16938,
+     "ecg": 0.09802,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__lvidd",
+     "gain": 0.06965,
+     "base": 0.14426,
+     "ecg": 0.07461,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_LAB__hs_troponin_t",
+     "gain": 0.06489,
+     "base": 0.1945,
+     "ecg": 0.12961,
+     "n_trials": 8
+    },
+    {
+     "var": "x:sepsis_365",
+     "gain": 0.06207,
+     "base": 0.21365,
+     "ecg": 0.15158,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_total_protein",
+     "gain": 0.06187,
+     "base": 0.19282,
+     "ecg": 0.13095,
+     "n_trials": 8
+    },
+    {
+     "var": "x:palliative_care",
+     "gain": 0.05965,
+     "base": 0.13204,
+     "ecg": 0.07239,
+     "n_trials": 8
+    },
+    {
+     "var": "x:hb_lt10",
+     "gain": 0.05519,
+     "base": 0.19235,
+     "ecg": 0.13716,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_neutrophils_abs",
+     "gain": 0.05314,
+     "base": 0.28774,
+     "ecg": 0.2346,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_RVPULM__rvidd",
+     "gain": 0.05292,
+     "base": 0.11341,
+     "ecg": 0.06048,
+     "n_trials": 8
+    },
+    {
+     "var": "x:elx_other_neuro",
+     "gain": 0.05242,
+     "base": 0.15972,
+     "ecg": 0.1073,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:smd_obs_bmi",
+     "gain": 0.05169,
+     "base": 0.12596,
+     "ecg": 0.07426,
+     "n_trials": 8
+    },
+    {
+     "var": "x:depression",
+     "gain": 0.05128,
+     "base": 0.09457,
+     "ecg": 0.04329,
+     "n_trials": 8
+    },
+    {
+     "var": "x:elx_depression",
+     "gain": 0.0511,
+     "base": 0.10114,
+     "ecg": 0.05004,
+     "n_trials": 8
+    },
+    {
+     "var": "x:dnr_status",
+     "gain": 0.05102,
+     "base": 0.18057,
+     "ecg": 0.12955,
+     "n_trials": 8
+    },
+    {
+     "var": "x:pressure_ulcer",
+     "gain": 0.04915,
+     "base": 0.09946,
+     "ecg": 0.05031,
+     "n_trials": 7
+    },
+    {
+     "var": "x:cognitive_symptoms",
+     "gain": 0.04903,
+     "base": 0.16148,
+     "ecg": 0.11245,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_globulin",
+     "gain": 0.04889,
+     "base": 0.13188,
+     "ecg": 0.08299,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_RVPULM__rv_s",
+     "gain": 0.04756,
+     "base": 0.18467,
+     "ecg": 0.13711,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__lvpwd",
+     "gain": 0.04686,
+     "base": 0.12713,
+     "ecg": 0.08027,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:smd_obs_lvef",
+     "gain": 0.04476,
+     "base": 0.1594,
+     "ecg": 0.11464,
+     "n_trials": 8
+    },
+    {
+     "var": "x:bleed_any_365",
+     "gain": 0.04434,
+     "base": 0.20917,
+     "ecg": 0.16483,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_weight_kg",
+     "gain": 0.04394,
+     "base": 0.11218,
+     "ecg": 0.06824,
+     "n_trials": 8
+    },
+    {
+     "var": "x:rx_h2_blocker_365",
+     "gain": 0.04393,
+     "base": 0.20407,
+     "ecg": 0.16014,
+     "n_trials": 8
+    }
+   ]
+  },
+  "sparse|default@all": {
+   "n_candidates": 364,
+   "selected": [
+    "x:lab_osmolality",
+    "p58:pp_LVSTRUCT__lvidd",
+    "x:lab_weight_kg",
+    "x:bleed_any_365",
+    "p58:pp_DIAST__la_size_grade",
+    "x:lab_troponin_hs",
+    "x:lab_total_protein",
+    "p58:pp_LVFUNC__ef",
+    "x:elx_fluid_electrolyte",
+    "p58:smd_obs_bmi",
+    "x:lab_ast",
+    "x:sepsis_365",
+    "x:lab_crp",
+    "x:underweight_bmi_lt20",
+    "x:lab_hematocrit",
+    "p58:smd_obs_lvef",
+    "x:lab_bilirubin_total",
+    "x:pneumonia_365",
+    "x:lab_bilirubin_direct",
+    "x:palliative_care",
+    "x:tobacco_counseling_or_history",
+    "p58:pp_RVPULM__rv_sys_grade",
+    "x:rx_potassium_supplement_365",
+    "x:intracranial_bleed_ever",
+    "x:n_cardiology_visits_365"
+   ],
+   "detail": [
+    {
+     "var": "x:lab_osmolality",
+     "gain": 0.07543,
+     "base": 0.20773,
+     "ecg": 0.1323,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__lvidd",
+     "gain": 0.04763,
+     "base": 0.16506,
+     "ecg": 0.11743,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_weight_kg",
+     "gain": 0.04385,
+     "base": 0.11114,
+     "ecg": 0.06729,
+     "n_trials": 18
+    },
+    {
+     "var": "x:bleed_any_365",
+     "gain": 0.04211,
+     "base": 0.16545,
+     "ecg": 0.12334,
+     "n_trials": 14
+    },
+    {
+     "var": "p58:pp_DIAST__la_size_grade",
+     "gain": 0.03925,
+     "base": 0.18061,
+     "ecg": 0.14136,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_troponin_hs",
+     "gain": 0.03814,
+     "base": 0.16686,
+     "ecg": 0.12872,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_total_protein",
+     "gain": 0.03645,
+     "base": 0.14663,
+     "ecg": 0.11017,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LVFUNC__ef",
+     "gain": 0.03625,
+     "base": 0.14481,
+     "ecg": 0.10856,
+     "n_trials": 18
+    },
+    {
+     "var": "x:elx_fluid_electrolyte",
+     "gain": 0.03556,
+     "base": 0.19836,
+     "ecg": 0.1628,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:smd_obs_bmi",
+     "gain": 0.03411,
+     "base": 0.10307,
+     "ecg": 0.06896,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_ast",
+     "gain": 0.03406,
+     "base": 0.10236,
+     "ecg": 0.0683,
+     "n_trials": 18
+    },
+    {
+     "var": "x:sepsis_365",
+     "gain": 0.03294,
+     "base": 0.14696,
+     "ecg": 0.11402,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_crp",
+     "gain": 0.03262,
+     "base": 0.25799,
+     "ecg": 0.22537,
+     "n_trials": 18
+    },
+    {
+     "var": "x:underweight_bmi_lt20",
+     "gain": 0.03219,
+     "base": 0.08919,
+     "ecg": 0.05699,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_hematocrit",
+     "gain": 0.03133,
+     "base": 0.21942,
+     "ecg": 0.18809,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:smd_obs_lvef",
+     "gain": 0.03063,
+     "base": 0.14425,
+     "ecg": 0.11361,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_bilirubin_total",
+     "gain": 0.03043,
+     "base": 0.08513,
+     "ecg": 0.0547,
+     "n_trials": 18
+    },
+    {
+     "var": "x:pneumonia_365",
+     "gain": 0.03026,
+     "base": 0.0982,
+     "ecg": 0.06794,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_bilirubin_direct",
+     "gain": 0.03005,
+     "base": 0.13932,
+     "ecg": 0.10927,
+     "n_trials": 18
+    },
+    {
+     "var": "x:palliative_care",
+     "gain": 0.02881,
+     "base": 0.0973,
+     "ecg": 0.0685,
+     "n_trials": 18
+    },
+    {
+     "var": "x:tobacco_counseling_or_history",
+     "gain": 0.02683,
+     "base": 0.08725,
+     "ecg": 0.06043,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_RVPULM__rv_sys_grade",
+     "gain": 0.02614,
+     "base": 0.17644,
+     "ecg": 0.15029,
+     "n_trials": 18
+    },
+    {
+     "var": "x:rx_potassium_supplement_365",
+     "gain": 0.02561,
+     "base": 0.11016,
+     "ecg": 0.08455,
+     "n_trials": 18
+    },
+    {
+     "var": "x:intracranial_bleed_ever",
+     "gain": 0.02547,
+     "base": 0.05472,
+     "ecg": 0.02925,
+     "n_trials": 14
+    },
+    {
+     "var": "x:n_cardiology_visits_365",
+     "gain": 0.02535,
+     "base": 0.131,
+     "ecg": 0.10565,
+     "n_trials": 18
+    }
+   ]
+  },
+  "demo|default@all": {
+   "n_candidates": 396,
+   "selected": [
+    "p58:pp_LVFUNC__ef",
+    "p58:smd_obs_lvef",
+    "x:n_distinct_procedures_365",
+    "x:lab_weight_kg",
+    "x:elx_htn_complicated",
+    "x:n_distinct_dx_365",
+    "p58:pp_RVPULM__rv_sys_grade",
+    "p58:pp_LVSTRUCT__lvesvi",
+    "x:elx_fluid_electrolyte",
+    "x:anemia",
+    "x:rx_potassium_supplement_365",
+    "p58:pp_VALVE__ar_grade",
+    "x:n_echo_days_365",
+    "p58:pp_DIAST__lavi",
+    "x:major_surgery_anesthesia_365",
+    "p58:pp_LVSTRUCT__lvidd",
+    "x:pressure_ulcer",
+    "x:cci_dm_uncomplicated",
+    "x:n_distinct_drugs_365",
+    "x:rx_insulin_365",
+    "x:lab_ptt_missing",
+    "p58:smd_obs_bmi",
+    "p58:pp_RVPULM__rvsp",
+    "x:lab_neutrophils_abs_missing",
+    "x:n_med_classes_365"
+   ],
+   "detail": [
+    {
+     "var": "p58:pp_LVFUNC__ef",
+     "gain": 0.07162,
+     "base": 0.18739,
+     "ecg": 0.11577,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:smd_obs_lvef",
+     "gain": 0.07009,
+     "base": 0.1909,
+     "ecg": 0.12081,
+     "n_trials": 18
+    },
+    {
+     "var": "x:n_distinct_procedures_365",
+     "gain": 0.05949,
+     "base": 0.32476,
+     "ecg": 0.26527,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_weight_kg",
+     "gain": 0.05939,
+     "base": 0.12731,
+     "ecg": 0.06792,
+     "n_trials": 18
+    },
+    {
+     "var": "x:elx_htn_complicated",
+     "gain": 0.05894,
+     "base": 0.2075,
+     "ecg": 0.14856,
+     "n_trials": 18
+    },
+    {
+     "var": "x:n_distinct_dx_365",
+     "gain": 0.0586,
+     "base": 0.28101,
+     "ecg": 0.22241,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_RVPULM__rv_sys_grade",
+     "gain": 0.05781,
+     "base": 0.21798,
+     "ecg": 0.16017,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__lvesvi",
+     "gain": 0.05758,
+     "base": 0.22195,
+     "ecg": 0.16437,
+     "n_trials": 18
+    },
+    {
+     "var": "x:elx_fluid_electrolyte",
+     "gain": 0.05709,
+     "base": 0.29653,
+     "ecg": 0.23944,
+     "n_trials": 18
+    },
+    {
+     "var": "x:anemia",
+     "gain": 0.05153,
+     "base": 0.26413,
+     "ecg": 0.2126,
+     "n_trials": 18
+    },
+    {
+     "var": "x:rx_potassium_supplement_365",
+     "gain": 0.04955,
+     "base": 0.17732,
+     "ecg": 0.12777,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_VALVE__ar_grade",
+     "gain": 0.04939,
+     "base": 0.1859,
+     "ecg": 0.13651,
+     "n_trials": 18
+    },
+    {
+     "var": "x:n_echo_days_365",
+     "gain": 0.04895,
+     "base": 0.25788,
+     "ecg": 0.20893,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_DIAST__lavi",
+     "gain": 0.04801,
+     "base": 0.15541,
+     "ecg": 0.10741,
+     "n_trials": 18
+    },
+    {
+     "var": "x:major_surgery_anesthesia_365",
+     "gain": 0.04712,
+     "base": 0.23209,
+     "ecg": 0.18497,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__lvidd",
+     "gain": 0.04673,
+     "base": 0.1651,
+     "ecg": 0.11837,
+     "n_trials": 18
+    },
+    {
+     "var": "x:pressure_ulcer",
+     "gain": 0.04666,
+     "base": 0.09633,
+     "ecg": 0.04967,
+     "n_trials": 12
+    },
+    {
+     "var": "x:cci_dm_uncomplicated",
+     "gain": 0.0459,
+     "base": 0.1198,
+     "ecg": 0.0739,
+     "n_trials": 18
+    },
+    {
+     "var": "x:n_distinct_drugs_365",
+     "gain": 0.04578,
+     "base": 0.24431,
+     "ecg": 0.19853,
+     "n_trials": 18
+    },
+    {
+     "var": "x:rx_insulin_365",
+     "gain": 0.04507,
+     "base": 0.19609,
+     "ecg": 0.15102,
+     "n_trials": 17
+    },
+    {
+     "var": "x:lab_ptt_missing",
+     "gain": 0.04417,
+     "base": 0.26781,
+     "ecg": 0.22364,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:smd_obs_bmi",
+     "gain": 0.04383,
+     "base": 0.11078,
+     "ecg": 0.06696,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_RVPULM__rvsp",
+     "gain": 0.04345,
+     "base": 0.15174,
+     "ecg": 0.10829,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_neutrophils_abs_missing",
+     "gain": 0.04286,
+     "base": 0.20278,
+     "ecg": 0.15993,
+     "n_trials": 18
+    },
+    {
+     "var": "x:n_med_classes_365",
+     "gain": 0.04246,
+     "base": 0.20166,
+     "ecg": 0.1592,
+     "n_trials": 18
+    }
+   ]
+  },
+  "hdPS200|default@all": {
+   "n_candidates": 354,
+   "selected": [
+    "p58:pp_LVSTRUCT__lvidd",
+    "x:lab_troponin_hs",
+    "p58:pp_DIAST__diastolic_grade",
+    "p58:pp_VALVE__modsev_mr",
+    "p58:smd_obs_sodium",
+    "x:lab_anion_gap",
+    "p58:pp_RVPULM__tapse",
+    "x:lab_non_hdl",
+    "x:lab_uric_acid",
+    "p58:smd_obs_lvef",
+    "p58:pp_DIAST__lvdd",
+    "p58:pp_LVFUNC__ef",
+    "p58:pp_DIAST__eprime_lat",
+    "p58:pp_LAB__ldl",
+    "p58:pp_LAB__hba1c",
+    "x:lab_lymphocytes_abs",
+    "p58:smd_obs_bmi",
+    "p58:smd_obs_dbp",
+    "p58:pp_VALVE__av_mean_grad",
+    "p58:smd_obs_hemoglobin",
+    "p58:pp_LVSTRUCT__lvesvi",
+    "p58:pp_DIAST__lavi",
+    "x:lab_troponin_i",
+    "x:lab_weight_kg",
+    "p58:pp_LAB__platelets"
+   ],
+   "detail": [
+    {
+     "var": "p58:pp_LVSTRUCT__lvidd",
+     "gain": 0.04383,
+     "base": 0.14421,
+     "ecg": 0.10037,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_troponin_hs",
+     "gain": 0.04142,
+     "base": 0.1459,
+     "ecg": 0.10448,
+     "n_trials": 17
+    },
+    {
+     "var": "p58:pp_DIAST__diastolic_grade",
+     "gain": 0.03346,
+     "base": 0.20079,
+     "ecg": 0.16733,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_VALVE__modsev_mr",
+     "gain": 0.03292,
+     "base": 0.1261,
+     "ecg": 0.09319,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:smd_obs_sodium",
+     "gain": 0.02945,
+     "base": 0.07329,
+     "ecg": 0.04384,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_anion_gap",
+     "gain": 0.02793,
+     "base": 0.07303,
+     "ecg": 0.04509,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_RVPULM__tapse",
+     "gain": 0.02761,
+     "base": 0.13016,
+     "ecg": 0.10255,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_non_hdl",
+     "gain": 0.0266,
+     "base": 0.37169,
+     "ecg": 0.3451,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_uric_acid",
+     "gain": 0.02602,
+     "base": 0.238,
+     "ecg": 0.21198,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:smd_obs_lvef",
+     "gain": 0.0259,
+     "base": 0.14126,
+     "ecg": 0.11536,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_DIAST__lvdd",
+     "gain": 0.02555,
+     "base": 0.18334,
+     "ecg": 0.15779,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LVFUNC__ef",
+     "gain": 0.02551,
+     "base": 0.14129,
+     "ecg": 0.11578,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_DIAST__eprime_lat",
+     "gain": 0.0237,
+     "base": 0.09627,
+     "ecg": 0.07256,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LAB__ldl",
+     "gain": 0.02367,
+     "base": 0.09924,
+     "ecg": 0.07557,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LAB__hba1c",
+     "gain": 0.02309,
+     "base": 0.09076,
+     "ecg": 0.06766,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_lymphocytes_abs",
+     "gain": 0.02305,
+     "base": 0.05926,
+     "ecg": 0.03621,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:smd_obs_bmi",
+     "gain": 0.02282,
+     "base": 0.08496,
+     "ecg": 0.06214,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:smd_obs_dbp",
+     "gain": 0.02277,
+     "base": 0.10603,
+     "ecg": 0.08326,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_VALVE__av_mean_grad",
+     "gain": 0.02276,
+     "base": 0.18467,
+     "ecg": 0.16191,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:smd_obs_hemoglobin",
+     "gain": 0.02236,
+     "base": 0.10213,
+     "ecg": 0.07977,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__lvesvi",
+     "gain": 0.02165,
+     "base": 0.16462,
+     "ecg": 0.14298,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_DIAST__lavi",
+     "gain": 0.02143,
+     "base": 0.09699,
+     "ecg": 0.07556,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_troponin_i",
+     "gain": 0.0214,
+     "base": 0.10091,
+     "ecg": 0.07951,
+     "n_trials": 18
+    },
+    {
+     "var": "x:lab_weight_kg",
+     "gain": 0.02105,
+     "base": 0.09914,
+     "ecg": 0.07809,
+     "n_trials": 18
+    },
+    {
+     "var": "p58:pp_LAB__platelets",
+     "gain": 0.02064,
+     "base": 0.04369,
+     "ecg": 0.02306,
+     "n_trials": 18
+    }
+   ]
+  },
+  "sparse|default@phys": {
+   "n_candidates": 365,
+   "selected": [
+    "p58:pp_LVFUNC__lv_sys_grade",
+    "x:lab_osmolality",
+    "x:elx_fluid_electrolyte",
+    "x:sepsis_365",
+    "x:lab_bilirubin_direct",
+    "x:lab_hematocrit",
+    "x:bleed_any_365",
+    "x:lab_total_protein",
+    "x:lab_calcium",
+    "p58:pp_DIAST__lvdd",
+    "x:lab_bilirubin_total",
+    "x:pneumonia_365",
+    "x:rx_potassium_supplement_365",
+    "x:lab_weight_kg",
+    "x:n_distinct_drugs_365",
+    "p58:smd_obs_bmi",
+    "x:hb_lt10",
+    "x:elx_other_neuro",
+    "p58:pp_LVSTRUCT__lvidd",
+    "x:rx_h2_blocker_365",
+    "p58:pp_DIAST__la_size_grade",
+    "x:underweight_bmi_lt20",
+    "p58:smd_obs_hemoglobin",
+    "x:delirium",
+    "x:n_cardiology_visits_365"
+   ],
+   "detail": [
+    {
+     "var": "p58:pp_LVFUNC__lv_sys_grade",
+     "gain": 0.09104,
+     "base": 0.22872,
+     "ecg": 0.13768,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_osmolality",
+     "gain": 0.08022,
+     "base": 0.2615,
+     "ecg": 0.18127,
+     "n_trials": 8
+    },
+    {
+     "var": "x:elx_fluid_electrolyte",
+     "gain": 0.07888,
+     "base": 0.23958,
+     "ecg": 0.1607,
+     "n_trials": 8
+    },
+    {
+     "var": "x:sepsis_365",
+     "gain": 0.06816,
+     "base": 0.20385,
+     "ecg": 0.13569,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_bilirubin_direct",
+     "gain": 0.06754,
+     "base": 0.2125,
+     "ecg": 0.14496,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_hematocrit",
+     "gain": 0.06453,
+     "base": 0.24328,
+     "ecg": 0.17875,
+     "n_trials": 8
+    },
+    {
+     "var": "x:bleed_any_365",
+     "gain": 0.06412,
+     "base": 0.21142,
+     "ecg": 0.1473,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_total_protein",
+     "gain": 0.06361,
+     "base": 0.19831,
+     "ecg": 0.1347,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_calcium",
+     "gain": 0.06078,
+     "base": 0.18,
+     "ecg": 0.11922,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_DIAST__lvdd",
+     "gain": 0.06014,
+     "base": 0.22979,
+     "ecg": 0.16965,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_bilirubin_total",
+     "gain": 0.05892,
+     "base": 0.12255,
+     "ecg": 0.06362,
+     "n_trials": 8
+    },
+    {
+     "var": "x:pneumonia_365",
+     "gain": 0.05409,
+     "base": 0.13149,
+     "ecg": 0.0774,
+     "n_trials": 8
+    },
+    {
+     "var": "x:rx_potassium_supplement_365",
+     "gain": 0.05407,
+     "base": 0.14235,
+     "ecg": 0.08827,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_weight_kg",
+     "gain": 0.05142,
+     "base": 0.11387,
+     "ecg": 0.06245,
+     "n_trials": 8
+    },
+    {
+     "var": "x:n_distinct_drugs_365",
+     "gain": 0.05113,
+     "base": 0.22779,
+     "ecg": 0.17667,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:smd_obs_bmi",
+     "gain": 0.04911,
+     "base": 0.12714,
+     "ecg": 0.07802,
+     "n_trials": 8
+    },
+    {
+     "var": "x:hb_lt10",
+     "gain": 0.04904,
+     "base": 0.18544,
+     "ecg": 0.1364,
+     "n_trials": 8
+    },
+    {
+     "var": "x:elx_other_neuro",
+     "gain": 0.04813,
+     "base": 0.13541,
+     "ecg": 0.08729,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__lvidd",
+     "gain": 0.04729,
+     "base": 0.14519,
+     "ecg": 0.0979,
+     "n_trials": 8
+    },
+    {
+     "var": "x:rx_h2_blocker_365",
+     "gain": 0.04712,
+     "base": 0.18868,
+     "ecg": 0.14156,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_DIAST__la_size_grade",
+     "gain": 0.04698,
+     "base": 0.14229,
+     "ecg": 0.09531,
+     "n_trials": 8
+    },
+    {
+     "var": "x:underweight_bmi_lt20",
+     "gain": 0.04697,
+     "base": 0.12229,
+     "ecg": 0.07532,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:smd_obs_hemoglobin",
+     "gain": 0.04572,
+     "base": 0.22647,
+     "ecg": 0.18074,
+     "n_trials": 8
+    },
+    {
+     "var": "x:delirium",
+     "gain": 0.0447,
+     "base": 0.12473,
+     "ecg": 0.08003,
+     "n_trials": 8
+    },
+    {
+     "var": "x:n_cardiology_visits_365",
+     "gain": 0.04456,
+     "base": 0.18763,
+     "ecg": 0.14307,
+     "n_trials": 8
+    }
+   ]
+  },
+  "demo|default@phys": {
+   "n_candidates": 397,
+   "selected": [
+    "p58:pp_VALVE__ar_grade",
+    "x:lab_hs_crp",
+    "x:lab_weight_kg",
+    "x:elx_fluid_electrolyte",
+    "x:n_distinct_dx_365",
+    "p58:smd_obs_lvef",
+    "p58:pp_LVSTRUCT__lvidd",
+    "p58:pp_DIAST__eprime_med",
+    "x:n_distinct_procedures_365",
+    "p58:pp_LVFUNC__ef",
+    "x:elx_htn_complicated",
+    "p58:pp_RVPULM__rap",
+    "x:pneumonia_365",
+    "x:rx_antibiotic_any_365",
+    "p58:pp_DIAST__eprime_lat",
+    "p58:pp_DIAST__diastolic_grade",
+    "p58:smd_obs_bmi",
+    "x:rx_potassium_supplement_365",
+    "x:n_distinct_drugs_365",
+    "p58:pp_DIAST__e_a",
+    "x:cci_dm_uncomplicated",
+    "x:n_venipuncture_days_365",
+    "x:obesity_class3",
+    "x:lab_crp",
+    "x:rx_systemic_corticosteroid_365"
+   ],
+   "detail": [
+    {
+     "var": "p58:pp_VALVE__ar_grade",
+     "gain": 0.11927,
+     "base": 0.24515,
+     "ecg": 0.12587,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_hs_crp",
+     "gain": 0.09151,
+     "base": 0.34523,
+     "ecg": 0.25372,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_weight_kg",
+     "gain": 0.08926,
+     "base": 0.1423,
+     "ecg": 0.05304,
+     "n_trials": 8
+    },
+    {
+     "var": "x:elx_fluid_electrolyte",
+     "gain": 0.08877,
+     "base": 0.29492,
+     "ecg": 0.20615,
+     "n_trials": 8
+    },
+    {
+     "var": "x:n_distinct_dx_365",
+     "gain": 0.08083,
+     "base": 0.26596,
+     "ecg": 0.18513,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:smd_obs_lvef",
+     "gain": 0.07982,
+     "base": 0.18958,
+     "ecg": 0.10976,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__lvidd",
+     "gain": 0.07838,
+     "base": 0.15664,
+     "ecg": 0.07826,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_DIAST__eprime_med",
+     "gain": 0.07757,
+     "base": 0.15801,
+     "ecg": 0.08043,
+     "n_trials": 8
+    },
+    {
+     "var": "x:n_distinct_procedures_365",
+     "gain": 0.07664,
+     "base": 0.30122,
+     "ecg": 0.22458,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_LVFUNC__ef",
+     "gain": 0.07614,
+     "base": 0.18642,
+     "ecg": 0.11028,
+     "n_trials": 8
+    },
+    {
+     "var": "x:elx_htn_complicated",
+     "gain": 0.0726,
+     "base": 0.19755,
+     "ecg": 0.12495,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_RVPULM__rap",
+     "gain": 0.07173,
+     "base": 0.17488,
+     "ecg": 0.10315,
+     "n_trials": 8
+    },
+    {
+     "var": "x:pneumonia_365",
+     "gain": 0.0707,
+     "base": 0.17402,
+     "ecg": 0.10333,
+     "n_trials": 8
+    },
+    {
+     "var": "x:rx_antibiotic_any_365",
+     "gain": 0.0687,
+     "base": 0.23278,
+     "ecg": 0.16408,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_DIAST__eprime_lat",
+     "gain": 0.06764,
+     "base": 0.1532,
+     "ecg": 0.08556,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_DIAST__diastolic_grade",
+     "gain": 0.06574,
+     "base": 0.21888,
+     "ecg": 0.15314,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:smd_obs_bmi",
+     "gain": 0.06535,
+     "base": 0.13249,
+     "ecg": 0.06714,
+     "n_trials": 8
+    },
+    {
+     "var": "x:rx_potassium_supplement_365",
+     "gain": 0.06474,
+     "base": 0.19755,
+     "ecg": 0.13282,
+     "n_trials": 8
+    },
+    {
+     "var": "x:n_distinct_drugs_365",
+     "gain": 0.06427,
+     "base": 0.26831,
+     "ecg": 0.20404,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_DIAST__e_a",
+     "gain": 0.06346,
+     "base": 0.15903,
+     "ecg": 0.09557,
+     "n_trials": 8
+    },
+    {
+     "var": "x:cci_dm_uncomplicated",
+     "gain": 0.06173,
+     "base": 0.1271,
+     "ecg": 0.06538,
+     "n_trials": 8
+    },
+    {
+     "var": "x:n_venipuncture_days_365",
+     "gain": 0.06101,
+     "base": 0.15929,
+     "ecg": 0.09828,
+     "n_trials": 8
+    },
+    {
+     "var": "x:obesity_class3",
+     "gain": 0.06072,
+     "base": 0.15638,
+     "ecg": 0.09566,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_crp",
+     "gain": 0.06027,
+     "base": 0.27097,
+     "ecg": 0.2107,
+     "n_trials": 8
+    },
+    {
+     "var": "x:rx_systemic_corticosteroid_365",
+     "gain": 0.05968,
+     "base": 0.15481,
+     "ecg": 0.09513,
+     "n_trials": 8
+    }
+   ]
+  },
+  "hdPS200|default@phys": {
+   "n_candidates": 354,
+   "selected": [
+    "p58:pp_DIAST__diastolic_grade",
+    "p58:pp_DIAST__lvdd",
+    "x:lab_non_hdl",
+    "x:lab_hs_crp",
+    "p58:pp_RVPULM__tapse",
+    "x:lab_anion_gap",
+    "p58:pp_VALVE__av_mean_grad",
+    "x:lab_uric_acid",
+    "p58:pp_DIAST__eprime_lat",
+    "p58:pp_LVSTRUCT__lvidd",
+    "x:lab_osmolality",
+    "p58:pp_LVSTRUCT__ivsd",
+    "p58:pp_LAB__platelets",
+    "p58:pp_DIAST__lavi",
+    "x:lab_bilirubin_direct",
+    "p58:pp_LAB__ldl",
+    "p58:smd_obs_dbp",
+    "x:lab_lymphocytes_abs",
+    "x:hb_lt10",
+    "x:parkinsonism",
+    "p58:pp_DIAST__eprime_med",
+    "x:malnutrition",
+    "p58:pp_DIAST__e_a",
+    "x:lab_troponin_i",
+    "p58:pp_VALVE__modsev_mr"
+   ],
+   "detail": [
+    {
+     "var": "p58:pp_DIAST__diastolic_grade",
+     "gain": 0.08667,
+     "base": 0.27512,
+     "ecg": 0.18845,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_DIAST__lvdd",
+     "gain": 0.07431,
+     "base": 0.24235,
+     "ecg": 0.16804,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_non_hdl",
+     "gain": 0.06524,
+     "base": 0.39303,
+     "ecg": 0.3278,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_hs_crp",
+     "gain": 0.06098,
+     "base": 0.16097,
+     "ecg": 0.09999,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_RVPULM__tapse",
+     "gain": 0.05829,
+     "base": 0.15973,
+     "ecg": 0.10145,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_anion_gap",
+     "gain": 0.05667,
+     "base": 0.07639,
+     "ecg": 0.01971,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_VALVE__av_mean_grad",
+     "gain": 0.05052,
+     "base": 0.23705,
+     "ecg": 0.18653,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_uric_acid",
+     "gain": 0.04996,
+     "base": 0.25052,
+     "ecg": 0.20056,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_DIAST__eprime_lat",
+     "gain": 0.0442,
+     "base": 0.11702,
+     "ecg": 0.07282,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__lvidd",
+     "gain": 0.04324,
+     "base": 0.15418,
+     "ecg": 0.11095,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_osmolality",
+     "gain": 0.04157,
+     "base": 0.22228,
+     "ecg": 0.18071,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_LVSTRUCT__ivsd",
+     "gain": 0.0413,
+     "base": 0.10807,
+     "ecg": 0.06677,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_LAB__platelets",
+     "gain": 0.03831,
+     "base": 0.06342,
+     "ecg": 0.02511,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_DIAST__lavi",
+     "gain": 0.03781,
+     "base": 0.08247,
+     "ecg": 0.04466,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_bilirubin_direct",
+     "gain": 0.03721,
+     "base": 0.12462,
+     "ecg": 0.08741,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_LAB__ldl",
+     "gain": 0.0371,
+     "base": 0.07497,
+     "ecg": 0.03787,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:smd_obs_dbp",
+     "gain": 0.03612,
+     "base": 0.12228,
+     "ecg": 0.08616,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_lymphocytes_abs",
+     "gain": 0.03536,
+     "base": 0.06962,
+     "ecg": 0.03426,
+     "n_trials": 8
+    },
+    {
+     "var": "x:hb_lt10",
+     "gain": 0.03508,
+     "base": 0.07337,
+     "ecg": 0.03829,
+     "n_trials": 8
+    },
+    {
+     "var": "x:parkinsonism",
+     "gain": 0.03287,
+     "base": 0.0595,
+     "ecg": 0.02663,
+     "n_trials": 5
+    },
+    {
+     "var": "p58:pp_DIAST__eprime_med",
+     "gain": 0.03271,
+     "base": 0.10335,
+     "ecg": 0.07064,
+     "n_trials": 8
+    },
+    {
+     "var": "x:malnutrition",
+     "gain": 0.03267,
+     "base": 0.06516,
+     "ecg": 0.03249,
+     "n_trials": 4
+    },
+    {
+     "var": "p58:pp_DIAST__e_a",
+     "gain": 0.03235,
+     "base": 0.12148,
+     "ecg": 0.08913,
+     "n_trials": 8
+    },
+    {
+     "var": "x:lab_troponin_i",
+     "gain": 0.03216,
+     "base": 0.13379,
+     "ecg": 0.10163,
+     "n_trials": 8
+    },
+    {
+     "var": "p58:pp_VALVE__modsev_mr",
+     "gain": 0.03214,
+     "base": 0.11012,
+     "ecg": 0.07798,
+     "n_trials": 8
+    }
+   ]
+  }
+ }
+}
