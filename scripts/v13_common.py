@@ -42,6 +42,13 @@ EXTRA = {n: (k, f"claude-{n}-cohort-v1") for n, k in (
     ("emperor-preserved-v2", "emperor_preserved"), ("east-afnet4", "east_afnet4"), ("cabana-v2", "cabana"),
     ("paradise-mi", "paradise_mi"), ("dcp", "dcp"), ("ontarget", "ontarget"), ("value", "value"), ("ascot", "ascot"),
     ("empa-reg", "empa_reg"), ("carolina", "carolina"), ("invest", "invest"))}
+# v1.7 confirmation-set trials (docs/v17/candidates.md; registered before outcome extraction). Not in the v1.6 18
+# (make_acc_figure.trials requires a claude-v13-bootstrap file, which v1.7 trials never get).
+V17 = {n: (k, f"claude-{n}-cohort-v1") for n, k in (
+    ("leader", "leader"), ("sustain6", "sustain6"), ("rewind", "rewind"), ("declare", "declare"), ("canvas", "canvas"),
+    ("tecos", "tecos"), ("carmelina", "carmelina"), ("valiant", "valiant"), ("insight", "insight"), ("affirm", "affirm"),
+    ("af-chf", "af_chf"), ("precision", "precision"), ("amplify", "amplify"), ("lodestar", "lodestar"), ("prove-it", "prove_it"))}
+EXTRA.update(V17)
 
 
 def paths(n):

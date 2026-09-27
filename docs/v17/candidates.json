@@ -1,0 +1,2681 @@
+{
+ "leader": {
+  "name": "LEADER (adapted, DPP-4i active-comparator proxy): liraglutide vs DPP-4i",
+  "registry_name": "leader",
+  "status": "selected_for_build",
+  "reasons_not_built": [],
+  "arms": [
+   "liraglutide",
+   "dpp4i"
+  ],
+  "arm_keywords": {
+   "liraglutide": [
+    "liraglutide",
+    "victoza"
+   ],
+   "dpp4i": [
+    "sitagliptin",
+    "januvia",
+    "janumet",
+    "saxagliptin",
+    "onglyza",
+    "kombiglyze",
+    "linagliptin",
+    "tradjenta",
+    "jentadueto",
+    "alogliptin",
+    "nesina",
+    "kazano"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "any_before_or_on_index": [
+    "E11"
+   ],
+   "require_all": [
+    [
+     "I20",
+     "I21",
+     "I22",
+     "I23",
+     "I24",
+     "I25",
+     "I63",
+     "I64",
+     "G45",
+     "I70",
+     "I739",
+     "N18",
+     "I50"
+    ]
+   ]
+  },
+  "exclusions": {
+   "ever_codes": [
+    "E10"
+   ],
+   "codes_window": [
+    [
+     60,
+     [
+      "I21",
+      "I22",
+      "I63",
+      "G45"
+     ]
+    ]
+   ]
+  },
+  "min_age": 50,
+  "max_age": null,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "cv_death",
+   "('hosp', ['I21', 'I22'])",
+   "('hosp', ['I60', 'I61', 'I63', 'I64'])"
+  ],
+  "rct_endpoint": "CV death, nonfatal MI or nonfatal stroke",
+  "horizon_months": 46,
+  "rct_hr": 0.87,
+  "rct_ci": [
+   0.78,
+   0.97
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": "HR vs placebo",
+  "rct_arms": "liraglutide vs placebo",
+  "our_orientation": 0.87,
+  "citation": "Marso et al. NEJM 2016;375:311-22 (PMID 27295427)",
+  "spec_version": "leader_adapted_v1",
+  "note": "RCT placebo-controlled; DPP-4i comparator as in RCT-DUPLICATE; age >= 50 with CVD, CKD or HF (the >= 60 risk-factor stratum not applied)",
+  "feasibility": {
+   "n_by_arm": {
+    "liraglutide": 994,
+    "dpp4i": 6077
+   },
+   "n_with_ecg_by_arm": {
+    "liraglutide": 453,
+    "dpp4i": 3329
+   },
+   "min_arm_with_ecg": 453,
+   "pooled_primary_events_horizon": 1280,
+   "pooled_primary_events_horizon_with_ecg": 794,
+   "pooled_deaths_horizon": 1024,
+   "max_same_record_share_one_v16_cohort": {
+    "cohort": "empa-reg",
+    "share": 0.58
+   },
+   "patients_in_any_v16_cohort": 6426
+  }
+ },
+ "sustain6": {
+  "name": "SUSTAIN-6 (adapted, DPP-4i active-comparator proxy): semaglutide vs DPP-4i",
+  "registry_name": "sustain6",
+  "status": "selected_for_build",
+  "reasons_not_built": [],
+  "arms": [
+   "semaglutide",
+   "dpp4i"
+  ],
+  "arm_keywords": {
+   "semaglutide": [
+    "semaglutide",
+    "ozempic"
+   ],
+   "dpp4i": [
+    "sitagliptin",
+    "januvia",
+    "janumet",
+    "saxagliptin",
+    "onglyza",
+    "kombiglyze",
+    "linagliptin",
+    "tradjenta",
+    "jentadueto",
+    "alogliptin",
+    "nesina",
+    "kazano"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "any_before_or_on_index": [
+    "E11"
+   ],
+   "require_all": [
+    [
+     "I20",
+     "I21",
+     "I22",
+     "I23",
+     "I24",
+     "I25",
+     "I63",
+     "I64",
+     "G45",
+     "I70",
+     "I739",
+     "N18",
+     "I50"
+    ]
+   ]
+  },
+  "exclusions": {
+   "ever_codes": [
+    "E10"
+   ],
+   "codes_window": [
+    [
+     60,
+     [
+      "I21",
+      "I22",
+      "I63",
+      "G45"
+     ]
+    ]
+   ]
+  },
+  "min_age": 50,
+  "max_age": null,
+  "index_window": [
+   "2017-12-05",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "cv_death",
+   "('hosp', ['I21', 'I22'])",
+   "('hosp', ['I60', 'I61', 'I63', 'I64'])"
+  ],
+  "rct_endpoint": "CV death, nonfatal MI or nonfatal stroke",
+  "horizon_months": 25,
+  "rct_hr": 0.74,
+  "rct_ci": [
+   0.58,
+   0.95
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": "HR vs placebo",
+  "rct_arms": "semaglutide vs placebo",
+  "our_orientation": 0.74,
+  "citation": "Marso et al. NEJM 2016;375:1834-44 (PMID 27633186)",
+  "spec_version": "sustain6_adapted_v1",
+  "note": "RCT placebo-controlled (injectable semaglutide); oral (rybelsus) and obesity-dose (wegovy) tokens not counted",
+  "feasibility": {
+   "n_by_arm": {
+    "semaglutide": 3690,
+    "dpp4i": 3444
+   },
+   "n_with_ecg_by_arm": {
+    "semaglutide": 1701,
+    "dpp4i": 2026
+   },
+   "min_arm_with_ecg": 1701,
+   "pooled_primary_events_horizon": 607,
+   "pooled_primary_events_horizon_with_ecg": 410,
+   "pooled_deaths_horizon": 470,
+   "max_same_record_share_one_v16_cohort": {
+    "cohort": "empa-reg",
+    "share": 0.32
+   },
+   "patients_in_any_v16_cohort": 5748
+  }
+ },
+ "rewind": {
+  "name": "REWIND (adapted, DPP-4i active-comparator proxy): dulaglutide vs DPP-4i",
+  "registry_name": "rewind",
+  "status": "selected_for_build",
+  "reasons_not_built": [],
+  "arms": [
+   "dulaglutide",
+   "dpp4i"
+  ],
+  "arm_keywords": {
+   "dulaglutide": [
+    "dulaglutide",
+    "trulicity"
+   ],
+   "dpp4i": [
+    "sitagliptin",
+    "januvia",
+    "janumet",
+    "saxagliptin",
+    "onglyza",
+    "kombiglyze",
+    "linagliptin",
+    "tradjenta",
+    "jentadueto",
+    "alogliptin",
+    "nesina",
+    "kazano"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "any_before_or_on_index": [
+    "E11"
+   ]
+  },
+  "exclusions": {
+   "ever_codes": [
+    "E10"
+   ],
+   "codes_window": [
+    [
+     60,
+     [
+      "I21",
+      "I22",
+      "I63",
+      "G45"
+     ]
+    ]
+   ],
+   "egfr_lt": 15
+  },
+  "min_age": 50,
+  "max_age": null,
+  "index_window": [
+   "2014-09-18",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "cv_death",
+   "('hosp', ['I21', 'I22'])",
+   "('hosp', ['I60', 'I61', 'I63', 'I64'])"
+  ],
+  "rct_endpoint": "nonfatal MI, nonfatal stroke or CV death (incl. unknown causes)",
+  "horizon_months": 65,
+  "rct_hr": 0.88,
+  "rct_ci": [
+   0.79,
+   0.99
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": "HR vs placebo",
+  "rct_arms": "dulaglutide vs placebo",
+  "our_orientation": 0.88,
+  "citation": "Gerstein et al. Lancet 2019;394:121-30 (PMID 31189511)",
+  "spec_version": "rewind_adapted_v1",
+  "note": "RCT placebo-controlled; broad T2D age >= 50 (trial: CVD or risk factors; ~31% with CVD)",
+  "feasibility": {
+   "n_by_arm": {
+    "dpp4i": 11135,
+    "dulaglutide": 3607
+   },
+   "n_with_ecg_by_arm": {
+    "dpp4i": 4714,
+    "dulaglutide": 1335
+   },
+   "min_arm_with_ecg": 1335,
+   "pooled_primary_events_horizon": 2131,
+   "pooled_primary_events_horizon_with_ecg": 1158,
+   "pooled_deaths_horizon": 1765,
+   "max_same_record_share_one_v16_cohort": {
+    "cohort": "empa-reg",
+    "share": 0.27
+   },
+   "patients_in_any_v16_cohort": 11105
+  }
+ },
+ "declare": {
+  "name": "DECLARE-TIMI 58 (adapted, DPP-4i active-comparator proxy): dapagliflozin vs DPP-4i",
+  "registry_name": "declare",
+  "status": "selected_for_build",
+  "reasons_not_built": [],
+  "arms": [
+   "dapagliflozin",
+   "dpp4i"
+  ],
+  "arm_keywords": {
+   "dapagliflozin": [
+    "dapagliflozin",
+    "farxiga",
+    "xigduo",
+    "qtern"
+   ],
+   "dpp4i": [
+    "sitagliptin",
+    "januvia",
+    "janumet",
+    "saxagliptin",
+    "onglyza",
+    "kombiglyze",
+    "linagliptin",
+    "tradjenta",
+    "jentadueto",
+    "alogliptin",
+    "nesina",
+    "kazano"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "any_before_or_on_index": [
+    "E11"
+   ]
+  },
+  "exclusions": {
+   "ever_codes": [
+    "E10"
+   ],
+   "codes_window": [
+    [
+     60,
+     [
+      "I21",
+      "I22",
+      "I63",
+      "G45"
+     ]
+    ]
+   ],
+   "egfr_lt": 60
+  },
+  "min_age": 40,
+  "max_age": null,
+  "index_window": [
+   "2014-01-08",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "cv_death",
+   "('hosp', ['I50'])"
+  ],
+  "rct_endpoint": "CV death or HF hospitalisation",
+  "horizon_months": 50,
+  "rct_hr": 0.83,
+  "rct_ci": [
+   0.73,
+   0.95
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": "HR vs placebo (co-primary; MACE 0.93, 0.84-1.03)",
+  "rct_arms": "dapagliflozin vs placebo",
+  "our_orientation": 0.83,
+  "citation": "Wiviott et al. NEJM 2019;380:347-57 (PMID 30415602)",
+  "spec_version": "declare_adapted_v1",
+  "note": "RCT placebo-controlled; DPP-4i comparator as in RCT-DUPLICATE; benchmark = co-primary CV death or HF hospitalisation; CrCl >= 60 approximated by eGFR >= 60",
+  "feasibility": {
+   "n_by_arm": {
+    "dpp4i": 12184,
+    "dapagliflozin": 3992
+   },
+   "n_with_ecg_by_arm": {
+    "dpp4i": 4865,
+    "dapagliflozin": 2102
+   },
+   "min_arm_with_ecg": 2102,
+   "pooled_primary_events_horizon": 2861,
+   "pooled_primary_events_horizon_with_ecg": 1811,
+   "pooled_deaths_horizon": 1499,
+   "max_same_record_share_one_v16_cohort": {
+    "cohort": "empa-reg",
+    "share": 0.35
+   },
+   "patients_in_any_v16_cohort": 12277
+  }
+ },
+ "canvas": {
+  "name": "CANVAS Program (adapted, DPP-4i active-comparator proxy): canagliflozin vs DPP-4i",
+  "registry_name": "canvas",
+  "status": "selected_for_build",
+  "reasons_not_built": [],
+  "arms": [
+   "canagliflozin",
+   "dpp4i"
+  ],
+  "arm_keywords": {
+   "canagliflozin": [
+    "canagliflozin",
+    "invokana",
+    "invokamet"
+   ],
+   "dpp4i": [
+    "sitagliptin",
+    "januvia",
+    "janumet",
+    "saxagliptin",
+    "onglyza",
+    "kombiglyze",
+    "linagliptin",
+    "tradjenta",
+    "jentadueto",
+    "alogliptin",
+    "nesina",
+    "kazano"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "any_before_or_on_index": [
+    "E11"
+   ]
+  },
+  "exclusions": {
+   "ever_codes": [
+    "E10"
+   ],
+   "codes_window": [
+    [
+     60,
+     [
+      "I21",
+      "I22",
+      "I63",
+      "G45"
+     ]
+    ]
+   ],
+   "egfr_lt": 30
+  },
+  "min_age": 30,
+  "max_age": null,
+  "index_window": [
+   "2013-03-29",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "cv_death",
+   "('hosp', ['I21', 'I22'])",
+   "('hosp', ['I60', 'I61', 'I63', 'I64'])"
+  ],
+  "rct_endpoint": "CV death, nonfatal MI or nonfatal stroke",
+  "horizon_months": 43,
+  "rct_hr": 0.86,
+  "rct_ci": [
+   0.75,
+   0.97
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": "HR vs placebo",
+  "rct_arms": "canagliflozin vs placebo",
+  "our_orientation": 0.86,
+  "citation": "Neal et al. NEJM 2017;377:644-57 (PMID 28605608)",
+  "spec_version": "canvas_adapted_v1",
+  "note": "RCT placebo-controlled; DPP-4i comparator as in RCT-DUPLICATE",
+  "feasibility": {
+   "n_by_arm": {
+    "dpp4i": 13666,
+    "canagliflozin": 1645
+   },
+   "n_with_ecg_by_arm": {
+    "dpp4i": 5552,
+    "canagliflozin": 485
+   },
+   "min_arm_with_ecg": 485,
+   "pooled_primary_events_horizon": 1667,
+   "pooled_primary_events_horizon_with_ecg": 928,
+   "pooled_deaths_horizon": 1247,
+   "max_same_record_share_one_v16_cohort": {
+    "cohort": "empa-reg",
+    "share": 0.31
+   },
+   "patients_in_any_v16_cohort": 11273
+  }
+ },
+ "tecos": {
+  "name": "TECOS (adapted, sulfonylurea active-comparator proxy): sitagliptin vs sulfonylurea",
+  "registry_name": "tecos",
+  "status": "selected_for_build",
+  "reasons_not_built": [],
+  "arms": [
+   "sitagliptin",
+   "sulfonylurea"
+  ],
+  "arm_keywords": {
+   "sitagliptin": [
+    "sitagliptin",
+    "januvia",
+    "janumet"
+   ],
+   "sulfonylurea": [
+    "glipizide",
+    "glucotrol",
+    "glimepiride",
+    "amaryl",
+    "glyburide",
+    "glynase",
+    "micronase",
+    "diabeta"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "any_before_or_on_index": [
+    "E11"
+   ],
+   "require_all": [
+    [
+     "I20",
+     "I21",
+     "I22",
+     "I23",
+     "I24",
+     "I25",
+     "I63",
+     "I64",
+     "G45",
+     "I70",
+     "I739"
+    ]
+   ]
+  },
+  "exclusions": {
+   "ever_codes": [
+    "E10"
+   ],
+   "egfr_lt": 30,
+   "other_drugs_365d": [
+    "liraglutide",
+    "victoza",
+    "semaglutide",
+    "ozempic",
+    "rybelsus",
+    "dulaglutide",
+    "trulicity",
+    "exenatide",
+    "byetta",
+    "bydureon",
+    "lixisenatide",
+    "adlyxin",
+    "albiglutide",
+    "tanzeum",
+    "xultophy",
+    "soliqua",
+    "tirzepatide",
+    "mounjaro",
+    "saxagliptin",
+    "onglyza",
+    "kombiglyze",
+    "linagliptin",
+    "tradjenta",
+    "jentadueto",
+    "alogliptin",
+    "nesina",
+    "kazano"
+   ]
+  },
+  "min_age": 50,
+  "max_age": null,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "cv_death",
+   "('hosp', ['I21', 'I22'])",
+   "('hosp', ['I60', 'I61', 'I63', 'I64'])",
+   "('hosp', ['I200'])"
+  ],
+  "rct_endpoint": "CV death, nonfatal MI, nonfatal stroke or UA hospitalisation",
+  "horizon_months": 36,
+  "rct_hr": 0.98,
+  "rct_ci": [
+   0.88,
+   1.09
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": "HR vs placebo (per-protocol primary)",
+  "rct_arms": "sitagliptin vs placebo",
+  "our_orientation": 0.98,
+  "citation": "Green et al. NEJM 2015;373:232-42 (PMID 26052984)",
+  "spec_version": "tecos_adapted_v1",
+  "note": "RCT placebo-controlled; sulfonylurea comparator as in RCT-DUPLICATE; other incretin users in prior year excluded",
+  "feasibility": {
+   "n_by_arm": {
+    "sulfonylurea": 2653,
+    "sitagliptin": 2720
+   },
+   "n_with_ecg_by_arm": {
+    "sulfonylurea": 1412,
+    "sitagliptin": 1513
+   },
+   "min_arm_with_ecg": 1412,
+   "pooled_primary_events_horizon": 973,
+   "pooled_primary_events_horizon_with_ecg": 630,
+   "pooled_deaths_horizon": 665,
+   "max_same_record_share_one_v16_cohort": {
+    "cohort": "empa-reg",
+    "share": 0.36
+   },
+   "patients_in_any_v16_cohort": 4754
+  }
+ },
+ "savor": {
+  "name": "SAVOR-TIMI 53 (adapted, sulfonylurea proxy): saxagliptin vs sulfonylurea",
+  "registry_name": null,
+  "status": "not_built",
+  "reasons_not_built": [
+   "smaller arm with ECG = 101 < 300"
+  ],
+  "arms": [
+   "saxagliptin",
+   "sulfonylurea"
+  ],
+  "arm_keywords": {
+   "saxagliptin": [
+    "saxagliptin",
+    "onglyza",
+    "kombiglyze",
+    "qtern"
+   ],
+   "sulfonylurea": [
+    "glipizide",
+    "glucotrol",
+    "glimepiride",
+    "amaryl",
+    "glyburide",
+    "glynase",
+    "micronase",
+    "diabeta"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "any_before_or_on_index": [
+    "E11"
+   ],
+   "require_all": [
+    [
+     "I20",
+     "I21",
+     "I22",
+     "I23",
+     "I24",
+     "I25",
+     "I63",
+     "I64",
+     "G45",
+     "I70",
+     "I739",
+     "N18"
+    ]
+   ]
+  },
+  "exclusions": {
+   "ever_codes": [
+    "E10"
+   ],
+   "egfr_lt": 15,
+   "other_drugs_365d": [
+    "liraglutide",
+    "victoza",
+    "semaglutide",
+    "ozempic",
+    "rybelsus",
+    "dulaglutide",
+    "trulicity",
+    "exenatide",
+    "byetta",
+    "bydureon",
+    "lixisenatide",
+    "adlyxin",
+    "albiglutide",
+    "tanzeum",
+    "xultophy",
+    "soliqua",
+    "tirzepatide",
+    "mounjaro",
+    "sitagliptin",
+    "januvia",
+    "janumet",
+    "linagliptin",
+    "tradjenta",
+    "jentadueto",
+    "alogliptin",
+    "nesina",
+    "kazano"
+   ]
+  },
+  "min_age": 40,
+  "max_age": null,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "cv_death",
+   "('hosp', ['I21', 'I22'])",
+   "('hosp', ['I60', 'I61', 'I63', 'I64'])"
+  ],
+  "rct_endpoint": "CV death, MI or ischaemic stroke",
+  "horizon_months": 25,
+  "rct_hr": 1.0,
+  "rct_ci": [
+   0.89,
+   1.12
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": null,
+  "rct_arms": null,
+  "our_orientation": null,
+  "citation": "Scirica et al. NEJM 2013;369:1317-26 (PMID 23992601)",
+  "spec_version": "savor_adapted_v1",
+  "note": "RCT placebo-controlled; sulfonylurea comparator as in RCT-DUPLICATE",
+  "feasibility": {
+   "n_by_arm": {
+    "sulfonylurea": 3424,
+    "saxagliptin": 220
+   },
+   "n_with_ecg_by_arm": {
+    "sulfonylurea": 1810,
+    "saxagliptin": 101
+   },
+   "min_arm_with_ecg": 101,
+   "pooled_primary_events_horizon": 495,
+   "pooled_primary_events_horizon_with_ecg": 338,
+   "pooled_deaths_horizon": 361,
+   "max_same_record_share_one_v16_cohort": null,
+   "patients_in_any_v16_cohort": 3007
+  }
+ },
+ "carmelina": {
+  "name": "CARMELINA (adapted, sulfonylurea proxy): linagliptin vs sulfonylurea in T2D with kidney disease",
+  "registry_name": "carmelina",
+  "status": "selected_for_build",
+  "reasons_not_built": [],
+  "arms": [
+   "linagliptin",
+   "sulfonylurea"
+  ],
+  "arm_keywords": {
+   "linagliptin": [
+    "linagliptin",
+    "tradjenta",
+    "jentadueto"
+   ],
+   "sulfonylurea": [
+    "glipizide",
+    "glucotrol",
+    "glimepiride",
+    "amaryl",
+    "glyburide",
+    "glynase",
+    "micronase",
+    "diabeta"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "any_before_or_on_index": [
+    "E11"
+   ],
+   "require_all": [
+    [
+     "N18",
+     "E112",
+     "R80",
+     "R809"
+    ]
+   ]
+  },
+  "exclusions": {
+   "ever_codes": [
+    "E10",
+    "N186",
+    "Z992"
+   ],
+   "egfr_lt": 15,
+   "other_drugs_365d": [
+    "liraglutide",
+    "victoza",
+    "semaglutide",
+    "ozempic",
+    "rybelsus",
+    "dulaglutide",
+    "trulicity",
+    "exenatide",
+    "byetta",
+    "bydureon",
+    "lixisenatide",
+    "adlyxin",
+    "albiglutide",
+    "tanzeum",
+    "xultophy",
+    "soliqua",
+    "tirzepatide",
+    "mounjaro",
+    "sitagliptin",
+    "januvia",
+    "janumet",
+    "saxagliptin",
+    "onglyza",
+    "kombiglyze",
+    "alogliptin",
+    "nesina",
+    "kazano"
+   ]
+  },
+  "min_age": 18,
+  "max_age": null,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "cv_death",
+   "('hosp', ['I21', 'I22'])",
+   "('hosp', ['I60', 'I61', 'I63', 'I64'])"
+  ],
+  "rct_endpoint": "CV death, nonfatal MI or nonfatal stroke",
+  "horizon_months": 26,
+  "rct_hr": 1.02,
+  "rct_ci": [
+   0.89,
+   1.17
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": "HR vs placebo",
+  "rct_arms": "linagliptin vs placebo",
+  "our_orientation": 1.02,
+  "citation": "Rosenstock et al. JAMA 2019;321:69-79 (PMID 30418475)",
+  "spec_version": "carmelina_adapted_v1",
+  "note": "RCT placebo-controlled; sulfonylurea comparator as in RCT-DUPLICATE; kidney risk = CKD/diabetic kidney disease/albuminuria code; dialysis excluded",
+  "feasibility": {
+   "n_by_arm": {
+    "sulfonylurea": 1411,
+    "linagliptin": 1261
+   },
+   "n_with_ecg_by_arm": {
+    "sulfonylurea": 743,
+    "linagliptin": 803
+   },
+   "min_arm_with_ecg": 743,
+   "pooled_primary_events_horizon": 435,
+   "pooled_primary_events_horizon_with_ecg": 313,
+   "pooled_deaths_horizon": 366,
+   "max_same_record_share_one_v16_cohort": {
+    "cohort": "carolina",
+    "share": 0.31
+   },
+   "patients_in_any_v16_cohort": 2267
+  }
+ },
+ "tosca_it": {
+  "name": "TOSCA.IT (adapted): pioglitazone vs sulfonylurea added to metformin",
+  "registry_name": null,
+  "status": "not_built",
+  "reasons_not_built": [
+   "smaller arm with ECG = 96 < 300"
+  ],
+  "arms": [
+   "pioglitazone",
+   "sulfonylurea"
+  ],
+  "arm_keywords": {
+   "pioglitazone": [
+    "pioglitazone",
+    "actos",
+    "actoplus",
+    "duetact"
+   ],
+   "sulfonylurea": [
+    "glipizide",
+    "glucotrol",
+    "glimepiride",
+    "amaryl",
+    "glyburide",
+    "glynase",
+    "micronase",
+    "diabeta"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "any_before_or_on_index": [
+    "E11"
+   ],
+   "require_drugs_365d": [
+    [
+     "metformin",
+     "glucophage"
+    ]
+   ]
+  },
+  "exclusions": {
+   "ever_codes": [
+    "E10",
+    "I50"
+   ],
+   "other_drugs_365d": [
+    "insulin",
+    "lantus",
+    "humalog",
+    "novolog",
+    "levemir",
+    "tresiba",
+    "basaglar"
+   ]
+  },
+  "min_age": 50,
+  "max_age": 75,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "death",
+   "('hosp', ['I21', 'I22'])",
+   "('hosp', ['I60', 'I61', 'I63', 'I64'])"
+  ],
+  "rct_endpoint": "death, nonfatal MI, nonfatal stroke, urgent coronary revascularisation",
+  "horizon_months": 57,
+  "rct_hr": 0.96,
+  "rct_ci": [
+   0.74,
+   1.26
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": null,
+  "rct_arms": null,
+  "our_orientation": null,
+  "citation": "Vaccaro et al. Lancet Diabetes Endocrinol 2017;5:887-97 (PMID 28917544)",
+  "spec_version": "tosca_it_adapted_v1",
+  "note": "pragmatic open-label active-comparator RCT; HF excluded (trial excluded HF); urgent coronary revascularisation not captured",
+  "feasibility": {
+   "n_by_arm": {
+    "sulfonylurea": 2375,
+    "pioglitazone": 377
+   },
+   "n_with_ecg_by_arm": {
+    "sulfonylurea": 721,
+    "pioglitazone": 96
+   },
+   "min_arm_with_ecg": 96,
+   "pooled_primary_events_horizon": 336,
+   "pooled_primary_events_horizon_with_ecg": 125,
+   "pooled_deaths_horizon": 160,
+   "max_same_record_share_one_v16_cohort": null,
+   "patients_in_any_v16_cohort": 2119
+  }
+ },
+ "valiant": {
+  "name": "VALIANT (adapted): ARB vs ACEi after MI with LV dysfunction",
+  "registry_name": "valiant",
+  "status": "selected_for_build",
+  "reasons_not_built": [],
+  "arms": [
+   "arb",
+   "acei"
+  ],
+  "arm_keywords": {
+   "arb": [
+    "losartan",
+    "valsartan",
+    "candesartan",
+    "irbesartan",
+    "olmesartan",
+    "telmisartan",
+    "eprosartan",
+    "azilsartan",
+    "cozaar",
+    "diovan"
+   ],
+   "acei": [
+    "captopril",
+    "enalapril",
+    "lisinopril",
+    "ramipril",
+    "benazepril",
+    "fosinopril",
+    "quinapril",
+    "perindopril",
+    "trandolapril",
+    "moexipril",
+    "vasotec",
+    "zestril",
+    "prinivil",
+    "altace",
+    "lotensin",
+    "accupril",
+    "monopril"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "window_30d": [
+    "I21",
+    "I22"
+   ]
+  },
+  "exclusions": {
+   "lvef_gt": 40,
+   "egfr_lt": 30,
+   "sbp_lt": 100,
+   "ever_codes": [
+    "T783"
+   ]
+  },
+  "min_age": 18,
+  "max_age": null,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "death"
+  ],
+  "rct_endpoint": "all-cause death",
+  "horizon_months": 25,
+  "rct_hr": 1.0,
+  "rct_ci": [
+   0.9,
+   1.11
+  ],
+  "rct_ci_level": 0.975,
+  "rct_measure": "HR (97.5% CI)",
+  "rct_arms": "valsartan vs captopril",
+  "our_orientation": 1.0,
+  "citation": "Pfeffer et al. NEJM 2003;349:1893-906 (PMID 14610160)",
+  "spec_version": "valiant_adapted_v1",
+  "note": "class adaptation (trial: valsartan vs captopril, 0.5-10 d after MI with LVEF <= 35-40% and/or HF); EF > 40 excluded when known (as PARADISE-MI)",
+  "feasibility": {
+   "n_by_arm": {
+    "arb": 1033,
+    "acei": 1969
+   },
+   "n_with_ecg_by_arm": {
+    "arb": 669,
+    "acei": 1427
+   },
+   "min_arm_with_ecg": 669,
+   "pooled_primary_events_horizon": 313,
+   "pooled_primary_events_horizon_with_ecg": 253,
+   "pooled_deaths_horizon": 313,
+   "max_same_record_share_one_v16_cohort": {
+    "cohort": "ontarget",
+    "share": 0.61
+   },
+   "patients_in_any_v16_cohort": 2867
+  }
+ },
+ "accomplish": {
+  "name": "ACCOMPLISH (adapted): amlodipine vs HCTZ added to RAS blockade in high-risk hypertension",
+  "registry_name": null,
+  "status": "not_built",
+  "reasons_not_built": [
+   "near-duplicate cohort: 96% of (patient, index) records identical to v1.6 allhat"
+  ],
+  "arms": [
+   "amlodipine",
+   "hctz"
+  ],
+  "arm_keywords": {
+   "amlodipine": [
+    "amlodipine",
+    "norvasc",
+    "lotrel"
+   ],
+   "hctz": [
+    "hydrochlorothiazide",
+    "microzide"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "any_before_or_on_index": [
+    "I10",
+    "I11",
+    "I12",
+    "I13",
+    "I15"
+   ],
+   "require_all": [
+    [
+     "I20",
+     "I21",
+     "I22",
+     "I23",
+     "I24",
+     "I25",
+     "I63",
+     "I64",
+     "G45",
+     "I70",
+     "I739",
+     "N18",
+     "E11",
+     "I517"
+    ]
+   ],
+   "require_drugs_365d": [
+    [
+     "captopril",
+     "enalapril",
+     "lisinopril",
+     "ramipril",
+     "benazepril",
+     "fosinopril",
+     "quinapril",
+     "perindopril",
+     "trandolapril",
+     "moexipril",
+     "vasotec",
+     "zestril",
+     "prinivil",
+     "altace",
+     "lotensin",
+     "accupril",
+     "monopril",
+     "losartan",
+     "valsartan",
+     "candesartan",
+     "irbesartan",
+     "olmesartan",
+     "telmisartan",
+     "eprosartan",
+     "azilsartan"
+    ]
+   ]
+  },
+  "exclusions": {
+   "ever_codes": [
+    "I50"
+   ],
+   "codes_window": [
+    [
+     90,
+     [
+      "I21",
+      "I22",
+      "I63"
+     ]
+    ]
+   ]
+  },
+  "min_age": 55,
+  "max_age": null,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "cv_death",
+   "('hosp', ['I21', 'I22'])",
+   "('hosp', ['I60', 'I61', 'I63', 'I64'])",
+   "('hosp', ['I200'])",
+   "('hosp', ['I46'])"
+  ],
+  "rct_endpoint": "CV death, MI, stroke, angina hospitalisation, resuscitated arrest, coronary revascularisation",
+  "horizon_months": 36,
+  "rct_hr": 0.8,
+  "rct_ci": [
+   0.72,
+   0.9
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": null,
+  "rct_arms": null,
+  "our_orientation": null,
+  "citation": "Jamerson et al. NEJM 2008;359:2417-28 (PMID 19052124)",
+  "spec_version": "accomplish_adapted_v1",
+  "note": "trial: benazepril + amlodipine vs benazepril + HCTZ; adaptation: ACEi/ARB order in prior 365 d (or at index) required; coronary revascularisation not captured",
+  "feasibility": {
+   "n_by_arm": {
+    "amlodipine": 9547,
+    "hctz": 5586
+   },
+   "n_with_ecg_by_arm": {
+    "amlodipine": 4938,
+    "hctz": 2778
+   },
+   "min_arm_with_ecg": 2778,
+   "pooled_primary_events_horizon": 1548,
+   "pooled_primary_events_horizon_with_ecg": 926,
+   "pooled_deaths_horizon": 1119,
+   "max_same_record_share_one_v16_cohort": {
+    "cohort": "allhat",
+    "share": 0.96
+   },
+   "patients_in_any_v16_cohort": 15076
+  }
+ },
+ "insight": {
+  "name": "INSIGHT (adapted): nifedipine vs thiazide in high-risk hypertension",
+  "registry_name": "insight",
+  "status": "selected_for_build",
+  "reasons_not_built": [],
+  "arms": [
+   "nifedipine",
+   "thiazide"
+  ],
+  "arm_keywords": {
+   "nifedipine": [
+    "nifedipine",
+    "procardia",
+    "adalat"
+   ],
+   "thiazide": [
+    "chlorthalidone",
+    "hydrochlorothiazide",
+    "indapamide",
+    "thalitone",
+    "microzide"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "any_before_or_on_index": [
+    "I10",
+    "I11",
+    "I12",
+    "I13",
+    "I15"
+   ],
+   "require_all": [
+    [
+     "I20",
+     "I21",
+     "I22",
+     "I23",
+     "I24",
+     "I25",
+     "I63",
+     "I64",
+     "G45",
+     "I70",
+     "I739",
+     "E11",
+     "I517",
+     "E78"
+    ]
+   ]
+  },
+  "exclusions": {
+   "ever_codes": [
+    "I50"
+   ],
+   "codes_window": [
+    [
+     90,
+     [
+      "I21",
+      "I22",
+      "I63"
+     ]
+    ]
+   ]
+  },
+  "min_age": 55,
+  "max_age": 80,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "cv_death",
+   "('hosp', ['I21', 'I22'])",
+   "('hosp', ['I60', 'I61', 'I63', 'I64'])",
+   "('hosp', ['I50'])"
+  ],
+  "rct_endpoint": "CV death, MI, HF or stroke",
+  "horizon_months": 42,
+  "rct_hr": 1.1,
+  "rct_ci": [
+   0.91,
+   1.34
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": "RR",
+  "rct_arms": "nifedipine GITS vs co-amilozide",
+  "our_orientation": 1.1,
+  "citation": "Brown et al. Lancet 2000;356:366-72 (PMID 10972368)",
+  "spec_version": "insight_adapted_v1",
+  "note": "trial: nifedipine GITS vs co-amilozide; thiazide class; risk factor = CVD, diabetes, LVH or hyperlipidaemia code",
+  "feasibility": {
+   "n_by_arm": {
+    "thiazide": 19101,
+    "nifedipine": 907
+   },
+   "n_with_ecg_by_arm": {
+    "thiazide": 8450,
+    "nifedipine": 397
+   },
+   "min_arm_with_ecg": 397,
+   "pooled_primary_events_horizon": 2216,
+   "pooled_primary_events_horizon_with_ecg": 1211,
+   "pooled_deaths_horizon": 956,
+   "max_same_record_share_one_v16_cohort": {
+    "cohort": "allhat",
+    "share": 0.63
+   },
+   "patients_in_any_v16_cohort": 18406
+  }
+ },
+ "affirm": {
+  "name": "AFFIRM (adapted, sequential: rhythm-control drug added vs continued rate control)",
+  "registry_name": "affirm",
+  "status": "selected_for_build",
+  "reasons_not_built": [],
+  "arms": [
+   "antiarrhythmic",
+   "rate_control"
+  ],
+  "arm_keywords": {
+   "antiarrhythmic": [
+    "amiodarone",
+    "dronedarone",
+    "sotalol",
+    "flecainide",
+    "propafenone",
+    "dofetilide",
+    "multaq",
+    "pacerone",
+    "tikosyn",
+    "betapace",
+    "rythmol",
+    "tambocor"
+   ],
+   "rate_control": [
+    "metoprolol",
+    "lopressor",
+    "toprol",
+    "atenolol",
+    "carvedilol",
+    "coreg",
+    "bisoprolol",
+    "nebivolol",
+    "diltiazem",
+    "cardizem",
+    "verapamil",
+    "digoxin",
+    "lanoxin"
+   ]
+  },
+  "design": "switch_seq",
+  "gates": {
+   "any_before_or_on_index": [
+    "I48"
+   ]
+  },
+  "exclusions": {
+   "ever_codes": [
+    "I050",
+    "I052",
+    "Z952"
+   ]
+  },
+  "min_age": 65,
+  "max_age": null,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "death"
+  ],
+  "rct_endpoint": "all-cause death",
+  "horizon_months": 42,
+  "rct_hr": 1.15,
+  "rct_ci": [
+   0.99,
+   1.34
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": "HR",
+  "rct_arms": "rhythm control vs rate control",
+  "our_orientation": 1.15,
+  "citation": "Wyse et al. NEJM 2002;347:1825-33 (PMID 12466506)",
+  "spec_version": "affirm_adapted_v1",
+  "note": "as EAST-AFNET 4 design without the early-AF gate; trial age >= 65 or stroke risk factor (age >= 65 applied)",
+  "feasibility": {
+   "n_by_arm": {
+    "rate_control": 18424,
+    "antiarrhythmic": 4606
+   },
+   "n_with_ecg_by_arm": {
+    "rate_control": 13534,
+    "antiarrhythmic": 4100
+   },
+   "min_arm_with_ecg": 4100,
+   "pooled_primary_events_horizon": 5867,
+   "pooled_primary_events_horizon_with_ecg": 4874,
+   "pooled_deaths_horizon": 5867,
+   "max_same_record_share_one_v16_cohort": {
+    "cohort": "east-afnet4",
+    "share": 0.25
+   },
+   "patients_in_any_v16_cohort": 19641
+  }
+ },
+ "af_chf": {
+  "name": "AF-CHF (adapted, sequential: rhythm-control drug added vs continued rate control in HFrEF)",
+  "registry_name": "af-chf",
+  "status": "selected_for_build",
+  "reasons_not_built": [],
+  "arms": [
+   "antiarrhythmic",
+   "rate_control"
+  ],
+  "arm_keywords": {
+   "antiarrhythmic": [
+    "amiodarone",
+    "dronedarone",
+    "sotalol",
+    "flecainide",
+    "propafenone",
+    "dofetilide",
+    "multaq",
+    "pacerone",
+    "tikosyn",
+    "betapace",
+    "rythmol",
+    "tambocor"
+   ],
+   "rate_control": [
+    "metoprolol",
+    "lopressor",
+    "toprol",
+    "atenolol",
+    "carvedilol",
+    "coreg",
+    "bisoprolol",
+    "nebivolol",
+    "diltiazem",
+    "cardizem",
+    "verapamil",
+    "digoxin",
+    "lanoxin"
+   ]
+  },
+  "design": "switch_seq",
+  "gates": {
+   "any_before_or_on_index": [
+    "I48"
+   ],
+   "require_all": [
+    [
+     "I50"
+    ]
+   ]
+  },
+  "exclusions": {
+   "lvef_gt": 35,
+   "hfpef_code_only": true,
+   "ever_codes": [
+    "I050",
+    "I052",
+    "Z952"
+   ]
+  },
+  "min_age": 18,
+  "max_age": null,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "cv_death"
+  ],
+  "rct_endpoint": "CV death",
+  "horizon_months": 37,
+  "rct_hr": 1.06,
+  "rct_ci": [
+   0.86,
+   1.3
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": "HR",
+  "rct_arms": "rhythm control vs rate control (LVEF <= 35%)",
+  "our_orientation": 1.06,
+  "citation": "Roy et al. NEJM 2008;358:2667-77 (PMID 18565859)",
+  "spec_version": "af_chf_adapted_v1",
+  "note": "trial: LVEF <= 35% with HF and AF; EF > 35 excluded when known",
+  "feasibility": {
+   "n_by_arm": {
+    "rate_control": 5648,
+    "antiarrhythmic": 1412
+   },
+   "n_with_ecg_by_arm": {
+    "rate_control": 4286,
+    "antiarrhythmic": 1272
+   },
+   "min_arm_with_ecg": 1272,
+   "pooled_primary_events_horizon": 1403,
+   "pooled_primary_events_horizon_with_ecg": 1130,
+   "pooled_deaths_horizon": 2189,
+   "max_same_record_share_one_v16_cohort": {
+    "cohort": "east-afnet4",
+    "share": 0.21
+   },
+   "patients_in_any_v16_cohort": 6155
+  }
+ },
+ "euclid": {
+  "name": "EUCLID (adapted): ticagrelor vs clopidogrel in PAD",
+  "registry_name": null,
+  "status": "not_built",
+  "reasons_not_built": [
+   "smaller arm with ECG = 153 < 300"
+  ],
+  "arms": [
+   "ticagrelor",
+   "clopidogrel"
+  ],
+  "arm_keywords": {
+   "ticagrelor": [
+    "ticagrelor",
+    "brilinta"
+   ],
+   "clopidogrel": [
+    "clopidogrel",
+    "plavix"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "any_before_or_on_index": [
+    "I702",
+    "I739"
+   ]
+  },
+  "exclusions": {
+   "anticoag_30d": [
+    "warfarin",
+    "apixaban",
+    "rivaroxaban",
+    "dabigatran",
+    "edoxaban",
+    "coumadin",
+    "eliquis",
+    "xarelto",
+    "pradaxa",
+    "savaysa"
+   ],
+   "ever_codes": [
+    "I61",
+    "I62"
+   ],
+   "codes_window": [
+    [
+     90,
+     [
+      "I21",
+      "I22",
+      "I24",
+      "I200"
+     ]
+    ]
+   ]
+  },
+  "min_age": 50,
+  "max_age": null,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "cv_death",
+   "('hosp', ['I21', 'I22'])",
+   "('hosp', ['I60', 'I61', 'I63', 'I64'])"
+  ],
+  "rct_endpoint": "CV death, MI or ischaemic stroke",
+  "horizon_months": 30,
+  "rct_hr": 1.02,
+  "rct_ci": [
+   0.92,
+   1.13
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": null,
+  "rct_arms": null,
+  "our_orientation": null,
+  "citation": "Hiatt et al. NEJM 2017;376:32-40 (PMID 27959717)",
+  "spec_version": "euclid_adapted_v1",
+  "note": "PAD by code; recent ACS excluded (trial excluded patients needing DAPT)",
+  "feasibility": {
+   "n_by_arm": {
+    "clopidogrel": 3130,
+    "ticagrelor": 203
+   },
+   "n_with_ecg_by_arm": {
+    "clopidogrel": 1972,
+    "ticagrelor": 153
+   },
+   "min_arm_with_ecg": 153,
+   "pooled_primary_events_horizon": 682,
+   "pooled_primary_events_horizon_with_ecg": 486,
+   "pooled_deaths_horizon": 497,
+   "max_same_record_share_one_v16_cohort": null,
+   "patients_in_any_v16_cohort": 2365
+  }
+ },
+ "isar_react5": {
+  "name": "ISAR-REACT 5 (adapted): ticagrelor vs prasugrel in ACS",
+  "registry_name": null,
+  "status": "not_built",
+  "reasons_not_built": [
+   "smaller arm with ECG = 245 < 300"
+  ],
+  "arms": [
+   "ticagrelor",
+   "prasugrel"
+  ],
+  "arm_keywords": {
+   "ticagrelor": [
+    "ticagrelor",
+    "brilinta"
+   ],
+   "prasugrel": [
+    "prasugrel",
+    "effient"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "window_30d": [
+    "I21",
+    "I24",
+    "I200"
+   ]
+  },
+  "exclusions": {
+   "anticoag_30d": [
+    "warfarin",
+    "apixaban",
+    "rivaroxaban",
+    "dabigatran",
+    "edoxaban",
+    "coumadin",
+    "eliquis",
+    "xarelto",
+    "pradaxa",
+    "savaysa"
+   ],
+   "ever_codes": [
+    "I61",
+    "I62",
+    "I63",
+    "G45"
+   ]
+  },
+  "min_age": 18,
+  "max_age": null,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "death",
+   "('hosp', ['I21', 'I22'])",
+   "('hosp', ['I60', 'I61', 'I63', 'I64'])"
+  ],
+  "rct_endpoint": "death, MI or stroke at 1 y (ticagrelor vs prasugrel)",
+  "horizon_months": 12,
+  "rct_hr": 1.36,
+  "rct_ci": [
+   1.09,
+   1.7
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": null,
+  "rct_arms": null,
+  "our_orientation": null,
+  "citation": "Schupke et al. NEJM 2019;381:1524-34 (PMID 31475799)",
+  "spec_version": "isar_react5_adapted_v1",
+  "note": "prior stroke/TIA excluded (prasugrel contraindication)",
+  "feasibility": {
+   "n_by_arm": {
+    "ticagrelor": 4594,
+    "prasugrel": 348
+   },
+   "n_with_ecg_by_arm": {
+    "ticagrelor": 4098,
+    "prasugrel": 245
+   },
+   "min_arm_with_ecg": 245,
+   "pooled_primary_events_horizon": 694,
+   "pooled_primary_events_horizon_with_ecg": 632,
+   "pooled_deaths_horizon": 299,
+   "max_same_record_share_one_v16_cohort": null,
+   "patients_in_any_v16_cohort": 4730
+  }
+ },
+ "precision": {
+  "name": "PRECISION (adapted): celecoxib vs naproxen in arthritis with CV risk",
+  "registry_name": "precision",
+  "status": "selected_for_build",
+  "reasons_not_built": [],
+  "arms": [
+   "celecoxib",
+   "naproxen"
+  ],
+  "arm_keywords": {
+   "celecoxib": [
+    "celecoxib",
+    "celebrex"
+   ],
+   "naproxen": [
+    "naproxen",
+    "naprosyn",
+    "anaprox",
+    "aleve"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "any_before_or_on_index": [
+    "M05",
+    "M06",
+    "M15",
+    "M16",
+    "M17",
+    "M18",
+    "M19"
+   ],
+   "require_all": [
+    [
+     "I20",
+     "I21",
+     "I22",
+     "I23",
+     "I24",
+     "I25",
+     "I63",
+     "I64",
+     "G45",
+     "I70",
+     "I739",
+     "E11",
+     "E78",
+     "I10",
+     "I11",
+     "I12",
+     "I13",
+     "I15"
+    ]
+   ]
+  },
+  "exclusions": {
+   "codes_window": [
+    [
+     90,
+     [
+      "I21",
+      "I22",
+      "I63",
+      "I24",
+      "I200"
+     ]
+    ]
+   ],
+   "egfr_lt": 30,
+   "other_drugs_365d": [
+    "ibuprofen",
+    "meloxicam",
+    "diclofenac",
+    "ketorolac",
+    "indomethacin",
+    "etodolac",
+    "nabumetone"
+   ]
+  },
+  "min_age": 18,
+  "max_age": null,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "cv_death",
+   "('hosp', ['I21', 'I22'])",
+   "('hosp', ['I60', 'I61', 'I63', 'I64'])"
+  ],
+  "rct_endpoint": "CV death (incl. haemorrhagic), nonfatal MI or nonfatal stroke (APTC)",
+  "horizon_months": 34,
+  "rct_hr": 0.93,
+  "rct_ci": [
+   0.76,
+   1.13
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": "HR, ITT",
+  "rct_arms": "celecoxib vs naproxen",
+  "our_orientation": 0.93,
+  "citation": "Nissen et al. NEJM 2016;375:2519-29 (PMID 27959716)",
+  "spec_version": "precision_adapted_v1",
+  "note": "trial arms celecoxib / ibuprofen / naproxen; this emulation = celecoxib vs naproxen (prescribed orders; OTC use unseen); other NSAIDs in prior year excluded",
+  "feasibility": {
+   "n_by_arm": {
+    "naproxen": 7649,
+    "celecoxib": 6342
+   },
+   "n_with_ecg_by_arm": {
+    "naproxen": 2870,
+    "celecoxib": 2440
+   },
+   "min_arm_with_ecg": 2440,
+   "pooled_primary_events_horizon": 908,
+   "pooled_primary_events_horizon_with_ecg": 511,
+   "pooled_deaths_horizon": 743,
+   "max_same_record_share_one_v16_cohort": {
+    "cohort": "value",
+    "share": 0.02
+   },
+   "patients_in_any_v16_cohort": 7378
+  }
+ },
+ "cares": {
+  "name": "CARES (adapted): febuxostat vs allopurinol in gout with CVD",
+  "registry_name": null,
+  "status": "not_built",
+  "reasons_not_built": [
+   "smaller arm with ECG = 161 < 300"
+  ],
+  "arms": [
+   "febuxostat",
+   "allopurinol"
+  ],
+  "arm_keywords": {
+   "febuxostat": [
+    "febuxostat",
+    "uloric"
+   ],
+   "allopurinol": [
+    "allopurinol",
+    "zyloprim"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "any_before_or_on_index": [
+    "M10",
+    "M1A"
+   ],
+   "require_all": [
+    [
+     "I20",
+     "I21",
+     "I22",
+     "I23",
+     "I24",
+     "I25",
+     "I63",
+     "I64",
+     "G45",
+     "I70",
+     "I739"
+    ]
+   ]
+  },
+  "exclusions": {
+   "codes_window": [
+    [
+     60,
+     [
+      "I21",
+      "I22",
+      "I63"
+     ]
+    ]
+   ],
+   "egfr_lt": 15
+  },
+  "min_age": 18,
+  "max_age": null,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "cv_death",
+   "('hosp', ['I21', 'I22'])",
+   "('hosp', ['I60', 'I61', 'I63', 'I64'])",
+   "('hosp', ['I200'])"
+  ],
+  "rct_endpoint": "CV death, MI, stroke, UA with urgent revascularisation",
+  "horizon_months": 32,
+  "rct_hr": 1.03,
+  "rct_ci": [
+   null,
+   1.23
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": null,
+  "rct_arms": null,
+  "our_orientation": null,
+  "citation": "White et al. NEJM 2018;378:1200-10 (PMID 29527974); one-sided 98.5% upper bound only",
+  "spec_version": "cares_adapted_v1",
+  "note": "febuxostat arm may have prior allopurinol use (as in CARES); allopurinol arm = new users; urgent revascularisation for UA approximated by UA hospitalisation",
+  "feasibility": {
+   "n_by_arm": {
+    "allopurinol": 2548,
+    "febuxostat": 270
+   },
+   "n_with_ecg_by_arm": {
+    "allopurinol": 1673,
+    "febuxostat": 161
+   },
+   "min_arm_with_ecg": 161,
+   "pooled_primary_events_horizon": 603,
+   "pooled_primary_events_horizon_with_ecg": 463,
+   "pooled_deaths_horizon": 543,
+   "max_same_record_share_one_v16_cohort": null,
+   "patients_in_any_v16_cohort": 2093
+  }
+ },
+ "fast": {
+  "name": "FAST (adapted, sequential switch): febuxostat vs continued allopurinol",
+  "registry_name": null,
+  "status": "not_built",
+  "reasons_not_built": [
+   "smaller arm with ECG = 94 < 300"
+  ],
+  "arms": [
+   "febuxostat",
+   "allopurinol"
+  ],
+  "arm_keywords": {
+   "febuxostat": [
+    "febuxostat",
+    "uloric"
+   ],
+   "allopurinol": [
+    "allopurinol",
+    "zyloprim"
+   ]
+  },
+  "design": "switch_seq",
+  "gates": {
+   "any_before_or_on_index": [
+    "M10",
+    "M1A"
+   ]
+  },
+  "exclusions": {
+   "codes_window": [
+    [
+     90,
+     [
+      "I21",
+      "I22",
+      "I63"
+     ]
+    ]
+   ]
+  },
+  "min_age": 60,
+  "max_age": null,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "cv_death",
+   "('hosp', ['I21', 'I22', 'I24'])",
+   "('hosp', ['I60', 'I61', 'I63', 'I64'])"
+  ],
+  "rct_endpoint": "hospitalisation for MI/biomarker-positive ACS, stroke or CV death",
+  "horizon_months": 48,
+  "rct_hr": 0.85,
+  "rct_ci": [
+   0.7,
+   1.03
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": null,
+  "rct_arms": null,
+  "our_orientation": null,
+  "citation": "Mackenzie et al. Lancet 2020;396:1745-57 (PMID 33181081); on-treatment primary",
+  "spec_version": "fast_adapted_v1",
+  "note": "trial: allopurinol users age >= 60 with >= 1 CV risk factor, randomised to switch or continue",
+  "feasibility": {
+   "n_by_arm": {
+    "allopurinol": 640,
+    "febuxostat": 160
+   },
+   "n_with_ecg_by_arm": {
+    "allopurinol": 374,
+    "febuxostat": 94
+   },
+   "min_arm_with_ecg": 94,
+   "pooled_primary_events_horizon": 205,
+   "pooled_primary_events_horizon_with_ecg": 158,
+   "pooled_deaths_horizon": 177,
+   "max_same_record_share_one_v16_cohort": null,
+   "patients_in_any_v16_cohort": 565
+  }
+ },
+ "oral_surv": {
+  "name": "ORAL Surveillance (adapted): tofacitinib vs TNF inhibitor in RA",
+  "registry_name": null,
+  "status": "not_built",
+  "reasons_not_built": [
+   "smaller arm with ECG = 87 < 300",
+   "pooled events with ECG = 40 < 50"
+  ],
+  "arms": [
+   "tofacitinib",
+   "tnfi"
+  ],
+  "arm_keywords": {
+   "tofacitinib": [
+    "tofacitinib",
+    "xeljanz"
+   ],
+   "tnfi": [
+    "adalimumab",
+    "humira",
+    "etanercept",
+    "enbrel"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "any_before_or_on_index": [
+    "M05",
+    "M06"
+   ]
+  },
+  "exclusions": {},
+  "min_age": 50,
+  "max_age": null,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "cv_death",
+   "('hosp', ['I21', 'I22'])",
+   "('hosp', ['I60', 'I61', 'I63', 'I64'])"
+  ],
+  "rct_endpoint": "MACE (tofacitinib vs TNFi)",
+  "horizon_months": 48,
+  "rct_hr": 1.33,
+  "rct_ci": [
+   0.91,
+   1.94
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": null,
+  "rct_arms": null,
+  "our_orientation": null,
+  "citation": "Ytterberg et al. NEJM 2022;386:316-26 (PMID 35081280)",
+  "spec_version": "oral_surv_adapted_v1",
+  "note": "",
+  "feasibility": {
+   "n_by_arm": {
+    "tnfi": 731,
+    "tofacitinib": 255
+   },
+   "n_with_ecg_by_arm": {
+    "tnfi": 230,
+    "tofacitinib": 87
+   },
+   "min_arm_with_ecg": 87,
+   "pooled_primary_events_horizon": 80,
+   "pooled_primary_events_horizon_with_ecg": 40,
+   "pooled_deaths_horizon": 67,
+   "max_same_record_share_one_v16_cohort": null,
+   "patients_in_any_v16_cohort": 472
+  }
+ },
+ "pronounce": {
+  "name": "PRONOUNCE (adapted): degarelix vs leuprolide in prostate cancer with ASCVD",
+  "registry_name": null,
+  "status": "not_built",
+  "reasons_not_built": [
+   "smaller arm with ECG = 126 < 300"
+  ],
+  "arms": [
+   "degarelix",
+   "leuprolide"
+  ],
+  "arm_keywords": {
+   "degarelix": [
+    "degarelix",
+    "firmagon"
+   ],
+   "leuprolide": [
+    "leuprolide",
+    "lupron",
+    "eligard"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "any_before_or_on_index": [
+    "C61"
+   ],
+   "require_all": [
+    [
+     "I20",
+     "I21",
+     "I22",
+     "I23",
+     "I24",
+     "I25",
+     "I63",
+     "I64",
+     "G45",
+     "I70",
+     "I739"
+    ]
+   ]
+  },
+  "exclusions": {},
+  "min_age": 18,
+  "max_age": null,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "death",
+   "('hosp', ['I21', 'I22'])",
+   "('hosp', ['I60', 'I61', 'I63', 'I64'])"
+  ],
+  "rct_endpoint": "death, MI or stroke at 12 months",
+  "horizon_months": 12,
+  "rct_hr": 1.28,
+  "rct_ci": [
+   0.59,
+   2.79
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": null,
+  "rct_arms": null,
+  "our_orientation": null,
+  "citation": "Lopes et al. Circulation 2021;144:1295-307 (PMID 34459214)",
+  "spec_version": "pronounce_adapted_v1",
+  "note": "",
+  "feasibility": {
+   "n_by_arm": {
+    "leuprolide": 870,
+    "degarelix": 227
+   },
+   "n_with_ecg_by_arm": {
+    "leuprolide": 485,
+    "degarelix": 126
+   },
+   "min_arm_with_ecg": 126,
+   "pooled_primary_events_horizon": 139,
+   "pooled_primary_events_horizon_with_ecg": 98,
+   "pooled_deaths_horizon": 102,
+   "max_same_record_share_one_v16_cohort": null,
+   "patients_in_any_v16_cohort": 716
+  }
+ },
+ "amplify": {
+  "name": "AMPLIFY (adapted): apixaban vs warfarin for acute VTE",
+  "registry_name": "amplify",
+  "status": "selected_for_build",
+  "reasons_not_built": [],
+  "arms": [
+   "apixaban",
+   "warfarin"
+  ],
+  "arm_keywords": {
+   "apixaban": [
+    "apixaban",
+    "eliquis"
+   ],
+   "warfarin": [
+    "warfarin",
+    "coumadin",
+    "jantoven"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "window_30d": [
+    "I26",
+    "I801",
+    "I802",
+    "I824"
+   ]
+  },
+  "exclusions": {
+   "ever_codes": [
+    "I48"
+   ],
+   "other_anticoag_365d": [
+    "rivaroxaban",
+    "xarelto",
+    "dabigatran",
+    "pradaxa",
+    "edoxaban",
+    "savaysa"
+   ]
+  },
+  "min_age": 18,
+  "max_age": null,
+  "index_window": [
+   "2014-08-21",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "('hosp', ['I26', 'I801', 'I802', 'I824'])"
+  ],
+  "rct_endpoint": "recurrent symptomatic VTE or VTE-related death",
+  "horizon_months": 6,
+  "rct_hr": 0.84,
+  "rct_ci": [
+   0.6,
+   1.18
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": "RR",
+  "rct_arms": "apixaban vs enoxaparin/warfarin",
+  "our_orientation": 0.84,
+  "citation": "Agnelli et al. NEJM 2013;369:799-808 (PMID 23808982)",
+  "spec_version": "amplify_adapted_v1",
+  "note": "VTE within 30 d; AF excluded; recurrent VTE = new inpatient stay after the index stay with a VTE code",
+  "feasibility": {
+   "n_by_arm": {
+    "warfarin": 1395,
+    "apixaban": 5490
+   },
+   "n_with_ecg_by_arm": {
+    "warfarin": 1012,
+    "apixaban": 4068
+   },
+   "min_arm_with_ecg": 1012,
+   "pooled_primary_events_horizon": 1194,
+   "pooled_primary_events_horizon_with_ecg": 980,
+   "pooled_deaths_horizon": 575,
+   "max_same_record_share_one_v16_cohort": {
+    "cohort": "aristotle",
+    "share": 0.01
+   },
+   "patients_in_any_v16_cohort": 3020
+  }
+ },
+ "ideal": {
+  "name": "IDEAL (adapted): atorvastatin vs simvastatin after MI",
+  "registry_name": null,
+  "status": "not_built",
+  "reasons_not_built": [
+   "smaller arm with ECG = 151 < 300"
+  ],
+  "arms": [
+   "atorvastatin",
+   "simvastatin"
+  ],
+  "arm_keywords": {
+   "atorvastatin": [
+    "atorvastatin",
+    "lipitor"
+   ],
+   "simvastatin": [
+    "simvastatin",
+    "zocor"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "any_before_or_on_index": [
+    "I21",
+    "I22",
+    "I252"
+   ]
+  },
+  "exclusions": {
+   "ever_codes": [
+    "I50"
+   ],
+   "other_drugs_365d": [
+    "rosuvastatin",
+    "pravastatin",
+    "lovastatin",
+    "pitavastatin",
+    "fluvastatin",
+    "crestor"
+   ]
+  },
+  "min_age": 18,
+  "max_age": 80,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "chd_death",
+   "('hosp', ['I21', 'I22'])",
+   "('hosp', ['I46'])"
+  ],
+  "rct_endpoint": "coronary death, nonfatal MI or resuscitated cardiac arrest",
+  "horizon_months": 58,
+  "rct_hr": 0.89,
+  "rct_ci": [
+   0.78,
+   1.01
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": null,
+  "rct_arms": null,
+  "our_orientation": null,
+  "citation": "Pedersen et al. JAMA 2005;294:2437-45 (PMID 16287954)",
+  "spec_version": "ideal_adapted_v1",
+  "note": "dose not identifiable (trial: atorvastatin 80 vs simvastatin 20-40); HF excluded (trial excluded HF)",
+  "feasibility": {
+   "n_by_arm": {
+    "atorvastatin": 4313,
+    "simvastatin": 357
+   },
+   "n_with_ecg_by_arm": {
+    "atorvastatin": 2881,
+    "simvastatin": 151
+   },
+   "min_arm_with_ecg": 151,
+   "pooled_primary_events_horizon": 642,
+   "pooled_primary_events_horizon_with_ecg": 464,
+   "pooled_deaths_horizon": 498,
+   "max_same_record_share_one_v16_cohort": null,
+   "patients_in_any_v16_cohort": 3562
+  }
+ },
+ "lodestar": {
+  "name": "LODESTAR (adapted): rosuvastatin vs atorvastatin in CAD",
+  "registry_name": "lodestar",
+  "status": "selected_for_build",
+  "reasons_not_built": [],
+  "arms": [
+   "rosuvastatin",
+   "atorvastatin"
+  ],
+  "arm_keywords": {
+   "rosuvastatin": [
+    "rosuvastatin",
+    "crestor"
+   ],
+   "atorvastatin": [
+    "atorvastatin",
+    "lipitor"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "any_before_or_on_index": [
+    "I20",
+    "I21",
+    "I22",
+    "I24",
+    "I25"
+   ]
+  },
+  "exclusions": {
+   "other_drugs_365d": [
+    "simvastatin",
+    "pravastatin",
+    "lovastatin",
+    "pitavastatin",
+    "fluvastatin",
+    "zocor"
+   ]
+  },
+  "min_age": 18,
+  "max_age": null,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "death",
+   "('hosp', ['I21', 'I22'])",
+   "('hosp', ['I60', 'I61', 'I63', 'I64'])"
+  ],
+  "rct_endpoint": "3-y death, MI, stroke or any coronary revascularisation",
+  "horizon_months": 36,
+  "rct_hr": 1.06,
+  "rct_ci": [
+   0.86,
+   1.3
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": "HR",
+  "rct_arms": "rosuvastatin vs atorvastatin",
+  "our_orientation": 1.06,
+  "citation": "Lee YJ et al. BMJ 2023;383:e075837 (PMID 37852649)",
+  "spec_version": "lodestar_adapted_v1",
+  "note": "coronary revascularisation (part of the trial composite) not captured",
+  "feasibility": {
+   "n_by_arm": {
+    "atorvastatin": 18137,
+    "rosuvastatin": 16895
+   },
+   "n_with_ecg_by_arm": {
+    "atorvastatin": 11323,
+    "rosuvastatin": 10954
+   },
+   "min_arm_with_ecg": 10954,
+   "pooled_primary_events_horizon": 6810,
+   "pooled_primary_events_horizon_with_ecg": 5103,
+   "pooled_deaths_horizon": 4247,
+   "max_same_record_share_one_v16_cohort": {
+    "cohort": "ontarget",
+    "share": 0.09
+   },
+   "patients_in_any_v16_cohort": 24495
+  }
+ },
+ "prove_it": {
+  "name": "PROVE IT-TIMI 22 (adapted): atorvastatin vs pravastatin after ACS",
+  "registry_name": "prove-it",
+  "status": "selected_for_build",
+  "reasons_not_built": [],
+  "arms": [
+   "atorvastatin",
+   "pravastatin"
+  ],
+  "arm_keywords": {
+   "atorvastatin": [
+    "atorvastatin",
+    "lipitor"
+   ],
+   "pravastatin": [
+    "pravastatin",
+    "pravachol"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "window_30d": [
+    "I21",
+    "I24",
+    "I200"
+   ]
+  },
+  "exclusions": {
+   "other_drugs_365d": [
+    "rosuvastatin",
+    "simvastatin",
+    "lovastatin",
+    "pitavastatin",
+    "fluvastatin",
+    "crestor",
+    "zocor"
+   ]
+  },
+  "min_age": 18,
+  "max_age": null,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "death",
+   "('hosp', ['I21', 'I22'])",
+   "('hosp', ['I200'])",
+   "('hosp', ['I60', 'I61', 'I63', 'I64'])"
+  ],
+  "rct_endpoint": "death, MI, UA rehospitalisation, revascularisation >= 30 d or stroke",
+  "horizon_months": 24,
+  "rct_hr": 0.84,
+  "rct_ci": [
+   0.74,
+   0.95
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": "HR (16% reduction, 95% CI 5-26%)",
+  "rct_arms": "atorvastatin 80 vs pravastatin 40",
+  "our_orientation": 0.84,
+  "citation": "Cannon et al. NEJM 2004;350:1495-504 (PMID 15007110)",
+  "spec_version": "prove_it_adapted_v1",
+  "note": "",
+  "feasibility": {
+   "n_by_arm": {
+    "atorvastatin": 4668,
+    "pravastatin": 714
+   },
+   "n_with_ecg_by_arm": {
+    "atorvastatin": 3848,
+    "pravastatin": 531
+   },
+   "min_arm_with_ecg": 531,
+   "pooled_primary_events_horizon": 1268,
+   "pooled_primary_events_horizon_with_ecg": 1116,
+   "pooled_deaths_horizon": 686,
+   "max_same_record_share_one_v16_cohort": {
+    "cohort": "plato",
+    "share": 0.35
+   },
+   "patients_in_any_v16_cohort": 4524
+  }
+ },
+ "paradise_mi": {
+  "status": "not_built",
+  "reasons_not_built": [
+   "v1.3 ext queue FAILED_FEASIBILITY: smaller arm (sacubitril/valsartan) with ECG = 296 < 300 (cohort 356 ARNI / 1,375 ACEi)"
+  ],
+  "rct_hr": 0.9,
+  "rct_ci": [
+   0.78,
+   1.04
+  ],
+  "citation": "Pfeffer et al. NEJM 2021 (PMID 34758252)",
+  "horizon_months": 22,
+  "feasibility": null
+ },
+ "dcp": {
+  "status": "not_built",
+  "reasons_not_built": [
+   "v1.3 ext queue FAILED_FEASIBILITY: smaller arm (chlorthalidone switchers) with ECG = 255 < 300 (cohort 441 / 1,764)"
+  ],
+  "rct_hr": 1.04,
+  "rct_ci": [
+   0.94,
+   1.16
+  ],
+  "citation": "Ishani et al. NEJM 2022",
+  "horizon_months": 29,
+  "feasibility": null
+ },
+ "invest": {
+  "status": "not_built",
+  "reasons_not_built": [
+   "v1.3 ext queue FAILED_FEASIBILITY: smaller arm (verapamil) with ECG = 224 < 300 (cohort 316 / 1,234)"
+  ],
+  "rct_hr": 0.98,
+  "rct_ci": [
+   0.9,
+   1.06
+  ],
+  "citation": "Pepine et al. JAMA 2003",
+  "horizon_months": 32,
+  "feasibility": null
+ },
+ "paragon_hf": {
+  "status": "excluded_previously_analysed",
+  "reasons_not_built": [
+   "built 2026-09-24 and analysed (phase-1 balance and phase-2 HR); results seen, so not a blind confirmation trial"
+  ],
+  "feasibility": null
+ },
+ "dapa_hf": {
+  "status": "excluded_previously_analysed",
+  "reasons_not_built": [
+   "DAPA-HF/EMPEROR-Reduced DPP-4i design built and analysed 2026-09-24 (phase 1 and 2); results seen"
+  ],
+  "feasibility": null
+ },
+ "partner": {
+  "status": "excluded_previously_analysed",
+  "reasons_not_built": [
+   "built and analysed 2026-09-24; results seen"
+  ],
+  "feasibility": null
+ },
+ "dionysos": {
+  "status": "excluded_previously_analysed",
+  "reasons_not_built": [
+   "built and balance-analysed 2026-09-24; outcome not emulable"
+  ],
+  "feasibility": null
+ },
+ "triton": {
+  "status": "not_built",
+  "reasons_not_built": [
+   "2026-09-24 FAILED_FEASIBILITY: smaller arm with ECG = 278"
+  ],
+  "feasibility": null
+ },
+ "engage_af": {
+  "status": "not_built",
+  "reasons_not_built": [
+   "v1.3: edoxaban arm 70 after gates (edoxaban ~150 persons ever ordered)"
+  ],
+  "feasibility": null
+ },
+ "castle_af": {
+  "status": "not_built",
+  "reasons_not_built": [
+   "v1.3: ablation arm 149 after gates"
+  ],
+  "feasibility": null
+ },
+ "topcat": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "placebo-controlled with no accepted active-comparator proxy for spironolactone in HFpEF"
+  ],
+  "feasibility": null
+ },
+ "hope3": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "placebo-controlled polypill/statin primary prevention; no active comparator"
+  ],
+  "feasibility": null
+ },
+ "credence": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "primary endpoint renal (ESKD, doubling of creatinine); CANVAS covers canagliflozin vs DPP-4i"
+  ],
+  "feasibility": null
+ },
+ "devote": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "degludec vs glargine not identifiable: generic insulin orders carry the token 'insulin' only"
+  ],
+  "feasibility": null
+ },
+ "averroes": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "aspirin largely OTC; trial population = VKA-unsuitable, not identifiable"
+  ],
+  "feasibility": null
+ },
+ "race": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "no HR reported for the primary endpoint (absolute difference); AFFIRM/AF-CHF cover the question"
+  ],
+  "feasibility": null
+ },
+ "empa_reg_emperor_reduced_alt": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "EMPEROR-Reduced/DELIVER re-use SGLT2i cohorts already analysed (DAPA-HF, EMPEROR-Preserved)"
+  ],
+  "feasibility": null
+ }
+}

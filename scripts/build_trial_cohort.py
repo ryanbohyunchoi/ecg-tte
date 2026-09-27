@@ -207,6 +207,13 @@ def main() -> None:
         apply(f"gate_first_{'_'.join(fcodes)}_within_{fdays}d", f"""EXISTS (SELECT 1 FROM cond x WHERE x.person_id = c.person_id
               AND x.idx = c.idx AND {code_like('x.code', fcodes)} AND x.d < c.idx - INTERVAL {fdays} DAY)""")
 
+    # v1.7 gate (default off): background therapy required, i.e. for each listed keyword group an order in
+    # [index-365, index] (index day allowed, so fixed-dose combinations started at index qualify)
+    for j, kws in enumerate(gate.get("require_drugs_365d", [])):
+        create_drug_tokens(con, G, kws, table=f"reqtok{j}", person_filter=cur)
+        apply(f"gate_require_drug_{kws[0]}_365d", f"""NOT EXISTS (SELECT 1 FROM reqtok{j} o WHERE o.person_id = c.person_id
+              AND o.d BETWEEN c.idx - INTERVAL 365 DAY AND c.idx)""")
+
     need_meas = [cid for key, cid in (("egfr_lt", 40764999), ("potassium_gt", 3023103), ("sbp_lt", 4152194)) if key in ex]
     if need_meas:
         con.execute(f"""CREATE TEMP TABLE meas AS SELECT person_id, measurement_concept_id cid, measurement_date,
