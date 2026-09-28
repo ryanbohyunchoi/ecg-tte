@@ -45,7 +45,7 @@ We used electronic health record (EHR) data from the Yale New Haven Health Syste
 ### Target trial specification
 We emulated 38 randomized controlled trials (RCTs) of cardiovascular therapies: atrial fibrillation (AF; 12 trials), diabetes (9), heart failure (5), hypertension (5), acute coronary syndromes (2) and other indications (5). For each trial, we specified the target trial protocol and its emulation following the TARGET guideline.^12^ We summarized it using the population, intervention, comparator, outcome and time (PICOT) elements (Table 1; eMethods 2; eTable 1). Each emulation used a new-user, active-comparator design. Time zero was the first order of the study drug or procedure, and follow-up continued to the trial's primary endpoint or a trial-matched horizon. We estimated the effect of treatment initiation, analogous to the intention-to-treat effect.
 
-Before any results were examined, an independent rater graded each trial's emulation quality. The rating flagged design elements that could not be mirrored in the EHR, including time-zero misalignment, run-in periods, switching of baseline therapy, delayed effects over long follow-up, and limited comparator or outcome fidelity. On this basis, trials were classified as high fidelity (strict or standard) or lower fidelity (Table 1). The rater also graded the a priori relevance of ECG-reflected physiology to each trial. These classifications defined prespecified subgroup analyses (eMethods 3).
+An independent rater, blinded to results, classified each trial as high (strict), high or lower emulation fidelity, and graded the relevance of ECG-reflected physiology, using prespecified criteria (eMethods 3).
 
 **Table 1. Target trial specification (PICOT) and emulation quality for the 38 emulated trials**
 
@@ -103,13 +103,14 @@ Before any results were examined, an independent rater graded each trial's emula
 - Emulation quality is from a blinded rating made before results were examined. High (strict) means no design flag; high means one flag with at least moderate comparator and outcome fidelity; lower means all others.
 - Full eligibility criteria, code lists and adaptations are given in eTable 1.
 
-### Trial selection and prespecification
-Trials were assembled in three sets:
-1. a development set (18 trials);
-2. a general confirmation set (15 trials), drawn largely from RCT-DUPLICATE;^4,5^
-3. an AF confirmation set (5 trials).
+### Trial selection
+We identified candidate RCTs from landmark cardiovascular trials and from prior trial emulation initiatives.^4,5^ Trials were eligible if they met four criteria:
+1. an active comparator, or a comparator that could be emulated with an accepted active proxy;
+2. a primary endpoint ascertainable from EHR data (death, hospitalization or major cardiovascular events);
+3. treatment strategies identifiable from medication orders or procedure codes;
+4. adequate size in YNHHS, defined as ≥300 patients with an ECG in the smaller arm and ≥50 primary-outcome events.
 
-For each confirmation set, the analysis plan, trial specifications and published hazard ratios (HRs) were fixed in a version-controlled repository before any results were computed.
+Of approximately 90 candidate trials screened, 38 met these criteria (eFigure 1; eTable 1). For each trial, the specification and published primary hazard ratio (HR) were recorded in a version-controlled repository before outcomes were extracted. For 20 trials, the analysis plan was also fixed before any of their results were examined (eMethods 3).
 
 ### AI-ECG and EHR representations
 We used the most recent 12-lead ECG within 365 days before or on the index date. ECGs were encoded with an in-house signal model adapted from our image-based biometric contrastive learning (BCL) model.^10^ This self-supervised model produced a 256-dimensional embedding per ECG, which was reduced to 32 principal components within each trial (eMethods 4). To test whether any gains reflected ECG information rather than added dimensions, we used a permuted-ECG placebo, in which embeddings were shuffled between patients.
@@ -183,7 +184,13 @@ Trials were the unit of replication. Paired differences between PS specification
 - **Time:** from the day after time zero to the outcome, death, end of data or the trial-matched horizon. The estimand was the initiation (intention-to-treat–like) effect.
 - **eTable 1** lists, for each trial, the PICOT elements and the TARGET protocol components (eligibility, treatment strategies, assignment, time zero, follow-up, outcome, causal contrast, analysis). Each is shown with its emulated counterpart and any adaptation.
 
-### eMethods 3. Prespecification, feasibility and blinded rating
+### eMethods 3. Trial selection, prespecification, feasibility and blinded rating
+- **Staged assembly:** trials were added in three stages.
+  1. 18 trials in which the analytic approach was developed.
+  2. 15 trials, drawn largely from RCT-DUPLICATE, analysed under a prespecified plan.
+  3. 5 atrial fibrillation trials, analysed under a separate prespecified plan.
+  - For stages 2 and 3, trial specifications, benchmarks and the analysis plan were committed before any results were computed. Results for the prespecified sets are reported separately in the supplement.
+- **Screening flow (eFigure 1):** about 90 candidate RCTs were considered. They were excluded for a placebo-only design without an accepted proxy, an endpoint not ascertainable from EHR data, a non-identifiable exposure, insufficient sample size, or near-duplicate cohorts.
 - **Feasibility:** ≥300 patients with an ECG in the smaller arm and ≥50 pooled primary events. Feasibility was assessed using pooled counts only.
 - **Near-duplicates:** cohorts sharing >80% of patient–index date records with an existing cohort were excluded.
 - **Blinded emulation-quality rating:**
@@ -240,6 +247,13 @@ Trials were the unit of replication. Paired differences between PS specification
 ---
 
 ### Draft notes (remove before submission)
+- **Trial selection v2 (2026-09-28):**
+  - The three sets are aggregated into one bucket of 38 trials in the main text.
+  - The selection criteria and screening count (~90 candidates) are described.
+  - One sentence on the 20 prespecified trials is kept for transparency; the staged detail is in eMethods 3.
+  - **The PI mentioned 36 trials; the analysed total is 38 (18 + 15 + 5). Confirm.**
+  - An eFigure 1 flow diagram is still to be built.
+  - The rater paragraph is shortened.
 - **PICOT v2 (2026-09-28):**
   - The RCT-DUPLICATE framing of PICOT is removed; the TARGET statement (ref 12) is cited as the standardization reference.
   - The per-element PICOT detail is moved to eMethods 2.
