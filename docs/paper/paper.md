@@ -58,7 +58,7 @@ To characterize emulation quality, each selected trial was classified as high (s
 ### AI-ECG and EHR representations
 We used the most recent 12-lead ECG within 365 days before or on the index date. ECGs were encoded with an in-house signal model adapted from our image-based biometric contrastive learning (BCL) model.^10^ This self-supervised model produced a 256-dimensional embedding per ECG, which was reduced to 32 principal components within each trial (eMethods 4). To test whether any gains reflected ECG information rather than added dimensions, we used a permuted-ECG placebo, in which embeddings were shuffled between patients.
 
-For comparison, we used CLMBR-T-base, a structured-EHR foundation model.^11^ We applied it to each patient's coded history before the index date and reduced its output to 64 principal components.
+*For comparison, we used CLMBR-T-base, a structured-EHR foundation model.^11^ We applied it to each patient's coded history before the index date and reduced its output to 64 principal components.*
 
 ### Propensity scores and matching
 The primary propensity score (PS) included demographics only (age, sex and calendar year). We also evaluated progressively richer specifications:
@@ -67,7 +67,7 @@ The primary propensity score (PS) included demographics only (age, sex and calen
 - a high-dimensional PS;^6^
 - a clinical PS including vital signs, laboratory values and ejection fraction.
 
-Each specification was fitted with and without the ECG and CLMBR-T representations and the placebo. Patients were matched 1:1 on the PS logit using nearest-neighbour matching with a caliper of 0.2 SD (eMethods 5).
+Each specification was fitted with and without the ECG representation (*and the CLMBR-T representation*) and the placebo. Patients were matched 1:1 on the PS logit using nearest-neighbour matching with a caliper of 0.2 SD (eMethods 5).
 
 ### Outcomes
 The primary balance outcome was the proportion of 58 held-out characteristics with an absolute standardized mean difference (SMD) <0.1. None of these characteristics were included in the PS under evaluation. They comprised medication, utilization and coded-record summaries; vital signs; laboratory values including NT-proBNP; and 35 echocardiographic measures (eTable 2). An expanded panel of about 400 characteristics was used in sensitivity analyses.
@@ -211,7 +211,7 @@ Trials were the unit of replication. Paired differences between PS specification
 - **ECG model:** a transformer encoder applied to 12-lead signals and trained in-house with the BCL objective of the published image-based model.^10^ [Add architecture and training-data details.]
 - **Embeddings:** the frozen encoder produced 256-dimensional embeddings, from which the first 32 principal components were computed within each trial.
 - **Placebos:** a permuted-ECG placebo (embeddings reassigned at random between patients within each cohort) and a noise placebo of independent Gaussian variables of the same dimension.
-- **CLMBR-T-base:** a 141-million-parameter model pretrained on the structured EHR data of 2.57 million patients at Stanford.^11^ It was applied frozen to pre-index coded history, producing 768-dimensional representations reduced to 64 principal components.
+- ***CLMBR-T-base:** a 141-million-parameter model pretrained on the structured EHR data of 2.57 million patients at Stanford.^11^ It was applied frozen to pre-index coded history, producing 768-dimensional representations reduced to 64 principal components.*
 
 ### eMethods 5. Propensity score specifications
 - **Five-diagnosis PS:** hypertension, type 2 diabetes, coronary artery disease, AF and heart failure.
@@ -243,17 +243,20 @@ Trials were the unit of replication. Paired differences between PS specification
   3. sparse PS matching;
   4. high-dimensional PS matching;
   5. clinical PS matching.
-- **Enrichment:** the cross-fitted AI-ECG risk score for each trial's primary outcome was compared with clinical and CLMBR-T scores. Sample-size reduction was estimated from enrolment of patients in the top quartile of predicted risk.
+- ***Enrichment:** the cross-fitted AI-ECG risk score for each trial's primary outcome was compared with clinical and CLMBR-T scores. Sample-size reduction was estimated from enrolment of patients in the top quartile of predicted risk.*
 
 ### eMethods 9. Statistical software
 - **Core analyses:** Python 3.11.16, with pandas 2.3.3, NumPy 2.4.6, DuckDB 1.5.5, scikit-learn 1.9.1, lifelines 0.30.3, SciPy 1.17.1, statsmodels 0.15.0 and matplotlib 3.11.2.
 - **ECG embeddings:** PyTorch 2.5.0.
-- **CLMBR-T representations:** PyTorch 2.13.0 and FEMR 0.2.3.
+- ***CLMBR-T representations:** PyTorch 2.13.0 and FEMR 0.2.3.*
 - **Tests:** one-sided where the direction was prespecified; two-sided otherwise.
 
 ---
 
 ### Draft notes (remove before submission)
+- **CLMBR-T (2026-09-28):**
+  - Every CLMBR-T passage is *italicized* to mark it as tentative; the PI has not yet decided whether to include it.
+  - If it is dropped, delete the italic passages, ref 11 and the FEMR software entry.
 - **Candidate count (2026-09-28): 99 individual RCTs.**
   - These are the unique trials across `trial_specs.py`, `docs/v17/candidates.json` and `docs/v18/af_candidates.json`.
   - Design variants of the same RCT are collapsed.
