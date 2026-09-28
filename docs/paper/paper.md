@@ -1,10 +1,31 @@
 # AI-enhanced electrocardiography as a phenotypic probe of confounding in target trial emulation: an evaluation across 38 cardiovascular trials
 
-*Working draft; last updated 2026-09-28. Sections are added in order. Draft notes are marked and must be removed before submission.*
+**Subtitle (JAMA requirement):** *A Comparative Effectiveness Study Using Target Trial Emulation* [confirm the study-type label with the editorial office]
+
+**Target journal:** JAMA Cardiology, Original Investigation.
+- **Limits:**
+  - main text ≤3,000 words;
+  - structured abstract ≤350 words;
+  - ≤5 tables and figures combined;
+  - 50–75 references;
+  - Key Points (Question / Findings / Meaning, ≤100 words);
+  - a data sharing statement;
+  - EQUATOR reporting (STROBE; the TARGET guideline for target trial emulation).
+- **Supplement:** eMethods, eTables and eFigures.
+
+*Working draft; last updated 2026-09-28. Draft notes are marked and must be removed before submission.*
+
+## Key Points
+
+**Question:** *(to write)*
+
+**Findings:** *(to write)*
+
+**Meaning:** *(to write)*
 
 ## Abstract
 
-*(to be written last)*
+*(to be written last; JAMA structure: Importance; Objective; Design, Setting, and Participants; Exposures; Main Outcomes and Measures; Results; Conclusions and Relevance; ≤350 words)*
 
 ## Introduction
 
