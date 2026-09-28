@@ -50,7 +50,8 @@ CATS = [("AF", "Atrial fibrillation"), ("HF", "Heart failure"), ("HTN", "Hyperte
         ("DM", "Diabetes"), ("Other", "Other")]
 
 
-def _sf(d, rng=np.random.default_rng(0)):
+def _sf(d):
+    rng = np.random.default_rng(0)
     d = np.asarray(d, float)
     d = d[np.isfinite(d)]
     if len(d) <= 20:
@@ -170,9 +171,35 @@ def panel_d(arms):
     save(fig, "fig_D_loveplot_unmatched")
 
 
+def panel_e(arms):
+    """Panel A with the unmatched comparison (gray) in place of the permuted-ECG placebo."""
+    plt.rcParams.update({"font.size": 11})
+    fig, ax = plt.subplots(figsize=(5.2, 5.2))
+    y = np.arange(len(DOMS))[::-1]
+    for i, (g, lab) in enumerate(DOMS):
+        c = f"mean_smd_g:{g}"
+        u, b, e = (arms[r][c].median() for r in ("unmatched", "base", "ECG"))
+        p = _sf((arms["ECG"][c] - arms["base"][c]).values)
+        ax.plot([b, e], [y[i]] * 2, color="#2b8a3e", lw=2.2, zorder=2)
+        ax.scatter(u, y[i], marker="X", color=C_SHUF, s=70, zorder=3, label="Unmatched" if i == 0 else None)
+        ax.scatter(b, y[i], color=C_BASE, s=70, zorder=4, edgecolors="white", label="Demographic PS" if i == 0 else None)
+        ax.scatter(e, y[i], color=C_ECG, s=70, zorder=5, edgecolors="white", label="+ ECG embedding" if i == 0 else None)
+        ax.text(max(u, b) + 0.006, y[i], _pstr(p), va="center", fontsize=9, color="#444")
+    ax.set_yticks(y)
+    ax.set_yticklabels([lab for _, lab in DOMS])
+    ax.set_xlim(0.06, 0.22)
+    ax.set_xlabel("Mean |SMD| (median across 38 trials)")
+    ax.set_title("E  Balance on held-out characteristics", loc="left", fontweight="bold", fontsize=12, pad=24)
+    ax.legend(loc="lower center", bbox_to_anchor=(0.45, 1.0), ncol=3, fontsize=8, frameon=False, handletextpad=0.3, columnspacing=1.0)
+    ax.text(0.0, -0.2, "p: + ECG vs demographic PS (sign-flip across 38 trials).\nAll 58 variables: share with |SMD|<0.1 51% → 57%. No gain for other labs or valves.",
+            transform=ax.transAxes, fontsize=8.5, color="#444", va="top")
+    save(fig, "fig_E_loveplot_unmatched")
+
+
 if __name__ == "__main__":
     arms = load()
     panel_a(arms)
     panel_b(arms)
     panel_c()
     panel_d(arms)
+    panel_e(arms)
