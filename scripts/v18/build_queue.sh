@@ -11,15 +11,15 @@ TH=8
 waitgpu(){ while true; do u=$(nvidia-smi -i $1 --query-gpu=memory.used --format=csv,noheader,nounits); [ "$u" -lt 1000 ] && return; sleep 60; done; }
 one(){ N=$1; T=$2; G1=$3; G2=$4; C=$A/claude-$N-cohort-v1; ROSTER=$C/restricted_cohort.parquet; L=$Q/logs/$N; mkdir -p $L
   say "$N start"
-  $PY build_trial_cohort.py --trial $T --threads $TH --output-dir $C > $L/cohort.log 2>&1 || { say "$N cohort FAILED"; return; }
-  $PY build_core_baseline.py --trial $T --roster $ROSTER --threads $TH --output-dir $A/claude-$N-baseline-v11 > $L/baseline.log 2>&1 || { say "$N baseline FAILED"; return; }
-  $PY build_preindex_panel.py --cohort-csv $ROSTER --omop-root /mnt/raid0/rbc58/omop/gold --threads $TH --output-dir $A/claude-$N-panel-v2 > $L/panel.log 2>&1 || { say "$N panel FAILED"; return; }
-  $PY select_cohort_ecgs.py select --cohort $ROSTER --output-dir $A/claude-$N-bcl/input > $L/select.log 2>&1 || { say "$N select FAILED"; return; }
+  [ -d $C ] || $PY build_trial_cohort.py --trial $T --threads $TH --output-dir $C > $L/cohort.log 2>&1 || { say "$N cohort FAILED"; return; }
+  [ -d $A/claude-$N-baseline-v11 ] || $PY build_core_baseline.py --trial $T --roster $ROSTER --threads $TH --output-dir $A/claude-$N-baseline-v11 > $L/baseline.log 2>&1 || { say "$N baseline FAILED"; return; }
+  [ -d $A/claude-$N-panel-v2 ] || $PY build_preindex_panel.py --cohort-csv $ROSTER --omop-root /mnt/raid0/rbc58/omop/gold --threads $TH --output-dir $A/claude-$N-panel-v2 > $L/panel.log 2>&1 || { say "$N panel FAILED"; return; }
+  [ -d $A/claude-$N-bcl/input ] || $PY select_cohort_ecgs.py select --cohort $ROSTER --output-dir $A/claude-$N-bcl/input > $L/select.log 2>&1 || { say "$N select FAILED"; return; }
   waitgpu $G1; say "$N BCL on GPU $G1"
   ( CUDA_VISIBLE_DEVICES=$G1 $BCL/env/bin/python bcl_embed_uv.py --upstream-dir $BCL/upstream -- --checkpoint-path $CK \
     --input-file $A/claude-$N-bcl/input/restricted_input.csv --formats-csv $A/claude-$N-bcl/input/restricted_formats_no250.csv \
     --data-roots /mnt/raid0/bb2238/signals/preprocessed/all_ecgs --output-dir $A/claude-$N-bcl/embeddings --batch-size 64 \
-    --num-workers 8 --shard-size 512 --no-quality-filter --no-deduplicate --no-partial --no-amp --no-overwrite \
+    --num-workers 4 --shard-size 512 --no-quality-filter --no-deduplicate --no-partial --no-amp --no-overwrite \
     --no-ddp-autodetect > $A/claude-$N-bcl/run.log 2>&1 ) & PB=$!
   ( mkdir $SH/claude-$N-meds-v2 && $PY build_comet_meds.py --source-report $C --gold-root /mnt/raid0/rbc58/omop/gold \
       --concept /mnt/raid0/rbc58/mosaic/mapping/CONCEPT.csv --output-dir $SH/claude-$N-meds-v2/meds > $SH/claude-$N-meds-v2/build.log 2>&1
@@ -49,13 +49,14 @@ one(){ N=$1; T=$2; G1=$3; G2=$4; C=$A/claude-$N-cohort-v1; ROSTER=$C/restricted_
   $PY v16/s5_nco_extract.py --trials $N --threads $TH --out $A/claude-v18-s5-nco/extract > $L/s5_nco.log 2>&1 || say "$N s5-nco FAILED"
   say "$N built"; }
 git -C /home/rbc58/github/ecg-tte rev-parse HEAD > $Q/code-commit.txt
-# usage: build_queue.sh "n1:key1 n2:key2" "n3:key3 ..." G1 G2 G3 G4   (two chains; GPUs checked idle before each use)
+# usage: build_queue.sh "n1:key1 n2:key2" "n3:key3 ..." G1 G2 G3 G4 ["all trial names"]   (two chains; GPUs checked idle before each use)
+# resumable: pre-BCL steps whose output directory exists are skipped (a queue stopped while waiting for a GPU)
 L1="$1"; L2="$2"; GA=$3; GB=$4; GC=$5; GD=$6
 ( for s in $L1; do IFS=: read N T <<< "$s"; one $N $T $GA $GB; done ) &
 ( for s in $L2; do IFS=: read N T <<< "$s"; one $N $T $GC $GD; done ) &
 wait; say "PER-TRIAL DONE"
 # held-out covariate panels (blind: no by-arm summaries / SMD)
-ALL=$(for s in $L1 $L2; do echo -n "${s%%:*} "; done)
+ALL=${7:-$(for s in $L1 $L2; do echo -n "${s%%:*} "; done)}  # optional 7th arg: all trials for the covars builders (resume)
 $PY v16/build_v16_covars.py --threads 16 --trials $ALL --out $A/claude-v18-covars --blind > $Q/logs/covars.log 2>&1 || say "covars FAILED"
 $PY v16/build_v16_covars2.py --threads 16 --trials $ALL --out $A/claude-v18-covars2b --blind > $Q/logs/covars2b.log 2>&1 || say "covars2b FAILED"
 say "ALL DONE"; touch $Q/BUILD_DONE

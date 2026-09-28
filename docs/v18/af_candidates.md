@@ -123,5 +123,44 @@ Five AF trials meet every rule and were selected for build: FRAIL-AF, LAAOS III,
   - Clopidogrel initiators in AF without recent ACS or stent are a selected group.
   - 69% of the records are identical to the RE-LY cohort (its warfarin arm). This is flagged, not excluded.
 
-## Build status
-Pending: this section is filled in after the build.
+## Build status (2026-09-28)
+All five selected trials were built after the registry commit `91cc8a3`. The specs had been registered earlier, in `6221162`. The queue is `scripts/v18/build_queue.sh`, which is `scripts/v17/build_queue.sh` with v1.8 paths, 4 BCL workers, and resumable pre-GPU steps.
+
+**Run history.** The first run had to be stopped: GPU 2 was taken by another job, and the queue sat waiting for it. It was resumed on idle GPUs 3/5/7. Every GPU was checked idle immediately before use.
+
+**Pipeline per trial:**
+- cohort v1;
+- core baseline v11;
+- panel v2;
+- ECG selection, BCL, link;
+- phenotype heads;
+- CLMBR code-only;
+- prognostic reference and scores v3;
+- physiology panel v11;
+- outcomes v1, v13 and HF v14;
+- S5 NCOs (`claude-v18-s5-nco/extract`).
+
+**Across the five trials:**
+- covars → `claude-v18-covars`;
+- covars2b → `claude-v18-covars2b`;
+- both run with `--blind`.
+
+**Not run:** no grid, no `run_phase2`, no `run_cell`, no PS, matching, balance or HR.
+
+**Verification.** `scripts/v18/verify_ready.py` (`E.load_trial(n, cache=False)`) writes `/mnt/raid0/rbc58/ecg-tte/audits/claude-v18-trials/<trial>.READY`. All 5 are READY.
+
+| trial | analysis n | arms (treated / comparator) | held-out VARS | horizon (d) |
+|---|---|---|---|---|
+| frail-af | 3,714 | 797 / 2,917 | 58/58 | 365 |
+| laaos3 | 2,621 | 511 / 2,110 | 58/58 | 1,400 |
+| protect-af | 1,442 | 314 / 1,128 | 58/58 | 548 |
+| raft-af | 3,003 | 614 / 2,389 | 58/58 | 1,096 |
+| active-w | 3,139 | 1,076 / 2,063 | 58/58 | 457 |
+
+**Paths for the Plan A runner:**
+- covars: `audits/claude-v18-covars/<trial>.parquet`;
+- covars2b: `audits/claude-v18-covars2b/<trial>.parquet`;
+- NCOs: `audits/claude-v18-s5-nco/extract/restricted_nco_<trial>.parquet`;
+- everything else: `claude-<trial>-*`.
+
+`v17_confirm.py` reads the v1.7 directories for `V17` trials, so the v1.8 trials need these paths passed in (Plan A says the code path stays unchanged; only the trial list and paths differ).
