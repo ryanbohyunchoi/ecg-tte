@@ -268,3 +268,8 @@ There are no deviations in analysis choices. The implementation notes below are 
 - **Consistency with the RCT is high even without the ECG** (P1 4/5, P5 5/5). The new trials' RCT benchmarks have wide intervals, which leaves little room to improve consistency.
 - **Multiplicity.** The secondary endpoints are reported without correction, per the plan.
 - **Privacy.** Aggregates only; no counts are shown. The analysed matched-pair counts all exceed 10.
+
+
+## Round-4 audit corrections (2026-09-28; docs/v18/AUDIT_ROUND4.md §7)
+- AF-12 balance: ECG improves covars2b balance beyond both placebos, and improves 58-panel balance beyond noise32. On the 58-panel it does not beat shufECG (p = 0.11).
+- AF-12 includes the 7 discovery trials, and its cluster p is at the floor.

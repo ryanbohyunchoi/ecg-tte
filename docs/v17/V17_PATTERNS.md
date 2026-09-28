@@ -73,3 +73,13 @@
 - **HTN (P1) and blinded high relevance.** The gains are significant and beat placebo, but they are not trial-specific, i.e. generic shrinkage.
 - **HF (P2).** The gain is trial-specific but not placebo-specific.
 - **Diabetes and ACS.** No emulation gain.
+
+
+## Round-4 audit corrections (2026-09-28; docs/v18/AUDIT_ROUND4.md §7)
+- **The AF pattern did not replicate in the prespecified v1.8 confirmation** (docs/v18/AF_CONFIRMATION_RESULTS.md: 3/5 closer, p = 0.19; worse with P5).
+- The AF-7 shuffled-RCT p depends on the benchmark pool:
+  - 0.096 within the 7 trials;
+  - 0.032 with 33 RCTs;
+  - 0.063 with 38 RCTs.
+- The "high ECG relevance" class was prespecified, but the test comparing it was not. Its shuffled-RCT p = 0.43 (generic).
+- Code for these tables: `scripts/v17/v17_patterns.py`.

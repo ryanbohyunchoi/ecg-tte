@@ -70,3 +70,8 @@ Code: `scripts/v16/s10_demo6.py` and `s10_summarize.py`. Aggregates are in `clau
 - **Balance gain by emulation quality:** mean +2.1 pp in the 5 "close" emulations and +4.2 pp in the 13 not close.
 - **Balance gain vs gain in |Δ|:** not correlated across trials (Spearman ρ = 0.12, p = 0.63).
 - **Reminder (placebo):** the |Δ| improvement is reproduced by shuffled ECG (ECG vs shufECG p = 0.96), so the per-trial movement toward the RCT is not attributable to ECG information.
+
+
+## Round-4 audit corrections (2026-09-28; docs/v18/AUDIT_ROUND4.md §7)
+- Per-trial table summary: consistency with the RCT is **10/18 → 12/18**, not 11 → 13.
+- The p-values in this file are two-sided unless stated otherwise.

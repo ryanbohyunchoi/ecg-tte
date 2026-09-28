@@ -346,3 +346,9 @@ Set = new15 (confirmation), all33, or old18 (v1.6 reference). Arm columns are ac
 | amplify | 0.84 | no | low | C_SINGLE_amplify | 0.67 / 0.72 (0.13) | 0.220 / 0.153 | 36.2 / 56.9 | 0.75 / 0.77 (0.12) | 0.107 / 0.087 | 56.9 / 48.3 |
 | lodestar | 1.06 | no | medium | C_STATIN_CAD | 1.09 / 0.91 (0.05) | 0.030 / 0.157 | 72.4 / 93.1 | 0.93 / 0.90 (0.05) | 0.133 / 0.164 | 89.7 / 91.4 |
 | prove-it | 0.84 | no | medium | C_STATIN_CAD | 1.17 / 1.07 (0.11) | 0.335 / 0.240 | 43.9 / 43.9 | 1.15 / 1.11 (0.10) | 0.310 / 0.277 | 43.1 / 46.6 |
+
+
+## Round-4 audit corrections (2026-09-28; docs/v18/AUDIT_ROUND4.md §7)
+- AFFIRM/EAST-AFNET 4 overlap: 48% of AFFIRM persons are in the EAST-AFNET 4 cohort (25% with the same index date). It is not "most records".
+- Patient-level overlap beyond the identical-record rule: ACTIVE W–ARISTOTLE 78% and INSIGHT–ALLHAT 79%.
+- The v1.7 count-only feasibility screen (pooled events) ran before the registration commit. No effect information was involved.

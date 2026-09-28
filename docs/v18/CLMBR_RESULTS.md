@@ -1775,3 +1775,9 @@
 | amplify | Other | 0.84 | 53.70 | 59.26 | 44.44 | 55.56 | 53.70 | 0.75 | 0.76 | 0.77 | 0.67 | 0.11 | 0.09 | 0.09 | 0.22 |
 | lodestar | Other | 1.06 | 88.89 | 87.04 | 90.74 | 85.19 | 87.04 | 0.93 | 0.97 | 0.90 | 0.99 | 0.13 | 0.09 | 0.16 | 0.07 |
 | prove-it | Other | 0.84 | 40.74 | 44.44 | 42.59 | 50.00 | 49.06 | 1.15 | 1.12 | 1.11 | 1.11 | 0.31 | 0.29 | 0.28 | 0.28 |
+
+
+## Round-4 audit corrections (2026-09-28; docs/v18/AUDIT_ROUND4.md §7)
+- Bottom line on AF: the AF ECG signal was exploratory (shuffle p 0.03–0.10 depending on pool) and **failed prespecified confirmation in 5 new AF trials**.
+- Retention: CLMBR matched 93% of base pairs. On the common matched population, its non-coded balance gain is +7.6 pp (vs +8.4).
+- CLMBR vs ECG tests are two-sided. This deviates from the plan's one-sided tests in the conservative direction.
