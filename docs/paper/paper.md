@@ -40,61 +40,55 @@ Here, we evaluated whether AI-ECG embeddings capture confounding missed by struc
 ## Methods
 
 ### Data sources
-We used electronic health record (EHR) data from the Yale New Haven Health System (YNHHS), a large academic health system in Connecticut and Rhode Island. We mapped the structured EHR data to the Observational Medical Outcomes Partnership (OMOP) common data model ourselves. We linked these data to structured echocardiography reports, raw 12-lead ECG signals and state vital statistics records (eMethods 1). We included patients with index dates from 2011 through 2024. The Yale Institutional Review Board approved the study (protocol number [ ]) and waived informed consent for this secondary analysis of existing data.
+We used electronic health record (EHR) data from the Yale New Haven Health System (YNHHS), a large academic health system in Connecticut. We mapped the structured EHR data to the Observational Medical Outcomes Partnership (OMOP) common data model ourselves. We linked these data to structured echocardiography reports, raw 12-lead ECG signals and state vital statistics records (eMethods 1). We included patients with index dates from 2011 through 2024. The Yale Institutional Review Board approved the study (protocol number [ ]) and waived informed consent for this secondary analysis of existing data.
 
 ### Target trial specification
-We emulated 38 randomized controlled trials (RCTs) of cardiovascular therapies: atrial fibrillation (AF; 12 trials), diabetes (9), heart failure (HF; 5), hypertension (5), acute coronary syndromes (2) and other indications (5). For each trial we specified a target trial protocol following the PICOT framework used by RCT-DUPLICATE (population, intervention, comparator, outcome and time) and the target trial emulation framework.^3,5^ Each component of the RCT was mapped to its closest counterpart in the EHR (Table 1; eTable 1).
+We emulated 38 randomized controlled trials (RCTs) of cardiovascular therapies: atrial fibrillation (AF; 12 trials), diabetes (9), heart failure (5), hypertension (5), acute coronary syndromes (2) and other indications (5). For each trial, we specified the target trial protocol and its emulation following the TARGET guideline.^12^ We summarized it using the population, intervention, comparator, outcome and time (PICOT) elements (Table 1; eMethods 2; eTable 1). Each emulation used a new-user, active-comparator design. Time zero was the first order of the study drug or procedure, and follow-up continued to the trial's primary endpoint or a trial-matched horizon. We estimated the effect of treatment initiation, analogous to the intention-to-treat effect.
 
-- **Population.** Patients who met the trial's key eligibility criteria as operationalized from structured data, for example documented AF, HF or type 2 diabetes with established cardiovascular disease. All patients were aged ≥18 years (or the trial's minimum age) and had ≥365 days of prior EHR activity. Trial exclusion criteria that could be ascertained from structured data were applied.
-- **Intervention and comparator.** New users of the trial's intervention were compared with new users of the trial's comparator (new-user, active-comparator design).
-  - Time zero was the first order of the study drug or procedure, with no order of the comparator in the preceding 365 days.
-  - Where the trial tested adding or switching to a therapy against continuing existing treatment (for example rhythm control added to rate control, or switching from warfarin), we used a sequential design with time zero at the switch or addition.
-  - For placebo-controlled trials, an active comparator with no expected effect on the outcome served as a proxy for placebo, following RCT-DUPLICATE (for example dipeptidyl peptidase-4 inhibitors in trials of glucose-lowering drugs).^5^
-- **Outcome.** The trial's primary endpoint, mapped to EHR events. Hospitalization components required a qualifying diagnosis during an inpatient stay. Cardiovascular death was defined from listed causes of death.
-- **Time.** Follow-up began the day after time zero and continued until the outcome, death, end of available data or a horizon matched to the trial's follow-up, whichever came first. We estimated the effect of treatment initiation, analogous to the intention-to-treat effect.
+Before any results were examined, an independent rater graded each trial's emulation quality. The rating flagged design elements that could not be mirrored in the EHR, including time-zero misalignment, run-in periods, switching of baseline therapy, delayed effects over long follow-up, and limited comparator or outcome fidelity. On this basis, trials were classified as high fidelity (strict or standard) or lower fidelity (Table 1). The rater also graded the a priori relevance of ECG-reflected physiology to each trial. These classifications defined prespecified subgroup analyses (eMethods 3).
 
-**Table 1. Target trial specification (PICOT) for the 38 emulated trials**
+**Table 1. Target trial specification (PICOT) and emulation quality for the 38 emulated trials**
 
-| Set | Trial | Population | Intervention | Comparator | Outcome (RCT primary endpoint) | Time (mo) | RCT HR (95% CI) |
-|---|---|---|---|---|---|---|---|
-| Development | COMET | HF | carvedilol | metoprolol | all-cause mortality | 58 | 0.83 (0.74–0.93) |
-| Development | PARADIGM-HF | HF on ACEi/ARB (switch at time zero) | sacubitril-valsartan | ACEi | CV death or first HF hospitalisation | 27 | 0.80 (0.73–0.87) |
-| Development | TRANSFORM-HF | HF hospitalisation (discharge within 30 d) | torsemide | furosemide | all-cause mortality | 12 | 1.02 (0.89–1.18) |
-| Development | ELITE II | HF, age ≥60 | ARB | ACEi | all-cause mortality | 18 | 1.13 (0.95–1.35) |
-| Development | LIFE | Hypertension with ECG-LVH, age 55–80 | ARB | β-blocker | CV death, MI or stroke | 58 | 0.87 (0.77–0.98) |
-| Development | PLATO | ACS within 30 d | ticagrelor | clopidogrel | vascular death, MI or stroke | 12 | 0.84 (0.77–0.92) |
-| Development | ARISTOTLE | AF | apixaban | warfarin | stroke or systemic embolism | 22 | 0.79 (0.66–0.95) |
-| Development | ROCKET-AF | AF | rivaroxaban | warfarin | stroke or systemic embolism | 23 | 0.88 (0.74–1.03) |
-| Development | RE-LY | AF | dabigatran | warfarin | stroke or systemic embolism | 24 | 0.66 (0.53–0.82) [RR] |
-| Development | ALLHAT | Hypertension, age ≥55 | amlodipine | thiazide | fatal CHD or nonfatal MI | 59 | 0.98 (0.90–1.07) [RR] |
-| Development | EMPEROR-Preserved | HF with T2D | SGLT2i | DPP-4i (placebo proxy) | CV death or HF hospitalisation | 26 | 0.79 (0.69–0.90) |
-| Development | EAST-AFNET 4 | Early AF (diagnosis ≤1 y) on rate control | rhythm-control drug added | continued rate control | CV death, stroke, HF or ACS hospitalisation | 61 | 0.79 (0.66–0.94) |
-| Development | CABANA | AF | catheter ablation | antiarrhythmic drug | death, disabling stroke, serious bleeding or cardiac arrest | 49 | 0.86 (0.65–1.15) |
-| Development | ONTARGET | Established vascular disease or high-risk diabetes, age ≥55 | ARB | ACEi | CV death, MI, stroke or HF hospitalisation | 56 | 1.01 (0.94–1.09) [RR] |
-| Development | VALUE | Hypertension, age ≥50 | ARB | amlodipine | cardiac morbidity and mortality composite | 50 | 1.04 (0.94–1.15) |
-| Development | ASCOT-BPLA | Hypertension, age 40–79 | amlodipine | β-blocker | nonfatal MI and fatal CHD | 66 | 0.90 (0.79–1.02) |
-| Development | EMPA-REG OUTCOME | T2D with established CVD | SGLT2i | DPP-4i (placebo proxy) | 3-point MACE | 37 | 0.86 (0.74–0.99) |
-| Development | CAROLINA | T2D | linagliptin | glimepiride | 3-point MACE | 76 | 0.98 (0.84–1.14) |
-| Confirmation (general) | LEADER | T2D with CVD, age ≥50 | liraglutide | DPP-4i (placebo proxy) | CV death, nonfatal MI or nonfatal stroke | 46 | 0.87 (0.78–0.97) |
-| Confirmation (general) | SUSTAIN-6 | T2D with CVD, age ≥50 | semaglutide | DPP-4i (placebo proxy) | CV death, nonfatal MI or nonfatal stroke | 25 | 0.74 (0.58–0.95) |
-| Confirmation (general) | REWIND | T2D, age ≥50 | dulaglutide | DPP-4i (placebo proxy) | nonfatal MI, nonfatal stroke or CV death (incl. unknown causes) | 65 | 0.88 (0.79–0.99) |
-| Confirmation (general) | DECLARE-TIMI 58 | T2D, age ≥40 | dapagliflozin | DPP-4i (placebo proxy) | CV death or HF hospitalisation | 50 | 0.83 (0.73–0.95) |
-| Confirmation (general) | CANVAS Program | T2D, age ≥30 | canagliflozin | DPP-4i (placebo proxy) | CV death, nonfatal MI or nonfatal stroke | 43 | 0.86 (0.75–0.97) |
-| Confirmation (general) | TECOS | T2D with CVD, age ≥50 | sitagliptin | sulfonylurea (placebo proxy) | CV death, nonfatal MI, nonfatal stroke or UA hospitalisation | 36 | 0.98 (0.88–1.09) |
-| Confirmation (general) | CARMELINA | T2D with kidney disease | linagliptin | sulfonylurea (placebo proxy) | CV death, nonfatal MI or nonfatal stroke | 26 | 1.02 (0.89–1.17) |
-| Confirmation (general) | VALIANT | MI within 30 d | ARB | ACEi | all-cause death | 25 | 1.00 (0.90–1.11) |
-| Confirmation (general) | INSIGHT | High-risk hypertension, age ≥55 | nifedipine | thiazide | CV death, MI, HF or stroke | 42 | 1.10 (0.91–1.34) [RR] |
-| Confirmation (general) | AFFIRM | AF on rate control, age ≥65 | rhythm-control drug added | continued rate control | all-cause death | 42 | 1.15 (0.99–1.34) |
-| Confirmation (general) | AF-CHF | AF with HF on rate control | rhythm-control drug added | continued rate control | CV death | 37 | 1.06 (0.86–1.30) |
-| Confirmation (general) | PRECISION | Arthritis with CV risk | celecoxib | naproxen | CV death (incl. haemorrhagic), nonfatal MI or nonfatal stroke (APTC) | 34 | 0.93 (0.76–1.13) |
-| Confirmation (general) | AMPLIFY | Acute VTE | apixaban | warfarin | recurrent symptomatic VTE or VTE-related death | 6 | 0.84 (0.60–1.18) [RR] |
-| Confirmation (general) | LODESTAR | Coronary artery disease | rosuvastatin | atorvastatin | 3-y death, MI, stroke or any coronary revascularisation | 36 | 1.06 (0.86–1.30) |
-| Confirmation (general) | PROVE IT-TIMI 22 | ACS within 30 d | atorvastatin | pravastatin | death, MI, UA rehospitalisation, revascularisation >= 30 d or stroke | 24 | 0.84 (0.74–0.95) |
-| Confirmation (AF) | FRAIL-AF | AF on warfarin, age ≥75 | switch to DOAC | warfarin | major or clinically relevant non-major bleeding | 12 | 1.69 (1.23–2.32) [cause-specific HR] |
-| Confirmation (AF) | LAAOS III | AF undergoing cardiac surgery | surgical LAA occlusion | surgery without LAA occlusion | ischaemic stroke or systemic embolism | 46 | 0.67 (0.53–0.85) |
-| Confirmation (AF) | PROTECT AF | AF on warfarin with ≥1 stroke risk factor | percutaneous LAA closure | warfarin | stroke, CV death or systemic embolism | 18 | 0.62 (0.35–1.25) [rate ratio] |
-| Confirmation (AF) | RAFT-AF | AF with HF on rate control | catheter ablation | continued rate control | all-cause death or HF event | 36 | 0.71 (0.49–1.03) |
-| Confirmation (AF) | ACTIVE W | AF with ≥1 stroke risk factor, age ≥55 | clopidogrel | warfarin | stroke, non-CNS systemic embolism, MI or vascular death | 15 | 1.44 (1.18–1.76) [RR] |
+| Set | Trial | Population | Intervention | Comparator | Outcome (RCT primary endpoint) | Time (mo) | RCT HR (95% CI) | Emulation quality |
+|---|---|---|---|---|---|---|---|---|
+| Development | COMET | HF | carvedilol | metoprolol | all-cause mortality | 58 | 0.83 (0.74–0.93) | Lower |
+| Development | PARADIGM-HF | HF on ACEi/ARB (switch at time zero) | sacubitril-valsartan | ACEi | CV death or first HF hospitalisation | 27 | 0.80 (0.73–0.87) | High |
+| Development | TRANSFORM-HF | HF hospitalisation (discharge within 30 d) | torsemide | furosemide | all-cause mortality | 12 | 1.02 (0.89–1.18) | Lower |
+| Development | ELITE II | HF, age ≥60 | ARB | ACEi | all-cause mortality | 18 | 1.13 (0.95–1.35) | High (strict) |
+| Development | LIFE | Hypertension with ECG-LVH, age 55–80 | ARB | β-blocker | CV death, MI or stroke | 58 | 0.87 (0.77–0.98) | Lower |
+| Development | PLATO | ACS within 30 d | ticagrelor | clopidogrel | vascular death, MI or stroke | 12 | 0.84 (0.77–0.92) | High |
+| Development | ARISTOTLE | AF | apixaban | warfarin | stroke or systemic embolism | 22 | 0.79 (0.66–0.95) | High (strict) |
+| Development | ROCKET-AF | AF | rivaroxaban | warfarin | stroke or systemic embolism | 23 | 0.88 (0.74–1.03) | High (strict) |
+| Development | RE-LY | AF | dabigatran | warfarin | stroke or systemic embolism | 24 | 0.66 (0.53–0.82) [RR] | High (strict) |
+| Development | ALLHAT | Hypertension, age ≥55 | amlodipine | thiazide | fatal CHD or nonfatal MI | 59 | 0.98 (0.90–1.07) [RR] | Lower |
+| Development | EMPEROR-Preserved | HF with T2D | SGLT2i | DPP-4i (placebo proxy) | CV death or HF hospitalisation | 26 | 0.79 (0.69–0.90) | Lower |
+| Development | EAST-AFNET 4 | Early AF (diagnosis ≤1 y) on rate control | rhythm-control drug added | continued rate control | CV death, stroke, HF or ACS hospitalisation | 61 | 0.79 (0.66–0.94) | High |
+| Development | CABANA | AF | catheter ablation | antiarrhythmic drug | death, disabling stroke, serious bleeding or cardiac arrest | 49 | 0.86 (0.65–1.15) | High |
+| Development | ONTARGET | Established vascular disease or high-risk diabetes, age ≥55 | ARB | ACEi | CV death, MI, stroke or HF hospitalisation | 56 | 1.01 (0.94–1.09) [RR] | Lower |
+| Development | VALUE | Hypertension, age ≥50 | ARB | amlodipine | cardiac morbidity and mortality composite | 50 | 1.04 (0.94–1.15) | Lower |
+| Development | ASCOT-BPLA | Hypertension, age 40–79 | amlodipine | β-blocker | nonfatal MI and fatal CHD | 66 | 0.90 (0.79–1.02) | Lower |
+| Development | EMPA-REG OUTCOME | T2D with established CVD | SGLT2i | DPP-4i (placebo proxy) | 3-point MACE | 37 | 0.86 (0.74–0.99) | Lower |
+| Development | CAROLINA | T2D | linagliptin | glimepiride | 3-point MACE | 76 | 0.98 (0.84–1.14) | High |
+| Confirmation (general) | LEADER | T2D with CVD, age ≥50 | liraglutide | DPP-4i (placebo proxy) | CV death, nonfatal MI or nonfatal stroke | 46 | 0.87 (0.78–0.97) | Lower |
+| Confirmation (general) | SUSTAIN-6 | T2D with CVD, age ≥50 | semaglutide | DPP-4i (placebo proxy) | CV death, nonfatal MI or nonfatal stroke | 25 | 0.74 (0.58–0.95) | Lower |
+| Confirmation (general) | REWIND | T2D, age ≥50 | dulaglutide | DPP-4i (placebo proxy) | nonfatal MI, nonfatal stroke or CV death (incl. unknown causes) | 65 | 0.88 (0.79–0.99) | Lower |
+| Confirmation (general) | DECLARE-TIMI 58 | T2D, age ≥40 | dapagliflozin | DPP-4i (placebo proxy) | CV death or HF hospitalisation | 50 | 0.83 (0.73–0.95) | Lower |
+| Confirmation (general) | CANVAS Program | T2D, age ≥30 | canagliflozin | DPP-4i (placebo proxy) | CV death, nonfatal MI or nonfatal stroke | 43 | 0.86 (0.75–0.97) | Lower |
+| Confirmation (general) | TECOS | T2D with CVD, age ≥50 | sitagliptin | sulfonylurea (placebo proxy) | CV death, nonfatal MI, nonfatal stroke or UA hospitalisation | 36 | 0.98 (0.88–1.09) | Lower |
+| Confirmation (general) | CARMELINA | T2D with kidney disease | linagliptin | sulfonylurea (placebo proxy) | CV death, nonfatal MI or nonfatal stroke | 26 | 1.02 (0.89–1.17) | Lower |
+| Confirmation (general) | VALIANT | MI within 30 d | ARB | ACEi | all-cause death | 25 | 1.00 (0.90–1.11) | High |
+| Confirmation (general) | INSIGHT | High-risk hypertension, age ≥55 | nifedipine | thiazide | CV death, MI, HF or stroke | 42 | 1.10 (0.91–1.34) [RR] | High |
+| Confirmation (general) | AFFIRM | AF on rate control, age ≥65 | rhythm-control drug added | continued rate control | all-cause death | 42 | 1.15 (0.99–1.34) | High (strict) |
+| Confirmation (general) | AF-CHF | AF with HF on rate control | rhythm-control drug added | continued rate control | CV death | 37 | 1.06 (0.86–1.30) | High (strict) |
+| Confirmation (general) | PRECISION | Arthritis with CV risk | celecoxib | naproxen | CV death (incl. haemorrhagic), nonfatal MI or nonfatal stroke (APTC) | 34 | 0.93 (0.76–1.13) | High |
+| Confirmation (general) | AMPLIFY | Acute VTE | apixaban | warfarin | recurrent symptomatic VTE or VTE-related death | 6 | 0.84 (0.60–1.18) [RR] | Lower |
+| Confirmation (general) | LODESTAR | Coronary artery disease | rosuvastatin | atorvastatin | 3-y death, MI, stroke or any coronary revascularisation | 36 | 1.06 (0.86–1.30) | Lower |
+| Confirmation (general) | PROVE IT-TIMI 22 | ACS within 30 d | atorvastatin | pravastatin | death, MI, UA rehospitalisation, revascularisation >= 30 d or stroke | 24 | 0.84 (0.74–0.95) | Lower |
+| Confirmation (AF) | FRAIL-AF | AF on warfarin, age ≥75 | switch to DOAC | warfarin | major or clinically relevant non-major bleeding | 12 | 1.69 (1.23–2.32) [cause-specific HR] | Lower |
+| Confirmation (AF) | LAAOS III | AF undergoing cardiac surgery | surgical LAA occlusion | surgery without LAA occlusion | ischaemic stroke or systemic embolism | 46 | 0.67 (0.53–0.85) | High (strict) |
+| Confirmation (AF) | PROTECT AF | AF on warfarin with ≥1 stroke risk factor | percutaneous LAA closure | warfarin | stroke, CV death or systemic embolism | 18 | 0.62 (0.35–1.25) [rate ratio] | High (strict) |
+| Confirmation (AF) | RAFT-AF | AF with HF on rate control | catheter ablation | continued rate control | all-cause death or HF event | 36 | 0.71 (0.49–1.03) | High (strict) |
+| Confirmation (AF) | ACTIVE W | AF with ≥1 stroke risk factor, age ≥55 | clopidogrel | warfarin | stroke, non-CNS systemic embolism, MI or vascular death | 15 | 1.44 (1.18–1.76) [RR] | High |
 
 *Abbreviations:*
 - ACEi, angiotensin-converting enzyme inhibitor; ARB, angiotensin receptor blocker;
@@ -106,6 +100,7 @@ We emulated 38 randomized controlled trials (RCTs) of cardiovascular therapies: 
 - RCT estimates are hazard ratios unless indicated.
 - Time is the trial-matched follow-up horizon.
 - "Placebo proxy" marks placebo-controlled trials emulated with an active comparator.
+- Emulation quality is from a blinded rating made before results were examined. High (strict) means no design flag; high means one flag with at least moderate comparator and outcome fidelity; lower means all others.
 - Full eligibility criteria, code lists and adaptations are given in eTable 1.
 
 ### Trial selection and prespecification
@@ -114,7 +109,7 @@ Trials were assembled in three sets:
 2. a general confirmation set (15 trials), drawn largely from RCT-DUPLICATE;^4,5^
 3. an AF confirmation set (5 trials).
 
-For each confirmation set, the analysis plan, trial specifications and published hazard ratios (HRs) were fixed in a version-controlled repository before any results were computed. An independent rater, blinded to all results, graded emulation fidelity and the a priori relevance of ECG-reflected physiology to each trial (eMethods 3).
+For each confirmation set, the analysis plan, trial specifications and published hazard ratios (HRs) were fixed in a version-controlled repository before any results were computed.
 
 ### AI-ECG and EHR representations
 We used the most recent 12-lead ECG within 365 days before or on the index date. ECGs were encoded with an in-house signal model adapted from our image-based biometric contrastive learning (BCL) model.^10^ This self-supervised model produced a 256-dimensional embedding per ECG, which was reduced to 32 principal components within each trial (eMethods 4). To test whether any gains reflected ECG information rather than added dimensions, we used a permuted-ECG placebo, in which embeddings were shuffled between patients.
@@ -166,6 +161,7 @@ Trials were the unit of replication. Paired differences between PS specification
 9. Dhingra LS, et al. Heart failure risk stratification using artificial intelligence applied to electrocardiogram images: a multinational study. *Eur Heart J.* 2025;46:1044–1053.
 10. Sangha V, Khunte A, Holste G, Mortazavi BJ, Wang Z, Oikonomou EK, Khera R. Biometric contrastive learning for data-efficient deep learning from electrocardiographic images. *J Am Med Inform Assoc.* 2024;31(4):855.
 11. Wornow M, Thapa R, Steinberg E, Fries JA, Shah NH. EHRSHOT: an EHR benchmark for few-shot evaluation of foundation models. *Adv Neural Inf Process Syst.* 2023;36.
+12. Cashin AG, Hansford HJ, Hernán MA, et al. Transparent reporting of observational studies emulating a target trial: the TARGET statement. *JAMA.* 2025. doi:10.1001/jama.2025.13350 [verify author list and pages]
 
 ## Supplementary Methods (eMethods)
 
@@ -177,17 +173,25 @@ Trials were the unit of replication. Paired differences between PS specification
 - **ECGs:** ECGs were retrieved from the institutional archive as raw 10-second, 500 Hz 12-lead signals.
 - **Follow-up:** follow-up extended through December 2024 for all-cause death and June 2024 for cause-specific death.
 
-### eMethods 2. Emulation design
-- **eTable 1** lists, for each trial, the PICOT elements (population, intervention, comparator, outcome, time) alongside the target trial protocol components recommended by the TARGET guideline: eligibility, treatment strategies, assignment, time zero, follow-up, outcome, causal contrast and analysis. Each is shown with its emulated counterpart and any adaptation.
-- **Eligibility:** patients were aged ≥18 years (or the trial minimum), had ≥365 days of prior EHR activity and met trial-specific inclusion and exclusion criteria operationalized from structured data.
-- **Time zero:** the first qualifying order or procedure, with no comparator order in the preceding 365 days. Sequential switch designs were used where the trial compared a new therapy with continuation of an existing one.
-- **Follow-up:** from the day after time zero until the outcome, death, end of data or the trial-matched horizon, whichever occurred first.
-- **Outcomes:** hospitalization endpoints required a qualifying ICD-10 code during an inpatient stay. Cardiovascular death was defined from listed causes of death.
+### eMethods 2. Emulation design (PICOT)
+- **Population:** patients meeting the trial's key eligibility criteria as operationalized from structured data. All were aged ≥18 years (or the trial minimum) and had ≥365 days of prior EHR activity. Ascertainable exclusion criteria were applied.
+- **Intervention and comparator:**
+  - New users of the intervention were compared with new users of the comparator. Time zero was the first order of the study drug or procedure, with no comparator order in the preceding 365 days.
+  - Sequential designs were used where the trial tested adding or switching therapy against continuing existing treatment, for example rhythm control added to rate control or switching from warfarin.
+  - For placebo-controlled trials, an active comparator without an expected effect on the outcome served as a placebo proxy, for example DPP-4 inhibitors in glucose-lowering drug trials.
+- **Outcome:** the trial's primary endpoint, mapped to EHR events. Hospitalization components required a qualifying ICD-10 code during an inpatient stay. Cardiovascular death was defined from listed causes of death.
+- **Time:** from the day after time zero to the outcome, death, end of data or the trial-matched horizon. The estimand was the initiation (intention-to-treat–like) effect.
+- **eTable 1** lists, for each trial, the PICOT elements and the TARGET protocol components (eligibility, treatment strategies, assignment, time zero, follow-up, outcome, causal contrast, analysis). Each is shown with its emulated counterpart and any adaptation.
 
 ### eMethods 3. Prespecification, feasibility and blinded rating
 - **Feasibility:** ≥300 patients with an ECG in the smaller arm and ≥50 pooled primary events. Feasibility was assessed using pooled counts only.
 - **Near-duplicates:** cohorts sharing >80% of patient–index date records with an existing cohort were excluded.
-- **Blinded rating:** the rater followed RCT-DUPLICATE-adapted criteria. These covered time-zero alignment, run-in periods, switching of baseline therapy, delayed effects with long follow-up, and comparator and outcome fidelity.
+- **Blinded emulation-quality rating:**
+  - Five design flags were scored: in-hospital start not mirrored; responder run-in; baseline-therapy switch not mirrored; ≥48-month horizon with delayed effect; other time-zero misalignment.
+  - Comparator and outcome fidelity were each graded good, moderate or poor.
+  - High fidelity required ≤1 flag and at least moderate comparator and outcome fidelity; strict high fidelity required 0 flags.
+  - ECG relevance was graded high, medium or low according to whether treatment choice and prognosis plausibly depend on ECG-reflected physiology.
+  - The rater followed RCT-DUPLICATE-adapted criteria. These covered time-zero alignment, run-in periods, switching of baseline therapy, delayed effects with long follow-up, and comparator and outcome fidelity.
 
 ### eMethods 4. ECG and EHR representations
 - **ECG model:** a transformer encoder applied to 12-lead signals and trained in-house with the BCL objective of the published image-based model.^10^ [Add architecture and training-data details.]
@@ -236,7 +240,11 @@ Trials were the unit of replication. Paired differences between PS specification
 ---
 
 ### Draft notes (remove before submission)
-- **PICOT in the main text (2026-09-28):**
+- **PICOT v2 (2026-09-28):**
+  - The RCT-DUPLICATE framing of PICOT is removed; the TARGET statement (ref 12) is cited as the standardization reference.
+  - The per-element PICOT detail is moved to eMethods 2.
+  - The emulation-quality rating is added to the main text and as a Table 1 column: 9 high (strict), 9 high, 20 lower.
+- **PICOT in the main text (earlier):**
   - PICOT is now part of the main Methods, with a 38-row Table 1 generated by `scripts/make_picot_table.py`.
   - For JAMA's 5-display-item limit, a condensed Table 1 may later be needed, with the full table moved to eTable 1.
   - The population descriptions in the script are concise summaries of the spec gates; verify them against trial_specs before submission.

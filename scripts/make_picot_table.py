@@ -9,6 +9,8 @@ sys.path.insert(0, str(ROOT / "v16"))
 import trial_specs as S  # noqa: E402
 import v13_common as C  # noqa: E402
 import v16_engine as E  # noqa: E402
+import json  # noqa: E402
+SEL = json.load(open(ROOT.parent / "docs" / "v17" / "trial_selection.json"))["trials"]
 
 SETS = [("Development", list(E.TRIALS)), ("Confirmation (general)", list(C.V17)), ("Confirmation (AF)", list(C.V18))]
 REG = {**C.PRIMARY, **C.EXTRA}
@@ -34,14 +36,23 @@ ARM = {"metoprolol_tartrate": "metoprolol", "sacubitril_valsartan": "sacubitril-
        "thiazide": "thiazide", "sulfonylurea": "sulfonylurea"}
 
 
+def qual(k):
+    r = SEL.get(k, {})
+    if not r:
+        return "not rated"
+    if r.get("fidelity_include_strict"):
+        return "High (strict)"
+    return "High" if r.get("fidelity_include") else "Lower"
+
+
 def arms(t):
     a = t["arms"]
     return [ARM.get(x[0], x[0]) for x in a]
 
 
 def main():
-    rows = ["| Set | Trial | Population | Intervention | Comparator | Outcome (RCT primary endpoint) | Time (mo) | RCT HR (95% CI) |",
-            "|---|---|---|---|---|---|---|---|"]
+    rows = ["| Set | Trial | Population | Intervention | Comparator | Outcome (RCT primary endpoint) | Time (mo) | RCT HR (95% CI) | Emulation quality |",
+            "|---|---|---|---|---|---|---|---|---|"]
     for sname, names in SETS:
         for n in names:
             k = REG[n][0]
@@ -58,7 +69,7 @@ def main():
             lo, hi = p["ci"]
             nm = t["name"].split(" (")[0].split(":")[0].replace(" switcher, sequential", "").replace(" amlodipine vs thiazide", "")
             rows.append(f"| {sname} | {nm} | {POP[k]} | {i} | {c} | {p['endpoint']} | {S.HORIZON_MONTHS[k]} | "
-                        f"{p['hr']:.2f} ({lo:.2f}–{hi:.2f}){meas} |")
+                        f"{p['hr']:.2f} ({lo:.2f}–{hi:.2f}){meas} | {qual(k)} |")
     out = "\n".join(rows)
     (ROOT.parent / "docs" / "paper" / "table1_picot.md").write_text(out + "\n")
     print(out)
