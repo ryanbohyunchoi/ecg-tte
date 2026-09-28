@@ -1,0 +1,84 @@
+{
+  "n_vars": 58,
+  "n_phys_vars": 54,
+  "sparse_ecg_better_phys": 27,
+  "hdps_ecg_better_phys": 35,
+  "sparse_ecg_better_all": 29,
+  "vars_below_0_1": {
+    "unmatched": 33,
+    "sparse": 48,
+    "sparse+ECG": 47,
+    "hdPS200": 51,
+    "hdPS200+ECG": 52,
+    "clinical (reference)": 51
+  },
+  "group_mean_smd": {
+    "Coded record": {
+      "unmatched": 0.123,
+      "sparse": 0.077,
+      "sparse+ECG": 0.077,
+      "hdPS200": 0.039,
+      "hdPS200+ECG": 0.039,
+      "clinical (reference)": 0.036
+    },
+    "Vitals & core labs": {
+      "unmatched": 0.116,
+      "sparse": 0.087,
+      "sparse+ECG": 0.086,
+      "hdPS200": 0.07,
+      "hdPS200+ECG": 0.063,
+      "clinical (reference)": 0.037
+    },
+    "Other labs": {
+      "unmatched": 0.06,
+      "sparse": 0.045,
+      "sparse+ECG": 0.047,
+      "hdPS200": 0.042,
+      "hdPS200+ECG": 0.04,
+      "clinical (reference)": 0.042
+    },
+    "Echo: LV structure": {
+      "unmatched": 0.111,
+      "sparse": 0.082,
+      "sparse+ECG": 0.078,
+      "hdPS200": 0.073,
+      "hdPS200+ECG": 0.068,
+      "clinical (reference)": 0.062
+    },
+    "Echo: LV function": {
+      "unmatched": 0.18,
+      "sparse": 0.13,
+      "sparse+ECG": 0.12,
+      "hdPS200": 0.12,
+      "hdPS200+ECG": 0.113,
+      "clinical (reference)": 0.081
+    },
+    "Echo: diastolic / LA": {
+      "unmatched": 0.09,
+      "sparse": 0.072,
+      "sparse+ECG": 0.064,
+      "hdPS200": 0.065,
+      "hdPS200+ECG": 0.057,
+      "clinical (reference)": 0.076
+    },
+    "Echo: RV / pulmonary": {
+      "unmatched": 0.105,
+      "sparse": 0.082,
+      "sparse+ECG": 0.074,
+      "hdPS200": 0.071,
+      "hdPS200+ECG": 0.071,
+      "clinical (reference)": 0.083
+    },
+    "Echo: valves / aorta": {
+      "unmatched": 0.136,
+      "sparse": 0.112,
+      "sparse+ECG": 0.117,
+      "hdPS200": 0.092,
+      "hdPS200+ECG": 0.092,
+      "clinical (reference)": 0.104
+    }
+  },
+  "closer": 14,
+  "mean_abs_sparse": 0.182,
+  "mean_abs_ecg": 0.162
+}

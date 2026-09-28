@@ -20,7 +20,7 @@ from trial_specs import TRIALS  # noqa: E402
 from v13_common import A, EXTRA, PRIMARY, bench  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-V14, OUT = ROOT / "docs" / "v14", ROOT / "docs" / "abstract"
+V14, OUT = ROOT / "docs" / "v14", ROOT / "docs" / "abstract" / "v1_superseded"
 ARMS = ["unmatched", "sparse", "sparse+ECG", "hdPS200", "hdPS200+ECG", "clinical (reference)"]
 LAB = {"unmatched": "Unmatched", "sparse": "Sparse PS", "sparse+ECG": "Sparse PS + ECG", "hdPS200": "hdPS", "hdPS200+ECG": "hdPS + ECG",
        "clinical (reference)": "Clinical PS"}
