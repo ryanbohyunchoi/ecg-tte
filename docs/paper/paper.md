@@ -49,9 +49,9 @@ We identified candidate cardiovascular randomized controlled trials (RCTs) from 
 3. treatment strategies identifiable from medication orders or procedure codes;
 4. adequate size in YNHHS, defined as ≥300 patients with an ECG in the smaller arm and ≥50 primary-outcome events.
 
-Of approximately 90 candidate trials screened, 38 met these criteria and were emulated (eFigure 1). They covered atrial fibrillation (AF; 12 trials), diabetes (9), heart failure (5), hypertension (5), acute coronary syndromes (2) and other indications (5).
+Of 99 candidate trials considered, 38 met these criteria and were emulated (eFigure 1). They covered atrial fibrillation (AF; 12 trials), diabetes (9), heart failure (5), hypertension (5), acute coronary syndromes (2) and other indications (5).
 
-For each trial, we specified the target trial protocol and its emulation following the TARGET guideline, summarized using the population, intervention, comparator, outcome and time (PICOT) elements (Table 1; eMethods 2; eTable 1).^12^ The specification and the published primary hazard ratio (HR) were recorded before outcomes were extracted. Each emulation used a new-user, active-comparator design. Time zero was the first order of the study drug or procedure, and follow-up continued to the trial's primary endpoint or a trial-matched horizon. We estimated the effect of treatment initiation, analogous to the intention-to-treat effect.
+For each trial, we specified the target trial protocol and its emulation following the TARGET guideline, summarized using the population, intervention, comparator, outcome and time (PICOT) elements (Table 1; eMethods 2; eTable 1).^12^ The specification and the published primary hazard ratio (HR) were recorded before outcomes were extracted. Each emulation used a new-user, active-comparator design (eMethods 2).
 
 To characterize emulation quality, each selected trial was classified as high (strict), high or lower fidelity using prespecified criteria, and the relevance of ECG-reflected physiology to each trial was graded (eMethods 3).
 
@@ -188,7 +188,7 @@ Trials were the unit of replication. Paired differences between PS specification
   - Sequential designs were used where the trial tested adding or switching therapy against continuing existing treatment, for example rhythm control added to rate control or switching from warfarin.
   - For placebo-controlled trials, an active comparator without an expected effect on the outcome served as a placebo proxy, for example DPP-4 inhibitors in glucose-lowering drug trials.
 - **Outcome:** the trial's primary endpoint, mapped to EHR events. Hospitalization components required a qualifying ICD-10 code during an inpatient stay. Cardiovascular death was defined from listed causes of death.
-- **Time:** from the day after time zero to the outcome, death, end of data or the trial-matched horizon. The estimand was the initiation (intention-to-treat–like) effect.
+- **Time:** follow-up began the day after time zero and continued to the trial's primary endpoint, death, end of data or a trial-matched horizon, whichever came first. We estimated the effect of treatment initiation, analogous to the intention-to-treat effect.
 - **eTable 1** lists, for each trial, the PICOT elements and the TARGET protocol components (eligibility, treatment strategies, assignment, time zero, follow-up, outcome, causal contrast, analysis). Each is shown with its emulated counterpart and any adaptation.
 
 ### eMethods 3. Trial selection, prespecification, feasibility and blinded rating
@@ -197,7 +197,7 @@ Trials were the unit of replication. Paired differences between PS specification
   2. 15 trials, drawn largely from RCT-DUPLICATE, analysed under a prespecified plan.
   3. 5 atrial fibrillation trials, analysed under a separate prespecified plan.
   - For stages 2 and 3, trial specifications, benchmarks and the analysis plan were committed before any results were computed. Results for the prespecified sets are reported separately in the supplement.
-- **Screening flow (eFigure 1):** about 90 candidate RCTs were considered. They were excluded for a placebo-only design without an accepted proxy, an endpoint not ascertainable from EHR data, a non-identifiable exposure, insufficient sample size, or near-duplicate cohorts.
+- **Screening flow (eFigure 1):** 99 candidate RCTs were considered, and 38 were emulated. They were excluded for a placebo-only design without an accepted proxy, an endpoint not ascertainable from EHR data, a non-identifiable exposure, insufficient sample size, or near-duplicate cohorts.
 - **Feasibility:** ≥300 patients with an ECG in the smaller arm and ≥50 pooled primary events. Feasibility was assessed using pooled counts only.
 - **Near-duplicates:** cohorts sharing >80% of patient–index date records with an existing cohort were excluded.
 - **Blinded emulation-quality rating:**
@@ -254,6 +254,12 @@ Trials were the unit of replication. Paired differences between PS specification
 ---
 
 ### Draft notes (remove before submission)
+- **Candidate count (2026-09-28): 99 individual RCTs.**
+  - These are the unique trials across `trial_specs.py`, `docs/v17/candidates.json` and `docs/v18/af_candidates.json`.
+  - Design variants of the same RCT are collapsed.
+  - Grouped not-screened entries are expanded: PALLAS/ELDERCARE-AF/NOAH; RAAFT-2/MANTRA-PAF/EARLY-AF/STOP AF First/Cryo-FIRST/AATAC; ENTRUST-AF PCI/ENVISAGE-TAVI AF; ELAN/TIMING/OPTIMAS; INVICTUS/RIVER; AVERROES/BAFTA; EMPEROR-Reduced/DELIVER; BRUISE CONTROL.
+  - The eFigure 1 flow must list these with reasons.
+  - The time-zero, follow-up and estimand sentences moved to eMethods 2.
 - **Trial selection v3 (2026-09-28):**
   - Selection and specification are merged into one subsection.
   - The main text now simply says 38 trials met the criteria; the staged and prespecified assembly is described only in eMethods 3.
