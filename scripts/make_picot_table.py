@@ -51,10 +51,21 @@ def arms(t):
 
 
 def main():
-    rows = ["| Set | Trial | Population | Intervention | Comparator | Outcome (RCT primary endpoint) | Time (mo) | RCT HR (95% CI) | Emulation quality |",
+    rows = ["| Area | Trial | Population | Intervention | Comparator | Outcome (RCT primary endpoint) | Time (mo) | RCT HR (95% CI) | Emulation quality |",
             "|---|---|---|---|---|---|---|---|---|"]
-    for sname, names in SETS:
-        for n in names:
+    AREA = {"comet": "HF", "paradigm_hf_seq": "HF", "transform_hf": "HF", "elite_ii": "HF", "emperor_preserved": "HF",
+            "aristotle": "AF", "rocket_af": "AF", "rely": "AF", "east_afnet4": "AF", "cabana": "AF", "affirm": "AF", "af_chf": "AF",
+            "frail_af": "AF", "laaos3": "AF", "protect_af": "AF", "raft_af": "AF", "active_w": "AF",
+            "life": "Hypertension", "allhat": "Hypertension", "value": "Hypertension", "ascot": "Hypertension", "insight": "Hypertension",
+            "plato": "ACS / MI", "valiant": "ACS / MI"}
+    order = ["AF", "HF", "Hypertension", "ACS / MI", "Diabetes", "Other"]
+    allk = [(REG[n][0], n) for _, names in SETS for n in names]
+    DM = {"empa_reg", "carolina", "leader", "sustain6", "rewind", "declare", "canvas", "tecos", "carmelina"}
+    area = lambda k: AREA.get(k, "Diabetes" if k in DM else "Other")
+    allk.sort(key=lambda x: order.index(area(x[0])))
+    for _k, n in allk:
+        if True:
+            sname = area(_k)
             k = REG[n][0]
             t = S.TRIALS[k]
             p = S.PUBLISHED[k]
