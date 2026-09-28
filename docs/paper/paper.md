@@ -8,25 +8,13 @@
 
 ## Introduction
 
+Randomization is the foundation of causal inference in medicine. Treatment is assigned by chance, so measured and unmeasured characteristics are, on average, balanced between arms. Differences in outcomes can then be attributed to the treatment itself.^1^ Randomized controlled trials (RCTs) are, however, expensive and time-consuming. They are also often infeasible or unrepresentative for important populations, such as older, multimorbid or underrepresented patients who receive these therapies in practice.^2^
 
-Randomized controlled trials (RCTs) remain the reference standard for estimating treatment effects, but they are costly and slow. They also often exclude the older, multimorbid patients who receive these therapies in practice.^1^ Target trial emulation offers a principled framework for estimating the same effects from routinely collected data.^2^ In this framework, the protocol of a hypothetical randomized trial is specified explicitly and then emulated in observational data. Systematic efforts to benchmark emulations against completed RCTs, most prominently RCT-DUPLICATE, have shown that agreement is achievable. These efforts also show that agreement depends heavily on how closely the design can be emulated and on how well the available data capture the determinants of treatment choice.^3–5^ When those determinants are not recorded, residual confounding persists regardless of design rigour.
+Inferring causal effects from the data already generated in routine care therefore remains an unmet need. Target trial emulation is a leading candidate approach.^3^ The protocol of a hypothetical randomized trial is specified explicitly and then emulated in observational data. Confounding is typically addressed with propensity scores (PS) estimated from structured variables. This strategy balances measured characteristics well, and benchmarking against completed RCTs has shown that well-designed emulations can reproduce trial results.^4,5^ Its guarantee extends only to what is measured, however. Most emulations rely on claims data, which record diagnoses, procedures and prescriptions consistently. Electronic health records (EHRs) contain richer clinical information, but laboratory values, vital signs and imaging are missing for many patients, and not at random. These measurements therefore cannot be relied on for adjustment.^6^
 
-In cardiovascular medicine, many of the strongest determinants of both prescribing and prognosis are physiological rather than administrative. Examples include left ventricular systolic and diastolic function, chamber size, atrial substrate, congestion and conduction disease. Clinicians choose between therapies on the basis of these features, and the same features predict outcomes, so they are classic sources of confounding by indication. They are also largely absent from the structured data on which most emulations rely. Claims and structured electronic health record (EHR) data record diagnoses, procedures and prescriptions well, but echocardiographic measurements and natriuretic peptides are available for only a subset of patients and are rarely captured in a form usable for adjustment. High-dimensional propensity score (PS) methods and EHR foundation models can recover some of this information indirectly from coding patterns.^6,7^ Neither, however, measures the physiology itself.
+This gap is particularly consequential in cardiovascular medicine. Many determinants of both treatment choice and prognosis are physiological: ventricular function, chamber size, atrial substrate, congestion and conduction. These are the characteristics most likely to confound comparisons and least likely to be captured in structured data. The 12-lead electrocardiogram (ECG) offers a potential solution. It is inexpensive and acquired routinely across the health system. Artificial intelligence applied to the ECG (AI-ECG) detects left ventricular dysfunction, structural heart disease and other latent phenotypes.^7–9^ Foundation-model embeddings compress this information into general-purpose representations of cardiac physiology.^10^ By analogy, polygenic scores were recently shown to serve as an orthogonal readout of residual confounding in trial emulations, even though they could not remove it.^11^ AI-ECG may play a similar and more direct role, because it measures current physiology and is available for most patients.
 
-A recent study introduced a complementary strategy: integrating an orthogonal biological data layer into trial emulation. German and colleagues emulated four cardiometabolic trials in FinnGen and examined polygenic scores (PGS) across successive design steps.^8^ They showed that PGS imbalance between arms shrank as the design improved, from crude comparison to eligibility criteria to PS matching. This provided an independent readout of confounding that the design itself did not target. Two further findings were instructive. First, simulations showed that PGS cannot by themselves adjust away unmeasured confounding, because they are weak and pleiotropic proxies of the traits they index. Second, the emulation framework could be used to evaluate PGS for prognostic enrichment of future trials. The study thus reframed a biological data type not as a remedy for confounding but as a tool for diagnosing it and for informing trial design. Germline genetics, however, captures lifelong liability rather than current physiological state. Genetic data are also available for only a small minority of patients in routine care.
-
-The 12-lead electrocardiogram (ECG) may be better suited to this role in cardiovascular emulations. The ECG is inexpensive and is acquired routinely across care settings, so it is often available for most patients in an emulated cohort around the time of treatment initiation. It records the heart's current electrical and, indirectly, structural state. Deep learning applied to the ECG (AI-ECG) detects left ventricular systolic dysfunction, structural heart disease and other latent phenotypes with high accuracy.^9–12^ Self-supervised ECG foundation models compress this information into general-purpose embeddings that are not tied to any single diagnostic label.^13^ In a single heart failure emulation, matching on AI-ECG embeddings recovered the direction of the RCT effect where adjustment for a few clinical covariates did not.^14^ It remains unknown whether this generalizes across therapeutic areas. It is also unknown whether AI-ECG information improves balance on physiology that is not otherwise measured, whether it reduces bias or merely shifts estimates, and how it compares with embeddings derived from the structured record itself.
-
-Here we evaluated AI-ECG embeddings as a source of information on unmeasured confounding in 38 emulations of cardiovascular RCTs in a large US health system. The emulations spanned atrial fibrillation, heart failure, hypertension, coronary disease and diabetes. Following the logic of German et al., we asked four questions:
-1. whether ECG-derived phenotypes track confounding across design steps;
-2. whether adding ECG embeddings to a PS improves balance on 58 clinical, laboratory and echocardiographic characteristics that no PS included, beyond a permuted-ECG placebo;
-3. whether this translates into closer agreement with RCT results and into reduced bias in simulations with a known treatment effect;
-4. whether AI-ECG can inform trial design through prognostic enrichment.
-
-To guard against selective reporting:
-- we prespecified confirmation analyses in 15 trials and, separately, in 5 atrial fibrillation trials whose results had not been examined;
-- a blinded rater classified emulation fidelity;
-- all analyses were compared with an EHR foundation-model embedding and audited independently.
+Here, we evaluated whether AI-ECG embeddings capture confounding missed by structured data in 38 emulations of cardiovascular RCTs. We assessed (i) balance on held-out clinical, laboratory and echocardiographic characteristics, (ii) agreement with RCT results, (iii) bias removal in simulations with a known treatment effect, and (iv) utility for trial enrichment.
 
 ## Methods
 
@@ -47,6 +35,28 @@ To guard against selective reporting:
 ---
 
 ### Draft notes: Introduction (remove before submission)
+- **v2 (2026-09-28), restructured per PI outline:**
+  - randomization and why it works, then RCT limits;
+  - unmet need for causal inference from routine data;
+  - TTE with a PS on structured variables: strengths and successes, then limits;
+  - EHR missingness vs claims;
+  - CV physiology, the ECG and AI-ECG;
+  - the German PGS analogy;
+  - "Here, we".
+- **v2 reference mapping:**
+  1. Randomization and causal inference, e.g. Hernán & Robins, *Causal Inference: What If*, or Rubin 1974 [?]
+  2. RCT limitations / representativeness, e.g. Sherman RE et al. NEJM 2016; Bothwell LE et al. NEJM 2016 [?]
+  3. Hernán MA, Robins JM. Am J Epidemiol 2016 [?]
+  4. Franklin JM et al. Circulation 2021 [V]
+  5. Wang SV et al. JAMA 2023 [V]
+  6. EHR missingness / informative observation, e.g. Haneuse S et al. or Goldstein BA et al.; the Khera-lab LEGEND papers use "measured-or-not" labs [?]
+  7. Attia ZI et al. Nat Med 2019 [?]
+  8. Dhingra LS et al. PRESENT-SHD, JACC 2025 [V]
+  9. Dhingra LS et al. Eur Heart J 2025, or Croon PM et al. Circulation 2025 [V]
+  10. BCL ECG foundation model [?]
+  11. German J et al. Nat Genet 2025 [V]
+  - Consider also citing DISCO (Biswas … Khera, EHJ 2025 suppl) in paragraph 3 or the Discussion.
+- The earlier v1 notes below refer to the v1 numbering.
 - **Tone.** Paragraph 5 deliberately does not preview results. We could add a German-style closing sentence: "We find that AI-ECG embeddings track design quality and improve balance on unmeasured physiology, remove confounding bias in proportion to how well they encode the confounder, and inform trial enrichment, but do not by themselves reproduce trial-specific RCT results." It is accurate per v1.6–v1.9 and the round-4 audit.
 - **Claims to keep consistent with results.**
   - The "single heart failure emulation" (DISCO) is an abstract only.
