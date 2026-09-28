@@ -30,6 +30,7 @@ Usage:
   v18_clmbr.py verify [--tag all]       base/ECG/shufECG/noise32/unmatched rows vs claude-v17-confirm results_all (P1,P2)
                                         and results_p5 (P5) -> OUT/verify_<tag>.csv, max deviation
   v18_clmbr.py summarize                -> OUT/summary.csv, OUT/per_category.csv, OUT/per_trial.csv, OUT/tables.md
+  v18_clmbr.py tables                   -> OUT/tables.md (markdown, aggregates)
   v18_clmbr.py figure                   -> docs/v18/CLMBR_vs_ECG.png
 """
 from __future__ import annotations
@@ -442,15 +443,60 @@ def summarize():
     print("written", len(S), len(C), len(P))
 
 
+def tables():
+    """markdown tables (aggregates) -> OUT/tables.md; pasted into docs/v18/CLMBR_RESULTS.md."""
+    from v13_summarize import md
+    S = pd.read_csv(OUT / "summary.csv")
+    C = pd.read_csv(OUT / "per_category.csv")
+    P = pd.read_csv(OUT / "per_trial.csv")
+    L = []
+    cols = ["ps", "contrast", "mean_a", "mean_b", "diff_a_minus_b", "k_a_better", "p", "cluster_p", "loo_max_p", "p_A", "p_B"]
+    lab = {"nc_lt01": "(ii) NON-CODED physiology subset of the 58-panel, % |SMD| < 0.1 (PRIMARY balance endpoint)",
+           "lt01": "(i) full 58-panel, % |SMD| < 0.1", "lv_lt01": "(iii) covars2b non-proximal lab/vital panel, % |SMD| < 0.1",
+           "lvv_lt01": "(iii-b) covars2b lab/vital values only (no measurement-presence indicators), % |SMD| < 0.1",
+           "nc_mean": "non-coded subset, mean |SMD| (lower = better)", "absd": "|Δlog HR| vs RCT (lower = better)",
+           "z2": "z² vs RCT (lower = better)", "cons": "% consistent with RCT (|z| < 1.96)"}
+    for scope, title in (("all33", "All 33 trials"), ("old18", "v1.6 18 trials"), ("new15", "v1.7 15 trials"),
+                         ("S_noown", "Leakage sensitivity S_noown (27 trials)"), ("S_noexpo", "Leakage sensitivity S_noexpo (23 trials)")):
+        L.append(f"\n### {title}\n")
+        for m in (METRICS if scope == "all33" else ["nc_lt01", "lv_lt01", "absd", "z2"]):
+            q = S[(S.scope == scope) & (S.metric == m)]
+            c = cols + (["bshuf_p"] if m in ("absd", "z2") else [])
+            c = [x for x in c if x in q and q[x].notna().any()]
+            L.append(f"\n**{lab[m]}**\n\n" + md(q[c].rename(columns={"diff_a_minus_b": "a−b", "k_a_better": "a better"}), 3))
+    L.append("\n### Per category (full cohort; one-sided exact sign-flip; benchmark shuffle from all 33 RCTs)\n")
+    K = ["CLMBR vs base", "ECG vs base", "CLMBR+ECG vs base", "CLMBR vs ECG", "CLMBR+ECG vs CLMBR", "CLMBR+ECG vs ECG",
+         "CLMBR vs shufCLMBR", "ECG vs shufECG"]
+    for m in ("nc_lt01", "absd"):
+        q = C[(C.metric == m) & C.contrast.isin(K)]
+        c = ["ps", "category", "contrast", "n", "mean_a", "mean_b", "diff_a_minus_b", "k_a_better", "p"] + (["bshuf_p"] if m == "absd" else [])
+        L.append(f"\n**{lab[m]}**\n\n" + md(q[c].rename(columns={"diff_a_minus_b": "a−b", "k_a_better": "a better"}), 3))
+    L.append("\n### Per trial (full cohort): non-coded % |SMD| < 0.1 and |Δlog HR| vs RCT\n")
+    for ps in PSS:
+        rows = []
+        for _, r in P.iterrows():
+            d = dict(trial=r.trial, category=r.category, rct_hr=r.rct_hr)
+            for a in ("base", "CLMBR", "ECG", "CLMBR+ECG", "shufCLMBR"):
+                d[f"nc {a}"] = r[f"{ps}|{a}|nc_lt01"]
+            for a in ("base", "CLMBR", "ECG", "CLMBR+ECG"):
+                d[f"HR {a}"] = r[f"{ps}|{a}|hr"]
+            for a in ("base", "CLMBR", "ECG", "CLMBR+ECG"):
+                d[f"gap {a}"] = r[f"{ps}|{a}|absd"]
+            rows.append(d)
+        L.append(f"\n**{ps}**\n\n" + md(pd.DataFrame(rows), 2))
+    (OUT / "tables.md").write_text("\n".join(L) + "\n")
+    print("tables written")
+
+
 def figure():
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     S = pd.read_csv(OUT / "summary.csv")
     S = S[S.scope == "all33"]
-    arms = [("CLMBR", "CLMBR-T 64", "#2a6f97"), ("ECG", "ECG 32", "#c0392b"), ("CLMBR+ECG", "CLMBR + ECG", "#6c3483"),
-            ("shufCLMBR", "shuffled CLMBR", "#9aa5b1"), ("noise64", "noise 64", "#c8ced6"),
-            ("shufECG", "shuffled ECG", "#b7a99a"), ("noise32", "noise 32", "#ddd5cc")]
+    arms = [("CLMBR", "CLMBR-T 64", "#2a78d6"), ("ECG", "ECG 32", "#eb6834"), ("CLMBR+ECG", "CLMBR + ECG", "#4a3aa7"),
+            ("shufCLMBR", "shuffled CLMBR", "#8d8c88"), ("noise64", "noise 64", "#b5b4af"),
+            ("shufECG", "shuffled ECG", "#8d8c88"), ("noise32", "noise 32", "#b5b4af")]
     mets = [("nc_lt01", "Balance gain vs base\n(pp of non-coded physiology vars |SMD|<0.1)"),
             ("absd", "Change in |Δlog HR| vs RCT\n(negative = closer to RCT)")]
     plt.rcParams.update({"font.size": 8.5, "font.family": "DejaVu Sans", "axes.spines.top": False, "axes.spines.right": False})
@@ -462,16 +508,21 @@ def figure():
             for r, nm, c in arms:
                 q = S[(S.ps == ps) & (S.metric == m) & (S.contrast == f"{r} vs base")].iloc[0]
                 vals.append(q.diff_a_minus_b)
-                ps_.append(q.bshuf_p if m == "absd" else q.p)
+                ps_.append((q.p, q.bshuf_p) if m == "absd" else (q.p,))
                 cols.append(c)
             y = np.arange(len(arms))[::-1]
             a.barh(y, vals, color=cols, height=0.7)
             a.axvline(0, color="#333", lw=0.8)
             span = max(abs(v) for v in vals) or 1
+            fp = lambda p: f"={p:.3f}" if p >= 0.001 else "<0.001"
             for yy, v, p in zip(y, vals, ps_):
-                a.text(v + (0.03 * span if v >= 0 else -0.03 * span), yy, f"p={p:.3f}" if p >= 0.001 else "p<0.001",
-                       va="center", ha="left" if v >= 0 else "right", fontsize=7.5, color="#333")
-            a.set_xlim(-1.45 * span, 1.45 * span)
+                if len(p) == 1:
+                    a.text(v + (0.03 * span if v >= 0 else -0.03 * span), yy, f"p{fp(p[0])}", va="center",
+                           ha="left" if v >= 0 else "right", fontsize=7.5, color="#333")
+                else:  # gap row: labels right of max(v, 0) so they never cross the bars or tick labels
+                    a.text(max(v, 0) + 0.04 * span, yy, f"sign-flip p{fp(p[0])}\nshuffle p{fp(p[1])}", va="center",
+                           ha="left", fontsize=7, color="#333", linespacing=1.1)
+            a.set_xlim((-1.45 * span, 1.45 * span) if i == 0 else (-1.15 * span, 1.35 * span))
             a.set_yticks(y)
             a.set_yticklabels([nm for _, nm, _ in arms])
             if i == 0:
@@ -479,7 +530,7 @@ def figure():
             if j == 0:
                 a.set_ylabel(lab)
     fig.text(0.5, 0.005, "33 trials, 1:1 caliper-0.2 PS matching, full cohort. Balance p: one-sided exact sign-flip; "
-             "gap p: benchmark-shuffle (RCT HRs drawn from all 33, 10,000 draws).", ha="center", fontsize=8)
+             "gap: sign-flip p and benchmark-shuffle p (RCT HRs drawn from all 33, 10,000 draws; tests trial-specificity).", ha="center", fontsize=8)
     fig.tight_layout(rect=(0, 0.03, 1, 1))
     DOCS.mkdir(parents=True, exist_ok=True)
     fig.savefig(DOCS / "CLMBR_vs_ECG.png", dpi=160)
@@ -488,7 +539,7 @@ def figure():
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("cmd", choices=["leakage", "run", "verify", "summarize", "figure"])
+    ap.add_argument("cmd", choices=["leakage", "run", "verify", "summarize", "tables", "figure"])
     ap.add_argument("--trials", default=",".join(ALL))
     ap.add_argument("--workers", type=int, default=24)
     ap.add_argument("--tag", default="all")
@@ -502,6 +553,8 @@ def main():
         verify(a.tag)
     elif a.cmd == "summarize":
         summarize()
+    elif a.cmd == "tables":
+        tables()
     else:
         figure()
 
