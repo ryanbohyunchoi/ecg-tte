@@ -78,7 +78,6 @@ def panel_a(arms):
         ax.scatter(b, y[i], color=C_BASE, s=70, zorder=4, edgecolors="white", label="Demographic PS" if i == 0 else None)
         ax.scatter(e, y[i], color=C_ECG, s=70, zorder=5, edgecolors="white", label="+ ECG embedding" if i == 0 else None)
         ax.text(max(b, sh) + 0.006, y[i], _pstr(p), va="center", fontsize=9, color="#444")
-    ax.axvline(0.1, color="#888", ls="--", lw=1)
     ax.set_yticks(y)
     ax.set_yticklabels([lab for _, lab in DOMS])
     ax.set_xlim(0.06, 0.22)
