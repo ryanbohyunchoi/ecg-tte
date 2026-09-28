@@ -43,63 +43,79 @@ def load():
     return arms
 
 
+DOMS = [("Echo: LV function", "LV function (echo)"), ("Echo: LV structure", "LV structure (echo)"),
+        ("Echo: diastolic / LA", "Diastolic / LA (echo)"), ("Echo: RV / pulmonary", "RV / pulmonary (echo)"),
+        ("Vitals & core labs", "Vitals & core labs"), ("Coded record", "Medications, utilisation, codes")]
+CATS = [("AF", "Atrial fibrillation"), ("HF", "Heart failure"), ("HTN", "Hypertension"), ("ACS/post-MI", "ACS / post-MI"),
+        ("DM", "Diabetes"), ("Other", "Other")]
+
+
+def _sf(d, rng=np.random.default_rng(0)):
+    d = np.asarray(d, float)
+    d = d[np.isfinite(d)]
+    if len(d) <= 20:
+        import itertools
+        sg = np.array(list(itertools.product([1, -1], repeat=len(d))))
+    else:
+        sg = rng.choice([1, -1], size=(200000, len(d)))
+    return float(((sg * np.abs(d)).mean(1) <= d.mean() + 1e-12).mean())
+
+
+def _pstr(p):
+    return "p<0.001" if p < 0.001 else f"p={p:.3f}" if p < 0.01 else f"p={p:.2f}"
+
+
 def panel_a(arms):
-    cols = [(c, lab, g) for c, lab, g in VARS if f"smd:{c}" in arms["base"]]
-    med = {r: pd.Series({lab: arms[r][f"smd:{c}"].abs().median() for c, lab, g in cols}) for r in arms}
-    pct = {r: (100 * (arms[r][[f"smd:{c}" for c, _, _ in cols]].abs() < 0.1).sum(1) / arms[r][[f"smd:{c}" for c, _, _ in cols]].notna().sum(1)) for r in arms}
-    order = [(g, lab) for c, lab, g in cols]
-    fig, ax = plt.subplots(figsize=(6.2, 10.5))
-    y = {o: i for i, o in enumerate(order[::-1])}
-    for i, o in enumerate(order):
-        if i % 2 == 0:
-            ax.axhspan(y[o] - 0.5, y[o] + 0.5, color="#f4f5f7", zorder=0)
-    for g, lab in order:
-        b, e = med["base"][lab], med["ECG"][lab]
-        ax.plot([b, e], [y[(g, lab)]] * 2, color="#2b8a3e" if e < b else "#c92a2a", lw=1.4, alpha=0.8, zorder=2)
-    kw = dict(zorder=4, s=22, edgecolors="white", linewidths=0.4)
-    ax.scatter([med["unmatched"][l] for _, l in order], [y[o] for o in order], marker="x", color=C_UNM, s=16, lw=1, zorder=3, label="Unmatched")
-    ax.scatter([med["shufECG"][l] for _, l in order], [y[o] for o in order], marker="D", color=C_SHUF, s=12, zorder=3, label="Permuted-ECG placebo")
-    ax.scatter([med["base"][l] for _, l in order], [y[o] for o in order], color=C_BASE, label="Demographic PS", **kw)
-    ax.scatter([med["ECG"][l] for _, l in order], [y[o] for o in order], color=C_ECG, label="Demographic PS + ECG", **kw)
-    ax.axvline(0.1, color="#888", ls="--", lw=0.8)
-    ax.set_yticks([y[o] for o in order])
-    ax.set_yticklabels([l for _, l in order], fontsize=6.8)
-    for g in dict.fromkeys(g for g, _ in order):
-        ys = [y[o] for o in order if o[0] == g]
-        ax.axhline(min(ys) - 0.5, color="#ccc", lw=0.6)
-        ax.annotate(SHORT[g], xy=(1.0, np.mean(ys)), xycoords=("axes fraction", "data"), xytext=(4, 0), textcoords="offset points",
-                    rotation=270, va="center", fontsize=7, fontweight="bold", color="#444")
-    ax.set_ylim(-0.7, len(order) - 0.3)
-    ax.set_xlim(0, min(0.45, float(np.nanmax([med[r].max() for r in med])) * 1.05))
-    ax.set_xlabel("|Standardized mean difference| (median across 38 trials)")
-    nb, ne = int((med["base"] < 0.1).sum()), int((med["ECG"] < 0.1).sum())
-    ax.text(0.98, 0.995, f"Variables with median |SMD| < 0.1: {nb} → {ne} of {len(order)}\n"
-            f"Per-trial share < 0.1: {pct['base'].mean():.0f}% → {pct['ECG'].mean():.0f}% (28/38 trials, p<0.001)",
-            transform=ax.transAxes, ha="right", va="top", fontsize=7.2, bbox=dict(fc="white", ec="#ccc", boxstyle="round,pad=0.3"))
-    ax.legend(loc="lower right", fontsize=7, frameon=True, facecolor="white", edgecolor="#ddd")
-    ax.set_title("A  Balance on 58 held-out characteristics", loc="left", fontweight="bold")
+    plt.rcParams.update({"font.size": 11})
+    fig, ax = plt.subplots(figsize=(5.2, 5.2))
+    y = np.arange(len(DOMS))[::-1]
+    for i, (g, lab) in enumerate(DOMS):
+        c = f"mean_smd_g:{g}"
+        b, e, sh = arms["base"][c].median(), arms["ECG"][c].median(), arms["shufECG"][c].median()
+        p = _sf((arms["ECG"][c] - arms["base"][c]).values)
+        ax.plot([b, e], [y[i]] * 2, color="#2b8a3e", lw=2.2, zorder=2)
+        ax.scatter(sh, y[i], marker="D", color=C_SHUF, s=34, zorder=3, label="Permuted-ECG placebo" if i == 0 else None)
+        ax.scatter(b, y[i], color=C_BASE, s=70, zorder=4, edgecolors="white", label="Demographic PS" if i == 0 else None)
+        ax.scatter(e, y[i], color=C_ECG, s=70, zorder=5, edgecolors="white", label="+ ECG embedding" if i == 0 else None)
+        ax.text(max(b, sh) + 0.006, y[i], _pstr(p), va="center", fontsize=9, color="#444")
+    ax.axvline(0.1, color="#888", ls="--", lw=1)
+    ax.set_yticks(y)
+    ax.set_yticklabels([lab for _, lab in DOMS])
+    ax.set_xlim(0.06, 0.22)
+    ax.set_xlabel("Mean |SMD| (median across 38 trials)")
+    pct = {r: 100 * (arms[r][[c for c in arms[r] if c.startswith("smd:")]].abs() < 0.1).sum(1) / arms[r][[c for c in arms[r] if c.startswith("smd:")]].notna().sum(1) for r in ("base", "ECG")}
+    ax.set_title("A  Balance on held-out characteristics", loc="left", fontweight="bold", fontsize=12, pad=24)
+    ax.text(0.0, -0.2, f"All 58 variables: share with |SMD|<0.1 {pct['base'].mean():.0f}% → {pct['ECG'].mean():.0f}% (28/38 trials, p<0.001).\n"
+            "No gain for other labs or valves.", transform=ax.transAxes, fontsize=8.5, color="#444", va="top")
+    ax.legend(loc="lower center", bbox_to_anchor=(0.45, 1.0), ncol=3, fontsize=8, frameon=False, handletextpad=0.3, columnspacing=1.0)
     save(fig, "fig_A_loveplot")
 
 
 def panel_b(arms):
+    plt.rcParams.update({"font.size": 11})
     b, e = arms["base"], arms["ECG"]
     db, de = (b.loghr - b.rb).abs(), (e.loghr - e.rb).abs()
-    fig, ax = plt.subplots(figsize=(4.2, 4.6))
-    for t in db.index:
-        ax.plot([0, 1], [db[t], de[t]], color="#2b8a3e" if de[t] < db[t] else "#c92a2a", alpha=0.55, lw=1.1)
-    ax.scatter(np.zeros(len(db)), db, color=C_BASE, s=16, zorder=3)
-    ax.scatter(np.ones(len(de)), de, color=C_ECG, s=16, zorder=3)
-    ax.plot([0, 1], [db.mean(), de.mean()], color="black", lw=3, zorder=4)
-    ax.text(-0.06, db.mean(), f"mean {db.mean():.2f}", ha="right", va="center", fontsize=8)
-    ax.text(1.06, de.mean(), f"mean {de.mean():.2f}", ha="left", va="center", fontsize=8)
-    k = int((de < db).sum())
-    ax.text(0.5, 0.97, f"Closer to RCT with ECG: {k} of {len(db)} trials (p=0.002)", transform=ax.transAxes, ha="center", va="top", fontsize=8,
-            bbox=dict(fc="white", ec="#ccc", boxstyle="round,pad=0.3"))
-    ax.set_xticks([0, 1])
-    ax.set_xticklabels(["Demographic PS", "+ ECG"])
-    ax.set_xlim(-0.45, 1.45)
-    ax.set_ylabel("|log HR (emulation) − log HR (RCT)|")
-    ax.set_title("B  Distance from RCT result, per trial", loc="left", fontweight="bold")
+    cat = b.category
+    fig, ax = plt.subplots(figsize=(5.2, 5.2))
+    rows = [("All", "All 38 trials", db.index)] + [(k, lab, cat.index[cat == k]) for k, lab in CATS]
+    y = np.arange(len(rows))[::-1]
+    for i, (k, lab, idx) in enumerate(rows):
+        m0, m1 = db[idx].mean(), de[idx].mean()
+        kk = int((de[idx] < db[idx]).sum())
+        p = _sf((de[idx] - db[idx]).values)
+        ax.plot([m0, m1], [y[i]] * 2, color="#2b8a3e" if m1 < m0 else "#c92a2a", lw=2.2, zorder=2)
+        ax.scatter(m0, y[i], color=C_BASE, s=70, zorder=4, edgecolors="white", label="Demographic PS" if i == 0 else None)
+        ax.scatter(m1, y[i], color=C_ECG, s=70, zorder=5, edgecolors="white", label="+ ECG embedding" if i == 0 else None)
+        ax.text(max(m0, m1) + 0.012, y[i], f"{kk}/{len(idx)} closer, {_pstr(p)}", va="center", fontsize=9, color="#444")
+    ax.set_yticks(y)
+    ax.set_yticklabels([f"{lab} (n={len(idx)})" if k != "All" else lab for k, lab, idx in rows])
+    ax.get_yticklabels()[0].set_fontweight("bold")
+    ax.set_xlim(0, max(db.groupby(cat).mean().max(), db.mean()) * 1.75)
+    ax.set_xlabel("Mean |log HR (emulation) − log HR (RCT)|")
+    ax.set_title("B  Distance from RCT result, by trial type", loc="left", fontweight="bold", fontsize=12, pad=24)
+    ax.text(0.0, -0.2, "Trial-type categories were defined post hoc; the AF gain did not replicate\nin 5 prespecified new AF trials alone (3/5 closer).",
+            transform=ax.transAxes, fontsize=8.5, color="#444", va="top")
+    ax.legend(loc="lower center", bbox_to_anchor=(0.45, 1.0), ncol=3, fontsize=8, frameon=False, handletextpad=0.3, columnspacing=1.0)
     save(fig, "fig_B_hr_gap")
 
 
