@@ -43,7 +43,7 @@ Here, we evaluated whether AI-ECG embeddings capture confounding missed by struc
 We used electronic health record (EHR) data from the Yale New Haven Health System (YNHHS), a large academic health system in Connecticut and Rhode Island. We mapped the structured EHR data to the Observational Medical Outcomes Partnership (OMOP) common data model ourselves. We linked these data to structured echocardiography reports, raw 12-lead ECG signals and state vital statistics records (eMethods 1). We included patients with index dates from 2011 through 2024. The Yale Institutional Review Board approved the study (protocol number [ ]) and waived informed consent for this secondary analysis of existing data.
 
 ### Target trial specification
-We emulated 38 randomized controlled trials (RCTs) of cardiovascular therapies with active comparators. The trials covered atrial fibrillation (AF; 12 trials), diabetes (9), heart failure (5), hypertension (5), acute coronary syndromes (2) and other indications (5) (eTable 1). Each emulation used a new-user, active-comparator design that mirrored the trial protocol:
+We emulated 38 randomized controlled trials (RCTs) of cardiovascular therapies with active comparators. The trials covered atrial fibrillation (AF; 12 trials), diabetes (9), heart failure (5), hypertension (5), acute coronary syndromes (2) and other indications (5) (eTable 1). For each trial, we specified the population, intervention, comparator, outcome and time (PICOT) elements, following RCT-DUPLICATE.^5^ We also specified the full target trial protocol and how each component was emulated.^3^ Both are given in eTable 1. Each emulation used a new-user, active-comparator design that mirrored the trial protocol:
 - trial eligibility criteria;
 - time zero at the first order of the study drug or procedure, with a 365-day washout for the comparator;
 - follow-up to the trial-matched horizon;
@@ -122,6 +122,7 @@ Trials were the unit of replication. Paired differences between PS specification
 - **Follow-up:** follow-up extended through December 2024 for all-cause death and June 2024 for cause-specific death.
 
 ### eMethods 2. Emulation design
+- **eTable 1** lists, for each trial, the PICOT elements (population, intervention, comparator, outcome, time) alongside the target trial protocol components recommended by the TARGET guideline: eligibility, treatment strategies, assignment, time zero, follow-up, outcome, causal contrast and analysis. Each is shown with its emulated counterpart and any adaptation.
 - **Eligibility:** patients were aged ≥18 years (or the trial minimum), had ≥365 days of prior EHR activity and met trial-specific inclusion and exclusion criteria operationalized from structured data.
 - **Time zero:** the first qualifying order or procedure, with no comparator order in the preceding 365 days. Sequential switch designs were used where the trial compared a new therapy with continuation of an existing one.
 - **Follow-up:** from the day after time zero until the outcome, death, end of data or the trial-matched horizon, whichever occurred first.
@@ -179,6 +180,10 @@ Trials were the unit of replication. Paired differences between PS specification
 ---
 
 ### Draft notes (remove before submission)
+- **PICOT (2026-09-28):**
+  - Added to the main Methods and eMethods 2.
+  - eTable 1 must be built from `scripts/trial_specs.py` and PROTOCOL_V1 §4b in PICOT plus TARGET format.
+  - The TARGET checklist goes in the supplement.
 - **Methods v3 (2026-09-28):**
   - The main text is shortened; detail has moved to eMethods 1–9.
   - The text now states that the OMOP mapping was generated in-house.
