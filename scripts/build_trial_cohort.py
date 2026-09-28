@@ -53,8 +53,9 @@ def main() -> None:
             f"WHERE procedure_date IS NOT NULL AND {code_like('upper(procedure_source_value)', codes)}"
             for i, (_, codes) in enumerate(spec["arms"]))
         con.execute(f"CREATE TEMP TABLE armexp AS SELECT DISTINCT * FROM ({conds})")
-    elif spec.get("design") == "proc_vs_drug":
+    elif spec.get("design") == "proc_vs_drug" or spec.get("arm0_procedure"):
         # v1.3: arm 0 = procedure codes (procedure_source_value prefixes), arm 1 = drug keywords
+        # v1.8: spec['arm0_procedure'] (default off) gives the same exposure table to the switch_seq design
         (_, pcodes), (arm1, kws1) = spec["arms"]
         con.execute(f"""CREATE TEMP TABLE armexp0 AS SELECT DISTINCT 0 arm_idx, person_id, procedure_date d
             FROM {rp(G, 'procedure_occurrence')} WHERE procedure_date IS NOT NULL
@@ -197,6 +198,13 @@ def main() -> None:
             WHERE person_id IN (SELECT person_id FROM {cur}) AND {code_like('upper(procedure_source_value)', PCI_CODES)}""")
         apply("gate_no_pci_30d", """NOT EXISTS (SELECT 1 FROM pci x WHERE x.person_id = c.person_id
               AND x.d BETWEEN c.idx - INTERVAL 30 DAY AND c.idx)""")
+
+    # v1.8 gate (default off): a listed procedure code in [index-1, index] (e.g. concomitant cardiac surgery)
+    if gate.get("procedure_1d"):
+        con.execute(f"""CREATE TEMP TABLE gproc AS SELECT DISTINCT person_id, procedure_date d FROM {rp(G, 'procedure_occurrence')}
+            WHERE person_id IN (SELECT person_id FROM {cur}) AND {code_like('upper(procedure_source_value)', gate['procedure_1d'])}""")
+        apply("gate_no_procedure_1d", """NOT EXISTS (SELECT 1 FROM gproc x WHERE x.person_id = c.person_id
+              AND x.d BETWEEN c.idx - INTERVAL 1 DAY AND c.idx)""")
 
     # v1.3 gates: every listed code group present on/before index; first-ever diagnosis recent
     for j, lst in enumerate(gate.get("require_all", [])):

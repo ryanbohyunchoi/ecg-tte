@@ -947,3 +947,155 @@ PUBLISHED.update({
     "prove_it": dict(hr=0.84, ci=(0.74, 0.95), measure="HR (16% reduction, 95% CI 5-26%)", endpoint="death, MI, UA rehospitalisation, revascularisation >= 30 d or stroke",
                      rct_arms="atorvastatin 80 vs pravastatin 40", our_orientation=0.84, source="Cannon et al. NEJM 2004;350:1495-504 (PMID 15007110)"),
 })
+
+# ---- v1.8 (2026-09-27; docs/v17/V18_PLANS.md Plan A): prespecified AF confirmation candidates. Specs are fixed from the
+# primary publications (PubMed abstracts, E-utilities text, 2026-09-27) before any count-only screen or outcome extraction;
+# candidate list and screen in docs/v18/af_candidates.md. Same pipeline as v1.7. No v1.8 trial has any balance or effect result.
+# New cohort options (default off): 'arm0_procedure' (switch_seq with a procedure arm 0) and gate 'procedure_1d'.
+WARFARIN = ["warfarin", "coumadin", "jantoven"]
+LAAO_PERC = ["33340", "02L73DK"]  # CPT percutaneous LAA closure; ICD-10-PCS occlusion of LAA with intraluminal device, percutaneous
+# surgical LAA occlusion/excision at open-heart surgery (ICD-10-PCS open approach; CPT 2023+ open codes); thoracoscopic stand-alone excluded
+LAAO_SURG = ["02L70", "02B70ZK", "33267", "33268"]
+CARDIAC_SURG = CABG_CODES + ["02RF0", "02RF4", "X2RF0", "02RG0", "02RG4", "02QG0", "02QG4", "02UG0", "02UG4",
+                             "33405", "33406", "33410", "33411", "33412", "33413", "33425", "33426", "33427", "33430"]
+# major bleeding hospitalisation: GI bleeding, peptic ulcer with haemorrhage, intracranial haemorrhage
+BLEED_HOSP = ["K920", "K921", "K922", "K250", "K252", "K254", "K256", "K260", "K262", "K264", "K266", "K270", "K272", "K274",
+              "K276", "K280", "K282", "K284", "K286", "I60", "I61", "I62"]
+PRIOR_BLEED = ["K92", "I60", "I61", "I62", "R31", "R58", "D62"]
+PRIOR_TE = ["I63", "I64", "G45", "I69", "I74", "Z8673"]
+CHADS_RISK = HTN + ["E10", "E11", "I50"] + PRIOR_TE
+AF_DRUGS = TRIALS["aristotle"]["drugs_90d"]
+AF_EXTRA = TRIALS["aristotle"]["extra_dx"]
+AF_PROG = TRIALS["aristotle"]["prognostic"]
+V18 = {
+    "prague17": dict(
+        name="PRAGUE-17 (adapted, sequential): percutaneous LAA closure vs continued DOAC", spec_version="prague17_adapted_v1",
+        role="control", design="switch_seq", arm0_procedure=True, arms=[("laao", LAAO_PERC), ("doac", DOAC_OTHER)],
+        prior_class=ANTICOAG + ["jantoven"], index_start="2015-03-13", index_end="2024-06-30",
+        gate={"any_before_or_on_index": ["I48"], "require_all": [PRIOR_BLEED + PRIOR_TE]}, exclusions=dict(ever_codes=AF_VALVE),
+        drugs_90d=AF_DRUGS, extra_dx=AF_EXTRA, report_covariates=TRIALS["aristotle"]["report_covariates"], prognostic=AF_PROG,
+        note="LAAO with an OAC order in the prior year vs established DOAC users (sequential, +/-30 d, 1:4); high risk = prior bleeding or "
+             "thromboembolism code (the CHA2DS2-VASc >= 3 with HAS-BLED > 2 route is not identifiable); procedure complications during the "
+             "index stay not captured"),
+    "protect_af": dict(
+        name="PROTECT AF (adapted, sequential): percutaneous LAA closure vs continued warfarin", spec_version="protect_af_adapted_v1",
+        role="control", design="switch_seq", arm0_procedure=True, arms=[("laao", LAAO_PERC), ("warfarin", WARFARIN)],
+        prior_class=ANTICOAG + ["jantoven"], index_start="2015-03-13", index_end="2024-06-30",
+        gate={"any_before_or_on_index": ["I48"], "require_all": [CHADS_RISK]}, exclusions=dict(ever_codes=AF_VALVE),
+        drugs_90d=AF_DRUGS, extra_dx=AF_EXTRA, report_covariates=TRIALS["aristotle"]["report_covariates"], prognostic=AF_PROG,
+        note="LAAO with an OAC order in the prior year vs established warfarin users (sequential); CHADS2 risk factor by code "
+             "(age >= 75 alone not applied); shares the LAAO arm with PRAGUE-17"),
+    "frail_af": dict(
+        name="FRAIL-AF (adapted, sequential): switch from warfarin to a DOAC vs continued warfarin, age >= 75",
+        spec_version="frail_af_adapted_v1", role="control", design="switch_seq", arms=[("doac_switch", DOAC_OTHER), ("warfarin", WARFARIN)],
+        prior_class=WARFARIN, min_age=75, index_start="2013-01-01", index_end="2024-06-30", gate={"any_before_or_on_index": ["I48"]},
+        exclusions=dict(ever_codes=AF_VALVE, egfr_lt=30), drugs_90d=AF_DRUGS, extra_dx=AF_EXTRA,
+        report_covariates=TRIALS["aristotle"]["report_covariates"], prognostic=AF_PROG,
+        note="frailty (Groningen Frailty Indicator >= 3) not identifiable; age >= 75 applied; major/CRNM bleeding -> major-bleeding hospitalisation"),
+    "laaos3": dict(
+        name="LAAOS III (adapted): surgical LAA occlusion vs none at cardiac surgery in AF", spec_version="laaos3_adapted_v1",
+        role="control", design="procedure", arms=[("laa_occlusion", LAAO_SURG), ("cardiac_surgery", CARDIAC_SURG)], washout_arms=[1],
+        index_start="2015-10-01", index_end="2024-06-30", gate={"any_before_or_on_index": ["I48"], "procedure_1d": CARDIAC_SURG},
+        exclusions=dict(), drugs_90d={**AF_DRUGS, "anticoag_order": ANTICOAG}, extra_dx=AF_EXTRA,
+        report_covariates=["lvef", "age_at_index", "creatinine", "stroke_history"], prognostic=AF_PROG,
+        note="CABG / valve surgery (open) with vs without a same-day LAA occlusion/excision code; ICD-10-PCS era only; comparator = "
+             "surgery without LAA code (washout of arm 1 only); perioperative (index-stay) strokes not counted"),
+    "raft_af": dict(
+        name="RAFT-AF (adapted, sequential): AF ablation vs continued rate control in HF", spec_version="raft_af_adapted_v1",
+        role="physiology", design="switch_seq", arm0_procedure=True, arms=[("af_ablation", AF_ABLATION), ("rate_control", RATE_CONTROL)],
+        prior_class=RATE_CONTROL, index_start="2013-01-01", index_end="2024-06-30",
+        gate={"any_before_or_on_index": ["I48"], "require_all": [["I50"]]}, exclusions=dict(ever_codes=AF_VALVE),
+        drugs_90d={"anticoag_order": ANTICOAG, "antiarrhythmic_order": ANTIARRHYTHMIC, "acei_arb_arni_order": ACEI + ARB + ["sacubitril", "entresto"],
+                   "mra_order": MRA, "loop_diuretic_order": LOOP, "sglt2_inhibitor_order": SGLT2},
+        extra_dx={"heart_failure": ["I50"]}, report_covariates=["lvef", "atrial_fibrillation", "creatinine", "sbp"], prognostic=HF_PROG,
+        note="HF by code (any EF; trial NYHA II-III with raised NT-proBNP); ablation with rate-control use in the prior year vs established "
+             "rate-control users without ablation (sequential); comparator antiarrhythmic use not excluded"),
+    "augustus": dict(
+        name="AUGUSTUS (adapted): apixaban vs warfarin initiation within 30 d after PCI in AF, on a P2Y12 inhibitor",
+        spec_version="augustus_adapted_v1", role="control", arms=[("apixaban", ["apixaban", "eliquis"]), ("warfarin", WARFARIN)],
+        index_start="2013-01-01", index_end="2024-06-30",
+        gate={"any_before_or_on_index": ["I48"], "pci_30d": True, "require_drugs_365d": [P2Y12]},
+        exclusions=dict(ever_codes=AF_VALVE, other_anticoag_365d=[d for d in DOAC_OTHER if d not in ("apixaban", "eliquis")]),
+        drugs_90d=AF_DRUGS, extra_dx={**AF_EXTRA, "stemi_30d": None}, index_event_pci=True,
+        report_covariates=["creatinine", "age_at_index", "stemi_30d", "hemoglobin"], prognostic=AF_PROG,
+        note="PCI in the 30 d before OAC initiation (ACS without PCI not captured); ISTH major/CRNM bleeding -> major-bleeding hospitalisation"),
+    "pioneer_af_pci": dict(
+        name="PIONEER AF-PCI (adapted): rivaroxaban vs warfarin initiation within 30 d after PCI in AF, on a P2Y12 inhibitor",
+        spec_version="pioneer_af_pci_adapted_v1", role="control", arms=[("rivaroxaban", ["rivaroxaban", "xarelto"]), ("warfarin", WARFARIN)],
+        index_start="2013-01-01", index_end="2024-06-30",
+        gate={"any_before_or_on_index": ["I48"], "pci_30d": True, "require_drugs_365d": [P2Y12]},
+        exclusions=dict(ever_codes=AF_VALVE, other_anticoag_365d=[d for d in DOAC_OTHER if d not in ("rivaroxaban", "xarelto")]),
+        drugs_90d=AF_DRUGS, extra_dx={**AF_EXTRA, "stemi_30d": None}, index_event_pci=True,
+        report_covariates=["creatinine", "age_at_index", "stemi_30d", "hemoglobin"], prognostic=AF_PROG,
+        note="trial group 1 (rivaroxaban 15 mg + P2Y12) vs VKA triple therapy; aspirin not identifiable; dose not identifiable"),
+    "re_dual_pci": dict(
+        name="RE-DUAL PCI (adapted): dabigatran vs warfarin initiation within 30 d after PCI in AF, on a P2Y12 inhibitor",
+        spec_version="re_dual_pci_adapted_v1", role="control", arms=[("dabigatran", ["dabigatran", "pradaxa"]), ("warfarin", WARFARIN)],
+        index_start="2013-01-01", index_end="2024-06-30",
+        gate={"any_before_or_on_index": ["I48"], "pci_30d": True, "require_drugs_365d": [P2Y12]},
+        exclusions=dict(ever_codes=AF_VALVE, other_anticoag_365d=[d for d in DOAC_OTHER if d not in ("dabigatran", "pradaxa")]),
+        drugs_90d=AF_DRUGS, extra_dx={**AF_EXTRA, "stemi_30d": None}, index_event_pci=True,
+        report_covariates=["creatinine", "age_at_index", "stemi_30d", "hemoglobin"], prognostic=AF_PROG,
+        note="benchmark = 150 mg dual vs triple (the US dose); aspirin not identifiable"),
+    "active_w": dict(
+        name="ACTIVE W (adapted): clopidogrel vs warfarin initiation in AF", spec_version="active_w_adapted_v1", role="control",
+        arms=[("clopidogrel", ["clopidogrel", "plavix"]), ("warfarin", WARFARIN)], min_age=55, index_start="2013-01-01", index_end="2024-06-30",
+        gate={"any_before_or_on_index": ["I48"], "require_all": [CHADS_RISK + ["I702", "I739"]]},
+        exclusions=dict(ever_codes=AF_VALVE + ["I61", "I62"], other_anticoag_365d=DOAC_OTHER,
+                        codes_window=[(365, MI_CODES + ["I24", "I200", "Z955"])]),
+        drugs_90d=AF_DRUGS, extra_dx=AF_EXTRA, report_covariates=TRIALS["aristotle"]["report_covariates"], prognostic=AF_PROG,
+        note="trial: clopidogrel + aspirin vs VKA; aspirin not identifiable; recent ACS/stent (clopidogrel indication) excluded"),
+    "renal_af": dict(
+        name="RENAL-AF (adapted): apixaban vs warfarin initiation in AF on haemodialysis", spec_version="renal_af_adapted_v1", role="control",
+        arms=[("apixaban", ["apixaban", "eliquis"]), ("warfarin", WARFARIN)], index_start="2013-01-01", index_end="2024-06-30",
+        gate={"any_before_or_on_index": ["I48"], "require_all": [["N186", "Z992", "Z4931", "Z4932"]]},
+        exclusions=dict(ever_codes=AF_VALVE, other_anticoag_365d=[d for d in DOAC_OTHER if d not in ("apixaban", "eliquis")]),
+        drugs_90d=AF_DRUGS, extra_dx=AF_EXTRA, report_covariates=TRIALS["aristotle"]["report_covariates"], prognostic=AF_PROG,
+        note="ESKD / dialysis by code; major/CRNM bleeding -> major-bleeding hospitalisation"),
+}
+TRIALS.update(V18)
+OUTCOMES.update({
+    "prague17": ["cv_death", ("hosp", STROKE + ["G45", "I74"]), ("hosp", BLEED_HOSP)],
+    "protect_af": ["cv_death", ("hosp", STROKE + ["I74"])],
+    "frail_af": [("hosp", BLEED_HOSP)],
+    "laaos3": [("hosp", ["I63", "I64", "I74"])],
+    "raft_af": ["death", ("hosp", ["I50"])],
+    "augustus": [("hosp", BLEED_HOSP)], "pioneer_af_pci": [("hosp", BLEED_HOSP)], "re_dual_pci": [("hosp", BLEED_HOSP)],
+    "active_w": ["cv_death", ("hosp", STROKE + ["I74"]), ("hosp", MI_CODES)],
+    "renal_af": [("hosp", BLEED_HOSP)],
+})
+HORIZON_MONTHS.update({"prague17": 20, "protect_af": 18, "frail_af": 12, "laaos3": 46, "raft_af": 36, "augustus": 6,
+                       "pioneer_af_pci": 12, "re_dual_pci": 14, "active_w": 15, "renal_af": 12})
+# v1.8 benchmarks: primary-paper abstracts (PubMed E-utilities text, 2026-09-27); `hr` in the RCT orientation, `our_orientation` = arms[0] vs arms[1].
+PUBLISHED.update({
+    "prague17": dict(hr=0.84, ci=(0.53, 1.31), measure="subdistribution HR, modified ITT", rct_arms="LAA closure vs DOAC",
+                     endpoint="stroke/TIA, systemic embolism, CV death, major or CRNM bleeding, procedure/device complications",
+                     our_orientation=0.84, source="Osmancik et al. J Am Coll Cardiol 2020;75:3122-35 (PMID 32586585)"),
+    "protect_af": dict(hr=0.62, ci=(0.35, 1.25), measure="rate ratio (Bayesian; 95% credible interval), ITT", rct_arms="Watchman LAA closure vs warfarin",
+                       endpoint="stroke, CV death or systemic embolism", our_orientation=0.62,
+                       source="Holmes et al. Lancet 2009;374:534-42 (PMID 19683639)"),
+    "frail_af": dict(hr=1.69, ci=(1.23, 2.32), measure="cause-specific HR, ITT", rct_arms="switch VKA to NOAC vs continue VKA (frail, >= 75 y)",
+                     endpoint="major or clinically relevant non-major bleeding", our_orientation=1.69,
+                     source="Joosten et al. Circulation 2024;149:279-89 (PMID 37634130)"),
+    "laaos3": dict(hr=0.67, ci=(0.53, 0.85), measure="HR", rct_arms="LAA occlusion vs no occlusion during cardiac surgery",
+                   endpoint="ischaemic stroke or systemic embolism", our_orientation=0.67,
+                   source="Whitlock et al. NEJM 2021;384:2081-91 (PMID 33999547)"),
+    "raft_af": dict(hr=0.71, ci=(0.49, 1.03), measure="HR", rct_arms="ablation-based rhythm control vs rate control (HF)",
+                    endpoint="all-cause death or HF event", our_orientation=0.71,
+                    source="Parkash et al. Circulation 2022;145:1693-704 (PMID 35313733)"),
+    "augustus": dict(hr=0.69, ci=(0.58, 0.81), measure="HR (factorial, apixaban vs VKA)", rct_arms="apixaban vs VKA after ACS/PCI",
+                     endpoint="ISTH major or clinically relevant non-major bleeding", our_orientation=0.69,
+                     source="Lopes et al. NEJM 2019;380:1509-24 (PMID 30883055)"),
+    "pioneer_af_pci": dict(hr=0.59, ci=(0.47, 0.76), measure="HR (group 1 vs group 3)", rct_arms="rivaroxaban 15 mg + P2Y12 vs VKA + DAPT",
+                           endpoint="clinically significant bleeding", our_orientation=0.59,
+                           source="Gibson et al. NEJM 2016;375:2423-34 (PMID 27959713)"),
+    "re_dual_pci": dict(hr=0.72, ci=(0.58, 0.88), measure="HR (150 mg dual vs corresponding triple)", rct_arms="dabigatran 150 mg + P2Y12 vs warfarin triple",
+                        endpoint="major or clinically relevant non-major bleeding", our_orientation=0.72,
+                        source="Cannon et al. NEJM 2017;377:1513-24 (PMID 28844193)"),
+    "active_w": dict(hr=1.44, ci=(1.18, 1.76), measure="RR", rct_arms="clopidogrel + aspirin vs oral anticoagulation",
+                     endpoint="stroke, non-CNS systemic embolism, MI or vascular death", our_orientation=1.44,
+                     source="ACTIVE Writing Group. Lancet 2006;367:1903-12 (PMID 16765759)"),
+    "renal_af": dict(hr=1.20, ci=(0.63, 2.30), measure="HR", rct_arms="apixaban vs warfarin (haemodialysis)",
+                     endpoint="major or clinically relevant non-major bleeding", our_orientation=1.20,
+                     source="Pokorney et al. Circulation 2022;146:1735-45 (PMID 36335914)"),
+})

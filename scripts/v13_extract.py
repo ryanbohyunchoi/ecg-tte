@@ -135,7 +135,7 @@ def main():
 
     # on-treatment periods (drug designs)
     pp_note = "not applicable (procedure design)"
-    if spec.get("design") not in ("procedure", "proc_vs_drug"):  # audit fix: no drug orders in a procedure arm
+    if spec.get("design") not in ("procedure", "proc_vs_drug") and not spec.get("arm0_procedure"):  # audit fix: no drug orders in a procedure arm
         rows = [(i, kw.lower()) for i, (_, kws) in enumerate(spec["arms"]) for kw in kws]
         kwdf = pd.DataFrame(rows, columns=["arm_idx", "kw"])
         con.register("kwdf", kwdf)
