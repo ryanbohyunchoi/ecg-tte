@@ -19,104 +19,54 @@ Here, we evaluated whether AI-ECG embeddings capture confounding missed by struc
 ## Methods
 
 ### Data sources
-We used data from the Yale New Haven Health System (YNHHS), a large academic health system with multiple hospitals and an extensive outpatient network across Connecticut and Rhode Island. Structured EHR data were obtained from an Observational Medical Outcomes Partnership (OMOP) common data model extract and the source Epic tables. They included diagnoses (ICD-10-CM), medication orders, procedures, laboratory measurements, vital signs and encounters. Echocardiographic measurements were obtained from structured echocardiography reports. Deaths were identified from the EHR and linked Connecticut vital statistics records, which also provided causes of death. Twelve-lead ECGs were obtained from the institutional ECG archive as raw 10-second, 500 Hz signals. The study included patients with an index date between 2011 and 2024, with follow-up through December 2024.
-
-The Yale Institutional Review Board approved the study protocol (protocol number [ ]) and waived the need for informed consent, as the study represents secondary analysis of existing data.
+We used electronic health record (EHR) data from the Yale New Haven Health System (YNHHS), a large academic health system in Connecticut and Rhode Island. We mapped the structured EHR data to the Observational Medical Outcomes Partnership (OMOP) common data model ourselves. We linked these data to structured echocardiography reports, raw 12-lead ECG signals and state vital statistics records (eMethods 1). We included patients with index dates from 2011 through 2024. The Yale Institutional Review Board approved the study (protocol number [ ]) and waived informed consent for this secondary analysis of existing data.
 
 ### Target trial specification
-We emulated 38 randomized controlled trials (RCTs) of cardiovascular therapies. Each used an active comparator or an established active-comparator adaptation of a placebo-controlled design. The trials spanned atrial fibrillation (AF; 12 trials), diabetes (9), heart failure (HF; 5), hypertension (5), acute coronary syndrome or myocardial infarction (2) and other indications (5) (Supplementary Table 1).
+We emulated 38 randomized controlled trials (RCTs) of cardiovascular therapies with active comparators. The trials covered atrial fibrillation (AF; 12 trials), diabetes (9), heart failure (5), hypertension (5), acute coronary syndromes (2) and other indications (5) (eTable 1). Each emulation used a new-user, active-comparator design that mirrored the trial protocol:
+- trial eligibility criteria;
+- time zero at the first order of the study drug or procedure, with a 365-day washout for the comparator;
+- follow-up to the trial-matched horizon;
+- the trial's primary endpoint;
+- an initiator (intention-to-treat–like) estimand.
 
-Each emulation followed a new-user, active-comparator design that mirrored the corresponding trial protocol:
-- **Eligibility:** trial inclusion and exclusion criteria were operationalized from structured data. All patients were aged ≥18 years (or the trial minimum) and had ≥365 days of prior EHR activity.
-- **Time zero:** the first order for the study drug or procedure, with no order for the comparator in the preceding 365 days. Sequential switch designs were used where the trial compared a new therapy against continuation of an existing one.
-- **Follow-up:** from the day after time zero until the outcome, death, the end of available data or the trial-matched follow-up horizon, whichever came first.
-- **Outcome:** each trial's primary endpoint, mapped to EHR events. Hospitalization endpoints required a qualifying diagnosis during an inpatient stay. Cardiovascular death was defined from listed causes of death.
-- **Estimand:** the effect of treatment initiation, analogous to the intention-to-treat effect.
+Operational definitions are given in eMethods 2.
 
 ### Trial selection and prespecification
 Trials were assembled in three sets:
-1. **Development set (18 trials),** in which the analytic approach was developed.
-2. **General confirmation set (15 trials),** drawn largely from trials emulated in the RCT-DUPLICATE initiative.^4,5^
-3. **AF confirmation set (5 trials).**
+1. a development set (18 trials);
+2. a general confirmation set (15 trials), drawn largely from RCT-DUPLICATE;^4,5^
+3. an AF confirmation set (5 trials).
 
-The analysis plan for each confirmation set was fixed before any of its results were computed. For each new trial, the trial specification and the published primary hazard ratio (HR) were registered in a version-controlled repository before outcome extraction.
+For each confirmation set, the analysis plan, trial specifications and published hazard ratios (HRs) were fixed in a version-controlled repository before any results were computed. An independent rater, blinded to all results, graded emulation fidelity and the a priori relevance of ECG-reflected physiology to each trial (eMethods 3).
 
-Feasibility required ≥300 patients with an ECG in the smaller treatment arm and ≥50 primary-outcome events. It was assessed using pooled counts only. Candidate cohorts sharing >80% of patient–index date records with an existing cohort were excluded as duplicates.
+### AI-ECG and EHR representations
+We used the most recent 12-lead ECG within 365 days before or on the index date. ECGs were encoded with an in-house signal model adapted from our image-based biometric contrastive learning (BCL) model.^10^ This self-supervised model produced a 256-dimensional embedding per ECG, which was reduced to 32 principal components within each trial (eMethods 4). To test whether any gains reflected ECG information rather than added dimensions, we used a permuted-ECG placebo, in which embeddings were shuffled between patients.
 
-An independent rater, blinded to all emulation results, classified the emulation fidelity of each trial using criteria adapted from RCT-DUPLICATE.^5^ These criteria cover time-zero alignment, run-in periods, switching of baseline therapy, delayed effects with long follow-up, and comparator and outcome fidelity. The rater also classified, a priori, the relevance of ECG-reflected physiology to treatment choice and prognosis in each trial.
+For comparison, we used CLMBR-T-base, a structured-EHR foundation model.^11^ We applied it to each patient's coded history before the index date and reduced its output to 64 principal components.
 
-### Study exposure: AI-ECG representations
-For each patient, we used the most recent 12-lead ECG obtained within 365 days before or on the index date. ECGs were encoded with an in-house signal model: a transformer encoder adapted from our previously developed image-based biometric contrastive learning (BCL) model and trained with the same self-supervised objective on 12-lead ECG signals (Supplementary Methods).^10^ The objective learns patient-specific representations of the ECG without diagnostic labels. The frozen encoder produced a 256-dimensional embedding per ECG. Within each trial, embeddings were reduced to their first 32 principal components, which entered the propensity score (PS) as covariates.
+### Propensity scores and matching
+The primary propensity score (PS) included demographics only (age, sex and calendar year). We also evaluated progressively richer specifications:
+- demographics plus five cardiometabolic diagnoses;
+- a sparse diagnosis-based PS;
+- a high-dimensional PS;^6^
+- a clinical PS including vital signs, laboratory values and ejection fraction.
 
-We constructed two placebo representations of the same dimension:
-- a **permuted-ECG placebo,** in which embeddings were randomly reassigned between patients within each cohort;
-- a **noise placebo** of independent standard Gaussian variables.
+Each specification was fitted with and without the ECG and CLMBR-T representations and the placebo. Patients were matched 1:1 on the PS logit using nearest-neighbour matching with a caliper of 0.2 SD (eMethods 5).
 
-As a comparator representation derived from the structured record, we used CLMBR-T-base, a 141-million-parameter foundation model developed at Stanford and pretrained on the structured EHR data of 2.57 million patients.^11^ The frozen model was applied to each patient's coded history before the index date. The resulting 768-dimensional representations were reduced to 64 principal components.
+### Outcomes
+The primary balance outcome was the proportion of 58 held-out characteristics with an absolute standardized mean difference (SMD) <0.1. None of these characteristics were included in the PS under evaluation. They comprised medication, utilization and coded-record summaries; vital signs; laboratory values including NT-proBNP; and 35 echocardiographic measures (eTable 2). An expanded panel of about 400 characteristics was used in sensitivity analyses.
 
-### Propensity score specifications and matching
-The primary PS included demographics only (age, sex and calendar year of index). This represents settings in which few structured covariates are reliably captured. We also evaluated progressively richer specifications:
-- demographics plus five cardiometabolic diagnoses (hypertension, type 2 diabetes, coronary artery disease, AF and HF);
-- the same with obesity;
-- a sparse PS of demographics and 9–13 investigator-selected cardiovascular diagnoses;
-- a high-dimensional PS adding the 200 codes most strongly associated with treatment;^6^
-- a clinical PS adding vital signs, laboratory values, left ventricular ejection fraction (LVEF), medications and healthcare use.
+Agreement with RCTs was measured as:
+- the absolute difference between emulated and RCT log HRs;
+- statistical consistency with the RCT estimate.
 
-Each specification was fitted alone, with the ECG embedding, with CLMBR-T, with both, and with each placebo. PS were estimated using L2-penalized logistic regression on standardized covariates. Patients were matched 1:1 on the logit of the PS using greedy nearest-neighbour matching without replacement and a caliper of 0.2 standard deviations. Sensitivity analyses varied the caliper, the matching ratio and the number of ECG components, and used inverse probability and overlap weighting.
+Emulated HRs were estimated with Cox models with robust variance clustered on matched pairs. A benchmark-permutation test distinguished trial-specific agreement from generic attenuation of extreme estimates (eMethods 6).
 
-### Study outcomes
-**Covariate balance.** Balance was assessed on 58 characteristics that were not included in the PS under evaluation (Supplementary Table 2). They comprised:
-- summaries of medications, healthcare use and held-out diagnosis and procedure codes;
-- an external prognostic score;
-- vital signs and laboratory values, including NT-proBNP;
-- 35 echocardiographic measures of left ventricular structure and function, diastolic and left atrial function, right ventricular and pulmonary haemodynamics, and valvular disease.
-
-Standardized mean differences (SMD) were calculated in the matched sample using observed values and the pooled standard deviation before matching. The primary balance outcome was the proportion of held-out characteristics with an absolute SMD <0.1 in each trial. We further evaluated an expanded panel of about 400 pre-index characteristics:
-- comorbidity and frailty indices, medication classes, healthcare use and additional laboratory values;
-- excluding variables included in or derived from the PS, variables that could reveal treatment assignment, and characteristics directly reflected in the ECG.
-
-**Agreement with RCT results.** For each emulation, we calculated:
-- the absolute difference between the emulated and RCT log HR;
-- a precision-standardized difference incorporating the standard errors of both estimates;
-- whether the emulated estimate was statistically consistent with the RCT.
-
-HRs were estimated using Cox proportional hazards models with robust standard errors clustered on matched pairs.
-
-To distinguish movement toward each trial's own result from generic attenuation of extreme estimates, we compared the observed improvement with that obtained after permuting RCT benchmarks across trials.
-
-### Simulation with a known treatment effect
-To quantify bias reduction directly, we performed plasmode simulations in 31 trials. Real covariates, ECGs and censoring patterns were retained, and repeated 80% subsamples were drawn.
-- **Hidden confounder:** one measured physiological variable (LVEF, NT-proBNP, body mass index or estimated glomerular filtration rate) was designated as an unmeasured confounder and excluded from every PS.
-- **Simulated treatment and outcomes:** treatment assignment and time-to-event outcomes were simulated to depend on this variable across a range of confounding strengths, with a true HR of 0.80.
-- **Bias removed:** the proportion of the demographic-PS bias eliminated by adding the ECG embedding, the placebos, or the confounder itself (oracle). We related this proportion to the cross-validated variance in the confounder explained by the ECG embedding.
-
-### ECG-based diagnostics and trial enrichment
-To evaluate AI-ECG as a diagnostic of residual confounding, we measured imbalance in AI-ECG-derived phenotypes, and the ability of the ECG embedding to discriminate treatment groups, at successive design steps:
-1. a comparison of initiators without trial eligibility criteria;
-2. the emulated trial population;
-3. matching on the sparse PS;
-4. matching on the high-dimensional PS;
-5. matching on the clinical PS.
-
-To evaluate utility for trial design, we derived a cross-fitted AI-ECG risk score for each trial's primary outcome. We compared its prognostic performance with that of clinical and EHR-embedding scores. We also estimated the reduction in required sample size from enrolling patients in the highest quartile of predicted risk.
+### Simulation and ECG-based diagnostics
+In plasmode simulations with a true HR of 0.80, a measured physiological variable was withheld from every PS to act as an unmeasured confounder. The variables were ejection fraction, NT-proBNP, body mass index and estimated glomerular filtration rate. We quantified the proportion of the resulting bias removed by adding the ECG embedding (eMethods 7). We also examined ECG-phenotype imbalance across successive design steps, and the prognostic value of an AI-ECG risk score for trial enrichment (eMethods 8).
 
 ### Statistical analysis
-Trials were treated as the unit of replication. Differences between PS specifications were tested with exact sign-flip permutation tests on per-trial paired differences. The tests were one-sided where the direction was prespecified and two-sided otherwise. Robustness was assessed by:
-- clustering trials that share comparator populations;
-- leave-one-trial-out analyses;
-- replication in two random, treatment-stratified halves of each cohort.
-
-The false discovery rate was controlled with the Benjamini–Hochberg procedure within analysis families. Analyses were designated prospectively as confirmatory or exploratory, and all results are reported regardless of direction. Three rounds of independent audit re-derived headline estimates from aggregate outputs and confirmed that each prespecification preceded the corresponding results.
-
-**Software.** All analyses were performed in Python 3.11.16, using:
-- pandas 2.3.3 and NumPy 2.4.6 for data processing;
-- DuckDB 1.5.5 for database queries;
-- scikit-learn 1.9.1 for PS models and imputation;
-- lifelines 0.30.3 for survival analysis;
-- SciPy 1.17.1 and statsmodels 0.15.0 for statistical testing;
-- matplotlib 3.11.2 for figures.
-
-ECG embeddings were generated with PyTorch 2.5.0. CLMBR-T representations were generated with PyTorch 2.13.0 and FEMR 0.2.3.
+Trials were the unit of replication. Paired differences between PS specifications were tested with exact sign-flip permutation tests across trials. We assessed robustness to clustering of related trials, leave-one-trial-out analysis and split-sample replication. The false discovery rate was controlled within analysis families. Analyses were designated as confirmatory or exploratory in advance, and all results are reported. Headline estimates were re-derived in three independent audits. Analyses were performed in Python 3.11 (eMethods 9).
 
 ## Results
 
@@ -140,10 +90,78 @@ ECG embeddings were generated with PyTorch 2.5.0. CLMBR-T representations were g
 10. Sangha V, Khunte A, Holste G, Mortazavi BJ, Wang Z, Oikonomou EK, Khera R. Biometric contrastive learning for data-efficient deep learning from electrocardiographic images. *J Am Med Inform Assoc.* 2024;31(4):855.
 11. Wornow M, Thapa R, Steinberg E, Fries JA, Shah NH. EHRSHOT: an EHR benchmark for few-shot evaluation of foundation models. *Adv Neural Inf Process Syst.* 2023;36.
 
+## Supplementary Methods (eMethods)
+
+### eMethods 1. Data sources
+- **YNHHS** comprises multiple hospitals and an extensive outpatient network across Connecticut and Rhode Island.
+- **EHR data:** our team mapped the structured Epic data to the OMOP common data model. The domains were diagnoses (ICD-10-CM), medication orders, procedures, laboratory measurements, vital signs and encounters. Source Epic tables supplemented the mapped data for race and ethnicity.
+- **Echocardiography:** echocardiographic measurements were taken from structured echocardiography reports. Free text was not used.
+- **Deaths:** deaths were identified from the EHR and from linked Connecticut vital statistics records, which also provided the listed causes.
+- **ECGs:** ECGs were retrieved from the institutional archive as raw 10-second, 500 Hz 12-lead signals.
+- **Follow-up:** follow-up extended through December 2024 for all-cause death and June 2024 for cause-specific death.
+
+### eMethods 2. Emulation design
+- **Eligibility:** patients were aged ≥18 years (or the trial minimum), had ≥365 days of prior EHR activity and met trial-specific inclusion and exclusion criteria operationalized from structured data.
+- **Time zero:** the first qualifying order or procedure, with no comparator order in the preceding 365 days. Sequential switch designs were used where the trial compared a new therapy with continuation of an existing one.
+- **Follow-up:** from the day after time zero until the outcome, death, end of data or the trial-matched horizon, whichever occurred first.
+- **Outcomes:** hospitalization endpoints required a qualifying ICD-10 code during an inpatient stay. Cardiovascular death was defined from listed causes of death.
+
+### eMethods 3. Prespecification, feasibility and blinded rating
+- **Feasibility:** ≥300 patients with an ECG in the smaller arm and ≥50 pooled primary events. Feasibility was assessed using pooled counts only.
+- **Near-duplicates:** cohorts sharing >80% of patient–index date records with an existing cohort were excluded.
+- **Blinded rating:** the rater followed RCT-DUPLICATE-adapted criteria. These covered time-zero alignment, run-in periods, switching of baseline therapy, delayed effects with long follow-up, and comparator and outcome fidelity.
+
+### eMethods 4. ECG and EHR representations
+- **ECG model:** a transformer encoder applied to 12-lead signals and trained in-house with the BCL objective of the published image-based model.^10^ [Add architecture and training-data details.]
+- **Embeddings:** the frozen encoder produced 256-dimensional embeddings, from which the first 32 principal components were computed within each trial.
+- **Placebos:** a permuted-ECG placebo (embeddings reassigned at random between patients within each cohort) and a noise placebo of independent Gaussian variables of the same dimension.
+- **CLMBR-T-base:** a 141-million-parameter model pretrained on the structured EHR data of 2.57 million patients at Stanford.^11^ It was applied frozen to pre-index coded history, producing 768-dimensional representations reduced to 64 principal components.
+
+### eMethods 5. Propensity score specifications
+- **Five-diagnosis PS:** hypertension, type 2 diabetes, coronary artery disease, AF and heart failure.
+- **Sparse PS:** 9–13 investigator-selected cardiovascular diagnoses.
+- **High-dimensional PS:** the 200 empirically selected codes most associated with treatment.
+- **Clinical PS:** added vital signs, laboratory values, LVEF, medications and healthcare use.
+- **Estimation:** PS were estimated with L2-penalized logistic regression on standardized covariates.
+- **Matching:** greedy nearest-neighbour, without replacement.
+- **Sensitivity analyses:** caliper 0.1, 1:3 matching, inverse probability and overlap weighting, and 4–256 ECG components.
+
+### eMethods 6. Balance and agreement metrics
+- **SMDs:** computed from observed values using the pooled SD before matching.
+- **Expanded panel:** comorbidity and frailty indices, medication classes, healthcare use and additional laboratory values. It excluded variables in or derived from the PS, variables revealing treatment, and ECG-proximal characteristics.
+- **Additional balance measures:** distributional and multivariate balance, and balance in measurement patterns.
+- **Agreement metrics:**
+  - a precision-standardized difference incorporating both standard errors;
+  - statistical consistency, defined as |z| <1.96.
+- **Benchmark-permutation test:** compared the observed improvement with that obtained after permuting RCT benchmarks across trials.
+
+### eMethods 7. Plasmode simulation
+- **Setting:** 31 trials, using repeated 80% subsamples that retained real covariates, ECGs and censoring.
+- **Simulated data:** treatment and time-to-event outcomes were simulated to depend on the withheld confounder across a grid of confounding strengths.
+- **Bias removed:** the proportion of the demographic-PS bias eliminated by adding the ECG embedding, the placebos or the confounder itself (oracle). It was related to the cross-validated variance in the confounder explained by the ECG.
+
+### eMethods 8. Design-step diagnostics and enrichment
+- **Design steps:**
+  1. initiators without trial eligibility criteria;
+  2. the emulated trial population;
+  3. sparse PS matching;
+  4. high-dimensional PS matching;
+  5. clinical PS matching.
+- **Enrichment:** the cross-fitted AI-ECG risk score for each trial's primary outcome was compared with clinical and CLMBR-T scores. Sample-size reduction was estimated from enrolment of patients in the top quartile of predicted risk.
+
+### eMethods 9. Statistical software
+- **Core analyses:** Python 3.11.16, with pandas 2.3.3, NumPy 2.4.6, DuckDB 1.5.5, scikit-learn 1.9.1, lifelines 0.30.3, SciPy 1.17.1, statsmodels 0.15.0 and matplotlib 3.11.2.
+- **ECG embeddings:** PyTorch 2.5.0.
+- **CLMBR-T representations:** PyTorch 2.13.0 and FEMR 0.2.3.
+- **Tests:** one-sided where the direction was prespecified; two-sided otherwise.
+
 ---
 
 ### Draft notes (remove before submission)
-- **Methods v2 (2026-09-28), written in the style of Khera-lab methods sections** (headings such as "Data sources" and "Study exposure"; the standard IRB and software sentences):
+- **Methods v3 (2026-09-28):**
+  - The main text is shortened; detail has moved to eMethods 1–9.
+  - The text now states that the OMOP mapping was generated in-house.
+- **Methods v2 notes, retained for reference:** (headings such as "Data sources" and "Study exposure"; the standard IRB and software sentences):
   - The IRB number is left blank for the PI.
   - BCL is described as an in-house signal model adapted from the image-based BCL (ref 10). Details go in the Supplementary Methods.
   - The embedding dimension is verified as 256, with 32 PCs.
