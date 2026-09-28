@@ -67,55 +67,55 @@ def _pstr(p):
 
 
 def panel_a(arms):
-    plt.rcParams.update({"font.size": 11})
-    fig, ax = plt.subplots(figsize=(5.2, 5.2))
+    plt.rcParams.update({"font.size": 18.3})
+    fig, ax = plt.subplots(figsize=(7.6, 7.6))
     y = np.arange(len(DOMS))[::-1]
     for i, (g, lab) in enumerate(DOMS):
         c = f"mean_smd_g:{g}"
         b, e, sh = arms["base"][c].median(), arms["ECG"][c].median(), arms["shufECG"][c].median()
         p = _sf((arms["ECG"][c] - arms["base"][c]).values)
-        ax.plot([b, e], [y[i]] * 2, color="#2b8a3e", lw=2.2, zorder=2)
-        ax.scatter(sh, y[i], marker="D", color=C_SHUF, s=34, zorder=3, label="Permuted-ECG placebo" if i == 0 else None)
-        ax.scatter(b, y[i], color=C_BASE, s=70, zorder=4, edgecolors="white", label="Demographic PS" if i == 0 else None)
-        ax.scatter(e, y[i], color=C_ECG, s=70, zorder=5, edgecolors="white", label="+ ECG embedding" if i == 0 else None)
-        ax.text(max(b, sh) + 0.006, y[i], _pstr(p), va="center", fontsize=9, color="#444")
+        ax.plot([b, e], [y[i]] * 2, color="#2b8a3e", lw=3, zorder=2)
+        ax.scatter(sh, y[i], marker="D", color=C_SHUF, s=60, zorder=3, label="Permuted-ECG placebo" if i == 0 else None)
+        ax.scatter(b, y[i], color=C_BASE, s=130, zorder=4, edgecolors="white", label="Demographic PS" if i == 0 else None)
+        ax.scatter(e, y[i], color=C_ECG, s=130, zorder=5, edgecolors="white", label="+ ECG embedding" if i == 0 else None)
+        ax.text(max(b, sh) + 0.006, y[i], _pstr(p), va="center", fontsize=15.0, color="#444")
     ax.set_yticks(y)
     ax.set_yticklabels([lab for _, lab in DOMS])
     ax.set_xlim(0.06, 0.22)
     ax.set_xlabel("Mean |SMD| (median across 38 trials)")
     pct = {r: 100 * (arms[r][[c for c in arms[r] if c.startswith("smd:")]].abs() < 0.1).sum(1) / arms[r][[c for c in arms[r] if c.startswith("smd:")]].notna().sum(1) for r in ("base", "ECG")}
-    ax.set_title("A  Balance on held-out characteristics", loc="left", fontweight="bold", fontsize=12, pad=24)
-    ax.text(0.0, -0.2, f"All 58 variables: share with |SMD|<0.1 {pct['base'].mean():.0f}% → {pct['ECG'].mean():.0f}% (28/38 trials, p<0.001).\n"
-            "No gain for other labs or valves.", transform=ax.transAxes, fontsize=8.5, color="#444", va="top")
-    ax.legend(loc="lower center", bbox_to_anchor=(0.45, 1.0), ncol=3, fontsize=8, frameon=False, handletextpad=0.3, columnspacing=1.0)
+    ax.set_title("A  Balance on held-out characteristics", loc="left", fontweight="bold", fontsize=20.0, pad=46)
+    ax.text(0.0, -0.17, f"All 58 variables: share with |SMD|<0.1 {pct['base'].mean():.0f}% → {pct['ECG'].mean():.0f}% (28/38 trials, p<0.001).\n"
+            "No gain for other labs or valves.", transform=ax.transAxes, fontsize=14.2, color="#444", va="top")
+    ax.legend(loc="lower center", bbox_to_anchor=(0.45, 1.005), ncol=3, fontsize=13.3, frameon=False, handletextpad=0.3, columnspacing=1.0)
     save(fig, "fig_A_loveplot")
 
 
 def panel_b(arms):
-    plt.rcParams.update({"font.size": 11})
+    plt.rcParams.update({"font.size": 18.3})
     b, e = arms["base"], arms["ECG"]
     db, de = (b.loghr - b.rb).abs(), (e.loghr - e.rb).abs()
     cat = b.category
-    fig, ax = plt.subplots(figsize=(5.2, 5.2))
+    fig, ax = plt.subplots(figsize=(7.6, 7.6))
     rows = [("All", "All 38 trials", db.index)] + [(k, lab, cat.index[cat == k]) for k, lab in CATS]
     y = np.arange(len(rows))[::-1]
     for i, (k, lab, idx) in enumerate(rows):
         m0, m1 = db[idx].mean(), de[idx].mean()
         kk = int((de[idx] < db[idx]).sum())
         p = _sf((de[idx] - db[idx]).values)
-        ax.plot([m0, m1], [y[i]] * 2, color="#2b8a3e" if m1 < m0 else "#c92a2a", lw=2.2, zorder=2)
-        ax.scatter(m0, y[i], color=C_BASE, s=70, zorder=4, edgecolors="white", label="Demographic PS" if i == 0 else None)
-        ax.scatter(m1, y[i], color=C_ECG, s=70, zorder=5, edgecolors="white", label="+ ECG embedding" if i == 0 else None)
-        ax.text(max(m0, m1) + 0.012, y[i], f"{kk}/{len(idx)} closer, {_pstr(p)}", va="center", fontsize=9, color="#444")
+        ax.plot([m0, m1], [y[i]] * 2, color="#2b8a3e" if m1 < m0 else "#c92a2a", lw=3, zorder=2)
+        ax.scatter(m0, y[i], color=C_BASE, s=130, zorder=4, edgecolors="white", label="Demographic PS" if i == 0 else None)
+        ax.scatter(m1, y[i], color=C_ECG, s=130, zorder=5, edgecolors="white", label="+ ECG embedding" if i == 0 else None)
+        ax.text(max(m0, m1) + 0.012, y[i], f"{kk}/{len(idx)} closer, {_pstr(p)}", va="center", fontsize=15.0, color="#444")
     ax.set_yticks(y)
     ax.set_yticklabels([f"{lab} (n={len(idx)})" if k != "All" else lab for k, lab, idx in rows])
     ax.get_yticklabels()[0].set_fontweight("bold")
     ax.set_xlim(0, max(db.groupby(cat).mean().max(), db.mean()) * 1.75)
     ax.set_xlabel("Mean |log HR (emulation) − log HR (RCT)|")
-    ax.set_title("B  Distance from RCT result, by trial type", loc="left", fontweight="bold", fontsize=12, pad=24)
-    ax.text(0.0, -0.2, "Trial-type categories were defined post hoc; the AF gain did not replicate\nin 5 prespecified new AF trials alone (3/5 closer).",
-            transform=ax.transAxes, fontsize=8.5, color="#444", va="top")
-    ax.legend(loc="lower center", bbox_to_anchor=(0.45, 1.0), ncol=3, fontsize=8, frameon=False, handletextpad=0.3, columnspacing=1.0)
+    ax.set_title("B  Distance from RCT result, by trial type", loc="left", fontweight="bold", fontsize=20.0, pad=46)
+    ax.text(0.0, -0.17, "Trial-type categories were defined post hoc; the AF gain did not replicate\nin 5 prespecified new AF trials alone (3/5 closer).",
+            transform=ax.transAxes, fontsize=14.2, color="#444", va="top")
+    ax.legend(loc="lower center", bbox_to_anchor=(0.45, 1.005), ncol=3, fontsize=13.3, frameon=False, handletextpad=0.3, columnspacing=1.0)
     save(fig, "fig_B_hr_gap")
 
 
