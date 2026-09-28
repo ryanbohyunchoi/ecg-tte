@@ -47,6 +47,50 @@ We emulated 38 randomized controlled trials (RCTs) of cardiovascular therapies: 
 
 An independent rater, blinded to results, classified each trial as high (strict), high or lower emulation fidelity, and graded the relevance of ECG-reflected physiology, using prespecified criteria (eMethods 3).
 
+### Trial selection
+We identified candidate RCTs from landmark cardiovascular trials and from prior trial emulation initiatives.^4,5^ Trials were eligible if they met four criteria:
+1. an active comparator, or a comparator that could be emulated with an accepted active proxy;
+2. a primary endpoint ascertainable from EHR data (death, hospitalization or major cardiovascular events);
+3. treatment strategies identifiable from medication orders or procedure codes;
+4. adequate size in YNHHS, defined as ≥300 patients with an ECG in the smaller arm and ≥50 primary-outcome events.
+
+Of approximately 90 candidate trials screened, 38 met these criteria (eFigure 1; eTable 1). For each trial, the specification and published primary hazard ratio (HR) were recorded in a version-controlled repository before outcomes were extracted. For 20 trials, the analysis plan was also fixed before any of their results were examined (eMethods 3).
+
+### AI-ECG and EHR representations
+We used the most recent 12-lead ECG within 365 days before or on the index date. ECGs were encoded with an in-house signal model adapted from our image-based biometric contrastive learning (BCL) model.^10^ This self-supervised model produced a 256-dimensional embedding per ECG, which was reduced to 32 principal components within each trial (eMethods 4). To test whether any gains reflected ECG information rather than added dimensions, we used a permuted-ECG placebo, in which embeddings were shuffled between patients.
+
+For comparison, we used CLMBR-T-base, a structured-EHR foundation model.^11^ We applied it to each patient's coded history before the index date and reduced its output to 64 principal components.
+
+### Propensity scores and matching
+The primary propensity score (PS) included demographics only (age, sex and calendar year). We also evaluated progressively richer specifications:
+- demographics plus five cardiometabolic diagnoses;
+- a sparse diagnosis-based PS;
+- a high-dimensional PS;^6^
+- a clinical PS including vital signs, laboratory values and ejection fraction.
+
+Each specification was fitted with and without the ECG and CLMBR-T representations and the placebo. Patients were matched 1:1 on the PS logit using nearest-neighbour matching with a caliper of 0.2 SD (eMethods 5).
+
+### Outcomes
+The primary balance outcome was the proportion of 58 held-out characteristics with an absolute standardized mean difference (SMD) <0.1. None of these characteristics were included in the PS under evaluation. They comprised medication, utilization and coded-record summaries; vital signs; laboratory values including NT-proBNP; and 35 echocardiographic measures (eTable 2). An expanded panel of about 400 characteristics was used in sensitivity analyses.
+
+Agreement with RCTs was measured as:
+- the absolute difference between emulated and RCT log HRs;
+- statistical consistency with the RCT estimate.
+
+Emulated HRs were estimated with Cox models with robust variance clustered on matched pairs. A benchmark-permutation test distinguished trial-specific agreement from generic attenuation of extreme estimates (eMethods 6).
+
+### Simulation and ECG-based diagnostics
+In plasmode simulations with a true HR of 0.80, a measured physiological variable was withheld from every PS to act as an unmeasured confounder. The variables were ejection fraction, NT-proBNP, body mass index and estimated glomerular filtration rate. We quantified the proportion of the resulting bias removed by adding the ECG embedding (eMethods 7). We also examined ECG-phenotype imbalance across successive design steps, and the prognostic value of an AI-ECG risk score for trial enrichment (eMethods 8).
+
+### Statistical analysis
+Trials were the unit of replication. Paired differences between PS specifications were tested with exact sign-flip permutation tests across trials. We assessed robustness to clustering of related trials, leave-one-trial-out analysis and split-sample replication. The false discovery rate was controlled within analysis families. Analyses were designated as confirmatory or exploratory in advance, and all results are reported. Headline estimates were re-derived in three independent audits. Analyses were performed in Python 3.11 (eMethods 9).
+
+## Results
+
+*(pending)*
+
+## Tables and Figures
+
 **Table 1. Target trial specification (PICOT) and emulation quality for the 38 emulated trials**
 
 | Area | Trial | Population | Intervention | Comparator | Outcome (RCT primary endpoint) | Time (mo) | RCT HR (95% CI) | Emulation quality |
@@ -103,47 +147,11 @@ An independent rater, blinded to results, classified each trial as high (strict)
 - Emulation quality is from a blinded rating made before results were examined. High (strict) means no design flag; high means one flag with at least moderate comparator and outcome fidelity; lower means all others.
 - Full eligibility criteria, code lists and adaptations are given in eTable 1.
 
-### Trial selection
-We identified candidate RCTs from landmark cardiovascular trials and from prior trial emulation initiatives.^4,5^ Trials were eligible if they met four criteria:
-1. an active comparator, or a comparator that could be emulated with an accepted active proxy;
-2. a primary endpoint ascertainable from EHR data (death, hospitalization or major cardiovascular events);
-3. treatment strategies identifiable from medication orders or procedure codes;
-4. adequate size in YNHHS, defined as ≥300 patients with an ECG in the smaller arm and ≥50 primary-outcome events.
+**Figure 1.** Balance on held-out characteristics by domain (docs/abstract/ACC_2027/fig_A_loveplot) *(placeholder; final figure plan pending)*
 
-Of approximately 90 candidate trials screened, 38 met these criteria (eFigure 1; eTable 1). For each trial, the specification and published primary hazard ratio (HR) were recorded in a version-controlled repository before outcomes were extracted. For 20 trials, the analysis plan was also fixed before any of their results were examined (eMethods 3).
+**Figure 2.** Distance from the RCT result by trial type (fig_B_hr_gap) *(placeholder)*
 
-### AI-ECG and EHR representations
-We used the most recent 12-lead ECG within 365 days before or on the index date. ECGs were encoded with an in-house signal model adapted from our image-based biometric contrastive learning (BCL) model.^10^ This self-supervised model produced a 256-dimensional embedding per ECG, which was reduced to 32 principal components within each trial (eMethods 4). To test whether any gains reflected ECG information rather than added dimensions, we used a permuted-ECG placebo, in which embeddings were shuffled between patients.
-
-For comparison, we used CLMBR-T-base, a structured-EHR foundation model.^11^ We applied it to each patient's coded history before the index date and reduced its output to 64 principal components.
-
-### Propensity scores and matching
-The primary propensity score (PS) included demographics only (age, sex and calendar year). We also evaluated progressively richer specifications:
-- demographics plus five cardiometabolic diagnoses;
-- a sparse diagnosis-based PS;
-- a high-dimensional PS;^6^
-- a clinical PS including vital signs, laboratory values and ejection fraction.
-
-Each specification was fitted with and without the ECG and CLMBR-T representations and the placebo. Patients were matched 1:1 on the PS logit using nearest-neighbour matching with a caliper of 0.2 SD (eMethods 5).
-
-### Outcomes
-The primary balance outcome was the proportion of 58 held-out characteristics with an absolute standardized mean difference (SMD) <0.1. None of these characteristics were included in the PS under evaluation. They comprised medication, utilization and coded-record summaries; vital signs; laboratory values including NT-proBNP; and 35 echocardiographic measures (eTable 2). An expanded panel of about 400 characteristics was used in sensitivity analyses.
-
-Agreement with RCTs was measured as:
-- the absolute difference between emulated and RCT log HRs;
-- statistical consistency with the RCT estimate.
-
-Emulated HRs were estimated with Cox models with robust variance clustered on matched pairs. A benchmark-permutation test distinguished trial-specific agreement from generic attenuation of extreme estimates (eMethods 6).
-
-### Simulation and ECG-based diagnostics
-In plasmode simulations with a true HR of 0.80, a measured physiological variable was withheld from every PS to act as an unmeasured confounder. The variables were ejection fraction, NT-proBNP, body mass index and estimated glomerular filtration rate. We quantified the proportion of the resulting bias removed by adding the ECG embedding (eMethods 7). We also examined ECG-phenotype imbalance across successive design steps, and the prognostic value of an AI-ECG risk score for trial enrichment (eMethods 8).
-
-### Statistical analysis
-Trials were the unit of replication. Paired differences between PS specifications were tested with exact sign-flip permutation tests across trials. We assessed robustness to clustering of related trials, leave-one-trial-out analysis and split-sample replication. The false discovery rate was controlled within analysis families. Analyses were designated as confirmatory or exploratory in advance, and all results are reported. Headline estimates were re-derived in three independent audits. Analyses were performed in Python 3.11 (eMethods 9).
-
-## Results
-
-*(pending)*
+**Figure 3.** Simulation: bias removed vs ECG R² (fig_C_simulation) *(placeholder)*
 
 ## Discussion
 
