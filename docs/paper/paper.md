@@ -1,8 +1,13 @@
-# Introduction (draft v1, 2026-09-28)
+# AI-enhanced electrocardiography as a phenotypic probe of confounding in target trial emulation: an evaluation across 38 cardiovascular trials
 
-**Working title.** AI-enhanced electrocardiography as a phenotypic probe of confounding in target trial emulation: an evaluation across 38 cardiovascular trials
+*Working draft; last updated 2026-09-28. Sections are added in order. Draft notes are marked and must be removed before submission.*
 
----
+## Abstract
+
+*(to be written last)*
+
+## Introduction
+
 
 Randomized controlled trials (RCTs) remain the reference standard for estimating treatment effects, but they are costly and slow. They also often exclude the older, multimorbid patients who receive these therapies in practice.^1^ Target trial emulation offers a principled framework for estimating the same effects from routinely collected data.^2^ In this framework, the protocol of a hypothetical randomized trial is specified explicitly and then emulated in observational data. Systematic efforts to benchmark emulations against completed RCTs, most prominently RCT-DUPLICATE, have shown that agreement is achievable. These efforts also show that agreement depends heavily on how closely the design can be emulated and on how well the available data capture the determinants of treatment choice.^3–5^ When those determinants are not recorded, residual confounding persists regardless of design rigour.
 
@@ -23,9 +28,25 @@ To guard against selective reporting:
 - a blinded rater classified emulation fidelity;
 - all analyses were compared with an EHR foundation-model embedding and audited independently.
 
+## Methods
+
+*(next)*
+
+## Results
+
+*(pending)*
+
+## Discussion
+
+*(pending)*
+
+## References
+
+*(see draft notes; to be formatted)*
+
 ---
 
-### Draft notes (remove before submission)
+### Draft notes: Introduction (remove before submission)
 - **Tone.** Paragraph 5 deliberately does not preview results. We could add a German-style closing sentence: "We find that AI-ECG embeddings track design quality and improve balance on unmeasured physiology, remove confounding bias in proportion to how well they encode the confounder, and inform trial enrichment, but do not by themselves reproduce trial-specific RCT results." It is accurate per v1.6–v1.9 and the round-4 audit.
 - **Claims to keep consistent with results.**
   - The "single heart failure emulation" (DISCO) is an abstract only.
