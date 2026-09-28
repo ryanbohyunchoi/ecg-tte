@@ -148,8 +148,31 @@ def panel_c():
     save(fig, "fig_C_simulation")
 
 
+def panel_d(arms):
+    """Panel A plus the unmatched (crude) comparison, for inspection."""
+    plt.rcParams.update({"font.size": 11})
+    fig, ax = plt.subplots(figsize=(5.2, 5.2))
+    y = np.arange(len(DOMS))[::-1]
+    for i, (g, lab) in enumerate(DOMS):
+        c = f"mean_smd_g:{g}"
+        u, b, e, sh = (arms[r][c].median() for r in ("unmatched", "base", "ECG", "shufECG"))
+        ax.plot([min(u, b, e), max(u, b, e)], [y[i]] * 2, color="#dee2e6", lw=1, zorder=1)
+        ax.plot([b, e], [y[i]] * 2, color="#2b8a3e", lw=2.2, zorder=2)
+        ax.scatter(u, y[i], marker="x", color=C_UNM, s=55, lw=1.6, zorder=3, label="Unmatched" if i == 0 else None)
+        ax.scatter(sh, y[i], marker="D", color=C_SHUF, s=34, zorder=3, label="Permuted-ECG placebo" if i == 0 else None)
+        ax.scatter(b, y[i], color=C_BASE, s=70, zorder=4, edgecolors="white", label="Demographic PS" if i == 0 else None)
+        ax.scatter(e, y[i], color=C_ECG, s=70, zorder=5, edgecolors="white", label="+ ECG embedding" if i == 0 else None)
+    ax.set_yticks(y)
+    ax.set_yticklabels([lab for _, lab in DOMS])
+    ax.set_xlabel("Mean |SMD| (median across 38 trials)")
+    ax.set_title("D  Balance incl. unmatched comparison", loc="left", fontweight="bold", fontsize=12, pad=24)
+    ax.legend(loc="lower center", bbox_to_anchor=(0.45, 1.0), ncol=4, fontsize=7.5, frameon=False, handletextpad=0.3, columnspacing=0.8)
+    save(fig, "fig_D_loveplot_unmatched")
+
+
 if __name__ == "__main__":
     arms = load()
     panel_a(arms)
     panel_b(arms)
     panel_c()
+    panel_d(arms)
