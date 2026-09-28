@@ -243,7 +243,7 @@ Trials were the unit of replication. Paired differences between PS specification
   3. sparse PS matching;
   4. high-dimensional PS matching;
   5. clinical PS matching.
-- ***Enrichment:** the cross-fitted AI-ECG risk score for each trial's primary outcome was compared with clinical and CLMBR-T scores. Sample-size reduction was estimated from enrolment of patients in the top quartile of predicted risk.*
+- **Enrichment:** the cross-fitted AI-ECG risk score for each trial's primary outcome was compared with clinical scores (*and CLMBR-T scores*). Sample-size reduction was estimated from enrolment of patients in the top quartile of predicted risk.
 
 ### eMethods 9. Statistical software
 - **Core analyses:** Python 3.11.16, with pandas 2.3.3, NumPy 2.4.6, DuckDB 1.5.5, scikit-learn 1.9.1, lifelines 0.30.3, SciPy 1.17.1, statsmodels 0.15.0 and matplotlib 3.11.2.
