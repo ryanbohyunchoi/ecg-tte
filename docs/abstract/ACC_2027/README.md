@@ -1,8 +1,12 @@
 # ACC abstract
 
 ## Files
+- `ACC_ABSTRACT.md` = `ACC_ABSTRACT_v4.md`: **current draft (2026-09-28)**, PI-preferred structure. It is 1,293 characters excluding spaces and title, uses all 38 trials and contains no AF claim.
+  - Balance 51 → 57%, 28/38, p = 0.0002, cluster p = 0.017: `claude-v18-embed-compare/summary.csv` (all38, P1, ECG vs base, lt01).
+  - Gap 0.26 → 0.21, 25/38, p = 0.002; benchmark shuffle p = 0.22, hence 'attenuating'.
+  - Simulation (NT-proBNP 21%, placebo ~0): `docs/v19/G2_SIMULATION.md`, as-designed scenario.
 - `ACC_ABSTRACT_v3_audit.md`: **recommended current draft**, from the round-4 audit (docs/v18/AUDIT_ROUND4.md §7). It is 1,287 characters excluding spaces, labels and title.
-- `ACC_ABSTRACT.md` / `ACC_ABSTRACT_v2_superseded.md`: the v2 draft (2026-09-27). **Do not submit as is.**
+- `ACC_ABSTRACT_v2_superseded.md`: the v2 draft (2026-09-27). **Do not submit as is.**
   - Its AF sentence is post hoc, and the AF signal failed prespecified confirmation (3/5, p = 0.19).
   - Its "agreement with RCTs" claim is generic shrinkage.
   - "Absent from structured data" is contradicted by CLMBR.
