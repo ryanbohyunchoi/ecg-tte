@@ -42,19 +42,18 @@ Here, we evaluated whether AI-ECG embeddings capture confounding missed by struc
 ### Data sources
 We used electronic health record (EHR) data from the Yale New Haven Health System (YNHHS), a large academic health system in Connecticut. We mapped the structured EHR data to the Observational Medical Outcomes Partnership (OMOP) common data model ourselves. We linked these data to structured echocardiography reports, raw 12-lead ECG signals and state vital statistics records (eMethods 1). We included patients with index dates from 2011 through 2024. The Yale Institutional Review Board approved the study (protocol number [ ]) and waived informed consent for this secondary analysis of existing data.
 
-### Target trial specification
-We emulated 38 randomized controlled trials (RCTs) of cardiovascular therapies: atrial fibrillation (AF; 12 trials), diabetes (9), heart failure (5), hypertension (5), acute coronary syndromes (2) and other indications (5). For each trial, we specified the target trial protocol and its emulation following the TARGET guideline.^12^ We summarized it using the population, intervention, comparator, outcome and time (PICOT) elements (Table 1; eMethods 2; eTable 1). Each emulation used a new-user, active-comparator design. Time zero was the first order of the study drug or procedure, and follow-up continued to the trial's primary endpoint or a trial-matched horizon. We estimated the effect of treatment initiation, analogous to the intention-to-treat effect.
-
-An independent rater, blinded to results, classified each trial as high (strict), high or lower emulation fidelity, and graded the relevance of ECG-reflected physiology, using prespecified criteria (eMethods 3).
-
-### Trial selection
-We identified candidate RCTs from landmark cardiovascular trials and from prior trial emulation initiatives.^4,5^ Trials were eligible if they met four criteria:
+### Trial selection and target trial specification
+We identified candidate cardiovascular randomized controlled trials (RCTs) from landmark trials and from prior trial emulation initiatives.^4,5^ Trials were eligible if they met four criteria:
 1. an active comparator, or a comparator that could be emulated with an accepted active proxy;
-2. a primary endpoint ascertainable from EHR data (death, hospitalization or major cardiovascular events);
+2. a primary endpoint ascertainable from EHR data;
 3. treatment strategies identifiable from medication orders or procedure codes;
 4. adequate size in YNHHS, defined as ≥300 patients with an ECG in the smaller arm and ≥50 primary-outcome events.
 
-Of approximately 90 candidate trials screened, 38 met these criteria (eFigure 1; eTable 1). For each trial, the specification and published primary hazard ratio (HR) were recorded in a version-controlled repository before outcomes were extracted. For 20 trials, the analysis plan was also fixed before any of their results were examined (eMethods 3).
+Of approximately 90 candidate trials screened, 38 met these criteria and were emulated (eFigure 1). They covered atrial fibrillation (AF; 12 trials), diabetes (9), heart failure (5), hypertension (5), acute coronary syndromes (2) and other indications (5).
+
+For each trial, we specified the target trial protocol and its emulation following the TARGET guideline, summarized using the population, intervention, comparator, outcome and time (PICOT) elements (Table 1; eMethods 2; eTable 1).^12^ The specification and the published primary hazard ratio (HR) were recorded before outcomes were extracted. Each emulation used a new-user, active-comparator design. Time zero was the first order of the study drug or procedure, and follow-up continued to the trial's primary endpoint or a trial-matched horizon. We estimated the effect of treatment initiation, analogous to the intention-to-treat effect.
+
+An independent rater, blinded to results, classified each trial as high (strict), high or lower emulation fidelity, and graded the relevance of ECG-reflected physiology, using prespecified criteria (eMethods 3).
 
 ### AI-ECG and EHR representations
 We used the most recent 12-lead ECG within 365 days before or on the index date. ECGs were encoded with an in-house signal model adapted from our image-based biometric contrastive learning (BCL) model.^10^ This self-supervised model produced a 256-dimensional embedding per ECG, which was reduced to 32 principal components within each trial (eMethods 4). To test whether any gains reflected ECG information rather than added dimensions, we used a permuted-ECG placebo, in which embeddings were shuffled between patients.
@@ -255,6 +254,10 @@ Trials were the unit of replication. Paired differences between PS specification
 ---
 
 ### Draft notes (remove before submission)
+- **Trial selection v3 (2026-09-28):**
+  - Selection and specification are merged into one subsection.
+  - The main text now simply says 38 trials met the criteria; the staged and prespecified assembly is described only in eMethods 3.
+  - **Caution for Results and Discussion:** when citing results from the prespecified subsets (e.g., the 15-trial and 5-trial AF confirmation analyses), reference eMethods 3 so that their status is clear.
 - **Trial selection v2 (2026-09-28):**
   - The three sets are aggregated into one bucket of 38 trials in the main text.
   - The selection criteria and screening count (~90 candidates) are described.
