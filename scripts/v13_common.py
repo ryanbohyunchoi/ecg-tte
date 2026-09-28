@@ -49,6 +49,11 @@ V17 = {n: (k, f"claude-{n}-cohort-v1") for n, k in (
     ("tecos", "tecos"), ("carmelina", "carmelina"), ("valiant", "valiant"), ("insight", "insight"), ("affirm", "affirm"),
     ("af-chf", "af_chf"), ("precision", "precision"), ("amplify", "amplify"), ("lodestar", "lodestar"), ("prove-it", "prove_it"))}
 EXTRA.update(V17)
+# v1.8 Plan A AF confirmation-set trials (docs/v18/af_candidates.md; specs registered in 6221162 before the screen, this registry
+# before outcome extraction). Not in the v1.6 18 or V17.
+V18 = {n: (k, f"claude-{n}-cohort-v1") for n, k in (
+    ("frail-af", "frail_af"), ("laaos3", "laaos3"), ("protect-af", "protect_af"), ("raft-af", "raft_af"), ("active-w", "active_w"))}
+EXTRA.update(V18)
 
 
 def paths(n):

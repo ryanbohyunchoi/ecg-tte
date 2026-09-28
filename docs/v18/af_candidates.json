@@ -1,0 +1,1288 @@
+{
+ "prague17": {
+  "name": "PRAGUE-17 (adapted, sequential): percutaneous LAA closure vs continued DOAC",
+  "registry_name": null,
+  "status": "not_built",
+  "reasons_not_built": [
+   "smaller arm with ECG = 249 < 300"
+  ],
+  "arms": [
+   "laao",
+   "doac"
+  ],
+  "arm_keywords": {
+   "laao": [
+    "33340",
+    "02L73DK"
+   ],
+   "doac": [
+    "rivaroxaban",
+    "xarelto",
+    "dabigatran",
+    "pradaxa",
+    "edoxaban",
+    "savaysa",
+    "apixaban",
+    "eliquis"
+   ]
+  },
+  "design": "switch_seq+arm0_procedure",
+  "gates": {
+   "any_before_or_on_index": [
+    "I48"
+   ],
+   "require_all": [
+    [
+     "K92",
+     "I60",
+     "I61",
+     "I62",
+     "R31",
+     "R58",
+     "D62",
+     "I63",
+     "I64",
+     "G45",
+     "I69",
+     "I74",
+     "Z8673"
+    ]
+   ]
+  },
+  "exclusions": {
+   "ever_codes": [
+    "I050",
+    "I052",
+    "I342",
+    "Z952"
+   ]
+  },
+  "min_age": 18,
+  "max_age": null,
+  "index_window": [
+   "2015-03-13",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "cv_death",
+   "('hosp', ['I60', 'I61', 'I63', 'I64', 'G45', 'I74'])",
+   "('hosp', ['K920', 'K921', 'K922', 'K250', 'K252', 'K254', 'K256', 'K260', 'K262', 'K264', 'K266', 'K270', 'K272', 'K274', 'K276', 'K280', 'K282', 'K284', 'K286', 'I60', 'I61', 'I62'])"
+  ],
+  "rct_endpoint": "stroke/TIA, systemic embolism, CV death, major or CRNM bleeding, procedure/device complications",
+  "horizon_months": 20,
+  "rct_hr": 0.84,
+  "rct_ci": [
+   0.53,
+   1.31
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": "subdistribution HR, modified ITT",
+  "rct_arms": "LAA closure vs DOAC",
+  "our_orientation": 0.84,
+  "citation": "Osmancik et al. J Am Coll Cardiol 2020;75:3122-35 (PMID 32586585)",
+  "spec_version": "prague17_adapted_v1",
+  "note": "LAAO with an OAC order in the prior year vs established DOAC users (sequential, +/-30 d, 1:4); high risk = prior bleeding or thromboembolism code (the CHA2DS2-VASc >= 3 with HAS-BLED > 2 route is not identifiable); procedure complications during the index stay not captured",
+  "feasibility": {
+   "n_by_arm": {
+    "doac": 1120,
+    "laao": 280
+   },
+   "n_with_ecg_by_arm": {
+    "doac": 910,
+    "laao": 249
+   },
+   "min_arm_with_ecg": 249,
+   "pooled_primary_events_horizon": 316,
+   "pooled_primary_events_horizon_with_ecg": 278,
+   "pooled_deaths_horizon": 254,
+   "max_same_record_share_one_existing_cohort": {
+    "cohort": "claude-affirm-cohort-v1",
+    "share": 0.029
+   },
+   "same_record_share_top3": {
+    "claude-affirm-cohort-v1": 0.029,
+    "claude-af-chf-cohort-v1": 0.012,
+    "claude-east-afnet4-cohort-v1": 0.012
+   }
+  }
+ },
+ "protect_af": {
+  "name": "PROTECT AF (adapted, sequential): percutaneous LAA closure vs continued warfarin",
+  "registry_name": "protect-af",
+  "status": "selected_for_build",
+  "reasons_not_built": [],
+  "arms": [
+   "laao",
+   "warfarin"
+  ],
+  "arm_keywords": {
+   "laao": [
+    "33340",
+    "02L73DK"
+   ],
+   "warfarin": [
+    "warfarin",
+    "coumadin",
+    "jantoven"
+   ]
+  },
+  "design": "switch_seq+arm0_procedure",
+  "gates": {
+   "any_before_or_on_index": [
+    "I48"
+   ],
+   "require_all": [
+    [
+     "I10",
+     "I11",
+     "I12",
+     "I13",
+     "I15",
+     "E10",
+     "E11",
+     "I50",
+     "I63",
+     "I64",
+     "G45",
+     "I69",
+     "I74",
+     "Z8673"
+    ]
+   ]
+  },
+  "exclusions": {
+   "ever_codes": [
+    "I050",
+    "I052",
+    "I342",
+    "Z952"
+   ]
+  },
+  "min_age": 18,
+  "max_age": null,
+  "index_window": [
+   "2015-03-13",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "cv_death",
+   "('hosp', ['I60', 'I61', 'I63', 'I64', 'I74'])"
+  ],
+  "rct_endpoint": "stroke, CV death or systemic embolism",
+  "horizon_months": 18,
+  "rct_hr": 0.62,
+  "rct_ci": [
+   0.35,
+   1.25
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": "rate ratio (Bayesian; 95% credible interval), ITT",
+  "rct_arms": "Watchman LAA closure vs warfarin",
+  "our_orientation": 0.62,
+  "citation": "Holmes et al. Lancet 2009;374:534-42 (PMID 19683639)",
+  "spec_version": "protect_af_adapted_v1",
+  "note": "LAAO with an OAC order in the prior year vs established warfarin users (sequential); CHADS2 risk factor by code (age >= 75 alone not applied); shares the LAAO arm with PRAGUE-17",
+  "feasibility": {
+   "n_by_arm": {
+    "warfarin": 1447,
+    "laao": 362
+   },
+   "n_with_ecg_by_arm": {
+    "warfarin": 1128,
+    "laao": 314
+   },
+   "min_arm_with_ecg": 314,
+   "pooled_primary_events_horizon": 253,
+   "pooled_primary_events_horizon_with_ecg": 221,
+   "pooled_deaths_horizon": 282,
+   "max_same_record_share_one_existing_cohort": {
+    "cohort": "claude-affirm-cohort-v1",
+    "share": 0.02
+   },
+   "same_record_share_top3": {
+    "claude-affirm-cohort-v1": 0.02,
+    "claude-dionysos-cohort-v1": 0.009,
+    "claude-dionysos-cohort-v11": 0.009
+   }
+  }
+ },
+ "frail_af": {
+  "name": "FRAIL-AF (adapted, sequential): switch from warfarin to a DOAC vs continued warfarin, age >= 75",
+  "registry_name": "frail-af",
+  "status": "selected_for_build",
+  "reasons_not_built": [],
+  "arms": [
+   "doac_switch",
+   "warfarin"
+  ],
+  "arm_keywords": {
+   "doac_switch": [
+    "rivaroxaban",
+    "xarelto",
+    "dabigatran",
+    "pradaxa",
+    "edoxaban",
+    "savaysa",
+    "apixaban",
+    "eliquis"
+   ],
+   "warfarin": [
+    "warfarin",
+    "coumadin",
+    "jantoven"
+   ]
+  },
+  "design": "switch_seq",
+  "gates": {
+   "any_before_or_on_index": [
+    "I48"
+   ]
+  },
+  "exclusions": {
+   "ever_codes": [
+    "I050",
+    "I052",
+    "I342",
+    "Z952"
+   ],
+   "egfr_lt": 30
+  },
+  "min_age": 75,
+  "max_age": null,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "('hosp', ['K920', 'K921', 'K922', 'K250', 'K252', 'K254', 'K256', 'K260', 'K262', 'K264', 'K266', 'K270', 'K272', 'K274', 'K276', 'K280', 'K282', 'K284', 'K286', 'I60', 'I61', 'I62'])"
+  ],
+  "rct_endpoint": "major or clinically relevant non-major bleeding",
+  "horizon_months": 12,
+  "rct_hr": 1.69,
+  "rct_ci": [
+   1.23,
+   2.32
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": "cause-specific HR, ITT",
+  "rct_arms": "switch VKA to NOAC vs continue VKA (frail, >= 75 y)",
+  "our_orientation": 1.69,
+  "citation": "Joosten et al. Circulation 2024;149:279-89 (PMID 37634130)",
+  "spec_version": "frail_af_adapted_v1",
+  "note": "frailty (Groningen Frailty Indicator >= 3) not identifiable; age >= 75 applied; major/CRNM bleeding -> major-bleeding hospitalisation",
+  "feasibility": {
+   "n_by_arm": {
+    "warfarin": 4109,
+    "doac_switch": 1028
+   },
+   "n_with_ecg_by_arm": {
+    "warfarin": 2917,
+    "doac_switch": 797
+   },
+   "min_arm_with_ecg": 797,
+   "pooled_primary_events_horizon": 360,
+   "pooled_primary_events_horizon_with_ecg": 285,
+   "pooled_deaths_horizon": 613,
+   "max_same_record_share_one_existing_cohort": {
+    "cohort": "claude-affirm-cohort-v1",
+    "share": 0.026
+   },
+   "same_record_share_top3": {
+    "claude-affirm-cohort-v1": 0.026,
+    "claude-east-afnet4-cohort-v1": 0.014,
+    "claude-af-chf-cohort-v1": 0.009
+   }
+  }
+ },
+ "laaos3": {
+  "name": "LAAOS III (adapted): surgical LAA occlusion vs none at cardiac surgery in AF",
+  "registry_name": "laaos3",
+  "status": "selected_for_build",
+  "reasons_not_built": [],
+  "arms": [
+   "laa_occlusion",
+   "cardiac_surgery"
+  ],
+  "arm_keywords": {
+   "laa_occlusion": [
+    "02L70",
+    "02B70ZK",
+    "33267",
+    "33268"
+   ],
+   "cardiac_surgery": [
+    "0210",
+    "0211",
+    "0212",
+    "0213",
+    "3351",
+    "3352",
+    "3353",
+    "02RF0",
+    "02RF4",
+    "X2RF0",
+    "02RG0",
+    "02RG4",
+    "02QG0",
+    "02QG4",
+    "02UG0",
+    "02UG4",
+    "33405",
+    "33406",
+    "33410",
+    "33411",
+    "33412",
+    "33413",
+    "33425",
+    "33426",
+    "33427",
+    "33430"
+   ]
+  },
+  "design": "procedure",
+  "gates": {
+   "any_before_or_on_index": [
+    "I48"
+   ],
+   "procedure_1d": [
+    "0210",
+    "0211",
+    "0212",
+    "0213",
+    "3351",
+    "3352",
+    "3353",
+    "02RF0",
+    "02RF4",
+    "X2RF0",
+    "02RG0",
+    "02RG4",
+    "02QG0",
+    "02QG4",
+    "02UG0",
+    "02UG4",
+    "33405",
+    "33406",
+    "33410",
+    "33411",
+    "33412",
+    "33413",
+    "33425",
+    "33426",
+    "33427",
+    "33430"
+   ]
+  },
+  "exclusions": {},
+  "min_age": 18,
+  "max_age": null,
+  "index_window": [
+   "2015-10-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "('hosp', ['I63', 'I64', 'I74'])"
+  ],
+  "rct_endpoint": "ischaemic stroke or systemic embolism",
+  "horizon_months": 46,
+  "rct_hr": 0.67,
+  "rct_ci": [
+   0.53,
+   0.85
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": "HR",
+  "rct_arms": "LAA occlusion vs no occlusion during cardiac surgery",
+  "our_orientation": 0.67,
+  "citation": "Whitlock et al. NEJM 2021;384:2081-91 (PMID 33999547)",
+  "spec_version": "laaos3_adapted_v1",
+  "note": "CABG / valve surgery (open) with vs without a same-day LAA occlusion/excision code; ICD-10-PCS era only; comparator = surgery without LAA code (washout of arm 1 only); perioperative (index-stay) strokes not counted",
+  "feasibility": {
+   "n_by_arm": {
+    "cardiac_surgery": 2298,
+    "laa_occlusion": 571
+   },
+   "n_with_ecg_by_arm": {
+    "cardiac_surgery": 2110,
+    "laa_occlusion": 511
+   },
+   "min_arm_with_ecg": 511,
+   "pooled_primary_events_horizon": 220,
+   "pooled_primary_events_horizon_with_ecg": 205,
+   "pooled_deaths_horizon": 436,
+   "max_same_record_share_one_existing_cohort": {
+    "cohort": "claude-partner-cohort-v11",
+    "share": 0.117
+   },
+   "same_record_share_top3": {
+    "claude-partner-cohort-v11": 0.117,
+    "claude-partner-cohort-v1": 0.117,
+    "claude-dionysos-cohort-v1": 0.068
+   }
+  }
+ },
+ "raft_af": {
+  "name": "RAFT-AF (adapted, sequential): AF ablation vs continued rate control in HF",
+  "registry_name": "raft-af",
+  "status": "selected_for_build",
+  "reasons_not_built": [],
+  "arms": [
+   "af_ablation",
+   "rate_control"
+  ],
+  "arm_keywords": {
+   "af_ablation": [
+    "93656",
+    "02573ZZ",
+    "025S3ZZ",
+    "025T3ZZ"
+   ],
+   "rate_control": [
+    "metoprolol",
+    "lopressor",
+    "toprol",
+    "atenolol",
+    "carvedilol",
+    "coreg",
+    "bisoprolol",
+    "nebivolol",
+    "diltiazem",
+    "cardizem",
+    "verapamil",
+    "digoxin",
+    "lanoxin"
+   ]
+  },
+  "design": "switch_seq+arm0_procedure",
+  "gates": {
+   "any_before_or_on_index": [
+    "I48"
+   ],
+   "require_all": [
+    [
+     "I50"
+    ]
+   ]
+  },
+  "exclusions": {
+   "ever_codes": [
+    "I050",
+    "I052",
+    "I342",
+    "Z952"
+   ]
+  },
+  "min_age": 18,
+  "max_age": null,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "death",
+   "('hosp', ['I50'])"
+  ],
+  "rct_endpoint": "all-cause death or HF event",
+  "horizon_months": 36,
+  "rct_hr": 0.71,
+  "rct_ci": [
+   0.49,
+   1.03
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": "HR",
+  "rct_arms": "ablation-based rhythm control vs rate control (HF)",
+  "our_orientation": 0.71,
+  "citation": "Parkash et al. Circulation 2022;145:1693-704 (PMID 35313733)",
+  "spec_version": "raft_af_adapted_v1",
+  "note": "HF by code (any EF; trial NYHA II-III with raised NT-proBNP); ablation with rate-control use in the prior year vs established rate-control users without ablation (sequential); comparator antiarrhythmic use not excluded",
+  "feasibility": {
+   "n_by_arm": {
+    "rate_control": 2860,
+    "af_ablation": 715
+   },
+   "n_with_ecg_by_arm": {
+    "rate_control": 2389,
+    "af_ablation": 614
+   },
+   "min_arm_with_ecg": 614,
+   "pooled_primary_events_horizon": 2116,
+   "pooled_primary_events_horizon_with_ecg": 1839,
+   "pooled_deaths_horizon": 924,
+   "max_same_record_share_one_existing_cohort": {
+    "cohort": "claude-cabana-v2-cohort-v1",
+    "share": 0.105
+   },
+   "same_record_share_top3": {
+    "claude-cabana-v2-cohort-v1": 0.105,
+    "claude-affirm-cohort-v1": 0.08,
+    "claude-east-afnet4-cohort-v1": 0.067
+   }
+  }
+ },
+ "augustus": {
+  "name": "AUGUSTUS (adapted): apixaban vs warfarin initiation within 30 d after PCI in AF, on a P2Y12 inhibitor",
+  "registry_name": null,
+  "status": "not_built",
+  "reasons_not_built": [
+   "smaller arm with ECG = 64 < 300",
+   "pooled events with ECG = 20 < 50",
+   "near-duplicate cohort: 100% of (patient, index) records identical to claude-aristotle-cohort-v1"
+  ],
+  "arms": [
+   "apixaban",
+   "warfarin"
+  ],
+  "arm_keywords": {
+   "apixaban": [
+    "apixaban",
+    "eliquis"
+   ],
+   "warfarin": [
+    "warfarin",
+    "coumadin",
+    "jantoven"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "any_before_or_on_index": [
+    "I48"
+   ],
+   "pci_30d": true,
+   "require_drugs_365d": [
+    [
+     "clopidogrel",
+     "prasugrel",
+     "ticagrelor",
+     "plavix",
+     "effient",
+     "brilinta"
+    ]
+   ]
+  },
+  "exclusions": {
+   "ever_codes": [
+    "I050",
+    "I052",
+    "I342",
+    "Z952"
+   ],
+   "other_anticoag_365d": [
+    "rivaroxaban",
+    "xarelto",
+    "dabigatran",
+    "pradaxa",
+    "edoxaban",
+    "savaysa"
+   ]
+  },
+  "min_age": 18,
+  "max_age": null,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "('hosp', ['K920', 'K921', 'K922', 'K250', 'K252', 'K254', 'K256', 'K260', 'K262', 'K264', 'K266', 'K270', 'K272', 'K274', 'K276', 'K280', 'K282', 'K284', 'K286', 'I60', 'I61', 'I62'])"
+  ],
+  "rct_endpoint": "ISTH major or clinically relevant non-major bleeding",
+  "horizon_months": 6,
+  "rct_hr": 0.69,
+  "rct_ci": [
+   0.58,
+   0.81
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": "HR (factorial, apixaban vs VKA)",
+  "rct_arms": "apixaban vs VKA after ACS/PCI",
+  "our_orientation": 0.69,
+  "citation": "Lopes et al. NEJM 2019;380:1509-24 (PMID 30883055)",
+  "spec_version": "augustus_adapted_v1",
+  "note": "PCI in the 30 d before OAC initiation (ACS without PCI not captured); ISTH major/CRNM bleeding -> major-bleeding hospitalisation",
+  "feasibility": {
+   "n_by_arm": {
+    "warfarin": 64,
+    "apixaban": 248
+   },
+   "n_with_ecg_by_arm": {
+    "warfarin": 64,
+    "apixaban": 227
+   },
+   "min_arm_with_ecg": 64,
+   "pooled_primary_events_horizon": 22,
+   "pooled_primary_events_horizon_with_ecg": 20,
+   "pooled_deaths_horizon": 23,
+   "max_same_record_share_one_existing_cohort": {
+    "cohort": "claude-aristotle-cohort-v1",
+    "share": 1.0
+   },
+   "same_record_share_top3": {
+    "claude-aristotle-cohort-v1": 1.0,
+    "claude-aristotle-cohort-v11": 1.0,
+    "claude-rely-cohort-v1": 0.205
+   }
+  }
+ },
+ "pioneer_af_pci": {
+  "name": "PIONEER AF-PCI (adapted): rivaroxaban vs warfarin initiation within 30 d after PCI in AF, on a P2Y12 inhibitor",
+  "registry_name": null,
+  "status": "not_built",
+  "reasons_not_built": [
+   "smaller arm with ECG = 46 < 300",
+   "pooled events with ECG = 17 < 50",
+   "near-duplicate cohort: 100% of (patient, index) records identical to claude-rocket-af-cohort-v1"
+  ],
+  "arms": [
+   "rivaroxaban",
+   "warfarin"
+  ],
+  "arm_keywords": {
+   "rivaroxaban": [
+    "rivaroxaban",
+    "xarelto"
+   ],
+   "warfarin": [
+    "warfarin",
+    "coumadin",
+    "jantoven"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "any_before_or_on_index": [
+    "I48"
+   ],
+   "pci_30d": true,
+   "require_drugs_365d": [
+    [
+     "clopidogrel",
+     "prasugrel",
+     "ticagrelor",
+     "plavix",
+     "effient",
+     "brilinta"
+    ]
+   ]
+  },
+  "exclusions": {
+   "ever_codes": [
+    "I050",
+    "I052",
+    "I342",
+    "Z952"
+   ],
+   "other_anticoag_365d": [
+    "dabigatran",
+    "pradaxa",
+    "edoxaban",
+    "savaysa",
+    "apixaban",
+    "eliquis"
+   ]
+  },
+  "min_age": 18,
+  "max_age": null,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "('hosp', ['K920', 'K921', 'K922', 'K250', 'K252', 'K254', 'K256', 'K260', 'K262', 'K264', 'K266', 'K270', 'K272', 'K274', 'K276', 'K280', 'K282', 'K284', 'K286', 'I60', 'I61', 'I62'])"
+  ],
+  "rct_endpoint": "clinically significant bleeding",
+  "horizon_months": 12,
+  "rct_hr": 0.59,
+  "rct_ci": [
+   0.47,
+   0.76
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": "HR (group 1 vs group 3)",
+  "rct_arms": "rivaroxaban 15 mg + P2Y12 vs VKA + DAPT",
+  "our_orientation": 0.59,
+  "citation": "Gibson et al. NEJM 2016;375:2423-34 (PMID 27959713)",
+  "spec_version": "pioneer_af_pci_adapted_v1",
+  "note": "trial group 1 (rivaroxaban 15 mg + P2Y12) vs VKA triple therapy; aspirin not identifiable; dose not identifiable",
+  "feasibility": {
+   "n_by_arm": {
+    "warfarin": 63,
+    "rivaroxaban": 49
+   },
+   "n_with_ecg_by_arm": {
+    "warfarin": 63,
+    "rivaroxaban": 46
+   },
+   "min_arm_with_ecg": 46,
+   "pooled_primary_events_horizon": 17,
+   "pooled_primary_events_horizon_with_ecg": 17,
+   "pooled_deaths_horizon": "<11",
+   "max_same_record_share_one_existing_cohort": {
+    "cohort": "claude-rocket-af-cohort-v1",
+    "share": 1.0
+   },
+   "same_record_share_top3": {
+    "claude-rocket-af-cohort-v1": 1.0,
+    "claude-rocket-af-cohort-v11": 1.0,
+    "claude-aristotle-cohort-v1": 0.562
+   }
+  }
+ },
+ "re_dual_pci": {
+  "name": "RE-DUAL PCI (adapted): dabigatran vs warfarin initiation within 30 d after PCI in AF, on a P2Y12 inhibitor",
+  "registry_name": null,
+  "status": "not_built",
+  "reasons_not_built": [
+   "smaller arm with ECG = <11 < 300",
+   "pooled events with ECG = <11 < 50",
+   "near-duplicate cohort: 100% of (patient, index) records identical to claude-rely-cohort-v1"
+  ],
+  "arms": [
+   "dabigatran",
+   "warfarin"
+  ],
+  "arm_keywords": {
+   "dabigatran": [
+    "dabigatran",
+    "pradaxa"
+   ],
+   "warfarin": [
+    "warfarin",
+    "coumadin",
+    "jantoven"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "any_before_or_on_index": [
+    "I48"
+   ],
+   "pci_30d": true,
+   "require_drugs_365d": [
+    [
+     "clopidogrel",
+     "prasugrel",
+     "ticagrelor",
+     "plavix",
+     "effient",
+     "brilinta"
+    ]
+   ]
+  },
+  "exclusions": {
+   "ever_codes": [
+    "I050",
+    "I052",
+    "I342",
+    "Z952"
+   ],
+   "other_anticoag_365d": [
+    "rivaroxaban",
+    "xarelto",
+    "edoxaban",
+    "savaysa",
+    "apixaban",
+    "eliquis"
+   ]
+  },
+  "min_age": 18,
+  "max_age": null,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "('hosp', ['K920', 'K921', 'K922', 'K250', 'K252', 'K254', 'K256', 'K260', 'K262', 'K264', 'K266', 'K270', 'K272', 'K274', 'K276', 'K280', 'K282', 'K284', 'K286', 'I60', 'I61', 'I62'])"
+  ],
+  "rct_endpoint": "major or clinically relevant non-major bleeding",
+  "horizon_months": 14,
+  "rct_hr": 0.72,
+  "rct_ci": [
+   0.58,
+   0.88
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": "HR (150 mg dual vs corresponding triple)",
+  "rct_arms": "dabigatran 150 mg + P2Y12 vs warfarin triple",
+  "our_orientation": 0.72,
+  "citation": "Cannon et al. NEJM 2017;377:1513-24 (PMID 28844193)",
+  "spec_version": "re_dual_pci_adapted_v1",
+  "note": "benchmark = 150 mg dual vs triple (the US dose); aspirin not identifiable",
+  "feasibility": {
+   "n_by_arm": {
+    "warfarin": 65,
+    "dabigatran": "<11"
+   },
+   "n_with_ecg_by_arm": {
+    "warfarin": 65,
+    "dabigatran": "<11"
+   },
+   "min_arm_with_ecg": "<11",
+   "pooled_primary_events_horizon": "<11",
+   "pooled_primary_events_horizon_with_ecg": "<11",
+   "pooled_deaths_horizon": "<11",
+   "max_same_record_share_one_existing_cohort": {
+    "cohort": "claude-rely-cohort-v1",
+    "share": 1.0
+   },
+   "same_record_share_top3": {
+    "claude-rely-cohort-v1": 1.0,
+    "claude-rely-cohort-v11": 1.0,
+    "claude-aristotle-cohort-v1": 0.914
+   }
+  }
+ },
+ "active_w": {
+  "name": "ACTIVE W (adapted): clopidogrel vs warfarin initiation in AF",
+  "registry_name": "active-w",
+  "status": "selected_for_build",
+  "reasons_not_built": [],
+  "arms": [
+   "clopidogrel",
+   "warfarin"
+  ],
+  "arm_keywords": {
+   "clopidogrel": [
+    "clopidogrel",
+    "plavix"
+   ],
+   "warfarin": [
+    "warfarin",
+    "coumadin",
+    "jantoven"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "any_before_or_on_index": [
+    "I48"
+   ],
+   "require_all": [
+    [
+     "I10",
+     "I11",
+     "I12",
+     "I13",
+     "I15",
+     "E10",
+     "E11",
+     "I50",
+     "I63",
+     "I64",
+     "G45",
+     "I69",
+     "I74",
+     "Z8673",
+     "I702",
+     "I739"
+    ]
+   ]
+  },
+  "exclusions": {
+   "ever_codes": [
+    "I050",
+    "I052",
+    "I342",
+    "Z952",
+    "I61",
+    "I62"
+   ],
+   "other_anticoag_365d": [
+    "rivaroxaban",
+    "xarelto",
+    "dabigatran",
+    "pradaxa",
+    "edoxaban",
+    "savaysa",
+    "apixaban",
+    "eliquis"
+   ],
+   "codes_window": [
+    [
+     365,
+     [
+      "I21",
+      "I22",
+      "I24",
+      "I200",
+      "Z955"
+     ]
+    ]
+   ]
+  },
+  "min_age": 55,
+  "max_age": null,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "cv_death",
+   "('hosp', ['I60', 'I61', 'I63', 'I64', 'I74'])",
+   "('hosp', ['I21', 'I22'])"
+  ],
+  "rct_endpoint": "stroke, non-CNS systemic embolism, MI or vascular death",
+  "horizon_months": 15,
+  "rct_hr": 1.44,
+  "rct_ci": [
+   1.18,
+   1.76
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": "RR",
+  "rct_arms": "clopidogrel + aspirin vs oral anticoagulation",
+  "our_orientation": 1.44,
+  "citation": "ACTIVE Writing Group. Lancet 2006;367:1903-12 (PMID 16765759)",
+  "spec_version": "active_w_adapted_v1",
+  "note": "trial: clopidogrel + aspirin vs VKA; aspirin not identifiable; recent ACS/stent (clopidogrel indication) excluded",
+  "feasibility": {
+   "n_by_arm": {
+    "clopidogrel": 1519,
+    "warfarin": 3420
+   },
+   "n_with_ecg_by_arm": {
+    "clopidogrel": 1076,
+    "warfarin": 2063
+   },
+   "min_arm_with_ecg": 1076,
+   "pooled_primary_events_horizon": 575,
+   "pooled_primary_events_horizon_with_ecg": 446,
+   "pooled_deaths_horizon": 458,
+   "max_same_record_share_one_existing_cohort": {
+    "cohort": "claude-rely-cohort-v1",
+    "share": 0.688
+   },
+   "same_record_share_top3": {
+    "claude-rely-cohort-v1": 0.688,
+    "claude-rely-cohort-v11": 0.688,
+    "claude-rocket-af-cohort-v1": 0.678
+   }
+  }
+ },
+ "renal_af": {
+  "name": "RENAL-AF (adapted): apixaban vs warfarin initiation in AF on haemodialysis",
+  "registry_name": null,
+  "status": "not_built",
+  "reasons_not_built": [
+   "smaller arm with ECG = 251 < 300",
+   "near-duplicate cohort: 100% of (patient, index) records identical to claude-aristotle-cohort-v1"
+  ],
+  "arms": [
+   "apixaban",
+   "warfarin"
+  ],
+  "arm_keywords": {
+   "apixaban": [
+    "apixaban",
+    "eliquis"
+   ],
+   "warfarin": [
+    "warfarin",
+    "coumadin",
+    "jantoven"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "any_before_or_on_index": [
+    "I48"
+   ],
+   "require_all": [
+    [
+     "N186",
+     "Z992",
+     "Z4931",
+     "Z4932"
+    ]
+   ]
+  },
+  "exclusions": {
+   "ever_codes": [
+    "I050",
+    "I052",
+    "I342",
+    "Z952"
+   ],
+   "other_anticoag_365d": [
+    "rivaroxaban",
+    "xarelto",
+    "dabigatran",
+    "pradaxa",
+    "edoxaban",
+    "savaysa"
+   ]
+  },
+  "min_age": 18,
+  "max_age": null,
+  "index_window": [
+   "2013-01-01",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "('hosp', ['K920', 'K921', 'K922', 'K250', 'K252', 'K254', 'K256', 'K260', 'K262', 'K264', 'K266', 'K270', 'K272', 'K274', 'K276', 'K280', 'K282', 'K284', 'K286', 'I60', 'I61', 'I62'])"
+  ],
+  "rct_endpoint": "major or clinically relevant non-major bleeding",
+  "horizon_months": 12,
+  "rct_hr": 1.2,
+  "rct_ci": [
+   0.63,
+   2.3
+  ],
+  "rct_ci_level": 0.95,
+  "rct_measure": "HR",
+  "rct_arms": "apixaban vs warfarin (haemodialysis)",
+  "our_orientation": 1.2,
+  "citation": "Pokorney et al. Circulation 2022;146:1735-45 (PMID 36335914)",
+  "spec_version": "renal_af_adapted_v1",
+  "note": "ESKD / dialysis by code; major/CRNM bleeding -> major-bleeding hospitalisation",
+  "feasibility": {
+   "n_by_arm": {
+    "apixaban": 674,
+    "warfarin": 301
+   },
+   "n_with_ecg_by_arm": {
+    "apixaban": 579,
+    "warfarin": 251
+   },
+   "min_arm_with_ecg": 251,
+   "pooled_primary_events_horizon": 132,
+   "pooled_primary_events_horizon_with_ecg": 123,
+   "pooled_deaths_horizon": 223,
+   "max_same_record_share_one_existing_cohort": {
+    "cohort": "claude-aristotle-cohort-v1",
+    "share": 1.0
+   },
+   "same_record_share_top3": {
+    "claude-aristotle-cohort-v1": 1.0,
+    "claude-aristotle-cohort-v11": 1.0,
+    "claude-rely-cohort-v1": 0.309
+   }
+  }
+ },
+ "engage_af": {
+  "name": "ENGAGE AF-TIMI 48 (adapted): edoxaban vs warfarin",
+  "registry_name": null,
+  "status": "not_built",
+  "reasons_not_built": [
+   "smaller arm with ECG = 37 < 300",
+   "near-duplicate cohort: 97% of (patient, index) records identical to claude-rely-cohort-v1",
+   "re-check of v1.3 spec: still infeasible"
+  ],
+  "arms": [
+   "edoxaban",
+   "warfarin"
+  ],
+  "arm_keywords": {
+   "edoxaban": [
+    "edoxaban",
+    "savaysa"
+   ],
+   "warfarin": [
+    "warfarin",
+    "coumadin",
+    "jantoven"
+   ]
+  },
+  "design": "new_user",
+  "gates": {
+   "any_before_or_on_index": [
+    "I48"
+   ]
+  },
+  "exclusions": {
+   "ever_codes": [
+    "I050",
+    "I052",
+    "I342",
+    "Z952"
+   ],
+   "other_anticoag_365d": [
+    "rivaroxaban",
+    "xarelto",
+    "dabigatran",
+    "pradaxa",
+    "apixaban",
+    "eliquis"
+   ]
+  },
+  "min_age": 18,
+  "max_age": null,
+  "index_window": [
+   "2015-01-08",
+   "2024-06-30"
+  ],
+  "outcome": [
+   "('hosp', ['I60', 'I61', 'I63', 'I64', 'I74'])"
+  ],
+  "rct_endpoint": "stroke or systemic embolism",
+  "horizon_months": 34,
+  "rct_hr": 0.87,
+  "rct_ci": [
+   0.73,
+   1.04
+  ],
+  "rct_ci_level": 0.975,
+  "rct_measure": "HR, ITT (superiority)",
+  "rct_arms": "edoxaban 60 mg vs warfarin",
+  "our_orientation": 0.87,
+  "citation": "Giugliano et al. NEJM 2013",
+  "spec_version": "engage_af_adapted_v1",
+  "note": "",
+  "feasibility": {
+   "n_by_arm": {
+    "warfarin": 3590,
+    "edoxaban": 70
+   },
+   "n_with_ecg_by_arm": {
+    "warfarin": 2509,
+    "edoxaban": 37
+   },
+   "min_arm_with_ecg": 37,
+   "pooled_primary_events_horizon": 349,
+   "pooled_primary_events_horizon_with_ecg": 290,
+   "pooled_deaths_horizon": 634,
+   "max_same_record_share_one_existing_cohort": {
+    "cohort": "claude-rely-cohort-v1",
+    "share": 0.973
+   },
+   "same_record_share_top3": {
+    "claude-engage-af-cohort-v1": 1.0,
+    "claude-rely-cohort-v1": 0.973,
+    "claude-rely-cohort-v11": 0.973
+   }
+  }
+ },
+ "race_ii": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "lenient vs strict heart-rate target: treat-to-target strategy without identifiable time zero; primary result is an absolute difference (PMID 20231232)"
+  ],
+  "feasibility": null
+ },
+ "rate_af": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "primary outcome quality of life (SF-36) (PMID 33351042)"
+  ],
+  "feasibility": null
+ },
+ "athena": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "dronedarone vs placebo; no standard active-comparator adaptation; CV hospitalisation not reliably identifiable in AF (PMID 19213680)"
+  ],
+  "feasibility": null
+ },
+ "pallas_eldercare_noah": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "placebo-controlled"
+  ],
+  "feasibility": null
+ },
+ "averroes_bafta": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "aspirin comparator (largely OTC)"
+  ],
+  "feasibility": null
+ },
+ "artesia": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "device-detected subclinical AF not identifiable; aspirin comparator (PMID 37952132)"
+  ],
+  "feasibility": null
+ },
+ "castle_htx": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "end-stage HF with ablation; parent CASTLE-AF ablation arm 149 after gates (v1.3) (PMID 37634135)"
+  ],
+  "feasibility": null
+ },
+ "raaft2_mantra_earlyaf_stopaf_cryofirst_aatac": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "primary outcome arrhythmia recurrence/burden"
+  ],
+  "feasibility": null
+ },
+ "champion_af": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "LAAO vs NOAC; primary efficacy result is a risk difference; same comparison/cohort as PRAGUE-17 (PMID 41910347)"
+  ],
+  "feasibility": null
+ },
+ "closure_af": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "LAAO vs best medical care; RMST difference, no HR; mixed comparator (PMID 41849741)"
+  ],
+  "feasibility": null
+ },
+ "prevail": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "same comparison as PROTECT AF (near-duplicate cohort) (PMID 24998121)"
+  ],
+  "feasibility": null
+ },
+ "option": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "LAAO after ablation vs OAC; primary efficacy difference in proportions; subset of LAAO cohort (PMID 39555822)"
+  ],
+  "feasibility": null
+ },
+ "entrust_af_pci_envisage_tavi": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "edoxaban (~150 persons ever ordered) (PMIDs 31492505, 34449183)"
+  ],
+  "feasibility": null
+ },
+ "afire": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "antiplatelet de-escalation on rivaroxaban; no identifiable initiation (PMID 31475793)"
+  ],
+  "feasibility": null
+ },
+ "periprocedural_oac_bruise_control": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "peri-procedural outcomes / pocket haematoma; no primary HR"
+  ],
+  "feasibility": null
+ },
+ "elan_timing_optimas": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "timing of DOAC after stroke; risk differences"
+  ],
+  "feasibility": null
+ },
+ "invictus_river": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "rheumatic / bioprosthetic-mitral AF; non-HR primary results"
+  ],
+  "feasibility": null
+ },
+ "castle_af": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "v1.3: ablation arm 149 after gates"
+  ],
+  "feasibility": null
+ },
+ "dionysos": {
+  "status": "not_screened",
+  "reasons_not_built": [
+   "outcome not emulable; analysed before"
+  ],
+  "feasibility": null
+ }
+}
