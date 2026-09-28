@@ -967,6 +967,111 @@
    "comparator_cluster": "C_STATIN_CAD",
    "rationale": "Fidelity: In-hospital ACS start is standard for both statins (F1 = 0). About 25% prior statin use, below the 'substantial share' bar for F3. Dose is not identifiable, but post-2013 post-ACS atorvastatin is predominantly high-intensity, so comparator moderate. Revascularisation >= 30 d, the largest primary component, is not captured. Outcome poor. ECG: ACS population (ischemic burden/infarct). Statin choice is intensity/formulary driven.",
    "sources": "Cannon NEJM 2004"
+  },
+  "frail_af": {
+   "set": "v1.8_new",
+   "fidelity_include": false,
+   "fidelity_include_strict": false,
+   "flags": {
+    "F1_in_hospital_start_not_mirrored": 0,
+    "F2_responder_runin": 0,
+    "F3_discontinuation_switch_not_mirrored": 0,
+    "F4_delayed_effect_long_followup": 0,
+    "F5_other_time_zero_misalignment": 0,
+    "n_core_flags": 0,
+    "comparator_fidelity": "good",
+    "outcome_fidelity": "poor",
+    "record_only_dose_titration": false,
+    "record_only_placebo_proxy": false
+   },
+   "ecg_relevance": "medium",
+   "comparator_cluster": "C_AF_OAC_VS_WARFARIN",
+   "rationale": "Fidelity: Switching from VKA to a DOAC vs continuing VKA is mirrored by the sequential design (F3 = 0); outpatient; 12-mo horizon. Comparator good (the RCT arm was any NOAC). Frailty (GFI >= 3) is replaced by age >= 75, an eligibility difference. The RCT primary endpoint is major OR clinically relevant non-major bleeding; CRNM bleeding (the larger share of events, mostly non-hospitalised) cannot be captured by major-bleeding hospitalisation, so a dominant component is missing. Outcome poor. ECG: AF population (atrial substrate, ECG-reflected prognosis). Switch vs stay on warfarin is driven by INR control, renal function, cost and frailty, not by cardiac structure.",
+   "sources": "Joosten Circulation 2024"
+  },
+  "laaos3": {
+   "set": "v1.8_new",
+   "fidelity_include": true,
+   "fidelity_include_strict": true,
+   "flags": {
+    "F1_in_hospital_start_not_mirrored": 0,
+    "F2_responder_runin": 0,
+    "F3_discontinuation_switch_not_mirrored": 0,
+    "F4_delayed_effect_long_followup": 0,
+    "F5_other_time_zero_misalignment": 0,
+    "n_core_flags": 0,
+    "comparator_fidelity": "moderate",
+    "outcome_fidelity": "moderate",
+    "record_only_dose_titration": false,
+    "record_only_placebo_proxy": false
+   },
+   "ecg_relevance": "high",
+   "comparator_cluster": "C_SINGLE_laaos3",
+   "rationale": "Fidelity: Both arms have time zero at the same open cardiac operation (in-hospital, mirrored). No run-in or switching. 46-mo horizon (< 48). Comparator moderate: 'no occlusion' is inferred from the absence of an LAA code, and under-coding misclassifies occluded patients as controls. Outcome moderate: stroke/SE from inpatient codes, but index-stay (perioperative) strokes, which the RCT counted, are excluded. ECG: AF at cardiac surgery (CAD/valve substrate). Surgeon choice of LAA occlusion tracks AF persistence/burden and atrial size, both ECG-reflected.",
+   "sources": "Whitlock NEJM 2021"
+  },
+  "protect_af": {
+   "set": "v1.8_new",
+   "fidelity_include": true,
+   "fidelity_include_strict": true,
+   "flags": {
+    "F1_in_hospital_start_not_mirrored": 0,
+    "F2_responder_runin": 0,
+    "F3_discontinuation_switch_not_mirrored": 0,
+    "F4_delayed_effect_long_followup": 0,
+    "F5_other_time_zero_misalignment": 0,
+    "n_core_flags": 0,
+    "comparator_fidelity": "good",
+    "outcome_fidelity": "moderate",
+    "record_only_dose_titration": false,
+    "record_only_placebo_proxy": false
+   },
+   "ecg_relevance": "medium",
+   "comparator_cluster": "C_AF_OAC_VS_WARFARIN",
+   "rationale": "Fidelity: LAAO (after prior OAC) vs continued warfarin, mirrored by the sequential design; time zero at the procedure; 18-mo horizon. Comparator good (warfarin; device class the same, newer generation). Stroke/SE + CV death needs cause of death. Not rule items (recorded): the benchmark is a Bayesian rate ratio with a credible interval; real-world LAAO is channelled to OAC-unsuitable patients, whereas the RCT enrolled warfarin-eligible patients (eligibility/confounding, not a design flag). ECG: AF population (ECG-reflected stroke/death prognosis). LAAO vs warfarin choice is driven by bleeding history, falls and OAC intolerance, which are non-cardiac.",
+   "sources": "Holmes Lancet 2009"
+  },
+  "raft_af": {
+   "set": "v1.8_new",
+   "fidelity_include": true,
+   "fidelity_include_strict": true,
+   "flags": {
+    "F1_in_hospital_start_not_mirrored": 0,
+    "F2_responder_runin": 0,
+    "F3_discontinuation_switch_not_mirrored": 0,
+    "F4_delayed_effect_long_followup": 0,
+    "F5_other_time_zero_misalignment": 0,
+    "n_core_flags": 0,
+    "comparator_fidelity": "moderate",
+    "outcome_fidelity": "moderate",
+    "record_only_dose_titration": false,
+    "record_only_placebo_proxy": false
+   },
+   "ecg_relevance": "high",
+   "comparator_cluster": "C_AF_RHYTHM_AAD",
+   "rationale": "Fidelity: Ablation vs continued rate control in HF, mirrored by the sequential design; 36-mo horizon. Comparator moderate: rate-control continuers may also receive antiarrhythmics, which are not excluded. HF from any code, any EF (the RCT required NYHA II-III with raised NT-proBNP). Death + HF hospitalisation (RCT HF events may include non-hospitalised events). ECG: AF + HF. Ablation choice depends on AF type/burden, LV function and atrial size; prognosis is LV-driven.",
+   "sources": "Parkash Circulation 2022"
+  },
+  "active_w": {
+   "set": "v1.8_new",
+   "fidelity_include": true,
+   "fidelity_include_strict": false,
+   "flags": {
+    "F1_in_hospital_start_not_mirrored": 0,
+    "F2_responder_runin": 0,
+    "F3_discontinuation_switch_not_mirrored": 1,
+    "F4_delayed_effect_long_followup": 0,
+    "F5_other_time_zero_misalignment": 0,
+    "n_core_flags": 1,
+    "comparator_fidelity": "moderate",
+    "outcome_fidelity": "moderate",
+    "record_only_dose_titration": false,
+    "record_only_placebo_proxy": false
+   },
+   "ecg_relevance": "medium",
+   "comparator_cluster": "C_AF_OAC_VS_WARFARIN",
+   "rationale": "Fidelity: Most ACTIVE W patients were VKA-experienced, and those allocated to clopidogrel+aspirin stopped OAC at randomization. The new-user design with other-arm/DOAC washout excludes such switchers (F3). Comparator moderate: clopidogrel monotherapy orders stand in for clopidogrel+aspirin (aspirin largely OTC/unobservable); clopidogrel initiators in AF without recent ACS/stent are a selected group. Composite with vascular death needs cause of death. ECG: AF population (ECG-reflected prognosis). Antiplatelet vs OAC choice is driven by bleeding risk, patient refusal and vascular comorbidity, not cardiac structure.",
+   "sources": "ACTIVE Writing Group Lancet 2006"
   }
  },
  "subsets": {
@@ -990,7 +1095,11 @@
     "insight",
     "affirm",
     "af_chf",
-    "precision"
+    "precision",
+    "laaos3",
+    "protect_af",
+    "raft_af",
+    "active_w"
    ],
    "S_fid_strict": [
     "elite_ii",
@@ -1002,7 +1111,10 @@
     "dcp",
     "engage_af",
     "affirm",
-    "af_chf"
+    "af_chf",
+    "laaos3",
+    "protect_af",
+    "raft_af"
    ],
    "S_ecg": [
     "comet",
@@ -1039,7 +1151,12 @@
     "affirm",
     "af_chf",
     "lodestar",
-    "prove_it"
+    "prove_it",
+    "frail_af",
+    "laaos3",
+    "protect_af",
+    "raft_af",
+    "active_w"
    ],
    "S_both": [
     "paradigm_hf_seq",
@@ -1056,7 +1173,11 @@
     "engage_af",
     "valiant",
     "affirm",
-    "af_chf"
+    "af_chf",
+    "laaos3",
+    "protect_af",
+    "raft_af",
+    "active_w"
    ],
    "S_both_high": [
     "paradigm_hf_seq",
@@ -1064,16 +1185,18 @@
     "cabana",
     "invest",
     "affirm",
-    "af_chf"
+    "af_chf",
+    "laaos3",
+    "raft_af"
    ],
    "sizes": {
-    "S_fid": 19,
-    "S_fid_strict": 10,
-    "S_ecg": 35,
-    "S_both": 15,
-    "S_both_high": 6
+    "S_fid": 23,
+    "S_fid_strict": 13,
+    "S_ecg": 40,
+    "S_both": 19,
+    "S_both_high": 8
    },
-   "n_rated": 46
+   "n_rated": 51
   },
   "v16_existing_31_keys": {
    "S_fid": [
@@ -1199,6 +1322,102 @@
     "S_both_high": 2
    },
    "n_rated": 15
+  },
+  "v18_new_af_5": {
+   "S_fid": [
+    "laaos3",
+    "protect_af",
+    "raft_af",
+    "active_w"
+   ],
+   "S_fid_strict": [
+    "laaos3",
+    "protect_af",
+    "raft_af"
+   ],
+   "S_ecg": [
+    "frail_af",
+    "laaos3",
+    "protect_af",
+    "raft_af",
+    "active_w"
+   ],
+   "S_both": [
+    "laaos3",
+    "protect_af",
+    "raft_af",
+    "active_w"
+   ],
+   "S_both_high": [
+    "laaos3",
+    "raft_af"
+   ],
+   "sizes": {
+    "S_fid": 4,
+    "S_fid_strict": 3,
+    "S_ecg": 5,
+    "S_both": 4,
+    "S_both_high": 2
+   },
+   "n_rated": 5
+  },
+  "confirmation_v17_plus_v18": {
+   "S_fid": [
+    "valiant",
+    "insight",
+    "affirm",
+    "af_chf",
+    "precision",
+    "laaos3",
+    "protect_af",
+    "raft_af",
+    "active_w"
+   ],
+   "S_fid_strict": [
+    "affirm",
+    "af_chf",
+    "laaos3",
+    "protect_af",
+    "raft_af"
+   ],
+   "S_ecg": [
+    "leader",
+    "sustain6",
+    "tecos",
+    "valiant",
+    "affirm",
+    "af_chf",
+    "lodestar",
+    "prove_it",
+    "frail_af",
+    "laaos3",
+    "protect_af",
+    "raft_af",
+    "active_w"
+   ],
+   "S_both": [
+    "valiant",
+    "affirm",
+    "af_chf",
+    "laaos3",
+    "protect_af",
+    "raft_af",
+    "active_w"
+   ],
+   "S_both_high": [
+    "affirm",
+    "af_chf",
+    "laaos3",
+    "raft_af"
+   ],
+   "sizes": {
+    "S_fid": 9,
+    "S_fid_strict": 5,
+    "S_ecg": 13,
+    "S_both": 7,
+    "S_both_high": 4
+   },
+   "n_rated": 20
   }
  },
  "comparator_clusters": {
@@ -1224,7 +1443,8 @@
     "af_chf",
     "cabana",
     "castle_af",
-    "dionysos"
+    "dionysos",
+    "raft_af"
    ],
    "C_ARB_VS_ACEI": [
     "elite_ii",
@@ -1252,7 +1472,10 @@
     "aristotle",
     "rocket_af",
     "rely",
-    "engage_af"
+    "engage_af",
+    "frail_af",
+    "protect_af",
+    "active_w"
    ],
    "C_P2Y12_ACS": [
     "plato",
@@ -1276,11 +1499,14 @@
    ],
    "C_SINGLE_amplify": [
     "amplify"
+   ],
+   "C_SINGLE_laaos3": [
+    "laaos3"
    ]
   },
-  "note": "Design-only cluster proposal for clustered/sign-flip tests. Trials share a cluster when they share a comparator drug class or arm patients drawn from the same prescribing pool, or when candidates.md flags record overlap of 50-80%: LEADER-EMPA-REG 0.58 (C_DPP4I_PROXY), VALIANT-ONTARGET 0.61 (C_ARB_VS_ACEI), INSIGHT-ALLHAT 0.63 (C_HTN_ANTIHYPERTENSIVE). AFFIRM contains most EAST-AFNET 4 records (C_AF_RHYTHM_AAD). CARMELINA-CAROLINA is 0.31, sharing linagliptin and SU arms (C_DPP4I_VS_SU). AMPLIFY shares the apixaban/warfarin tokens with the AF trials, but its population is disjoint (AF excluded; overlap 0.01), so it is a singleton. LODESTAR and PROVE IT share the atorvastatin arm within CAD/ACS. Hypertension trials are pooled into one cluster because their amlodipine, thiazide, ARB and beta-blocker arms interlock. Sensitivity: split C_HTN into CCB-vs-thiazide (allhat, insight), and C_AF_RHYTHM_AAD into sequential add-on (east_afnet4, affirm, af_chf) and ablation (cabana, castle_af)."
+  "note": "Design-only cluster proposal for clustered/sign-flip tests. Trials share a cluster when they share a comparator drug class or arm patients drawn from the same prescribing pool, or when candidates.md flags record overlap of 50-80%: LEADER-EMPA-REG 0.58 (C_DPP4I_PROXY), VALIANT-ONTARGET 0.61 (C_ARB_VS_ACEI), INSIGHT-ALLHAT 0.63 (C_HTN_ANTIHYPERTENSIVE). AFFIRM contains most EAST-AFNET 4 records (C_AF_RHYTHM_AAD). CARMELINA-CAROLINA is 0.31, sharing linagliptin and SU arms (C_DPP4I_VS_SU). AMPLIFY shares the apixaban/warfarin tokens with the AF trials, but its population is disjoint (AF excluded; overlap 0.01), so it is a singleton. LODESTAR and PROVE IT share the atorvastatin arm within CAD/ACS. Hypertension trials are pooled into one cluster because their amlodipine, thiazide, ARB and beta-blocker arms interlock. Sensitivity: split C_HTN into CCB-vs-thiazide (allhat, insight), and C_AF_RHYTHM_AAD into sequential add-on (east_afnet4, affirm, af_chf) and ablation (cabana, castle_af). v1.8 AF additions (design-only): frail_af, protect_af and active_w join C_AF_OAC_VS_WARFARIN because their comparator is the warfarin prescribing pool (ACTIVE W has 69% of records identical to RE-LY; FRAIL-AF and PROTECT AF both sample established warfarin users). raft_af joins C_AF_RHYTHM_AAD (it shares the rate-control-continuer comparator with AFFIRM/EAST-AFNET 4/AF-CHF, and the ablation arm with CABANA/CASTLE-AF). laaos3 is a singleton (surgical population; 0.12 overlap with PARTNER). Sensitivity: a C_LAAO cluster (protect_af, laaos3) by intervention, and protect_af/frail_af as a sequential-warfarin-continuer sub-cluster."
  },
- "candidates_json": "First pass (commit 68a13a5): docs/v17/candidates.json was absent, so only the 31 existing keys were rated. Second pass (same day): the 15 built v1.7 trials listed in candidates.md 'Selected for build' were rated under the unchanged rule. Screened-not-built candidates (savor, tosca_it, accomplish, euclid, isar_react5, cares, fast, oral_surv, pronounce, ideal) were not rated.",
+ "candidates_json": "First pass (commit 68a13a5): docs/v17/candidates.json was absent, so only the 31 existing keys were rated. Second pass (same day): the 15 built v1.7 trials listed in candidates.md 'Selected for build' were rated under the unchanged rule. Third pass (2026-09-28): the 5 built v1.8 AF trials in docs/v18/af_candidates.md (frail_af, laaos3, protect_af, raft_af, active_w) were rated under the unchanged rule; the not-built v1.8 screens (prague17, renal_af, augustus, pioneer_af_pci, re_dual_pci) were not rated. Screened-not-built v1.7 candidates (savor, tosca_it, accomplish, euclid, isar_react5, cares, fast, oral_surv, pronounce, ideal) were not rated.",
  "blinding_attestation": {
   "files_read": [
    "scripts/trial_specs.py (full file, including the V17 block lines 651-949)",
@@ -1289,11 +1515,15 @@
    "docs/PROTOCOL_V1.md lines 44-147 (sections 3, 4, 4b, 4c: trial designs, PICOT, sufficiency rule; these contain design-stage pair counts for DAPA-HF/PARTNER/PARAGON and emulation-rating labels, not used)",
    "docs/v14/closeness_rating.json: only the 'method' string was printed (plus the list of top-level keys, which printing the method exposed); no ratings viewed",
    "docs/v17/candidates.md (full file). It contains count-only feasibility numbers (arm sizes, pooled event counts, record-overlap shares), which were ignored for rating; only the overlap flags were used, for clusters.",
+   "scripts/trial_specs.py V18 block (lines 951-1101)",
+   "docs/v18/af_candidates.md (full file; its count-only feasibility numbers were ignored for rating, only the design caveats and overlap flags were used)",
+   "docs/v18/af_candidates.json: not opened (design fields duplicate the V18 specs)",
+   "Directory listing of docs/v18 (file names only; CLMBR_RESULTS.md, CLMBR_LEAKAGE.md and CLMBR_vs_ECG.png were seen by name and NOT opened)",
    "docs/v17/candidates.json: only the top-level keys and the field names of one entry were printed (design fields duplicate trial_specs V17); no feasibility block was printed",
    "CLAUDE.md (auto-loaded)",
    "Web searches: CASTLE-AF control-arm composition, PLATO clopidogrel pretreatment, ONTARGET run-in, PARADISE-MI design, TRANSFORM-HF design, PROVE IT endpoint components, LODESTAR endpoint components, VALIANT prior-ACEi discontinuation",
    "Directory listings: docs/v16 and docs/v17 (file names only; docs/v17/V17_BLINDED_SUBSET_EXISTING18.md was seen in a listing and NOT opened)"
   ],
-  "statement": "No file under /mnt/raid0, no audit/summary/panel/headline/result file (including docs/v17/V17_BLINDED_SUBSET_EXISTING18.md), no report.md, presentation or abstract, and no git log/show/diff of results was opened. No HR/SMD/balance numbers from any emulation were seen; per candidates.md, no PS, balance or HR exists for any v1.7 trial. The RATING_ITEMS tuples in trial_specs.py (an earlier design rating) were visible in the allowed file; the ratings here were derived independently from the rule above. The rule text was not changed between the two passes."
+  "statement": "No file under /mnt/raid0, no audit/summary/panel/headline/result file (including docs/v17/V17_BLINDED_SUBSET_EXISTING18.md), no report.md, presentation or abstract, and no git log/show/diff of results was opened. No HR/SMD/balance numbers from any emulation were seen; per candidates.md, no PS, balance or HR exists for any v1.7 trial. The RATING_ITEMS tuples in trial_specs.py (an earlier design rating) were visible in the allowed file; the ratings here were derived independently from the rule above. The rule text was not changed across the three passes."
  }
 }

@@ -1,6 +1,6 @@
 # v1.7 blinded trial-selection rule (no results viewed)
 
-Rater: independent blinded agent, 2026-09-27. The rule text below was fixed before any trial was scored. The second pass (15 new v1.7 trials) applied it unchanged.
+Rater: independent blinded agent, 2026-09-27. The rule text below was fixed before any trial was scored. The second pass (15 new v1.7 trials) and third pass (5 v1.8 AF trials) applied it unchanged.
 
 ## 1. Rule (defined before scoring)
 
@@ -35,7 +35,7 @@ Why these thresholds:
 
 ## 3. Per-trial scores
 
-Flags: F1 in-hospital start, F2 responder run-in, F3 discontinuation/switch, F4 delayed effect (horizon >= 48 mo), F5 other time-zero problem. Tit = dose-titration protocol (recorded only). Set: v1.6 = existing key; v1.7 = new confirmation trial.
+Flags: F1 in-hospital start, F2 responder run-in, F3 discontinuation/switch, F4 delayed effect (horizon >= 48 mo), F5 other time-zero problem. Tit = dose-titration protocol (recorded only). Set: v1.6 = existing key; v1.7 = new v1.7 confirmation trial; v1.8 = new v1.8 AF trial.
 
 | Trial | Set | F1 | F2 | F3 | F4 | F5 | n flags | Comparator | Outcome | Tit | Fidelity | Strict | ECG relevance | Cluster |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -85,6 +85,11 @@ Flags: F1 in-hospital start, F2 responder run-in, F3 discontinuation/switch, F4 
 | amplify | v1.7 | 0 | 0 | 0 | 0 | 0 | 0 | good | poor | 0 | **exclude** | exclude | low | C_SINGLE_amplify |
 | lodestar | v1.7 | 0 | 0 | 0 | 0 | 0 | 0 | good | poor | 1 | **exclude** | exclude | medium | C_STATIN_CAD |
 | prove_it | v1.7 | 0 | 0 | 0 | 0 | 0 | 0 | moderate | poor | 1 | **exclude** | exclude | medium | C_STATIN_CAD |
+| frail_af | v1.8 | 0 | 0 | 0 | 0 | 0 | 0 | good | poor | 0 | **exclude** | exclude | medium | C_AF_OAC_VS_WARFARIN |
+| laaos3 | v1.8 | 0 | 0 | 0 | 0 | 0 | 0 | moderate | moderate | 0 | **include** | include | high | C_SINGLE_laaos3 |
+| protect_af | v1.8 | 0 | 0 | 0 | 0 | 0 | 0 | good | moderate | 0 | **include** | include | medium | C_AF_OAC_VS_WARFARIN |
+| raft_af | v1.8 | 0 | 0 | 0 | 0 | 0 | 0 | moderate | moderate | 0 | **include** | include | high | C_AF_RHYTHM_AAD |
+| active_w | v1.8 | 0 | 0 | 1 | 0 | 0 | 1 | moderate | moderate | 0 | **include** | exclude | medium | C_AF_OAC_VS_WARFARIN |
 
 ## 4. Rationale and sources
 
@@ -134,16 +139,21 @@ Flags: F1 in-hospital start, F2 responder run-in, F3 discontinuation/switch, F4 
 - **amplify**. Fidelity: Both anticoagulants start at the index VTE encounter; the enoxaparin bridge is implicit in warfarin care. Recurrent VTE from a new inpatient stay with any VTE code is low-specificity (index-VTE codes recur), outpatient-managed recurrences are missed and VTE-related death is not captured. Outcome poor. ECG: Acute VTE with AF excluded; not a cardiac substrate. Choice is renal, cancer, cost and patient-preference driven. *Source: Agnelli NEJM 2013.*
 - **lodestar**. Fidelity: Same agents (dose follows a factorial treat-to-target/high-intensity scheme; recorded). Any coronary revascularisation was the dominant component (about 5.3% of 8.7%, i.e. over half the events) and is not captured. Outcome poor. ECG: CAD population (ischemic burden). Rosuvastatin vs atorvastatin choice is formulary/intensity driven. *Source: Lee BMJ 2023.*
 - **prove_it**. Fidelity: In-hospital ACS start is standard for both statins (F1 = 0). About 25% prior statin use, below the 'substantial share' bar for F3. Dose is not identifiable, but post-2013 post-ACS atorvastatin is predominantly high-intensity, so comparator moderate. Revascularisation >= 30 d, the largest primary component, is not captured. Outcome poor. ECG: ACS population (ischemic burden/infarct). Statin choice is intensity/formulary driven. *Source: Cannon NEJM 2004.*
+- **frail_af**. Fidelity: Switching from VKA to a DOAC vs continuing VKA is mirrored by the sequential design (F3 = 0); outpatient; 12-mo horizon. Comparator good (the RCT arm was any NOAC). Frailty (GFI >= 3) is replaced by age >= 75, an eligibility difference. The RCT primary endpoint is major OR clinically relevant non-major bleeding; CRNM bleeding (the larger share of events, mostly non-hospitalised) cannot be captured by major-bleeding hospitalisation, so a dominant component is missing. Outcome poor. ECG: AF population (atrial substrate, ECG-reflected prognosis). Switch vs stay on warfarin is driven by INR control, renal function, cost and frailty, not by cardiac structure. *Source: Joosten Circulation 2024.*
+- **laaos3**. Fidelity: Both arms have time zero at the same open cardiac operation (in-hospital, mirrored). No run-in or switching. 46-mo horizon (< 48). Comparator moderate: 'no occlusion' is inferred from the absence of an LAA code, and under-coding misclassifies occluded patients as controls. Outcome moderate: stroke/SE from inpatient codes, but index-stay (perioperative) strokes, which the RCT counted, are excluded. ECG: AF at cardiac surgery (CAD/valve substrate). Surgeon choice of LAA occlusion tracks AF persistence/burden and atrial size, both ECG-reflected. *Source: Whitlock NEJM 2021.*
+- **protect_af**. Fidelity: LAAO (after prior OAC) vs continued warfarin, mirrored by the sequential design; time zero at the procedure; 18-mo horizon. Comparator good (warfarin; device class the same, newer generation). Stroke/SE + CV death needs cause of death. Not rule items (recorded): the benchmark is a Bayesian rate ratio with a credible interval; real-world LAAO is channelled to OAC-unsuitable patients, whereas the RCT enrolled warfarin-eligible patients (eligibility/confounding, not a design flag). ECG: AF population (ECG-reflected stroke/death prognosis). LAAO vs warfarin choice is driven by bleeding history, falls and OAC intolerance, which are non-cardiac. *Source: Holmes Lancet 2009.*
+- **raft_af**. Fidelity: Ablation vs continued rate control in HF, mirrored by the sequential design; 36-mo horizon. Comparator moderate: rate-control continuers may also receive antiarrhythmics, which are not excluded. HF from any code, any EF (the RCT required NYHA II-III with raised NT-proBNP). Death + HF hospitalisation (RCT HF events may include non-hospitalised events). ECG: AF + HF. Ablation choice depends on AF type/burden, LV function and atrial size; prognosis is LV-driven. *Source: Parkash Circulation 2022.*
+- **active_w**. Fidelity: Most ACTIVE W patients were VKA-experienced, and those allocated to clopidogrel+aspirin stopped OAC at randomization. The new-user design with other-arm/DOAC washout excludes such switchers (F3). Comparator moderate: clopidogrel monotherapy orders stand in for clopidogrel+aspirin (aspirin largely OTC/unobservable); clopidogrel initiators in AF without recent ACS/stent are a selected group. Composite with vascular death needs cause of death. ECG: AF population (ECG-reflected prognosis). Antiplatelet vs OAC choice is driven by bleeding risk, patient refusal and vascular comorbidity, not cardiac structure. *Source: ACTIVE Writing Group Lancet 2006.*
 
 ## 5. Subsets
 
 ### All trials
 
-- **S_fid** (19): paradigm_hf_seq, elite_ii, plato, triton, aristotle, rocket_af, rely, partner, east_afnet4, cabana, dcp, carolina, invest, engage_af, valiant, insight, affirm, af_chf, precision
-- **S_fid_strict** (10): elite_ii, triton, aristotle, rocket_af, rely, partner, dcp, engage_af, affirm, af_chf
-- **S_ecg** (35): comet, paradigm_hf, paradigm_hf_switch, paradigm_hf_seq, paragon_hf, paragon_hf_switch, transform_hf, elite_ii, life, dionysos, plato, triton, aristotle, rocket_af, rely, dapa_hf, partner, emperor_preserved, east_afnet4, cabana, castle_af, paradise_mi, ontarget, ascot, empa_reg, invest, engage_af, leader, sustain6, tecos, valiant, affirm, af_chf, lodestar, prove_it
-- **S_both** (15): paradigm_hf_seq, elite_ii, plato, triton, aristotle, rocket_af, rely, partner, east_afnet4, cabana, invest, engage_af, valiant, affirm, af_chf
-- **S_both_high** (6): paradigm_hf_seq, east_afnet4, cabana, invest, affirm, af_chf
+- **S_fid** (23): paradigm_hf_seq, elite_ii, plato, triton, aristotle, rocket_af, rely, partner, east_afnet4, cabana, dcp, carolina, invest, engage_af, valiant, insight, affirm, af_chf, precision, laaos3, protect_af, raft_af, active_w
+- **S_fid_strict** (13): elite_ii, triton, aristotle, rocket_af, rely, partner, dcp, engage_af, affirm, af_chf, laaos3, protect_af, raft_af
+- **S_ecg** (40): comet, paradigm_hf, paradigm_hf_switch, paradigm_hf_seq, paragon_hf, paragon_hf_switch, transform_hf, elite_ii, life, dionysos, plato, triton, aristotle, rocket_af, rely, dapa_hf, partner, emperor_preserved, east_afnet4, cabana, castle_af, paradise_mi, ontarget, ascot, empa_reg, invest, engage_af, leader, sustain6, tecos, valiant, affirm, af_chf, lodestar, prove_it, frail_af, laaos3, protect_af, raft_af, active_w
+- **S_both** (19): paradigm_hf_seq, elite_ii, plato, triton, aristotle, rocket_af, rely, partner, east_afnet4, cabana, invest, engage_af, valiant, affirm, af_chf, laaos3, protect_af, raft_af, active_w
+- **S_both_high** (8): paradigm_hf_seq, east_afnet4, cabana, invest, affirm, af_chf, laaos3, raft_af
 
 ### Existing v1.6 keys (31)
 
@@ -161,6 +171,22 @@ Flags: F1 in-hospital start, F2 responder run-in, F3 discontinuation/switch, F4 
 - **S_both** (3): valiant, affirm, af_chf
 - **S_both_high** (2): affirm, af_chf
 
+### New v1.8 AF trials (5)
+
+- **S_fid** (4): laaos3, protect_af, raft_af, active_w
+- **S_fid_strict** (3): laaos3, protect_af, raft_af
+- **S_ecg** (5): frail_af, laaos3, protect_af, raft_af, active_w
+- **S_both** (4): laaos3, protect_af, raft_af, active_w
+- **S_both_high** (2): laaos3, raft_af
+
+### v1.7 + v1.8 confirmation trials (20)
+
+- **S_fid** (9): valiant, insight, affirm, af_chf, precision, laaos3, protect_af, raft_af, active_w
+- **S_fid_strict** (5): affirm, af_chf, laaos3, protect_af, raft_af
+- **S_ecg** (13): leader, sustain6, tecos, valiant, affirm, af_chf, lodestar, prove_it, frail_af, laaos3, protect_af, raft_af, active_w
+- **S_both** (7): valiant, affirm, af_chf, laaos3, protect_af, raft_af, active_w
+- **S_both_high** (4): affirm, af_chf, laaos3, raft_af
+
 Caveats for use:
 - The subsets include design variants of the same RCT (e.g. paradigm_hf_seq). Apply the project's one-per-RCT convention downstream.
 - TRITON has no registered outcome or horizon in trial_specs and did not pass v1 feasibility.
@@ -169,17 +195,17 @@ Caveats for use:
 
 ## 6. Comparator clusters (design-only proposal)
 
-Design-only cluster proposal for clustered/sign-flip tests. Trials share a cluster when they share a comparator drug class or arm patients drawn from the same prescribing pool, or when candidates.md flags record overlap of 50-80%: LEADER-EMPA-REG 0.58 (C_DPP4I_PROXY), VALIANT-ONTARGET 0.61 (C_ARB_VS_ACEI), INSIGHT-ALLHAT 0.63 (C_HTN_ANTIHYPERTENSIVE). AFFIRM contains most EAST-AFNET 4 records (C_AF_RHYTHM_AAD). CARMELINA-CAROLINA is 0.31, sharing linagliptin and SU arms (C_DPP4I_VS_SU). AMPLIFY shares the apixaban/warfarin tokens with the AF trials, but its population is disjoint (AF excluded; overlap 0.01), so it is a singleton. LODESTAR and PROVE IT share the atorvastatin arm within CAD/ACS. Hypertension trials are pooled into one cluster because their amlodipine, thiazide, ARB and beta-blocker arms interlock. Sensitivity: split C_HTN into CCB-vs-thiazide (allhat, insight), and C_AF_RHYTHM_AAD into sequential add-on (east_afnet4, affirm, af_chf) and ablation (cabana, castle_af).
+Design-only cluster proposal for clustered/sign-flip tests. Trials share a cluster when they share a comparator drug class or arm patients drawn from the same prescribing pool, or when candidates.md flags record overlap of 50-80%: LEADER-EMPA-REG 0.58 (C_DPP4I_PROXY), VALIANT-ONTARGET 0.61 (C_ARB_VS_ACEI), INSIGHT-ALLHAT 0.63 (C_HTN_ANTIHYPERTENSIVE). AFFIRM contains most EAST-AFNET 4 records (C_AF_RHYTHM_AAD). CARMELINA-CAROLINA is 0.31, sharing linagliptin and SU arms (C_DPP4I_VS_SU). AMPLIFY shares the apixaban/warfarin tokens with the AF trials, but its population is disjoint (AF excluded; overlap 0.01), so it is a singleton. LODESTAR and PROVE IT share the atorvastatin arm within CAD/ACS. Hypertension trials are pooled into one cluster because their amlodipine, thiazide, ARB and beta-blocker arms interlock. Sensitivity: split C_HTN into CCB-vs-thiazide (allhat, insight), and C_AF_RHYTHM_AAD into sequential add-on (east_afnet4, affirm, af_chf) and ablation (cabana, castle_af). v1.8 AF additions (design-only): frail_af, protect_af and active_w join C_AF_OAC_VS_WARFARIN because their comparator is the warfarin prescribing pool (ACTIVE W has 69% of records identical to RE-LY; FRAIL-AF and PROTECT AF both sample established warfarin users). raft_af joins C_AF_RHYTHM_AAD (it shares the rate-control-continuer comparator with AFFIRM/EAST-AFNET 4/AF-CHF, and the ablation arm with CABANA/CASTLE-AF). laaos3 is a singleton (surgical population; 0.12 overlap with PARTNER). Sensitivity: a C_LAAO cluster (protect_af, laaos3) by intervention, and protect_af/frail_af as a sequential-warfarin-continuer sub-cluster.
 
 | Cluster | Trials |
 |---|---|
 | C_DPP4I_PROXY | dapa_hf, emperor_preserved, empa_reg, leader, sustain6, rewind, declare, canvas |
 | C_DPP4I_VS_SU | carolina, tecos, carmelina |
-| C_AF_RHYTHM_AAD | east_afnet4, affirm, af_chf, cabana, castle_af, dionysos |
+| C_AF_RHYTHM_AAD | east_afnet4, affirm, af_chf, cabana, castle_af, dionysos, raft_af |
 | C_ARB_VS_ACEI | elite_ii, ontarget, valiant |
 | C_ARNI | paradigm_hf, paradigm_hf_switch, paradigm_hf_seq, paragon_hf, paragon_hf_switch, paradise_mi |
 | C_HTN_ANTIHYPERTENSIVE | life, allhat, value, ascot, dcp, invest, insight |
-| C_AF_OAC_VS_WARFARIN | aristotle, rocket_af, rely, engage_af |
+| C_AF_OAC_VS_WARFARIN | aristotle, rocket_af, rely, engage_af, frail_af, protect_af, active_w |
 | C_P2Y12_ACS | plato, triton |
 | C_STATIN_CAD | lodestar, prove_it |
 | C_SINGLE_comet | comet |
@@ -187,10 +213,11 @@ Design-only cluster proposal for clustered/sign-flip tests. Trials share a clust
 | C_SINGLE_partner | partner |
 | C_SINGLE_precision | precision |
 | C_SINGLE_amplify | amplify |
+| C_SINGLE_laaos3 | laaos3 |
 
 ## 7. Candidate coverage
 
-First pass (commit 68a13a5): docs/v17/candidates.json was absent, so only the 31 existing keys were rated. Second pass (same day): the 15 built v1.7 trials listed in candidates.md 'Selected for build' were rated under the unchanged rule. Screened-not-built candidates (savor, tosca_it, accomplish, euclid, isar_react5, cares, fast, oral_surv, pronounce, ideal) were not rated.
+First pass (commit 68a13a5): docs/v17/candidates.json was absent, so only the 31 existing keys were rated. Second pass (same day): the 15 built v1.7 trials listed in candidates.md 'Selected for build' were rated under the unchanged rule. Third pass (2026-09-28): the 5 built v1.8 AF trials in docs/v18/af_candidates.md (frail_af, laaos3, protect_af, raft_af, active_w) were rated under the unchanged rule; the not-built v1.8 screens (prague17, renal_af, augustus, pioneer_af_pci, re_dual_pci) were not rated. Screened-not-built v1.7 candidates (savor, tosca_it, accomplish, euclid, isar_react5, cares, fast, oral_surv, pronounce, ideal) were not rated.
 
 ## 8. Blinding attestation
 
@@ -200,9 +227,13 @@ First pass (commit 68a13a5): docs/v17/candidates.json was absent, so only the 31
 - docs/PROTOCOL_V1.md lines 44-147 (sections 3, 4, 4b, 4c: trial designs, PICOT, sufficiency rule; these contain design-stage pair counts for DAPA-HF/PARTNER/PARAGON and emulation-rating labels, not used)
 - docs/v14/closeness_rating.json: only the 'method' string was printed (plus the list of top-level keys, which printing the method exposed); no ratings viewed
 - docs/v17/candidates.md (full file). It contains count-only feasibility numbers (arm sizes, pooled event counts, record-overlap shares), which were ignored for rating; only the overlap flags were used, for clusters.
+- scripts/trial_specs.py V18 block (lines 951-1101)
+- docs/v18/af_candidates.md (full file; its count-only feasibility numbers were ignored for rating, only the design caveats and overlap flags were used)
+- docs/v18/af_candidates.json: not opened (design fields duplicate the V18 specs)
+- Directory listing of docs/v18 (file names only; CLMBR_RESULTS.md, CLMBR_LEAKAGE.md and CLMBR_vs_ECG.png were seen by name and NOT opened)
 - docs/v17/candidates.json: only the top-level keys and the field names of one entry were printed (design fields duplicate trial_specs V17); no feasibility block was printed
 - CLAUDE.md (auto-loaded)
 - Web searches: CASTLE-AF control-arm composition, PLATO clopidogrel pretreatment, ONTARGET run-in, PARADISE-MI design, TRANSFORM-HF design, PROVE IT endpoint components, LODESTAR endpoint components, VALIANT prior-ACEi discontinuation
 - Directory listings: docs/v16 and docs/v17 (file names only; docs/v17/V17_BLINDED_SUBSET_EXISTING18.md was seen in a listing and NOT opened)
 
-No file under /mnt/raid0, no audit/summary/panel/headline/result file (including docs/v17/V17_BLINDED_SUBSET_EXISTING18.md), no report.md, presentation or abstract, and no git log/show/diff of results was opened. No HR/SMD/balance numbers from any emulation were seen; per candidates.md, no PS, balance or HR exists for any v1.7 trial. The RATING_ITEMS tuples in trial_specs.py (an earlier design rating) were visible in the allowed file; the ratings here were derived independently from the rule above. The rule text was not changed between the two passes.
+No file under /mnt/raid0, no audit/summary/panel/headline/result file (including docs/v17/V17_BLINDED_SUBSET_EXISTING18.md), no report.md, presentation or abstract, and no git log/show/diff of results was opened. No HR/SMD/balance numbers from any emulation were seen; per candidates.md, no PS, balance or HR exists for any v1.7 trial. The RATING_ITEMS tuples in trial_specs.py (an earlier design rating) were visible in the allowed file; the ratings here were derived independently from the rule above. The rule text was not changed across the three passes.
