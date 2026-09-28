@@ -252,7 +252,7 @@ A trial whose interaction appears for every score, including clinical ones (VALU
 | AFFIRM | 1.09 | 0.041 | 0.19 |
 | AF-CHF | 1.13 | 0.20 | |
 | FRAIL-AF | 0.95 | 0.78 | |
-| LAAOS III | 0.92 | 0.66 | |
+| LAAOS III | 0.91 | 0.66 | |
 | PROTECT AF | 1.30 | 0.24 | |
 | RAFT-AF | 1.18 | 0.046 | 0.19 |
 | ACTIVE W | 0.80 | 0.086 | |
