@@ -101,3 +101,10 @@ Read mounted data; write only under `/mnt/raid0/rbc58` and `/home/rbc58/github`.
 ## Deviation log
 
 (dated entries added during implementation, before results are summarised)
+
+- **2026-09-29, deviation 1 (II3).** In the smoke test (CARMELINA, full cohort; no HR compared with the RCT), only
+  about 23% of matched patients had a repeat order of the assigned drug in (0, 90], so the registered pair-level
+  run-in keeps about 4% of matched patients and is often not estimable (≤ 50 kept). Orders carry no days-supply, and
+  90-day prescriptions with refills generate no new order. Added a reference estimand `landmark90`: same day-90
+  landmark and pair rule (both members followed > 90 d), without the repeat-order requirement. This separates
+  the landmark itself from the adherence selection. Added before any sensitivity estimate was compared with an RCT.
