@@ -626,17 +626,6 @@ function balUpdate() {
   if (M.rank === "gain") h += `<div class="note" style="color:${RED}">Variables chosen by ECG gain: the comparisons below are descriptive (selected on the result), so p is not shown.</div>`;
   const cU = arms.filter(a => a !== "unmatched"), cB = arms.filter(a => a !== "base" && a !== "unmatched");
   if (arms.includes("base") && cB.length) h += paired("base", "PS alone", cB);
-  /* ECG reduction in mean |SMD| by domain among the shown variables */
-  if (arms.includes("base") && arms.includes("ECG")) {
-    const gs = [...new Set(vars.map(v => v.g))];
-    let t = `<h4 style="margin-top:10px">ECG vs PS alone, by domain</h4><table><tr><th>Domain (n)</th><th>PS alone</th><th>+ ECG</th><th>reduction</th></tr>`;
-    for (const g of gs) { const vs = vars.filter(v => v.g === g);
-      const mb = T.map(tr => mean(vs.map(v => get("base", tr, v.j)))), me = T.map(tr => mean(vs.map(v => get("ECG", tr, v.j))));
-      const ok = T.map((_, i) => i).filter(i => fin(mb[i]) && fin(me[i])); if (!ok.length) continue;
-      const B = mean(ok.map(i => mb[i])), E = mean(ok.map(i => me[i]));
-      t += `<tr><td>${esc(GSHORT[g] || g)} (${vs.length})</td><td>${f3(B)}</td><td>${f3(E)}</td><td>${f1(100 * (1 - E / B))}%</td></tr>`; }
-    h += t + `</table><div class="note">Mean |SMD| over the domain's shown variables, averaged over trials; reduction = 1 − ECG / PS alone. Hover a row in the chart for the per-variable value.</div>`;
-  }
   if (arms.includes("base") && cB.length)
     h += `<div class="note">Δ pts: change in % vars below the threshold; better: trials in which it rose; p: one-sided exact sign-flip test across trials. Mean |SMD| reduction: 1 − arm / reference mean |SMD| (no threshold), 95% CI by bootstrap over trials.</div>`;
   else h += `<div class="note">Select "PS alone" and another arm to see paired comparisons.</div>`;
