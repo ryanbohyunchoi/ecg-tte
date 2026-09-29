@@ -287,6 +287,7 @@ table.t{border-collapse:collapse;width:100%}
 .tier{display:inline-block;min-width:66px;padding:0 5px;font-size:12px;font-weight:600}
 .tier.t0{background:var(--navy);color:#fff}.tier.t1{background:#5b5d86;color:#fff}.tier.t2{background:var(--band);color:var(--navy);outline:1px solid var(--line)}.tier.t3{background:#fbe3e2;color:#a8322e}
 table.t td,table.t th{font-size:19px;padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+#agq-tab table.t td,#agq-tab table.t th{font-size:12.5px;padding:3px 8px}
 table.t th{background:var(--navy);color:#fff;font-weight:600}
 /* title slide */
 #s-title .tlogo{position:absolute;left:539px;top:212px;width:202px;height:204px}
@@ -485,6 +486,15 @@ svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
     <div class="side" id="emu-sum"></div>
   </div>
   <div class="fn">Trial-type categories were defined post hoc. The AF signal did not replicate in 5 prespecified AF trials (FRAIL-AF, LAAOS III, PROTECT AF, RAFT-AF, ACTIVE W; P1 |Δ| 0.254 → 0.199, 3/5 closer, p = 0.19; benchmark shuffle p = 0.28).</div>
+</section>
+
+<section class="slide" data-title="Agreement with RCTs by emulation quality" id="s-agq">
+  <div class="panel" style="bottom:66px">
+    <div class="ctrl" id="agq-ctrl"></div>
+    <div class="chart" style="padding:4px 10px"><svg id="agq-svg" width="714" height="330"></svg><div id="agq-tab"></div></div>
+    <div class="side" id="agq-note"></div>
+  </div>
+  <div class="fn">Quality groups from design items only (docs/v19/QUALITY_REAUDIT.md). RCT-DUPLICATE (Wang, JAMA 2023; post hoc): closely vs not closely emulated trials, r 0.93 vs 0.53, estimate agreement 88% vs 50%, standardized-difference agreement 88% vs 69%. Descriptive; no between-group test.</div>
 </section>
 
 <!-- 13 -->
@@ -828,13 +838,25 @@ function emuInit() {
   emuUpdate();
 }
 const NA2 = [NaN, NaN];
-function emuEst(rung, a, t) {
-  const est = $("#emu-est").value;
+function emuEst(rung, a, t) { return estOf($("#emu-est").value, rung, a, t); }
+function estOf(est, rung, a, t) {
   if (est === "itt") return a === "unmatched" ? D.est.none.unmatched[t] : D.est[rung][a][t];
   const S = D.sens[est]; const g = a === "unmatched" ? S.none : S[rung];
   return (g && g[a] && g[a][t]) || NA2;
 }
 const TIER = t => t.qt.tier.split(" ")[0];
+const pearson = (x, y) => { const n = x.length; if (n < 3) return NaN; const mx = x.reduce((a, b) => a + b) / n, my = y.reduce((a, b) => a + b) / n;
+  let sxy = 0, sxx = 0, syy = 0; for (let i = 0; i < n; i++) { sxy += (x[i] - mx) * (y[i] - my); sxx += (x[i] - mx) ** 2; syy += (y[i] - my) ** 2; } return sxy / Math.sqrt(sxx * syy); };
+/* RCT-DUPLICATE agreement metrics over trials T for one method */
+function agree(est, rung, a, T) {
+  const ok = T.filter(t => fin(estOf(est, rung, a, t)[0]));
+  const L = ok.map(t => estOf(est, rung, a, t)), tr = ok.map(t => D.trials[t]);
+  const d = L.map(([l], i) => Math.abs(l - tr[i].rb));
+  return {n: ok.length, r: pearson(L.map(x => x[0]), tr.map(x => x.rb)), gap: mean(d),
+    ea: ok.length ? d.filter((x, i) => x <= 1.96 * tr[i].rs).length / ok.length : NaN,
+    sd: ok.length ? L.filter(([l, se], i) => Math.abs(l - tr[i].rb) / Math.sqrt(se * se + tr[i].rs * tr[i].rs) < 1.96).length / ok.length : NaN};
+}
+const pc = x => fin(x) ? Math.round(100 * x) + "%" : "–", f2 = x => fin(x) ? x.toFixed(2) : "–";
 function emuUpdate() {
   const est = $("#emu-est").value;
   const ropt = $("#emu-rung").querySelectorAll("option");
@@ -886,10 +908,10 @@ function emuUpdate() {
   s += `<text x="${(ml + W - mr) / 2}" y="${yb + 33}" font-size="12" text-anchor="middle" fill="${NAVY}">Hazard ratio (log scale; values beyond 0.2–5 marked ◂ ▸)</text>`;
   $("#emu-svg").innerHTML = s;
   /* summary */
-  let h = `<h4>Selected set: ${T.length} trials</h4><table><tr><th>Method</th><th>mean |Δ|</th><th>consistent</th></tr>`;
+  let h = `<h4>Selected set: ${T.length} trials</h4><table><tr><th>Method</th><th>mean |Δ|</th><th>r</th><th>est.</th><th>std.</th></tr>`;
   const cons = (a, t) => { const [l, se] = emuEst(rung, a, t); const tr = D.trials[t]; return fin(l) ? Math.abs((l - tr.rb) / Math.sqrt(se * se + tr.rs * tr.rs)) < 1.96 : null; };
-  for (const a of arms) { const g = T.map(t => gap(a, t)), c = T.map(t => cons(a, t)).filter(x => x !== null);
-    h += `<tr><td>${swatch(a)} ${ARM[a].lab}</td><td>${f3(mean(g))}</td><td>${c.filter(Boolean).length}/${c.length}</td></tr>`; }
+  for (const a of arms) { const m = agree(est, rung, a, T);
+    h += `<tr><td>${swatch(a)} ${ARM[a].lab}</td><td>${f3(m.gap)}</td><td>${f2(m.r)}</td><td>${pc(m.ea)}</td><td>${pc(m.sd)}</td></tr>`; }
   h += `</table>`;
   const cmp = arms.filter(a => a !== "base");
   if (arms.includes("base") && cmp.length && T.length > 1) {
@@ -902,7 +924,7 @@ function emuUpdate() {
     }
     h += `</table><div class="note"><b>closer</b>: smaller |Δ log HR| than PS alone. <b>sign-flip p</b>: one-sided exact test on paired |Δ| reductions. <b>shuffle p</b>: RCT results randomly reassigned among the selected trials (2,000 draws); a large p means generic attenuation, not movement toward each trial's own result.</div>`;
   } else h += `<div class="note">Select "PS alone" and another method (and ≥2 trials) for paired tests.</div>`;
-  h += `<div class="note">consistent: |z| &lt; 1.96 using both SEs. Counts are trials. p values unadjusted (exploratory).${est !== "itt" ? " Sensitivity analysis: trials without an estimate (procedure arms; run-in with too few patients kept; outpatient cohorts too small) are dropped." : ""}</div>`;
+  h += `<div class="note">r: Pearson correlation of emulated vs RCT log HRs. est.: estimate agreement (emulated HR within the RCT 95% CI). std.: standardized-difference agreement (|z| &lt; 1.96 using both SEs). Counts are trials. p values unadjusted (exploratory).${est !== "itt" ? " Sensitivity analysis: trials without an estimate (procedure arms; run-in with too few patients kept; outpatient cohorts too small) are dropped." : ""}</div>`;
   $("#emu-sum").innerHTML = h;
 }
 
@@ -1133,7 +1155,57 @@ addEventListener("keydown", e => {
 });
 $("#nav-prev").onclick = () => show(cur - 1);
 $("#nav-next").onclick = () => show(cur + 1);
-drawStatic(); balInit(); emuInit(); simInit(); fit();
+/* ---------- agreement by emulation quality ---------- */
+const SPLITS = {tier2: ["Excellent + Good", t => ["Excellent", "Good"].includes(TIER(t)), "Moderate + Limited"],
+  tier3: null, cls: ["High fidelity (3-class)", t => t.qt.cls !== "Lower", "Lower fidelity (3-class)"]};
+function agqInit() {
+  const sel = (id, opts) => `<select id="${id}">${opts}</select>`;
+  $("#agq-ctrl").innerHTML = `
+  <label class="h">Analysis</label>${sel("agq-est", $("#emu-est").innerHTML)}
+  <label class="h">PS base</label>${rungSel("agq-rung")}
+  <label class="h">Methods</label>
+  <div id="agq-arms">${armBoxes("agq-arm", ["base", "ECG", "CLMBR", "CLMBR+ECG", "shufECG"], ["base", "ECG"])}</div>
+  <label class="h">Quality groups</label>${sel("agq-split", `<option value="tier2">Excellent + Good vs Moderate + Limited</option><option value="tier3">Excellent + Good vs Moderate vs Limited</option><option value="tier4">All four tiers</option><option value="cls">3-class rule: High vs Lower</option>`)}
+  <label class="h">Metric plotted</label>${sel("agq-met", `<option value="sd">Standardized-difference agreement</option><option value="ea">Estimate agreement</option><option value="r">Pearson r</option>`)}`;
+  for (const id of ["agq-est", "agq-rung", "agq-split", "agq-met"]) $("#" + id).onchange = agqUpdate;
+  $("#agq-arms").onchange = agqUpdate;
+  agqUpdate();
+}
+function agqGroups(v) {
+  const idx = D.trials.map((_, i) => i);
+  if (v === "tier2") return [["Excellent + Good", idx.filter(i => ["Excellent", "Good"].includes(TIER(D.trials[i])))], ["Moderate + Limited", idx.filter(i => ["Moderate", "Limited"].includes(TIER(D.trials[i])))]];
+  if (v === "tier3") return [["Excellent + Good", idx.filter(i => ["Excellent", "Good"].includes(TIER(D.trials[i])))], ["Moderate", idx.filter(i => TIER(D.trials[i]) === "Moderate")], ["Limited", idx.filter(i => TIER(D.trials[i]) === "Limited")]];
+  if (v === "tier4") return ["Excellent", "Good", "Moderate", "Limited"].map(q => [q, idx.filter(i => TIER(D.trials[i]) === q)]);
+  return [["High fidelity", idx.filter(i => D.trials[i].qt.cls !== "Lower")], ["Lower fidelity", idx.filter(i => D.trials[i].qt.cls === "Lower")]];
+}
+function agqUpdate() {
+  const est = $("#agq-est").value;
+  $("#agq-rung").querySelectorAll("option").forEach(o => { o.disabled = est !== "itt" && !["P1", "P5"].includes(o.value); });
+  if (est !== "itt" && !["P1", "P5"].includes($("#agq-rung").value)) $("#agq-rung").value = "P1";
+  const avail = est === "itt" ? ["base", "ECG", "CLMBR", "CLMBR+ECG", "shufECG"] : ["base", "ECG", "shufECG"];
+  document.querySelectorAll("#agq-arms .cb").forEach(l => { const ok = avail.includes(l.dataset.arm); l.classList.toggle("dis", !ok); l.querySelector("input").disabled = !ok; });
+  const rung = $("#agq-rung").value, arms = checked("agq-arm").filter(a => avail.includes(a)), G = agqGroups($("#agq-split").value), met = $("#agq-met").value;
+  const R = G.map(([g, T]) => [g, T, arms.map(a => agree(est, rung, a, T))]);
+  /* grouped bars */
+  const W = 714, H = 330, ml = 50, mb = 44, mt = 24, pw = W - ml - 10, ph = H - mt - mb;
+  const lo = met === "r" ? -0.5 : 0, hi = 1.1, ys = v => mt + ph - (Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo) * ph;
+  let s = `<text x="${ml}" y="14" font-size="13" font-weight="700" fill="${NAVY}">${$("#agq-met").selectedOptions[0].text} by emulation quality (${RSHORT[rung]}; ${esc($("#agq-est").selectedOptions[0].text)})</text>`;
+  for (let v = lo; v <= 1 + 1e-9; v += met === "r" ? 0.25 : 0.2) s += `<line x1="${ml}" x2="${W - 10}" y1="${ys(v)}" y2="${ys(v)}" stroke="#ececf1"/><text x="${ml - 6}" y="${ys(v) + 4}" font-size="11" text-anchor="end" fill="${NAVY}">${met === "r" ? v.toFixed(2) : Math.round(v * 100) + "%"}</text>`;
+  const gw = pw / R.length, bw = Math.min(46, (gw - 30) / Math.max(arms.length, 1));
+  R.forEach(([g, T, M], gi) => {
+    const x0 = ml + gi * gw + (gw - bw * arms.length) / 2;
+    M.forEach((m, k) => { const v = m[met]; if (!fin(v)) return; const x = x0 + k * bw, y = ys(v), y0 = ys(Math.max(0, lo));
+      s += `<rect x="${x + 3}" y="${Math.min(y, y0)}" width="${bw - 6}" height="${Math.abs(y0 - y)}" fill="${ARM[arms[k]].col}"/><text x="${x + bw / 2}" y="${Math.min(y, y0) - 4}" font-size="11" text-anchor="middle" fill="${NAVY}">${met === "r" ? v.toFixed(2) : Math.round(v * 100)}</text>`; });
+    s += `<text x="${ml + gi * gw + gw / 2}" y="${H - mb + 18}" font-size="13" text-anchor="middle" font-weight="700" fill="${NAVY}">${esc(g)} (${T.length})</text>`;
+  });
+  $("#agq-svg").innerHTML = s;
+  let h = `<table class="t" style="margin-top:6px"><tr><th>Group</th><th>Method</th><th>n</th><th>r</th><th>Estimate agr.</th><th>Std-diff agr.</th><th>mean |Δ|</th></tr>`;
+  R.forEach(([g, T, M]) => M.forEach((m, k) => h += `<tr><td>${k ? "" : esc(g)}</td><td>${swatch(arms[k])} ${ARM[arms[k]].lab}</td><td>${m.n}</td><td>${f2(m.r)}</td><td>${pc(m.ea)}</td><td>${pc(m.sd)}</td><td>${f3(m.gap)}</td></tr>`));
+  $("#agq-tab").innerHTML = h + `</table>`;
+  $("#agq-note").innerHTML = `<h4>Metrics (as RCT-DUPLICATE)</h4><div class="note"><b>r</b>: Pearson correlation of emulated vs RCT log HRs across trials.<br><b>Estimate agreement</b>: emulated HR inside the RCT 95% CI.<br><b>Std-diff agreement</b>: |z| &lt; 1.96 using both SEs.<br><b>mean |Δ|</b>: mean |log HR − RCT log HR|.</div><div class="note">Groups are descriptive (design items, blind to results); small groups give unstable r. No multiplicity adjustment.</div>`;
+}
+
+drawStatic(); balInit(); emuInit(); agqInit(); simInit(); fit();
 show((parseInt(location.hash.slice(1), 10) || 1) - 1);
 </script>
 </body>
