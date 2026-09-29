@@ -1,0 +1,718 @@
+{
+ "title": "v1.9 independent blinded re-rating of emulation quality (step 1)",
+ "rater": "Claude (independent agent), 2026-09-29",
+ "blinding": "Rated from the RULE DEFINITIONS section of docs/v17/TRIAL_SELECTION_RULE.md (lines 1-35), trial_specs.py design fields, rct_facts.json, candidate caveats and published protocols, before opening docs/v17/trial_selection.json or the rule's per-trial table. No emulation result was viewed. Disclosure: a grep of docs/paper/table1_picot.md displayed its 'Emulation quality' class column, and trial_specs.py displayed older v1.3 RATING_ITEMS tuples; neither per-item rating was used.",
+ "rule": "F1-F5 core flags (0/1); comparator and outcome fidelity good/moderate/poor, as defined in TRIAL_SELECTION_RULE.md section 1.",
+ "trials": [
+  {
+   "registry": "aristotle",
+   "key": "aristotle",
+   "trial": "ARISTOTLE",
+   "area": "AF",
+   "horizon_months": 22,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "good",
+   "outcome": "good",
+   "rationale": "Apixaban vs warfarin initiators in outpatient AF; stroke/SE from inpatient codes. VKA-experienced patients transitioned by protocol (post-randomisation washout), which RCT-DUPLICATE did not score as baseline-therapy discontinuation.",
+   "sources": [
+    "Granger et al. NEJM 2011",
+    "Wang et al. JAMA 2023;329:1376, Table 2 (RCT-DUPLICATE design-difference ratings)"
+   ]
+  },
+  {
+   "registry": "rocket-af",
+   "key": "rocket_af",
+   "trial": "ROCKET-AF",
+   "area": "AF",
+   "horizon_months": 23,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "good",
+   "outcome": "good",
+   "rationale": "Same agents; ITT benchmark; stroke/SE from inpatient codes; VKA transition handled as for ARISTOTLE.",
+   "sources": [
+    "Patel et al. NEJM 2011",
+    "Wang et al. JAMA 2023;329:1376, Table 2 (RCT-DUPLICATE design-difference ratings)"
+   ]
+  },
+  {
+   "registry": "rely",
+   "key": "rely",
+   "trial": "RE-LY",
+   "area": "AF",
+   "horizon_months": 24,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "good",
+   "outcome": "good",
+   "rationale": "Dabigatran vs warfarin; the benchmark is the 150 mg arm and 110 mg is not marketed in the US (75 mg only below RE-LY's CrCl limit), so the agent and effective dose match; stroke/SE from inpatient codes.",
+   "sources": [
+    "Connolly et al. NEJM 2009",
+    "Wang et al. JAMA 2023;329:1376, Table 2 (RCT-DUPLICATE design-difference ratings)"
+   ]
+  },
+  {
+   "registry": "east-afnet4",
+   "key": "east_afnet4",
+   "trial": "EAST-AFNET 4",
+   "area": "AF",
+   "horizon_months": 61,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 1,
+   "F5": 0,
+   "comparator": "moderate",
+   "outcome": "moderate",
+   "rationale": "Horizon 61 mo (F4). Early rhythm-control strategy approximated by adding an antiarrhythmic (ablation-first not captured). Composite needs CV death from listed causes and HF/ACS hospitalisation codes.",
+   "sources": [
+    "Kirchhof et al. NEJM 2020"
+   ]
+  },
+  {
+   "registry": "cabana-v2",
+   "key": "cabana",
+   "trial": "CABANA",
+   "area": "AF",
+   "horizon_months": 49,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 1,
+   "F5": 0,
+   "comparator": "moderate",
+   "outcome": "moderate",
+   "rationale": "Horizon 49 mo (F4). RCT drug arm = rate or rhythm drugs; emulation = antiarrhythmic initiators. 'Disabling' stroke not identifiable; serious bleeding reduced to GI bleed/ICH hospitalisation.",
+   "sources": [
+    "Packer et al. JAMA 2019"
+   ]
+  },
+  {
+   "registry": "affirm",
+   "key": "affirm",
+   "trial": "AFFIRM",
+   "area": "AF",
+   "horizon_months": 42,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "moderate",
+   "outcome": "good",
+   "rationale": "Sequential add-on design mirrors adding rhythm control to rate control; strategy approximated by antiarrhythmic initiation (cardioversion not captured). All-cause death.",
+   "sources": [
+    "Wyse et al. NEJM 2002;347:1825-33 (PMID 12466506)"
+   ]
+  },
+  {
+   "registry": "af-chf",
+   "key": "af_chf",
+   "trial": "AF-CHF",
+   "area": "AF",
+   "horizon_months": 37,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "moderate",
+   "outcome": "moderate",
+   "rationale": "Same strategy approximation as AFFIRM in HFrEF. Primary endpoint CV death needs listed causes of death.",
+   "sources": [
+    "Roy et al. NEJM 2008;358:2667-77 (PMID 18565859)"
+   ]
+  },
+  {
+   "registry": "frail-af",
+   "key": "frail_af",
+   "trial": "FRAIL-AF",
+   "area": "AF",
+   "horizon_months": 12,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "good",
+   "outcome": "poor",
+   "rationale": "Sequential warfarin-to-DOAC switch mirrors the randomised switch (F3 not flagged); any DOAC as in the trial. Primary = major or clinically relevant non-major bleeding; CRNM bleeding (the dominant component) is not ascertainable, only major-bleeding hospitalisation.",
+   "sources": [
+    "Joosten et al. Circulation 2024;149:279-89 (PMID 37634130)",
+    "docs/v18/af_candidates.md caveats"
+   ]
+  },
+  {
+   "registry": "laaos3",
+   "key": "laaos3",
+   "trial": "LAAOS III",
+   "area": "AF",
+   "horizon_months": 46,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "good",
+   "outcome": "moderate",
+   "rationale": "Occlusion vs none at the same cardiac surgery; time zero is the surgery in both arms (F1 not flagged). Ischaemic stroke/SE from codes, but perioperative (index-stay) events, part of the RCT primary, are not counted.",
+   "sources": [
+    "Whitlock et al. NEJM 2021;384:2081-91 (PMID 33999547)",
+    "docs/v18/af_candidates.md caveats"
+   ]
+  },
+  {
+   "registry": "protect-af",
+   "key": "protect_af",
+   "trial": "PROTECT AF",
+   "area": "AF",
+   "horizon_months": 18,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "good",
+   "outcome": "moderate",
+   "rationale": "LAAO vs continued warfarin in OAC-treated AF (sequential; no future information). Composite includes CV/unexplained death needing listed causes.",
+   "sources": [
+    "Holmes et al. Lancet 2009;374:534-42 (PMID 19683639)",
+    "docs/v18/af_candidates.md caveats"
+   ]
+  },
+  {
+   "registry": "raft-af",
+   "key": "raft_af",
+   "trial": "RAFT-AF",
+   "area": "AF",
+   "horizon_months": 36,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "moderate",
+   "outcome": "moderate",
+   "rationale": "Ablation vs continued rate control; comparator antiarrhythmic use not excluded (contamination of the rate-control strategy). HF events from any-position HF hospitalisation codes.",
+   "sources": [
+    "Parkash et al. Circulation 2022;145:1693-704 (PMID 35313733)",
+    "docs/v18/af_candidates.md caveats"
+   ]
+  },
+  {
+   "registry": "active-w",
+   "key": "active_w",
+   "trial": "ACTIVE W",
+   "area": "AF",
+   "horizon_months": 15,
+   "F1": 0,
+   "F2": 0,
+   "F3": 1,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "moderate",
+   "outcome": "moderate",
+   "rationale": "77% were on OAC at entry and the clopidogrel+aspirin arm stopped it at randomisation (no protocol transition window); the initiator design neither requires nor reproduces that OAC discontinuation (F3). Aspirin not identifiable. Composite includes vascular death.",
+   "sources": [
+    "ACTIVE Writing Group. Lancet 2006;367:1903-12 (PMID 16765759)",
+    "ACTIVE Writing Group, Lancet 2006 (PMID 16765759): prior OAC 77%"
+   ]
+  },
+  {
+   "registry": "comet",
+   "key": "comet",
+   "trial": "COMET",
+   "area": "HF",
+   "horizon_months": 58,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 1,
+   "F5": 0,
+   "comparator": "good",
+   "outcome": "good",
+   "rationale": "Horizon 58 mo (F4). Carvedilol vs immediate-release metoprolol tartrate, as in the RCT (docs/COMET_ADAPTED_PROTOCOL.md); dose not identifiable (record-only titration). All-cause death.",
+   "sources": [
+    "Poole-Wilson et al. Lancet 2003",
+    "docs/COMET_ADAPTED_PROTOCOL.md (formulation line only)"
+   ]
+  },
+  {
+   "registry": "paradigm-hf-seq",
+   "key": "paradigm_hf_seq",
+   "trial": "PARADIGM-HF",
+   "area": "HF",
+   "horizon_months": 27,
+   "F1": 0,
+   "F2": 1,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "moderate",
+   "outcome": "moderate",
+   "rationale": "Sequential enalapril then sacubitril/valsartan active run-in removed intolerant patients (F2). The ACEi/ARB switch is mirrored by the sequential switch design. Comparator = any ACEi (trial: enalapril). CV death or HF hospitalisation.",
+   "sources": [
+    "McMurray et al. NEJM 2014",
+    "Wang et al. JAMA 2023;329:1376, Table 2 (RCT-DUPLICATE design-difference ratings)"
+   ]
+  },
+  {
+   "registry": "transform-hf",
+   "key": "transform_hf",
+   "trial": "TRANSFORM-HF",
+   "area": "HF",
+   "horizon_months": 12,
+   "F1": 1,
+   "F2": 0,
+   "F3": 1,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "good",
+   "outcome": "good",
+   "rationale": "Randomised before discharge from an HF admission; initiators within 30 d of an HF code can take time zero from an inpatient IV furosemide order vs an oral discharge torsemide strategy (F1). 67% were on a loop diuretic before admission and changed agent at randomisation; the new-user design excludes them (F3). All-cause death.",
+   "sources": [
+    "Mentz et al. JAMA 2023",
+    "Mentz et al. JAMA 2023, PMC9857435"
+   ]
+  },
+  {
+   "registry": "elite-ii",
+   "key": "elite_ii",
+   "trial": "ELITE II",
+   "area": "HF",
+   "horizon_months": 18,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "moderate",
+   "outcome": "good",
+   "rationale": "Class adaptation (any ARB vs any ACEi; trial losartan vs captopril) in ACEi-naive HF; 18 mo; all-cause death.",
+   "sources": [
+    "Pitt et al. Lancet 2000"
+   ]
+  },
+  {
+   "registry": "emperor-preserved-v2",
+   "key": "emperor_preserved",
+   "trial": "EMPEROR-Preserved",
+   "area": "HF",
+   "horizon_months": 26,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "poor",
+   "outcome": "moderate",
+   "rationale": "Placebo-controlled RCT emulated with a DPP-4i active-comparator proxy (estimand changes); T2D restriction. CV death or HF hospitalisation.",
+   "sources": [
+    "Anker et al. NEJM 2021"
+   ]
+  },
+  {
+   "registry": "life",
+   "key": "life",
+   "trial": "LIFE",
+   "area": "Hypertension",
+   "horizon_months": 58,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 1,
+   "F5": 0,
+   "comparator": "moderate",
+   "outcome": "moderate",
+   "rationale": "Horizon 58 mo (F4). ARB class vs cardioselective beta-blocker class (trial losartan vs atenolol). Prior therapy was withdrawn during a placebo run-in before randomisation (not F2/F3). CV death, MI or stroke.",
+   "sources": [
+    "Dahlöf et al. Lancet 2002"
+   ]
+  },
+  {
+   "registry": "allhat",
+   "key": "allhat",
+   "trial": "ALLHAT",
+   "area": "Hypertension",
+   "horizon_months": 59,
+   "F1": 0,
+   "F2": 0,
+   "F3": 1,
+   "F4": 1,
+   "F5": 0,
+   "comparator": "moderate",
+   "outcome": "moderate",
+   "rationale": "About 90% were treated at entry and prior antihypertensives were replaced by study drug at randomisation without washout; initiator design does not mirror this (F3). Horizon 59 mo (F4). Thiazide class for chlorthalidone. Fatal CHD needs listed causes.",
+   "sources": [
+    "ALLHAT Officers, JAMA 2002"
+   ]
+  },
+  {
+   "registry": "value",
+   "key": "value",
+   "trial": "VALUE",
+   "area": "Hypertension",
+   "horizon_months": 50,
+   "F1": 0,
+   "F2": 0,
+   "F3": 1,
+   "F4": 1,
+   "F5": 0,
+   "comparator": "moderate",
+   "outcome": "moderate",
+   "rationale": "89.9% previously treated were switched directly to study drug without run-in (F3). Horizon 50 mo (F4). ARB class for valsartan. Cardiac composite approximated by CV death, HF hospitalisation and MI (emergency procedures not captured).",
+   "sources": [
+    "Julius et al. Lancet 2004",
+    "Julius et al. Lancet 2004; Hypertension 2006 VALUE review"
+   ]
+  },
+  {
+   "registry": "ascot",
+   "key": "ascot",
+   "trial": "ASCOT-BPLA",
+   "area": "Hypertension",
+   "horizon_months": 66,
+   "F1": 0,
+   "F2": 0,
+   "F3": 1,
+   "F4": 1,
+   "F5": 0,
+   "comparator": "moderate",
+   "outcome": "moderate",
+   "rationale": "Previously treated patients (most) had therapy replaced at randomisation (PROBE, no washout) (F3). Horizon 66 mo (F4). Atenolol-based strategy approximated by cardioselective beta-blocker initiation. Fatal CHD from listed causes; silent MI not captured.",
+   "sources": [
+    "Dahlöf et al. Lancet 2005"
+   ]
+  },
+  {
+   "registry": "insight",
+   "key": "insight",
+   "trial": "INSIGHT",
+   "area": "Hypertension",
+   "horizon_months": 42,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "moderate",
+   "outcome": "moderate",
+   "rationale": "4-week placebo run-in (washout) before randomisation, not flagged. Nifedipine (GITS not identifiable) vs thiazide class for co-amilozide. Composite needs CV death and HF hospitalisation codes.",
+   "sources": [
+    "Brown et al. Lancet 2000;356:366-72 (PMID 10972368)",
+    "Brown et al. Lancet 2000 (4-week placebo run-in)"
+   ]
+  },
+  {
+   "registry": "plato",
+   "key": "plato",
+   "trial": "PLATO",
+   "area": "ACS / MI",
+   "horizon_months": 12,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "good",
+   "outcome": "moderate",
+   "rationale": "P2Y12 inhibitors in ACS start within the index admission and EHR inpatient orders are visible (F1 exemption in the rule). Vascular death needs listed causes.",
+   "sources": [
+    "Wallentin et al. NEJM 2009",
+    "Wang et al. JAMA 2023;329:1376, Table 2 (RCT-DUPLICATE design-difference ratings)"
+   ]
+  },
+  {
+   "registry": "valiant",
+   "key": "valiant",
+   "trial": "VALIANT",
+   "area": "ACS / MI",
+   "horizon_months": 25,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "moderate",
+   "outcome": "good",
+   "rationale": "RCT randomised 0.5-10 d after MI in hospital; ACEi/ARB are started in the admission with visible inpatient orders (treated like the P2Y12 exemption; borderline). Class adaptation (valsartan vs captopril). All-cause death.",
+   "sources": [
+    "Pfeffer et al. NEJM 2003;349:1893-906 (PMID 14610160)"
+   ]
+  },
+  {
+   "registry": "empa-reg",
+   "key": "empa_reg",
+   "trial": "EMPA-REG OUTCOME",
+   "area": "Diabetes",
+   "horizon_months": 37,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "poor",
+   "outcome": "moderate",
+   "rationale": "Placebo-controlled; DPP-4i proxy. 3-point MACE with CV death from listed causes.",
+   "sources": [
+    "Zinman et al. NEJM 2015",
+    "Wang et al. JAMA 2023;329:1376, Table 2 (RCT-DUPLICATE design-difference ratings)"
+   ]
+  },
+  {
+   "registry": "carolina",
+   "key": "carolina",
+   "trial": "CAROLINA",
+   "area": "Diabetes",
+   "horizon_months": 76,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 1,
+   "F5": 0,
+   "comparator": "good",
+   "outcome": "moderate",
+   "rationale": "Same agents (linagliptin vs glimepiride). Horizon 76 mo (F4). Prior SU/glinide was stopped at randomisation for a minority (SU-exposed stratum); not judged substantial (RCT-DUPLICATE: no). 3-point MACE.",
+   "sources": [
+    "Rosenstock et al. JAMA 2019",
+    "Wang et al. JAMA 2023;329:1376, Table 2 (RCT-DUPLICATE design-difference ratings)",
+    "Marx et al. Diab Vasc Dis Res 2015 (PMC4390606)"
+   ]
+  },
+  {
+   "registry": "leader",
+   "key": "leader",
+   "trial": "LEADER",
+   "area": "Diabetes",
+   "horizon_months": 46,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "poor",
+   "outcome": "moderate",
+   "rationale": "Placebo-controlled; DPP-4i proxy. Horizon 46 mo (<48). 3-point MACE.",
+   "sources": [
+    "Marso et al. NEJM 2016;375:311-22 (PMID 27295427)",
+    "Wang et al. JAMA 2023;329:1376, Table 2 (RCT-DUPLICATE design-difference ratings)"
+   ]
+  },
+  {
+   "registry": "sustain6",
+   "key": "sustain6",
+   "trial": "SUSTAIN-6",
+   "area": "Diabetes",
+   "horizon_months": 25,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "poor",
+   "outcome": "moderate",
+   "rationale": "Placebo-controlled; DPP-4i proxy. 3-point MACE.",
+   "sources": [
+    "Marso et al. NEJM 2016;375:1834-44 (PMID 27633186)"
+   ]
+  },
+  {
+   "registry": "rewind",
+   "key": "rewind",
+   "trial": "REWIND",
+   "area": "Diabetes",
+   "horizon_months": 65,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 1,
+   "F5": 0,
+   "comparator": "poor",
+   "outcome": "moderate",
+   "rationale": "Placebo-controlled; DPP-4i proxy. Horizon 65 mo (F4). 3-point MACE.",
+   "sources": [
+    "Gerstein et al. Lancet 2019;394:121-30 (PMID 31189511)"
+   ]
+  },
+  {
+   "registry": "declare",
+   "key": "declare",
+   "trial": "DECLARE-TIMI 58",
+   "area": "Diabetes",
+   "horizon_months": 50,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 1,
+   "F5": 0,
+   "comparator": "poor",
+   "outcome": "moderate",
+   "rationale": "Placebo-controlled; DPP-4i proxy. Horizon 50 mo (F4). CV death or HF hospitalisation.",
+   "sources": [
+    "Wiviott et al. NEJM 2019;380:347-57 (PMID 30415602)",
+    "Wang et al. JAMA 2023;329:1376, Table 2 (RCT-DUPLICATE design-difference ratings)"
+   ]
+  },
+  {
+   "registry": "canvas",
+   "key": "canvas",
+   "trial": "CANVAS Program",
+   "area": "Diabetes",
+   "horizon_months": 43,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "poor",
+   "outcome": "moderate",
+   "rationale": "Placebo-controlled; DPP-4i proxy. Horizon 43 mo. 3-point MACE.",
+   "sources": [
+    "Neal et al. NEJM 2017;377:644-57 (PMID 28605608)",
+    "Wang et al. JAMA 2023;329:1376, Table 2 (RCT-DUPLICATE design-difference ratings)"
+   ]
+  },
+  {
+   "registry": "tecos",
+   "key": "tecos",
+   "trial": "TECOS",
+   "area": "Diabetes",
+   "horizon_months": 36,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "poor",
+   "outcome": "moderate",
+   "rationale": "Placebo-controlled; sulfonylurea proxy (rated poor in RCT-DUPLICATE). 4-point MACE incl. UA hospitalisation.",
+   "sources": [
+    "Green et al. NEJM 2015;373:232-42 (PMID 26052984)",
+    "Wang et al. JAMA 2023;329:1376, Table 2 (RCT-DUPLICATE design-difference ratings)"
+   ]
+  },
+  {
+   "registry": "carmelina",
+   "key": "carmelina",
+   "trial": "CARMELINA",
+   "area": "Diabetes",
+   "horizon_months": 26,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "poor",
+   "outcome": "moderate",
+   "rationale": "Placebo-controlled; sulfonylurea proxy. 3-point MACE.",
+   "sources": [
+    "Rosenstock et al. JAMA 2019;321:69-79 (PMID 30418475)",
+    "Wang et al. JAMA 2023;329:1376, Table 2 (RCT-DUPLICATE design-difference ratings)"
+   ]
+  },
+  {
+   "registry": "ontarget",
+   "key": "ontarget",
+   "trial": "ONTARGET",
+   "area": "Other",
+   "horizon_months": 56,
+   "F1": 0,
+   "F2": 1,
+   "F3": 0,
+   "F4": 1,
+   "F5": 0,
+   "comparator": "moderate",
+   "outcome": "moderate",
+   "rationale": "3-week single-blind active run-in (ramipril, then telmisartan+ramipril) removed intolerant patients (F2 as the rule defines it). Horizon 56 mo (F4). ARB class for telmisartan, ACEi class for ramipril. CV death, MI, stroke or HF hospitalisation.",
+   "sources": [
+    "ONTARGET Investigators, NEJM 2008",
+    "docs/v13/rct_facts.json ONTARGET (3-week run-in)"
+   ]
+  },
+  {
+   "registry": "precision",
+   "key": "precision",
+   "trial": "PRECISION",
+   "area": "Other",
+   "horizon_months": 34,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "good",
+   "outcome": "moderate",
+   "rationale": "Same agents (celecoxib vs naproxen; OTC naproxen unseen, dose titration record-only). APTC composite needs CV death incl. haemorrhagic.",
+   "sources": [
+    "Nissen et al. NEJM 2016;375:2519-29 (PMID 27959716)"
+   ]
+  },
+  {
+   "registry": "amplify",
+   "key": "amplify",
+   "trial": "AMPLIFY",
+   "area": "Other",
+   "horizon_months": 6,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "good",
+   "outcome": "moderate",
+   "rationale": "Apixaban vs warfarin (with parenteral lead-in) after acute VTE; both started around the index encounter with visible orders. Recurrent VTE from a new inpatient stay with a VTE code: ascertainable but low specificity and outpatient-managed recurrences missed (moderate, as RCT-DUPLICATE rated its AMPLIFY outcome).",
+   "sources": [
+    "Agnelli et al. NEJM 2013;369:799-808 (PMID 23808982)",
+    "Wang et al. JAMA 2023;329:1376, Table 2 (RCT-DUPLICATE design-difference ratings)"
+   ]
+  },
+  {
+   "registry": "lodestar",
+   "key": "lodestar",
+   "trial": "LODESTAR",
+   "area": "Other",
+   "horizon_months": 36,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "good",
+   "outcome": "poor",
+   "rationale": "Rosuvastatin vs atorvastatin (factorial with intensity strategy; agents match). Any coronary revascularisation, the most frequent component of the RCT composite, is not captured (dominant component missing).",
+   "sources": [
+    "Lee YJ et al. BMJ 2023;383:e075837 (PMID 37852649)",
+    "Lee et al. BMJ 2023 (PMID 37852649)"
+   ]
+  },
+  {
+   "registry": "prove-it",
+   "key": "prove_it",
+   "trial": "PROVE IT-TIMI 22",
+   "area": "Other",
+   "horizon_months": 24,
+   "F1": 0,
+   "F2": 0,
+   "F3": 0,
+   "F4": 0,
+   "F5": 0,
+   "comparator": "poor",
+   "outcome": "poor",
+   "rationale": "The tested hypothesis is intensive (atorvastatin 80) vs moderate (pravastatin 40) therapy; dose is not identifiable, so atorvastatin initiators at any dose change the hypothesis. Revascularisation >= 30 d, the most frequent component, is not captured. Statins start in the ACS admission (F1 not flagged).",
+   "sources": [
+    "Cannon et al. NEJM 2004;350:1495-504 (PMID 15007110)",
+    "Cannon et al. NEJM 2004"
+   ]
+  }
+ ]
+}
