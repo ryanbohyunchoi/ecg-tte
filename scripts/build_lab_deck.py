@@ -288,6 +288,7 @@ table.t{border-collapse:collapse;width:100%}
 .tier.t0{background:var(--navy);color:#fff}.tier.t1{background:#5b5d86;color:#fff}.tier.t2{background:var(--band);color:var(--navy);outline:1px solid var(--line)}.tier.t3{background:#fbe3e2;color:#a8322e}
 table.t td,table.t th{font-size:19px;padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
 #agq-tab table.t td,#agq-tab table.t th{font-size:12.5px;padding:3px 8px}
+#tab-domains td,#tab-domains th,#tab-buckets td,#tab-buckets th{font-size:14px;padding:4px 8px}
 table.t th{background:var(--navy);color:#fff;font-weight:600}
 /* title slide */
 #s-title .tlogo{position:absolute;left:539px;top:212px;width:202px;height:204px}
@@ -388,7 +389,7 @@ svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
 <section class="slide" data-title="Study design: trials">
   <div class="body">
     <h2>38 target trial emulations in Yale New Haven Health System EHR data</h2>
-    <svg id="svg-trials" width="1184" height="330" viewBox="0 0 1184 330"></svg>
+    <svg id="svg-trials" width="1184" height="350" viewBox="0 -20 1184 350"></svg>
     <p style="margin-top:10px">New-user, active-comparator designs; index dates 2011–2024; outcome = the trial's primary endpoint.</p>
     <p id="qual-count">Emulation quality (design items only): see next slides.</p>
   </div>
@@ -442,14 +443,14 @@ svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
 <!-- 9 -->
 <section class="slide" data-title="Method 1: held-out balance">
   <div class="body">
-    <div style="display:grid;grid-template-columns:1fr 470px;gap:40px">
+    <div style="display:grid;grid-template-columns:1fr 500px;gap:36px">
       <div>
-        <p>Standardized mean difference: SMD = (mean<sub>T</sub> − mean<sub>C</sub>) / pooled SD before matching.</p>
-        <p>"Held-out": the characteristic is not in the PS being evaluated. Echo and lab values are observed only in a subset, so they are used for evaluation, not adjustment.</p>
-        <p>Per trial: % of held-out characteristics with |SMD| &lt; 0.1. Compare arms paired within trial; one-sided sign-flip test across 38 trials.</p>
-        <p>Placebo: ECG embeddings permuted between patients.</p>
+        <p>SMD = (mean<sub>T</sub> − mean<sub>C</sub>) / pooled SD before matching. "Held-out": not in the PS being evaluated.</p>
+        <p>Per trial: % of held-out characteristics with |SMD| &lt; 0.1; arms compared within trial; one-sided sign-flip test across trials. Placebo: ECG embeddings permuted between patients.</p>
+        <p><b>Primary panel (58).</b> Fixed before results. Directly measured physiology most relevant to cardiac confounding and to what an ECG can reflect: 35 echocardiographic measures, vital signs, laboratory values (incl. NT-proBNP), plus coded-record summaries.</p>
+        <p><b>Expanded panel (~330 per trial).</b> Assembled afterwards from the literature: comorbidity indices, drug classes, healthcare use, devices, additional labs. Mostly coded-record items, partly proxied by PS diagnoses; excludes PS variables, treatment-revealing and ECG-proximal items. Used as a sensitivity analysis.</p>
       </div>
-      <table class="t" id="tab-domains"></table>
+      <div><table class="t" id="tab-domains"></table><table class="t" id="tab-buckets" style="margin-top:10px"></table></div>
     </div>
   </div>
 </section>
@@ -664,7 +665,7 @@ function trialOptions(withSingle) {
   for (const a of AREAS) h += `<option value="area:${a}">${a} (${D.trials.filter(t => t.area === a).length})</option>`;
   h += `</optgroup><optgroup label="Emulation quality">`;
   const nq = q => D.trials.filter(t => q.includes(t.qt.tier.split(" ")[0])).length;
-  for (const q of [["Excellent"], ["Good"], ["Excellent", "Good"], ["Moderate"], ["Limited"], ["Moderate", "Limited"]]) h += `<option value="q:${q.join(",")}">${q.join(" or ")} (${nq(q)})</option>`;
+  for (const q of [["Excellent", "Good", "Moderate"], ["Excellent"], ["Good"], ["Excellent", "Good"], ["Moderate"], ["Limited"], ["Moderate", "Limited"]]) h += `<option value="q:${q.join(",")}">${q.join(" or ")} (${nq(q)})</option>`;
   h += `</optgroup><optgroup label="ECG relevance">`;
   for (const e of ["high", "medium", "low"]) h += `<option value="e:${e}">${e[0].toUpperCase() + e.slice(1)} (${D.trials.filter(t => t.ecg === e).length})</option>`;
   h += `</optgroup>`;
@@ -828,7 +829,7 @@ function emuInit() {
   <label class="h">Methods</label>
   <div id="emu-arms">${armBoxes("emu-arm", ["unmatched", "base", "ECG", "CLMBR", "CLMBR+ECG", "shufECG", "noise96"], ["base", "ECG"])}</div>
   <label class="h">Clinical area</label>${sel("emu-area", `<option value="all">All</option>` + AREAS.map(a => `<option>${a}</option>`).join(""))}
-  <label class="h">Emulation quality</label>${sel("emu-q", `<option value="all">All</option><optgroup label="Tier (points)"><option value="t:Excellent">Excellent</option><option value="t:Good">Good</option><option value="t:Excellent,Good">Excellent or good</option><option value="t:Moderate">Moderate</option><option value="t:Limited">Limited</option><option value="t:Moderate,Limited">Moderate or limited</option></optgroup><optgroup label="3-class rule (adjudicated)"><option value="c:High (strict)">High (strict)</option><option value="c:High (strict),High">High, incl. strict</option><option value="c:Lower">Lower</option></optgroup>`)}
+  <label class="h">Emulation quality</label>${sel("emu-q", `<option value="all">All</option><optgroup label="Tier (points)"><option value="t:Excellent,Good,Moderate">Analysed set: excluding limited (32)</option><option value="t:Excellent">Excellent</option><option value="t:Good">Good</option><option value="t:Excellent,Good">Excellent or good</option><option value="t:Moderate">Moderate</option><option value="t:Limited">Limited</option><option value="t:Moderate,Limited">Moderate or limited</option></optgroup><optgroup label="3-class rule (adjudicated)"><option value="c:High (strict)">High (strict)</option><option value="c:High (strict),High">High, incl. strict</option><option value="c:Lower">Lower</option></optgroup>`)}
   <label class="h">ECG relevance</label>${sel("emu-e", `<option value="all">All</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option><option value="high,medium">High or medium</option>`)}
   <label class="h">Sort by</label>${sel("emu-sort", `<option value="area">Area, then RCT HR</option><option value="rct">RCT HR</option><option value="gap">|Δ| with PS alone</option><option value="chg">Change in |Δ| with ECG</option><option value="name">Name</option>`)}
   <div class="xs" style="margin-top:10px">Grey band: RCT 95% CI; black bar: RCT HR. Markers: emulated HR with 95% CI. Hover a row for values.</div>`;
@@ -1052,10 +1053,16 @@ function drawStatic() {
   s += `<rect x="262" y="0" width="460" height="200" fill="#f5f5f8" stroke="none"/>`;
   const crit = ["Active comparator (or accepted active proxy)", "Primary endpoint ascertainable from EHR", "Strategies identifiable from orders or procedures", "≥300 with an ECG in the smaller arm", "≥50 primary-outcome events", "No near-duplicate cohort (>80% shared records)"];
   crit.forEach((c, i) => s += `<text x="276" y="${30 + i * 30}" font-size="16" fill="${NAVY}">– ${esc(c)}</text>`);
-  s += arrow(728, 65, 768, 65) + box(772, 20, 140, 90, "38\nemulated", {fs: 20, bold: true, fill: NAVY, col: "#fff"});
-  const areas = [["AF", 12], ["Diabetes", 9], ["HF", 5], ["Hypertension", 5], ["ACS / MI", 2], ["Other", 5]];
-  areas.forEach(([a, n], i) => { const y = 24 + i * 29; s += `<text x="1052" y="${y + 15}" font-size="15" text-anchor="end" fill="${NAVY}">${a}</text><rect x="1060" y="${y + 2}" width="${n * 8}" height="18" fill="${a === "AF" ? RED : NAVY}"/><text x="${1066 + n * 8}" y="${y + 16}" font-size="14" fill="${NAVY}">${n}</text>`; });
-  s += `<text x="1060" y="12" font-size="14" font-weight="700" fill="${NAVY}">Clinical area</text>`;
+  s += arrow(728, 65, 768, 65) + box(772, 20, 140, 90, "38\nemulated", {fs: 20, bold: true});
+  s += arrow(842, 114, 842, 150) + box(772, 154, 140, 90, "32\nanalysed", {fs: 20, bold: true, fill: NAVY, col: "#fff"});
+  const lim = D.trials.filter(t => t.qt.tier === "Limited").map(t => t.name);
+  s += `<text x="832" y="130" font-size="13" text-anchor="end" fill="${RED}">− ${lim.length} limited</text><text x="832" y="145" font-size="13" text-anchor="end" fill="${RED}">quality</text>`;
+  s += `<text x="0" y="275" font-size="14" fill="${NAVY}">Excluded for limited emulation quality (≥4 design points): ${esc(lim.join(", "))}.</text>`;
+  const AR6 = ["AF", "Diabetes", "HF", "Hypertension", "ACS / MI", "Other"];
+  const n38 = a => D.trials.filter(t => t.area === a).length, n32 = a => D.trials.filter(t => t.area === a && t.qt.tier !== "Limited").length;
+  AR6.forEach((a, i) => { const y = 24 + i * 29, A = n38(a), B = n32(a);
+    s += `<text x="1032" y="${y + 15}" font-size="15" text-anchor="end" fill="${NAVY}">${a}</text><rect x="1040" y="${y + 2}" width="${A * 8}" height="18" fill="#c9cbd8"/><rect x="1040" y="${y + 2}" width="${B * 8}" height="18" fill="${a === "AF" ? RED : NAVY}"/><text x="${1046 + A * 8}" y="${y + 16}" font-size="14" fill="${NAVY}">${B}${A !== B ? " / " + A : ""}</text>`; });
+  s += `<text x="1040" y="-4" font-size="14" font-weight="700" fill="${NAVY}">Clinical area</text><text x="1040" y="12" font-size="12" fill="${NAVY}">analysed / emulated</text>`;
   $("#svg-trials").innerHTML = s;
   /* emulation quality */
   (function () {
@@ -1106,6 +1113,9 @@ function drawStatic() {
   let echo = 0; for (const [g, n] of Object.entries(cnt)) { if (g.startsWith("Echo")) { echo += n; continue; } tb += `<tr><td>${g}<br><span class="small">${ex[g] || ""}</span></td><td>${n}</td></tr>`; }
   tb += `<tr><td>Echocardiography<br><span class="small">LV structure and function, diastolic / LA, RV / pulmonary, valves / aorta</span></td><td>${echo}</td></tr><tr><td><b>Total</b></td><td><b>${D.vars.length}</b></td></tr>`;
   $("#tab-domains").innerHTML = tb;
+  const bc = {}; D.exp.vars.forEach(v => bc[v.b] = (bc[v.b] || 0) + 1);
+  let tb2 = `<tr><th>Expanded panel bucket</th><th>n</th></tr>`; for (const b of D.exp.buckets) if (bc[b]) tb2 += `<tr><td>${esc(b)}</td><td>${bc[b]}</td></tr>`;
+  $("#tab-buckets").innerHTML = tb2 + `<tr><td><b>Total (union across trials)</b></td><td><b>${D.exp.vars.length}</b></td></tr>`;
   /* shuffle schematic */
   s = `<text x="0" y="20" font-size="16" font-weight="700" fill="${NAVY}">Benchmark shuffle</text>`;
   const tr = [["Trial A", "0.79"], ["Trial B", "1.15"], ["Trial C", "0.66"], ["Trial D", "1.02"]], sh = [2, 3, 0, 1];
