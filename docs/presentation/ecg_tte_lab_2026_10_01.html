@@ -476,7 +476,7 @@ function balInit() {
   <label class="h">Show top <span id="bal-nlab"></span> by unmatched |SMD|</label><input type="range" id="bal-n" min="10" max="58" value="58">
   <label class="h">Trials</label><select id="bal-trials">${trialOptions(true)}</select>
   <label class="h">Across trials</label><select id="bal-stat"><option value="median">Median</option><option value="mean">Mean</option></select>
-  <label class="h">Balance threshold</label><select id="bal-thr"><option value="0.1">|SMD| &lt; 0.10 (conventional)</option><option value="0.15">|SMD| &lt; 0.15</option><option value="0.2">|SMD| &lt; 0.20 (lenient)</option></select>
+  <label class="h">Balance threshold</label><select id="bal-thr"><option value="0.1">|SMD| &lt; 0.10 (standard)</option><option value="0.15">|SMD| &lt; 0.15</option><option value="0.2">|SMD| &lt; 0.20</option></select>
   <label class="cb" style="margin-top:8px"><input type="checkbox" id="bal-ref" checked>Threshold line</label>`;
   const onSet = () => {
     const s = $("#bal-set").value, exp = s.endsWith("exp"), all = s.endsWith("all");
