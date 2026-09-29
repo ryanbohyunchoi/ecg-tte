@@ -95,6 +95,9 @@ FLAGLAB = [("F1_in_hospital_start_not_mirrored", "in-hospital start"), ("F2_resp
            ("F5_other_time_zero_misalignment", "time zero")]
 
 
+SENS_KEYS = ["pp_ipcw_365", "pp_ipcw_switch", "landmark90", "runin90"]
+
+
 def build_data():
     R = pd.read_csv(A / "claude-v18-embed-compare/results.csv")
     R = R[R.half == "full"].copy()
@@ -135,6 +138,23 @@ def build_data():
                     M[j, vn.index(c)] = np.nan
             bal[rg][a] = [[r4s(x) for x in row] for row in M]
             est[rg][a] = [[r4(x), r4(y)] for x, y in zip(g.loghr, g.se)]
+    # sensitivity estimands (P1/P5; base, ECG, shufECG, unmatched): docs/v19/SENS_ADHERENCE.md, SENS_OUTPATIENT.md
+    sens = {}
+    C_ = pd.read_csv(A / "claude-v19-sens-adherence/cells.csv")
+    O_ = pd.read_csv(A / "claude-v19-sens-outpatient/results_outpt.csv")
+    ST = pd.read_csv(A / "claude-v19-sens-outpatient/setting.csv")
+    out29 = set(ST[ST.rct_setting == "outpatient"].trial) - {"cabana-v2", "protect-af", "raft-af"}  # OUT-29 (a priori; SENS_OUTPATIENT_PLAN)
+    O_ = O_[(O_.half == "full") & O_.trial.isin(out29)].assign(estimand="outpt")
+    C_ = C_[C_.half == "full"]
+    C_ = C_[~((C_.estimand == "runin90") & (C_.n_kept <= 50))]  # registered rule: run-in not estimable with <= 50 kept
+    for e, G in pd.concat([C_[C_.estimand.isin(SENS_KEYS)], O_]).groupby("estimand"):
+        sens[e] = {}
+        for (ps, a), H in G.groupby(["ps", "arm_role"]):
+            if a not in ("base", "ECG", "shufECG", "unmatched"):
+                continue
+            H = H.drop_duplicates("trial").set_index("trial").reindex(tid)
+            sens[e].setdefault("none" if a == "unmatched" else ps, {})[a] = [[r4(x), r4(y)] if np.isfinite(x) and np.isfinite(y) else None
+                                                                              for x, y in zip(H.loghr, H.se)]
     # expanded panel (all PS rungs x arms; scripts/v19/expanded_all_rungs.py)
     P = pd.read_csv(A / "claude-v19-expanded-buckets/per_var_all_rungs.csv")
     dic = pd.read_csv(A / "claude-v16-covars2b/dictionary.csv").set_index("variable")
@@ -174,7 +194,7 @@ def build_data():
     assert len(cells) == 107 and not any((e.trial, e.conf) in cells for _, e in exc.iterrows())
     sim["cells"] = [dict(t=tid.index(t), c=c, r2=r4(rel.loc[(t, c), "r2_partial"])) for t, c in cells]
     return dict(trials=trials, vars=[dict(c=c, lab=lab, g=g) for c, lab, g in VARS], bal=bal, est=est,
-                exp=dict(vars=exp_vars, buckets=BUCKETS, smd=exp), sim=sim)
+                exp=dict(vars=exp_vars, buckets=BUCKETS, smd=exp), sim=sim, sens=sens)
 
 
 def reference_values(D):
@@ -633,8 +653,8 @@ function trialOptions(withSingle) {
   let h = `<option value="all">All ${NT} trials</option><optgroup label="Clinical area">`;
   for (const a of AREAS) h += `<option value="area:${a}">${a} (${D.trials.filter(t => t.area === a).length})</option>`;
   h += `</optgroup><optgroup label="Emulation quality">`;
-  const nq = q => D.trials.filter(t => q.includes(t.qual)).length;
-  h += `<option value="q:strict">High (strict) (${nq(["strict"])})</option><option value="q:strict,high">High, incl. strict (${nq(["strict", "high"])})</option><option value="q:lower">Lower (${nq(["lower"])})</option>`;
+  const nq = q => D.trials.filter(t => q.includes(t.qt.tier.split(" ")[0])).length;
+  for (const q of [["Excellent"], ["Good"], ["Excellent", "Good"], ["Moderate"], ["Limited"], ["Moderate", "Limited"]]) h += `<option value="q:${q.join(",")}">${q.join(" or ")} (${nq(q)})</option>`;
   h += `</optgroup><optgroup label="ECG relevance">`;
   for (const e of ["high", "medium", "low"]) h += `<option value="e:${e}">${e[0].toUpperCase() + e.slice(1)} (${D.trials.filter(t => t.ecg === e).length})</option>`;
   h += `</optgroup>`;
@@ -646,7 +666,7 @@ function trialSet(v) {
   if (v === "all") return idx;
   const [k, x] = v.split(":");
   if (k === "area") return idx.filter(i => D.trials[i].area === x);
-  if (k === "q") { const q = x.split(","); return idx.filter(i => q.includes(D.trials[i].qual)); }
+  if (k === "q") { const q = x.split(","); return idx.filter(i => q.includes(D.trials[i].qt.tier.split(" ")[0])); }
   if (k === "e") return idx.filter(i => D.trials[i].ecg === x);
   if (k === "t") return [+x];
   return idx;
@@ -793,24 +813,40 @@ function balUpdate() {
 function emuInit() {
   const sel = (id, opts) => `<select id="${id}">${opts}</select>`;
   $("#emu-ctrl").innerHTML = `
+  <label class="h">Analysis</label>${sel("emu-est", `<option value="itt">Primary: all initiators (ITT)</option><option value="outpt">Outpatient initiators only</option><option value="pp_ipcw_365">Per-protocol (IPCW, 365-d grace)</option><option value="pp_ipcw_switch">Switch-only censoring (IPCW)</option><option value="landmark90">90-day landmark</option><option value="runin90">90-day run-in (repeat order)</option>`)}
   <label class="h">PS base</label>${rungSel("emu-rung")}
   <label class="h">Methods</label>
   <div id="emu-arms">${armBoxes("emu-arm", ["unmatched", "base", "ECG", "CLMBR", "CLMBR+ECG", "shufECG", "noise96"], ["base", "ECG"])}</div>
   <label class="h">Clinical area</label>${sel("emu-area", `<option value="all">All</option>` + AREAS.map(a => `<option>${a}</option>`).join(""))}
-  <label class="h">Emulation quality</label>${sel("emu-q", `<option value="all">All</option><option value="strict">High (strict)</option><option value="strict,high">High, incl. strict</option><option value="lower">Lower</option>`)}
+  <label class="h">Emulation quality</label>${sel("emu-q", `<option value="all">All</option><optgroup label="Tier (points)"><option value="t:Excellent">Excellent</option><option value="t:Good">Good</option><option value="t:Excellent,Good">Excellent or good</option><option value="t:Moderate">Moderate</option><option value="t:Limited">Limited</option><option value="t:Moderate,Limited">Moderate or limited</option></optgroup><optgroup label="3-class rule (adjudicated)"><option value="c:High (strict)">High (strict)</option><option value="c:High (strict),High">High, incl. strict</option><option value="c:Lower">Lower</option></optgroup>`)}
   <label class="h">ECG relevance</label>${sel("emu-e", `<option value="all">All</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option><option value="high,medium">High or medium</option>`)}
   <label class="h">Sort by</label>${sel("emu-sort", `<option value="area">Area, then RCT HR</option><option value="rct">RCT HR</option><option value="gap">|Δ| with PS alone</option><option value="chg">Change in |Δ| with ECG</option><option value="name">Name</option>`)}
   <div class="xs" style="margin-top:10px">Grey band: RCT 95% CI; black bar: RCT HR. Markers: emulated HR with 95% CI. Hover a row for values.</div>`;
-  for (const id of ["emu-rung", "emu-area", "emu-q", "emu-e", "emu-sort"]) $("#" + id).onchange = emuUpdate;
+  for (const id of ["emu-est", "emu-rung", "emu-area", "emu-q", "emu-e", "emu-sort"]) $("#" + id).onchange = emuUpdate;
   $("#emu-arms").onchange = emuUpdate;
   bindTips($("#emu-svg"));
   emuUpdate();
 }
-function emuEst(rung, a, t) { const e = a === "unmatched" ? D.est.none.unmatched[t] : D.est[rung][a][t]; return e; }
+const NA2 = [NaN, NaN];
+function emuEst(rung, a, t) {
+  const est = $("#emu-est").value;
+  if (est === "itt") return a === "unmatched" ? D.est.none.unmatched[t] : D.est[rung][a][t];
+  const S = D.sens[est]; const g = a === "unmatched" ? S.none : S[rung];
+  return (g && g[a] && g[a][t]) || NA2;
+}
+const TIER = t => t.qt.tier.split(" ")[0];
 function emuUpdate() {
-  const rung = $("#emu-rung").value, arms = checked("emu-arm");
-  const area = $("#emu-area").value, q = $("#emu-q").value.split(","), e = $("#emu-e").value.split(",");
-  let T = D.trials.map((_, i) => i).filter(i => (area === "all" || D.trials[i].area === area) && (q[0] === "all" || q.includes(D.trials[i].qual)) && (e[0] === "all" || e.includes(D.trials[i].ecg)));
+  const est = $("#emu-est").value;
+  const ropt = $("#emu-rung").querySelectorAll("option");
+  ropt.forEach(o => { o.disabled = est !== "itt" && !["P1", "P5"].includes(o.value); });
+  if (est !== "itt" && !["P1", "P5"].includes($("#emu-rung").value)) $("#emu-rung").value = "P1";
+  const avail = est === "itt" ? ["unmatched", "base", "ECG", "CLMBR", "CLMBR+ECG", "shufECG", "noise96"] : ["unmatched", "base", "ECG", "shufECG"];
+  document.querySelectorAll("#emu-arms .cb").forEach(l => { const ok = avail.includes(l.dataset.arm); l.classList.toggle("dis", !ok); l.querySelector("input").disabled = !ok; });
+  const rung = $("#emu-rung").value, arms = checked("emu-arm").filter(a => avail.includes(a));
+  const area = $("#emu-area").value, qv = $("#emu-q").value, e = $("#emu-e").value.split(",");
+  const qok = tr => { if (qv === "all") return true; const [k, x] = qv.split(":"); const L = x.split(","); return k === "t" ? L.includes(TIER(tr)) : L.includes(tr.qt.cls); };
+  let T = D.trials.map((_, i) => i).filter(i => (area === "all" || D.trials[i].area === area) && qok(D.trials[i]) && (e[0] === "all" || e.includes(D.trials[i].ecg)));
+  if (est !== "itt") T = T.filter(t => fin(emuEst(rung, "base", t)[0]) && fin(emuEst(rung, "ECG", t)[0]));
   const gap = (a, t) => { const x = emuEst(rung, a, t)[0]; return fin(x) ? Math.abs(x - D.trials[t].rb) : NaN; };
   const srt = $("#emu-sort").value;
   const key = {area: t => [AREAS.indexOf(D.trials[t].area), D.trials[t].rb], rct: t => [D.trials[t].rb], name: t => [D.trials[t].name],
@@ -820,7 +856,8 @@ function emuUpdate() {
   const W = 714, H = 580, ml = 150, mr = 16, mt = 26, mb = 42, lo = Math.log(0.2), hi = Math.log(5);
   const ph = H - mt - mb, rh = ph / Math.max(T.length, 1);
   const xs = l => ml + (Math.max(lo, Math.min(hi, l)) - lo) / (hi - lo) * (W - ml - mr);
-  let s = `<text x="${ml}" y="15" font-size="13" font-weight="700" fill="${NAVY}">Hazard ratio, emulation vs RCT (PS base ${RSHORT[rung]}; ${T.length} trials)</text>`;
+  const ESTLAB = {itt: "all initiators", outpt: "outpatient initiators", pp_ipcw_365: "per-protocol 365 d", pp_ipcw_switch: "switch-only", landmark90: "90-d landmark", runin90: "90-d run-in"};
+  let s = `<text x="${ml}" y="15" font-size="13" font-weight="700" fill="${NAVY}">Hazard ratio, emulation vs RCT (PS ${RSHORT[rung]}; ${ESTLAB[est]}; ${T.length} trials)</text>`;
   for (const v of [0.25, 0.5, 1, 2, 4]) s += `<line x1="${xs(Math.log(v))}" x2="${xs(Math.log(v))}" y1="${mt}" y2="${mt + ph}" stroke="${v === 1 ? "#9a9cb0" : "#ececf1"}" stroke-width="${v === 1 ? 1.2 : 1}"/>`;
   const na = arms.length;
   T.forEach((t, i) => {
@@ -831,7 +868,7 @@ function emuUpdate() {
     const fs = Math.max(7, Math.min(12, rh * 0.75));
     s += `<text x="${ml - 6}" y="${yc + fs * 0.35}" font-size="${fs}" text-anchor="end" fill="${NAVY}">${esc(tr.name)}</text>`;
     const sp = Math.min(rh * 0.7, 4 * na) / Math.max(na - 1, 1);
-    let tt = `<b>${esc(tr.full)}</b> (${esc(tr.area)}; quality ${QUAL[tr.qual]}; ECG relevance ${tr.ecg})<br>${esc(tr.ic)}<br>RCT: ${esc(tr.hr)}`;
+    let tt = `<b>${esc(tr.full)}</b> (${esc(tr.area)}; quality ${esc(tr.qt.tier)}, ${tr.qt.p} pts; ECG relevance ${tr.ecg})<br>${esc(tr.ic)}<br>RCT: ${esc(tr.hr)}`;
     arms.forEach((a, k) => {
       const [l, se] = emuEst(rung, a, t); const yy = na > 1 ? yc - Math.min(rh * 0.7, 4 * na) / 2 + k * sp : yc;
       if (!fin(l)) { tt += `<br>${ARM[a].lab}: not estimable`; return; }
@@ -865,7 +902,7 @@ function emuUpdate() {
     }
     h += `</table><div class="note"><b>closer</b>: smaller |Δ log HR| than PS alone. <b>sign-flip p</b>: one-sided exact test on paired |Δ| reductions. <b>shuffle p</b>: RCT results randomly reassigned among the selected trials (2,000 draws); a large p means generic attenuation, not movement toward each trial's own result.</div>`;
   } else h += `<div class="note">Select "PS alone" and another method (and ≥2 trials) for paired tests.</div>`;
-  h += `<div class="note">consistent: |z| &lt; 1.96 using both SEs. Counts are trials.</div>`;
+  h += `<div class="note">consistent: |z| &lt; 1.96 using both SEs. Counts are trials. p values unadjusted (exploratory).${est !== "itt" ? " Sensitivity analysis: trials without an estimate (procedure arms; run-in with too few patients kept; outpatient cohorts too small) are dropped." : ""}</div>`;
   $("#emu-sum").innerHTML = h;
 }
 
