@@ -315,6 +315,8 @@ table.t th{background:var(--navy);color:#fff;font-weight:600}
 .side td:first-child,.side th:first-child{text-align:left}
 .side .note{font-size:11.5px;color:var(--muted);line-height:1.35;margin:6px 0}
 .side .hl{background:#fbeceb}
+.qv{display:flex;gap:8px;font-size:13px}.qv label{display:flex;align-items:center;gap:2px;cursor:pointer;white-space:nowrap}.qv input{margin:0}
+#bal-ctrl label.h{margin:6px 0 2px}
 #s-bal .panel{grid-template-columns:210px 1fr 332px}
 .side td .ci{display:block;font-size:10.5px;color:var(--muted)}
 .fn{position:absolute;left:210px;right:90px;bottom:16px;font-size:11.5px;color:var(--muted);line-height:1.3}
@@ -703,6 +705,8 @@ function balInit() {
   <label class="h">PS base</label>${rungSel("bal-rung")}
   <label class="h">Comparison arms</label>
   <div id="bal-arms">${armBoxes("bal-arm", ["unmatched", "base", "ECG", "CLMBR", "CLMBR+ECG", "shufECG", "noise96"], ["base", "ECG", "shufECG"])}</div>
+  <label class="h">Quick view</label>
+  <div id="bal-qv" class="qv"><label><input type="radio" name="bal-qv" value="all" checked>All</label><label><input type="radio" name="bal-qv" value="phys">Physiology</label><label><input type="radio" name="bal-qv" value="echo">Echo</label></div>
   <label class="h">Variable set</label>
   <select id="bal-set"><option value="v58">Primary 58, by variable</option><option value="d58">Primary 58, by domain</option>
    <option value="vexp">Expanded panel, by variable</option><option value="bexp">Expanded panel, by bucket</option>
@@ -717,11 +721,16 @@ function balInit() {
   const onSet = () => {
     const s = $("#bal-set").value, exp = s.endsWith("exp"), all = s.endsWith("all");
     const groups = all ? GROUPS58.concat(D.exp.buckets) : exp ? D.exp.buckets : GROUPS58;
-    $("#bal-dom").innerHTML = `<option value="all">All domains</option><option value="phys">Physiology only (vitals, labs, echo)</option>` + groups.map(g => `<option>${esc(g)}</option>`).join("");
+    $("#bal-dom").innerHTML = `<option value="all">All domains</option><option value="phys">Physiology only (vitals, labs, echo)</option><option value="echo">Echocardiography only</option>` + groups.map(g => `<option>${esc(g)}</option>`).join("");
     const nmax = all ? 58 + D.exp.vars.length : exp ? D.exp.vars.length : 58; const r = $("#bal-n"); r.max = nmax; r.value = (exp || all) ? 60 : 58;
+    const qv = document.querySelector('#bal-qv input:checked'); if (qv) $("#bal-dom").value = qv.value;
     balUpdate();
   };
   $("#bal-set").onchange = onSet;
+  /* quick view: sets the Domain filter (physiology = measured vitals, labs and echo; echo = the 35 echo measures) */
+  document.querySelectorAll('#bal-qv input').forEach(r => r.onchange = () => { $("#bal-dom").value = r.value; balUpdate(); });
+  $("#bal-dom").addEventListener("change", () => { const v = $("#bal-dom").value, q = document.querySelector(`#bal-qv input[value="${v}"]`);
+    document.querySelectorAll('#bal-qv input').forEach(x => x.checked = x === q); });
   $("#bal-rank").onchange = () => { const r = $("#bal-n"); r.value = $("#bal-rank").value === "gain" ? 15 : r.max; balUpdate(); };
   $("#bal-rung").onchange = balUpdate;
   for (const id of ["bal-dom", "bal-trials", "bal-stat", "bal-ref", "bal-thr"]) $("#" + id).onchange = balUpdate;
@@ -749,7 +758,7 @@ function balModel() {
   /* physiology = measured values: all 58-panel domains except the coded-record summaries, plus the expanded
      labs & vitals bucket without its missing-value flags */
   const isPhys = v => v.j < 1000 ? v.g !== "Coded record" : v.g === "Additional labs & vitals" && !/missing/i.test(v.lab);
-  vars = vars.filter(v => dom === "all" || (dom === "phys" ? isPhys(v) : v.g === dom));
+  vars = vars.filter(v => dom === "all" || (dom === "phys" ? isPhys(v) : dom === "echo" ? v.j < 1000 && v.g.startsWith("Echo") : v.g === dom));
   vars.forEach(v => { v.u = stat(T.map(t => get("unmatched", t, v.j))); });
   vars = vars.filter(v => T.some(t => fin(get("base", t, v.j))));
   const N = +$("#bal-n").value;
@@ -1196,7 +1205,7 @@ function drawStatic() {
 const slides = [...document.querySelectorAll(".slide")];
 slides.forEach((sl, i) => {
   if (!sl.dataset.title) return;
-  sl.insertAdjacentHTML("afterbegin", `<div class="ttl">${sl.dataset.title}</div><div class="num">${i + 1}</div><div class="foot"><b>CarDS</b>LAB</div><img class="logo" alt="" src="${LOGO}">`);
+  sl.insertAdjacentHTML("afterbegin", `<div class="ttl">${sl.dataset.title}</div><div class="num">${i + 1}</div><div class="foot"><b>CarDS</b>Lab</div><img class="logo" alt="" src="${LOGO}">`);
 });
 let cur = 0;
 function show(i) {
