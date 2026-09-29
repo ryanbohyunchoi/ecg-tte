@@ -135,8 +135,8 @@ def build_data():
                     M[j, vn.index(c)] = np.nan
             bal[rg][a] = [[r4s(x) for x in row] for row in M]
             est[rg][a] = [[r4(x), r4(y)] for x, y in zip(g.loghr, g.se)]
-    # expanded panel (P1)
-    P = pd.read_csv(A / "claude-v19-expanded-buckets/per_var.csv")
+    # expanded panel (all PS rungs x arms; scripts/v19/expanded_all_rungs.py)
+    P = pd.read_csv(A / "claude-v19-expanded-buckets/per_var_all_rungs.csv")
     dic = pd.read_csv(A / "claude-v16-covars2b/dictionary.csv").set_index("variable")
     vb = P.drop_duplicates("var").set_index("var").bucket
     evars = sorted(vb.index, key=lambda v: (BUCKETS.index(vb[v]), v))
@@ -145,10 +145,11 @@ def build_data():
         d = str(dic.definition.get(v, "")).split("; tokens")[0]
         lab = v.replace("_365", "").replace("_ever", " (ever)").replace("lab_", "").replace("rx_", "Rx ").replace("_", " ")
         exp_vars.append(dict(v=v, lab=lab[:34], b=vb[v], d=d[:140]))
+    r3 = lambda x: None if not np.isfinite(x) else round(float(x), 3)
     exp = {}
-    for a in ["unmatched", "base", "ECG", "shufECG"]:
-        W = P[P.arm == a].pivot(index="trial", columns="var", values="smd").reindex(index=tid, columns=evars).abs()
-        exp[a] = [[r4s(x) for x in row] for row in W.to_numpy(float)]
+    for (rg, a), G in P.groupby(["rung", "arm"]):
+        W = G.pivot(index="trial", columns="var", values="smd").reindex(index=tid, columns=evars).abs()
+        exp.setdefault(rg, {})[a] = [[r3(x) for x in row] for row in W.to_numpy(float)]
     # simulation
     G = A / "claude-v19-g2-simulation"
     exc = pd.read_csv(G / "excluded_cells.csv")
@@ -671,21 +672,22 @@ function balInit() {
   <div id="bal-arms">${armBoxes("bal-arm", ["unmatched", "base", "ECG", "CLMBR", "CLMBR+ECG", "shufECG", "noise96"], ["unmatched", "base", "ECG", "shufECG"])}</div>
   <label class="h">Variable set</label>
   <select id="bal-set"><option value="v58">Primary 58, by variable</option><option value="d58">Primary 58, by domain</option>
-   <option value="vexp">Expanded panel (P1), by variable</option><option value="bexp">Expanded panel (P1), by bucket</option></select>
+   <option value="vexp">Expanded panel, by variable</option><option value="bexp">Expanded panel, by bucket</option>
+   <option value="vall">All held-out (58 + expanded), by variable</option><option value="ball">All held-out, by domain/bucket</option></select>
   <label class="h">Domain</label><select id="bal-dom"></select>
   <label class="h">Show top <span id="bal-nlab"></span> by unmatched |SMD|</label><input type="range" id="bal-n" min="10" max="58" value="58">
   <label class="h">Trials</label><select id="bal-trials">${trialOptions(true)}</select>
   <label class="h">Across trials</label><select id="bal-stat"><option value="median">Median</option><option value="mean">Mean</option></select>
   <label class="cb" style="margin-top:8px"><input type="checkbox" id="bal-ref" checked>|SMD| = 0.1 line</label>`;
   const onSet = () => {
-    const s = $("#bal-set").value, exp = s.endsWith("exp");
-    const groups = exp ? D.exp.buckets : GROUPS58;
+    const s = $("#bal-set").value, exp = s.endsWith("exp"), all = s.endsWith("all");
+    const groups = all ? GROUPS58.concat(D.exp.buckets) : exp ? D.exp.buckets : GROUPS58;
     $("#bal-dom").innerHTML = `<option value="all">All domains</option>` + groups.map(g => `<option>${esc(g)}</option>`).join("");
-    const nmax = exp ? D.exp.vars.length : 58; const r = $("#bal-n"); r.max = nmax; r.value = exp ? 40 : 58;
+    const nmax = all ? 58 + D.exp.vars.length : exp ? D.exp.vars.length : 58; const r = $("#bal-n"); r.max = nmax; r.value = (exp || all) ? 60 : 58;
     balUpdate();
   };
   $("#bal-set").onchange = onSet;
-  $("#bal-rung").onchange = () => { if ($("#bal-rung").value !== "P1" && $("#bal-set").value.endsWith("exp")) { $("#bal-set").value = "v58"; onSet(); } else balUpdate(); };
+  $("#bal-rung").onchange = balUpdate;
   for (const id of ["bal-dom", "bal-trials", "bal-stat", "bal-ref"]) $("#" + id).onchange = balUpdate;
   $("#bal-n").oninput = balUpdate;
   $("#bal-arms").onchange = balUpdate;
@@ -693,21 +695,20 @@ function balInit() {
   onSet();
 }
 function balModel() {
-  const rung = $("#bal-rung").value, set = $("#bal-set").value, exp = set.endsWith("exp");
-  const avail = exp ? ["unmatched", "base", "ECG", "shufECG"] : ["unmatched", "base", "ECG", "CLMBR", "CLMBR+ECG", "shufECG", "noise96"];
+  const rung = $("#bal-rung").value, set = $("#bal-set").value, all = set.endsWith("all"), exp = set.endsWith("exp") || all;
+  const avail = ["unmatched", "base", "ECG", "CLMBR", "CLMBR+ECG", "shufECG", "noise96"];
   document.querySelectorAll("#bal-arms .cb").forEach(l => { const ok = avail.includes(l.dataset.arm); l.classList.toggle("dis", !ok); l.querySelector("input").disabled = !ok; });
   const arms = checked("bal-arm").filter(a => avail.includes(a));
-  const opt = $("#bal-set").querySelectorAll("option"); opt[2].disabled = opt[3].disabled = rung !== "P1";
   const T = trialSet($("#bal-trials").value);
   const stat = $("#bal-stat").value === "mean" ? mean : median;
   let vars, get; /* get(arm, trial, j) -> |SMD| or null */
-  if (exp) {
-    vars = D.exp.vars.map((v, j) => ({j, lab: v.lab, g: v.b, def: v.d}));
-    get = (a, t, j) => D.exp.smd[a][t][j];
-  } else {
-    vars = D.vars.map((v, j) => ({j, lab: v.lab, g: v.g, def: ""}));
-    get = (a, t, j) => { const b = D.bal[rung].base[t][j]; if (b === null) return null; return a === "unmatched" ? D.bal.none.unmatched[t][j] : D.bal[rung][a][t][j]; };
-  }
+  const get58 = (a, t, j) => { const b = D.bal[rung].base[t][j]; if (b === null) return null; return a === "unmatched" ? D.bal.none.unmatched[t][j] : D.bal[rung][a][t][j]; };
+  const getX = (a, t, j) => a === "unmatched" ? D.exp.smd.none.unmatched[t][j] : D.exp.smd[rung][a][t][j];
+  const v58 = D.vars.map((v, j) => ({j, lab: v.lab, g: v.g, def: ""}));
+  const vX = D.exp.vars.map((v, j) => ({j: 1000 + j, lab: v.lab, g: v.b, def: v.d}));
+  if (all) { vars = v58.concat(vX); get = (a, t, j) => j >= 1000 ? getX(a, t, j - 1000) : get58(a, t, j); }
+  else if (exp) { vars = vX; get = (a, t, j) => getX(a, t, j - 1000); }
+  else { vars = v58; get = get58; }
   const dom = $("#bal-dom").value;
   vars = vars.filter(v => dom === "all" || v.g === dom);
   vars.forEach(v => { v.u = stat(T.map(t => get("unmatched", t, v.j))); });
@@ -716,12 +717,12 @@ function balModel() {
   $("#bal-nlab").textContent = Math.min(N, vars.length) + " of " + vars.length;
   const top = new Set([...vars].sort((a, b) => (fin(b.u) ? b.u : -1) - (fin(a.u) ? a.u : -1)).slice(0, N).map(v => v.j));
   vars = vars.filter(v => top.has(v.j));
-  return {rung, set, exp, arms, T, stat, vars, get};
+  return {rung, set, exp, all, arms, T, stat, vars, get};
 }
 function balUpdate() {
-  const M = balModel(), {arms, T, stat, vars, get, exp} = M;
+  const M = balModel(), {arms, T, stat, vars, get, exp, all} = M;
   const byDom = M.set.startsWith("d") || M.set.startsWith("b");
-  const groups = exp ? D.exp.buckets : GROUPS58;
+  const groups = all ? GROUPS58.concat(D.exp.buckets) : exp ? D.exp.buckets : GROUPS58;
   let rows = [];
   if (byDom) {
     for (const g of groups) { const vs = vars.filter(v => v.g === g); if (!vs.length) continue;
@@ -781,7 +782,7 @@ function balUpdate() {
       h += `<tr class="${a === "ECG" ? "hl" : ""}"><td>${ARM[a].lab}</td><td>${(mean(d) >= 0 ? "+" : "") + f1(mean(d))}</td><td>${ok.filter(x => x > 0).length}/${ok.length}</td><td>${T.length > 1 ? fmtp(p) : "–"}</td></tr>`; }
     h += `</table><div class="note">p: one-sided exact sign-flip test across the selected trials (H1: arm better than PS alone). "better" = trials in which the share rose.</div>`;
   } else h += `<div class="note">Select "PS alone" and another arm to see paired comparisons.</div>`;
-  h += `<div class="note">${M.exp ? "Expanded panel: about 340 pre-index characteristics (comorbidities, medications, use, labs), excluding variables in or derived from the P1 PS and ECG-proximal variables; available for P1 only." :
+  h += `<div class="note">${M.exp ? "Expanded panel: about 330 pre-index characteristics per trial (comorbidities, medications, healthcare use, labs, devices, scores, preventive care), excluding variables in or derived from the selected PS, hdPS-selected codes and ECG-proximal variables." :
     "Primary panel: 58 characteristics not in any P-rung PS. At the clinical rung, variables in that PS are excluded."} Summary statistics only; no patient-level data.</div>`;
   $("#bal-sum").innerHTML = h;
 }
