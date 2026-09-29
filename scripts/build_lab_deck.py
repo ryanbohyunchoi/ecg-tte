@@ -90,6 +90,11 @@ def logo_b64(media_dir):
     return base64.b64encode(raw).decode()
 
 
+FLAGLAB = [("F1_in_hospital_start_not_mirrored", "in-hospital start"), ("F2_responder_runin", "run-in"),
+           ("F3_discontinuation_switch_not_mirrored", "therapy switch"), ("F4_delayed_effect_long_followup", "long follow-up"),
+           ("F5_other_time_zero_misalignment", "time zero")]
+
+
 def build_data():
     R = pd.read_csv(A / "claude-v18-embed-compare/results.csv")
     R = R[R.half == "full"].copy()
@@ -107,7 +112,10 @@ def build_data():
         assert {"strict": "High (strict)", "high": "High", "lower": "Lower"}[qual] == t1["qual"], (k, qual, t1["qual"])
         trials.append(dict(id=r.trial, name=SHORT.get(nm, nm), full=nm, area=AREA[r.category], qual=qual,
                            ecg=s["ecg_relevance"], rb=r4(r.rb), rs=r4(r.rs), hr=t1["hr"], ic=f"{t1['i']} vs {t1['c']}",
-                           outcome=t1["outcome"], set=r.set))
+                           outcome=t1["outcome"], set=r.set,
+                           flags=[lab for f, lab in FLAGLAB if s["flags"].get(f)],
+                           comp=s["flags"]["comparator_fidelity"], outc=s["flags"]["outcome_fidelity"],
+                           proxy=bool(s["flags"].get("record_only_placebo_proxy"))))
     tid = [t["id"] for t in trials]
     vn = [c for c, _, _ in VARS]
     bal, est = {}, {}
@@ -232,6 +240,12 @@ ul{margin:0;padding-left:26px}
 .card p{font-size:20px}
 .tag{display:inline-block;background:var(--navy);color:#fff;font-weight:700;padding:2px 10px;margin-right:8px}
 table.t{border-collapse:collapse;width:100%}
+.qgrid{display:grid;grid-template-columns:0.8fr 1.05fr 1.35fr;gap:16px}
+.qgrid h4{margin:0 0 6px;padding:6px 10px;background:var(--navy);color:#fff;font-size:17px;font-weight:600}
+.qgrid table{border-collapse:collapse;width:100%}
+.qgrid td{font-size:13px;padding:2px 6px;white-space:nowrap;border-bottom:1px solid var(--line);vertical-align:top;color:var(--navy)}
+.qgrid td.n{font-weight:600;white-space:nowrap}
+.qgrid td.r{color:#555}
 table.t td,table.t th{font-size:19px;padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
 table.t th{background:var(--navy);color:#fff;font-weight:600}
 /* title slide */
@@ -335,7 +349,16 @@ svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
     <h2>38 target trial emulations in Yale New Haven Health System EHR data</h2>
     <svg id="svg-trials" width="1184" height="330" viewBox="0 0 1184 330"></svg>
     <p style="margin-top:10px">New-user, active-comparator designs; index dates 2011–2024; outcome = the trial's primary endpoint.</p>
-    <p>Emulation quality (blinded rating): 9 high (strict), 9 high, 20 lower.</p>
+    <p>Emulation quality: 9 high (strict), 9 high, 20 lower (next slide).</p>
+  </div>
+</section>
+
+<!-- 6b -->
+<section class="slide" data-title="Emulation quality">
+  <div class="body">
+    <h2>Emulation quality of the 38 trials</h2>
+    <p class="small" style="margin:0 0 8px">High (strict): no design flag. High: ≤1 flag, comparator and outcome fidelity at least moderate. Lower: all others. Flags: in-hospital start, run-in, baseline-therapy switch, long follow-up with delayed effect, time-zero misalignment; also placebo proxy, poor comparator or outcome capture.</p>
+    <div id="qual-grid" class="qgrid"></div>
   </div>
 </section>
 
@@ -945,9 +968,24 @@ function drawStatic() {
   const areas = [["AF", 12], ["Diabetes", 9], ["HF", 5], ["Hypertension", 5], ["ACS / MI", 2], ["Other", 5]];
   areas.forEach(([a, n], i) => { const y = 24 + i * 29; s += `<text x="1052" y="${y + 15}" font-size="15" text-anchor="end" fill="${NAVY}">${a}</text><rect x="1060" y="${y + 2}" width="${n * 8}" height="18" fill="${a === "AF" ? RED : NAVY}"/><text x="${1066 + n * 8}" y="${y + 16}" font-size="14" fill="${NAVY}">${n}</text>`; });
   s += `<text x="1060" y="12" font-size="14" font-weight="700" fill="${NAVY}">Clinical area</text>`;
-  s += `<text x="0" y="250" font-size="15" fill="${NAVY}">Examples: ARISTOTLE, ROCKET-AF, RE-LY (DOAC vs warfarin); PARADIGM-HF; EMPA-REG, LEADER, DECLARE (vs DPP-4i proxy); PLATO; ALLHAT; LAAOS III.</text>`;
-  s += `<text x="0" y="280" font-size="15" fill="${NAVY}">Assembled in stages: 18 trials used to develop the analysis, then 15 and 5 (AF) under prespecified plans.</text>`;
   $("#svg-trials").innerHTML = s;
+  /* emulation quality */
+  (function () {
+    const G = [["strict", "High (strict)"], ["high", "High"], ["lower", "Lower"]];
+    const why = t => {
+      const r = [];
+      if (t.flags.length) r.push(t.flags.join(", "));
+      if (t.comp === "poor") r.push(t.proxy ? "placebo proxy" : "comparator");
+      if (t.outc === "poor") r.push("outcome");
+      return r.join("; ");
+    };
+    let h = "";
+    G.forEach(([q, lab]) => {
+      const T = D.trials.filter(t => t.qual === q).sort((a, b) => a.area.localeCompare(b.area) || a.name.localeCompare(b.name));
+      h += `<div><h4>${lab} (${T.length})</h4><table>` + T.map(t => `<tr><td class="n">${esc(t.name)}</td><td>${esc(t.area)}</td><td class="r">${esc(q === "strict" ? "" : why(t))}</td></tr>`).join("") + `</table></div>`;
+    });
+    $("#qual-grid").innerHTML = h;
+  })();
   /* ladder */
   const L = [["P1", "Demographics: age, sex, index year", "primary"], ["P5", "+ 5 diagnoses: HTN, T2D, CAD, AF, HF", ""], ["P2", "+ obesity", ""],
     ["Sparse", "Demographics + 9–13 CV diagnoses (prior year)", ""], ["hdPS", "+ 200 codes most associated with treatment", ""], ["Clinical", "+ vitals, labs, LVEF, meds, healthcare use", ""]];
