@@ -102,6 +102,8 @@ def build_data():
     order = R[(R.rung == "P1") & (R.arm_role == "base")].sort_values("idx")
     sel = json.load(open(ROOT / "docs/v17/trial_selection.json"))["trials"]
     T1 = table1()
+    # v1.9 adjudicated design-only quality items, points and tiers (docs/v19/QUALITY_REAUDIT.md)
+    QT = {t["key"]: t for t in json.load(open(ROOT / "docs/v19/quality_tiers.json"))["trials"]}
     trials = []
     for _, r in order.iterrows():
         k = r.key
@@ -115,7 +117,10 @@ def build_data():
                            outcome=t1["outcome"], set=r.set,
                            flags=[lab for f, lab in FLAGLAB if s["flags"].get(f)],
                            comp=s["flags"]["comparator_fidelity"], outc=s["flags"]["outcome_fidelity"],
-                           proxy=bool(s["flags"].get("record_only_placebo_proxy"))))
+                           proxy=bool(s["flags"].get("record_only_placebo_proxy")),
+                           qt=dict(f=[QT[k]["flags"][f"F{i}"] for i in range(1, 6)], c=QT[k]["comparator"][0].upper(),
+                                   o=QT[k]["outcome"][0].upper(), p=QT[k]["points"], tier=QT[k]["tier"].split(" - ")[0],
+                                   cls=QT[k]["class_3_adjudicated"])))
     tid = [t["id"] for t in trials]
     vn = [c for c, _, _ in VARS]
     bal, est = {}, {}
@@ -246,6 +251,20 @@ table.t{border-collapse:collapse;width:100%}
 .qgrid td{font-size:13px;padding:2px 6px;white-space:nowrap;border-bottom:1px solid var(--line);vertical-align:top;color:var(--navy)}
 .qgrid td.n{font-weight:600;white-space:nowrap}
 .qgrid td.r{color:#555}
+.qgrid.q4{grid-template-columns:repeat(4,1fr)}
+.qgrid td.p{text-align:right;color:#555}
+.qgrid h4 .d{font-weight:400;font-size:13px;opacity:.85}
+.qitems{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.qitems table{border-collapse:collapse;width:100%}
+.qitems th{font-size:12.5px;font-weight:600;background:var(--navy);color:#fff;padding:4px 5px;text-align:center}
+.qitems th.l,.qitems td.l{text-align:left}
+.qitems td{font-size:12.5px;padding:2.5px 5px;border-bottom:1px solid var(--line);text-align:center;color:var(--navy);white-space:nowrap}
+.qitems td.n{font-weight:600}
+.qitems tr.tb td{border-top:2px solid var(--navy)}
+.qitems td.P{color:var(--red);font-weight:700}
+.qitems td.pt{font-weight:700}
+.tier{display:inline-block;min-width:66px;padding:0 5px;font-size:12px;font-weight:600}
+.tier.t0{background:var(--navy);color:#fff}.tier.t1{background:#5b5d86;color:#fff}.tier.t2{background:var(--band);color:var(--navy);outline:1px solid var(--line)}.tier.t3{background:#fbe3e2;color:#a8322e}
 table.t td,table.t th{font-size:19px;padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
 table.t th{background:var(--navy);color:#fff;font-weight:600}
 /* title slide */
@@ -349,7 +368,7 @@ svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
     <h2>38 target trial emulations in Yale New Haven Health System EHR data</h2>
     <svg id="svg-trials" width="1184" height="330" viewBox="0 0 1184 330"></svg>
     <p style="margin-top:10px">New-user, active-comparator designs; index dates 2011–2024; outcome = the trial's primary endpoint.</p>
-    <p>Emulation quality: 9 high (strict), 9 high, 20 lower (next slide).</p>
+    <p id="qual-count">Emulation quality (design items only): see next slides.</p>
   </div>
 </section>
 
@@ -357,8 +376,17 @@ svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
 <section class="slide" data-title="Emulation quality">
   <div class="body">
     <h2>Emulation quality of the 38 trials</h2>
-    <p class="small" style="margin:0 0 8px">High (strict): no design flag. High: ≤1 flag, comparator and outcome fidelity at least moderate. Lower: all others. Flags: in-hospital start, run-in, baseline-therapy switch, long follow-up with delayed effect, time-zero misalignment; also placebo proxy, poor comparator or outcome capture.</p>
+    <p class="small" style="margin:0 0 8px">Points = 1 per design flag (in-hospital start, run-in, baseline-therapy switch, follow-up ≥48 mo, time-zero issue) + comparator and outcome fidelity (moderate 1, poor 2). A poor item or ≥2 flags caps the tier at Moderate. Rated from trial protocols, blind to all results.</p>
     <div id="qual-grid" class="qgrid"></div>
+    <p class="xs" id="qual-cls" style="margin-top:8px"></p>
+  </div>
+</section>
+
+<!-- 6c -->
+<section class="slide" data-title="Emulation quality: item-level breakdown">
+  <div class="body">
+    <div id="qual-items" class="qitems"></div>
+    <p class="xs" style="margin-top:6px">✓ = design flag present. F1 in-hospital start not mirrored · F2 responder/tolerability run-in · F3 baseline-therapy switch at randomization · F4 follow-up ≥48 mo · F5 other time-zero issue. Comparator/outcome: G good (0), M moderate (1), P poor (2; placebo proxy, hypothesis-changing substitution, or endpoint not ascertainable). Tier: 0 Excellent, 1–2 Good, 3 Moderate, ≥4 Limited; a poor item or ≥2 flags caps the tier at Moderate. Design items only, blind to results (docs/v19/QUALITY_REAUDIT.md).</p>
   </div>
 </section>
 
@@ -971,20 +999,31 @@ function drawStatic() {
   $("#svg-trials").innerHTML = s;
   /* emulation quality */
   (function () {
-    const G = [["strict", "High (strict)"], ["high", "High"], ["lower", "Lower"]];
-    const why = t => {
-      const r = [];
-      if (t.flags.length) r.push(t.flags.join(", "));
-      if (t.comp === "poor") r.push(t.proxy ? "placebo proxy" : "comparator");
-      if (t.outc === "poor") r.push("outcome");
-      return r.join("; ");
-    };
+    /* v1.9 graded tiers (docs/v19/quality_tiers.json; design items only, blind to results) */
+    const G = [["Excellent", "close emulation", "0 points"], ["Good", "minor deviations", "1–2 points"],
+      ["Moderate", "substantial deviations", "3 points, or capped"], ["Limited", "major deviations", "≥4 points"]];
+    const TI = Object.fromEntries(G.map(([t], i) => [t, i]));
+    const byTier = (a, b) => TI[a.qt.tier] - TI[b.qt.tier] || a.qt.p - b.qt.p || a.area.localeCompare(b.area) || a.name.localeCompare(b.name);
     let h = "";
-    G.forEach(([q, lab]) => {
-      const T = D.trials.filter(t => t.qual === q).sort((a, b) => a.area.localeCompare(b.area) || a.name.localeCompare(b.name));
-      h += `<div><h4>${lab} (${T.length})</h4><table>` + T.map(t => `<tr><td class="n">${esc(t.name)}</td><td>${esc(t.area)}</td><td class="r">${esc(q === "strict" ? "" : why(t))}</td></tr>`).join("") + `</table></div>`;
+    G.forEach(([t, lab, d]) => {
+      const T = D.trials.filter(x => x.qt.tier === t).sort(byTier);
+      h += `<div><h4>${t} — ${lab} (${T.length})<br><span class="d">${d}</span></h4><table>` +
+        T.map(x => `<tr><td class="n">${esc(x.name)}</td><td>${esc(x.area)}</td><td class="p">${x.qt.p}</td></tr>`).join("") + `</table></div>`;
     });
+    $("#qual-grid").classList.add("q4");
     $("#qual-grid").innerHTML = h;
+    const nc = c => D.trials.filter(x => x.qt.cls === c).length, no = q => D.trials.filter(x => x.qual === q).length;
+    $("#qual-cls").textContent = `Original 3-class rule, after re-audit: ${nc("High (strict)")} high (strict), ${nc("High")} high, ${nc("Lower")} lower ` +
+      `(v1.7: ${no("strict")} / ${no("high")} / ${no("lower")}; changed: ` +
+      D.trials.filter(x => QUAL[x.qual] !== x.qt.cls).map(x => `${x.name} ${QUAL[x.qual].toLowerCase()} → ${x.qt.cls.toLowerCase()}`).join(", ") + `). Right column: points.`;
+    $("#qual-count").textContent = "Emulation quality (design items only): " + G.map(([t]) => `${D.trials.filter(x => x.qt.tier === t).length} ${t.toLowerCase()}`).join(", ") + " (next slides).";
+    /* item-level breakdown: two side-by-side tables sorted by tier */
+    const S = D.trials.slice().sort(byTier), half = Math.ceil(S.length / 2);
+    const tab = R => `<table><tr><th class="l">Trial</th><th class="l">Area</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>Comp.</th><th>Outc.</th><th>Pts</th><th class="l">Tier</th></tr>` +
+      R.map((x, i) => `<tr${i && R[i - 1].qt.tier !== x.qt.tier ? ' class="tb"' : ""}><td class="l n">${esc(x.name)}</td><td class="l">${esc(x.area)}</td>` +
+        x.qt.f.map(v => `<td>${v ? "✓" : ""}</td>`).join("") + `<td class="${x.qt.c}">${x.qt.c}</td><td class="${x.qt.o}">${x.qt.o}</td>` +
+        `<td class="pt">${x.qt.p}</td><td class="l"><span class="tier t${TI[x.qt.tier]}">${x.qt.tier}</span></td></tr>`).join("") + `</table>`;
+    $("#qual-items").innerHTML = `<div>${tab(S.slice(0, half))}</div><div>${tab(S.slice(half))}</div>`;
   })();
   /* ladder */
   const L = [["P1", "Demographics: age, sex, index year", "primary"], ["P5", "+ 5 diagnoses: HTN, T2D, CAD, AF, HF", ""], ["P2", "+ obesity", ""],
