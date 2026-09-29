@@ -150,3 +150,9 @@ suppressed in every written file; no patient rows printed. Commit only code and 
 ## Deviation log
 
 (dated entries added during implementation, before results are summarised)
+
+- **2026-09-29, deviation 1 (reproduction tolerance).** With pop = all, CAROLINA and LAAOS III reproduce the
+  reference files exactly for loghr, se, n, n_t, n_c, n_pairs, cstat and every threshold-based count; the SMD
+  columns differ by at most one or two floating-point ulps (max 7.1e-15 on x_pct_lt10, ≤ 2.2e-16 on SMDs;
+  summation-order noise). The gate is applied as max deviation ≤ 1e-12 (as in the adherence plan), and the check is
+  extended from 2 to all 38 trials. Found before any outpatient-restricted result was computed.
