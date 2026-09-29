@@ -702,7 +702,7 @@ function balInit() {
   $("#bal-ctrl").innerHTML = `
   <label class="h">PS base</label>${rungSel("bal-rung")}
   <label class="h">Comparison arms</label>
-  <div id="bal-arms">${armBoxes("bal-arm", ["unmatched", "base", "ECG", "CLMBR", "CLMBR+ECG", "shufECG", "noise96"], ["unmatched", "base", "ECG", "shufECG"])}</div>
+  <div id="bal-arms">${armBoxes("bal-arm", ["unmatched", "base", "ECG", "CLMBR", "CLMBR+ECG", "shufECG", "noise96"], ["base", "ECG", "shufECG"])}</div>
   <label class="h">Variable set</label>
   <select id="bal-set"><option value="v58">Primary 58, by variable</option><option value="d58">Primary 58, by domain</option>
    <option value="vexp">Expanded panel, by variable</option><option value="bexp">Expanded panel, by bucket</option>
@@ -717,7 +717,7 @@ function balInit() {
   const onSet = () => {
     const s = $("#bal-set").value, exp = s.endsWith("exp"), all = s.endsWith("all");
     const groups = all ? GROUPS58.concat(D.exp.buckets) : exp ? D.exp.buckets : GROUPS58;
-    $("#bal-dom").innerHTML = `<option value="all">All domains</option>` + groups.map(g => `<option>${esc(g)}</option>`).join("");
+    $("#bal-dom").innerHTML = `<option value="all">All domains</option><option value="phys">Physiology only (vitals, labs, echo)</option>` + groups.map(g => `<option>${esc(g)}</option>`).join("");
     const nmax = all ? 58 + D.exp.vars.length : exp ? D.exp.vars.length : 58; const r = $("#bal-n"); r.max = nmax; r.value = (exp || all) ? 60 : 58;
     balUpdate();
   };
@@ -746,7 +746,10 @@ function balModel() {
   else if (exp) { vars = vX; get = (a, t, j) => getX(a, t, j - 1000); }
   else { vars = v58; get = get58; }
   const dom = $("#bal-dom").value;
-  vars = vars.filter(v => dom === "all" || v.g === dom);
+  /* physiology = measured values: all 58-panel domains except the coded-record summaries, plus the expanded
+     labs & vitals bucket without its missing-value flags */
+  const isPhys = v => v.j < 1000 ? v.g !== "Coded record" : v.g === "Additional labs & vitals" && !/missing/i.test(v.lab);
+  vars = vars.filter(v => dom === "all" || (dom === "phys" ? isPhys(v) : v.g === dom));
   vars.forEach(v => { v.u = stat(T.map(t => get("unmatched", t, v.j))); });
   vars = vars.filter(v => T.some(t => fin(get("base", t, v.j))));
   const N = +$("#bal-n").value;
@@ -802,7 +805,8 @@ function balUpdate() {
     const vals = arms.filter(a => fin(r.val[a]));
     if (vals.length > 1) { const mn = Math.min(...vals.map(a => r.val[a])), mx = Math.max(...vals.map(a => r.val[a]));
       s += `<line x1="${xs(mn)}" x2="${xs(mx)}" y1="${y}" y2="${y}" stroke="#c9cad4" stroke-width="1"/>`; }
-    const tipTxt = `<b>${esc(r.lab)}</b>${r.tipx ? "<br><span style='color:#666'>" + esc(r.tipx) + "</span>" : ""}<br>` + arms.map(a => `${ARM[a].lab}: ${f3(r.val[a])}`).join("<br>");
+    const red = fin(r.val.base) && fin(r.val.ECG) && r.val.base > 0 ? `<br>ECG vs PS alone: ${f1(100 * (1 - r.val.ECG / r.val.base))}% reduction` : "";
+    const tipTxt = `<b>${esc(r.lab)}</b>${r.tipx ? "<br><span style='color:#666'>" + esc(r.tipx) + "</span>" : ""}<br>` + arms.map(a => `${ARM[a].lab}: ${f3(r.val[a])}`).join("<br>") + red;
     s += `<rect x="0" y="${mt + i * rh}" width="${W}" height="${rh}" fill="transparent" data-tip="${esc(tipTxt)}"/>`;
     for (const a of arms) if (fin(r.val[a])) s += marker(ARM[a].mk, xs(r.val[a]), y, Math.max(2.2, Math.min(5, rh * 0.38)), ARM[a].col, ARM[a].hollow, `pointer-events="none"`);
   });
@@ -847,11 +851,21 @@ function balUpdate() {
   };
   if (M.rank === "gain") h += `<div class="note" style="color:${RED}">Variables chosen by ECG gain: the comparisons below are descriptive (selected on the result), so p is not shown.</div>`;
   const cU = arms.filter(a => a !== "unmatched"), cB = arms.filter(a => a !== "base" && a !== "unmatched");
-  if (arms.includes("unmatched") && cU.length) h += paired("unmatched", "unmatched", cU);
   if (arms.includes("base") && cB.length) h += paired("base", "PS alone", cB);
-  if ((arms.includes("unmatched") && cU.length) || (arms.includes("base") && cB.length))
-    h += `<div class="note">Δ pts: change in % vars below the threshold; better: trials in which it rose; p: one-sided exact sign-flip test across trials. Mean |SMD| reduction: 1 − arm / reference mean |SMD| (no threshold), 95% CI by bootstrap over trials; vs unmatched = percent bias reduction.</div>`;
-  else h += `<div class="note">Select "Unmatched" or "PS alone" and another arm to see paired comparisons.</div>`;
+  /* ECG reduction in mean |SMD| by domain among the shown variables */
+  if (arms.includes("base") && arms.includes("ECG")) {
+    const gs = [...new Set(vars.map(v => v.g))];
+    let t = `<h4 style="margin-top:10px">ECG vs PS alone, by domain</h4><table><tr><th>Domain (n)</th><th>PS alone</th><th>+ ECG</th><th>reduction</th></tr>`;
+    for (const g of gs) { const vs = vars.filter(v => v.g === g);
+      const mb = T.map(tr => mean(vs.map(v => get("base", tr, v.j)))), me = T.map(tr => mean(vs.map(v => get("ECG", tr, v.j))));
+      const ok = T.map((_, i) => i).filter(i => fin(mb[i]) && fin(me[i])); if (!ok.length) continue;
+      const B = mean(ok.map(i => mb[i])), E = mean(ok.map(i => me[i]));
+      t += `<tr><td>${esc(GSHORT[g] || g)} (${vs.length})</td><td>${f3(B)}</td><td>${f3(E)}</td><td>${f1(100 * (1 - E / B))}%</td></tr>`; }
+    h += t + `</table><div class="note">Mean |SMD| over the domain's shown variables, averaged over trials; reduction = 1 − ECG / PS alone. Hover a row in the chart for the per-variable value.</div>`;
+  }
+  if (arms.includes("base") && cB.length)
+    h += `<div class="note">Δ pts: change in % vars below the threshold; better: trials in which it rose; p: one-sided exact sign-flip test across trials. Mean |SMD| reduction: 1 − arm / reference mean |SMD| (no threshold), 95% CI by bootstrap over trials.</div>`;
+  else h += `<div class="note">Select "PS alone" and another arm to see paired comparisons.</div>`;
   h += `<div class="note">${M.exp ? "Expanded panel: about 330 pre-index characteristics per trial (comorbidities, medications, healthcare use, labs, devices, scores, preventive care), excluding variables in or derived from the selected PS, hdPS-selected codes and ECG-proximal variables." :
     "Primary panel: 58 characteristics not in any P-rung PS. At the clinical rung, variables in that PS are excluded."} Summary statistics only; no patient-level data.</div>`;
   $("#bal-sum").innerHTML = h;
