@@ -226,7 +226,7 @@ svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
 <section class="slide" data-title="Results 1: covariate balance explorer" id="s-bal">
   <div class="panel">
     <div class="ctrl" id="bal-ctrl"></div>
-    <div class="chart"><svg id="bal-svg" width="714" height="590"></svg></div>
+    <div class="chart"><svg id="bal-svg" viewBox="0 0 714 590" style="width:100%;height:auto;max-height:590px"></svg></div>
     <div class="side" id="bal-sum"></div>
   </div>
 </section>
@@ -473,7 +473,8 @@ function balInit() {
    <option value="vexp">Expanded panel, by variable</option><option value="bexp">Expanded panel, by bucket</option>
    <option value="vall">All held-out (58 + expanded), by variable</option><option value="ball">All held-out, by domain/bucket</option></select>
   <label class="h">Domain</label><select id="bal-dom"></select>
-  <label class="h">Show top <span id="bal-nlab"></span> by unmatched |SMD|</label><input type="range" id="bal-n" min="10" max="58" value="58">
+  <label class="h">Rank variables by</label><select id="bal-rank"><option value="u">Unmatched |SMD|</option><option value="gain">ECG gain over PS alone</option></select>
+  <label class="h">Show top <span id="bal-nlab"></span></label><input type="range" id="bal-n" min="10" max="58" value="58">
   <label class="h">Trials</label><select id="bal-trials">${trialOptions(true)}</select>
   <label class="h">Across trials</label><select id="bal-stat"><option value="median">Median</option><option value="mean">Mean</option></select>
   <label class="h">Balance threshold</label><select id="bal-thr"><option value="0.1">|SMD| &lt; 0.10 (standard)</option><option value="0.15">|SMD| &lt; 0.15</option><option value="0.2">|SMD| &lt; 0.20</option></select>
@@ -486,6 +487,7 @@ function balInit() {
     balUpdate();
   };
   $("#bal-set").onchange = onSet;
+  $("#bal-rank").onchange = () => { const r = $("#bal-n"); r.value = $("#bal-rank").value === "gain" ? 15 : r.max; balUpdate(); };
   $("#bal-rung").onchange = balUpdate;
   for (const id of ["bal-dom", "bal-trials", "bal-stat", "bal-ref", "bal-thr"]) $("#" + id).onchange = balUpdate;
   $("#bal-n").oninput = balUpdate;
@@ -514,9 +516,14 @@ function balModel() {
   vars = vars.filter(v => T.some(t => fin(get("base", t, v.j))));
   const N = +$("#bal-n").value;
   $("#bal-nlab").textContent = Math.min(N, vars.length) + " of " + vars.length;
-  const top = new Set([...vars].sort((a, b) => (fin(b.u) ? b.u : -1) - (fin(a.u) ? a.u : -1)).slice(0, N).map(v => v.j));
-  vars = vars.filter(v => top.has(v.j));
-  return {rung, set, exp, all, arms, T, stat, vars, get};
+  const rank = $("#bal-rank").value;
+  /* ECG gain: |SMD| with PS alone minus |SMD| with PS + ECG, per trial, summarised across trials */
+  vars.forEach(v => { v.gain = stat(T.map(t => { const b = get("base", t, v.j), e = get("ECG", t, v.j); return fin(b) && fin(e) ? b - e : NaN; })); });
+  const key = rank === "gain" ? (v => v.gain) : (v => v.u);
+  const ranked = [...vars].sort((a, b) => (fin(key(b)) ? key(b) : -9) - (fin(key(a)) ? key(a) : -9)).slice(0, N);
+  const top = new Set(ranked.map(v => v.j));
+  vars = rank === "gain" ? ranked : vars.filter(v => top.has(v.j));
+  return {rung, set, exp, all, arms, T, stat, vars, get, rank};
 }
 function balUpdate() {
   const M = balModel(), {arms, T, stat, vars, get, exp, all} = M;
@@ -527,6 +534,11 @@ function balUpdate() {
     for (const g of groups) { const vs = vars.filter(v => v.g === g); if (!vs.length) continue;
       const r = {lab: `${g} (${vs.length})`, g, val: {}, tipx: ""};
       for (const a of arms) r.val[a] = stat(T.map(t => mean(vs.map(v => get(a, t, v.j)))));
+      rows.push(r); }
+  } else if (M.rank === "gain") {
+    for (const v of vars) {
+      const r = {lab: v.lab, g: v.g, val: {}, tipx: `${v.g}${v.def ? "; " + v.def : ""}; ECG gain ${f3(v.gain)}`};
+      for (const a of arms) r.val[a] = stat(T.map(t => get(a, t, v.j)));
       rows.push(r); }
   } else {
     for (const g of groups) for (const v of vars.filter(v => v.g === g)) {
@@ -542,12 +554,12 @@ function balUpdate() {
   const xs = x => ml + (Math.min(x, xmax) / xmax) * (W - ml - mr);
   let s = "";
   const statLab = $("#bal-stat").value;
-  s += `<text x="${ml}" y="16" font-size="13" font-weight="700" fill="${NAVY}">${byDom ? "Mean |SMD| per domain" : "|SMD| after matching"} (${statLab} across ${T.length} trial${T.length > 1 ? "s" : ""})</text>`;
+  s += `<text x="${ml}" y="16" font-size="13" font-weight="700" fill="${NAVY}">${byDom ? "Mean |SMD| per domain" : "|SMD| after matching"} (${statLab} across ${T.length} trial${T.length > 1 ? "s" : ""}${M.rank === "gain" ? "; ranked by ECG gain" : ""})</text>`;
   let prevG = null;
   rows.forEach((r, i) => {
     const y = mt + i * rh + rh / 2;
     if (i % 2 === 0) s += `<rect x="${ml}" y="${mt + i * rh}" width="${W - ml - mr}" height="${rh}" fill="${"#f5f5f8"}"/>`;
-    if (r.g !== prevG && !byDom) { const gh = rh * rows.filter(q => q.g === r.g).length;
+    if (r.g !== prevG && !byDom && M.rank !== "gain") { const gh = rh * rows.filter(q => q.g === r.g).length;
       s += `<line x1="4" x2="${W - mr}" y1="${mt + i * rh}" y2="${mt + i * rh}" stroke="#b9bbc8" stroke-width="0.8"/>`;
       const gl = GSHORT[r.g] || r.g; if (gh > gl.length * 5.2) s += `<text transform="translate(12 ${mt + i * rh + gh / 2}) rotate(-90)" font-size="9.5" font-weight="700" text-anchor="middle" fill="${RED}">${esc(gl)}</text>`; prevG = r.g; }
     const fs = Math.max(6, Math.min(12, rh * 0.8));
@@ -595,9 +607,10 @@ function balUpdate() {
     let t = `<h4 style="margin-top:10px">vs ${refLab} (paired by trial)</h4><table><tr><th>Arm</th><th>Δ pts</th><th>better</th><th>p</th><th>mean |SMD| reduction</th></tr>`;
     for (const a of cmp) { const d = T.map((_, i) => P[a][i] - Pr[i]);
       const ok = d.filter(fin); const p = T.length > 1 ? signflip(d) : NaN; const [rr, lo, hi] = relRed(ref, a);
-      t += `<tr class="${a === "ECG" ? "hl" : ""}"><td>${SL[a]}</td><td>${(mean(d) >= 0 ? "+" : "") + f1(mean(d))}</td><td>${ok.filter(x => x > 0).length}/${ok.length}</td><td>${T.length > 1 ? fmtp(p) : "–"}</td><td>${f1(rr)}%${fin(lo) ? `<span class="ci">${f1(lo)} to ${f1(hi)}</span>` : ""}</td></tr>`; }
+      t += `<tr class="${a === "ECG" ? "hl" : ""}"><td>${SL[a]}</td><td>${(mean(d) >= 0 ? "+" : "") + f1(mean(d))}</td><td>${ok.filter(x => x > 0).length}/${ok.length}</td><td>${T.length > 1 && M.rank !== "gain" ? fmtp(p) : "–"}</td><td>${f1(rr)}%${fin(lo) ? `<span class="ci">${f1(lo)} to ${f1(hi)}</span>` : ""}</td></tr>`; }
     return t + `</table>`;
   };
+  if (M.rank === "gain") h += `<div class="note" style="color:${RED}">Variables chosen by ECG gain: the comparisons below are descriptive (selected on the result), so p is not shown.</div>`;
   const cU = arms.filter(a => a !== "unmatched"), cB = arms.filter(a => a !== "base" && a !== "unmatched");
   if (arms.includes("unmatched") && cU.length) h += paired("unmatched", "unmatched", cU);
   if (arms.includes("base") && cB.length) h += paired("base", "PS alone", cB);
