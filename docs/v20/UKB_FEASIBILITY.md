@@ -48,7 +48,7 @@
 
 ## 1. Data inventory
 
-### 1.1 S3 bucket A: `spinup-001718-ukbiobank-src` (profile `ukb_s3`; read-only)
+### 1.1 S3 bucket A: `<ukb-s3 bucket>` (profile `ukb_s3`; read-only)
 
 The name the task used, "ukb-s3", is the local profile name. That bucket name does not exist, and
 the IAM user cannot call ListBuckets.
@@ -65,7 +65,7 @@ the IAM user cannot call ListBuckets.
 | `ukbconv`, `ukbfetch`, `ukbmd5`, `ukblink`, `gfetch`, `encoding.ukb`, `*.key`, `.ukbkey` | UKB legacy tools and access keys | small | **Key files were not opened** |
 | `rohan_explore/`, `.ipynb_checkpoints/`, `.vscode/`, `.Trash-1000/` | Scratch | small | |
 
-### 1.2 S3 bucket B: `spinup-001a89-biobankmri-1` (profile `biobank-mri-1`; read-only)
+### 1.2 S3 bucket B: `<biobank-mri-1 bucket>` (profile `biobank-mri-1`; read-only)
 
 | Path | Content | Size | Notes |
 |---|---|---|---|
