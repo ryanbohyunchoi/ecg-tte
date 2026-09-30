@@ -81,6 +81,16 @@ def table1():
     return rows
 
 
+LOGO_SVG = Path(__file__).resolve().parents[1] / "docs/presentation/assets/cards_logo.svg"  # scripts/trace_logo.py
+
+
+def logo_uri(media_dir):
+    """Vector logo (traced from the pptx raster; no vector original exists) as a data URI; PNG fallback."""
+    if LOGO_SVG.exists():
+        return "data:image/svg+xml;base64," + base64.b64encode(LOGO_SVG.read_bytes()).decode()
+    return "data:image/png;base64," + logo_b64(media_dir)
+
+
 def logo_b64(media_dir):
     if media_dir and (Path(media_dir) / "image1.png").exists():
         raw = (Path(media_dir) / "image1.png").read_bytes()
@@ -219,7 +229,7 @@ def main():
     ap.add_argument("--copy-to", default=None)
     args = ap.parse_args()
     D = build_data()
-    html = TEMPLATE.replace("__LOGO__", logo_b64(args.pptx_media)).replace("__DATA__", json.dumps(D, separators=(",", ":")))
+    html = TEMPLATE.replace("__LOGO__", logo_uri(args.pptx_media)).replace("__DATA__", json.dumps(D, separators=(",", ":")))
     for bad in ("http://", "https://", "@import", "<link"):
         assert bad not in html.replace("http://www.w3.org/2000/svg", ""), bad
     OUT.parent.mkdir(parents=True, exist_ok=True)
@@ -238,20 +248,25 @@ TEMPLATE = r'''<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ECG-TTE | CarDS Lab Presentation | October 1, 2026</title>
+<title>Target Trial Emulation Using ECG Embeddings | CarDS Lab Presentation | October 1, 2026</title>
 <style>
 :root{--navy:#0E103C;--red:#DC5A55;--ink:#0E103C;--muted:#55576f;--faint:#8a8ca0;--line:#dcdde5;--band:#f3f3f7}
-html,body{margin:0;height:100%;background:#15162a;overflow:hidden}
+html,body{margin:0;height:100%;background:#fff;overflow:hidden}
 body{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif;color:var(--ink)}
 #stage{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:center center;background:#fff}
 .slide{position:absolute;inset:0;background:#fff;display:none;overflow:hidden}
 .slide.active{display:block}
-.ttl{position:absolute;left:19px;top:18px;min-width:298px;height:46px;background:var(--navy);color:#fff;font-weight:700;font-size:26px;
-  display:flex;align-items:center;padding:0 18px;box-sizing:border-box;white-space:nowrap}
-.num{position:absolute;right:23px;top:16px;width:54px;height:36px;background:var(--navy);color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center}
-.foot{position:absolute;left:0;bottom:13px;width:197px;height:35px;background:var(--navy);color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;letter-spacing:.6px}
-.foot b{font-weight:700;margin-right:.45em}
-.logo{position:absolute;right:22px;bottom:7px;width:54px;height:55px}
+.ttl{position:absolute;left:19px;top:24px;height:34px;background:var(--navy);color:#fff;font-weight:700;font-size:19px;
+  display:flex;align-items:center;padding:0 14px;box-sizing:border-box;white-space:nowrap}
+.rule{position:absolute;left:19px;right:19px;height:2px;background:var(--navy)}
+.rule.top{top:58px}.rule.bot{top:664px}
+.num{position:absolute;right:21px;top:28px;color:var(--navy);font-size:18px;font-weight:700}
+.foot{position:absolute;right:66px;bottom:17px;color:var(--navy);font-size:16px;letter-spacing:.3px}
+.foot b{font-weight:700;margin-right:.3em}
+.logo{position:absolute;right:19px;bottom:10px;width:40px;height:40px}
+/* click builds: .build[data-step=k] appears at step >= k */
+.build{transition:opacity .25s}
+.build.hid{opacity:0;visibility:hidden}
 .body{position:absolute;left:48px;right:48px;top:92px;bottom:74px}
 h2{font-size:30px;font-weight:700;margin:0 0 18px 0}
 p,li{font-size:22px;line-height:1.38;margin:0 0 12px 0}
@@ -297,7 +312,7 @@ table.t th{background:var(--navy);color:#fff;font-weight:600}
 #s-title .l3{position:absolute;left:0;right:0;top:562px;text-align:center;font-size:26px;color:#595959}
 #s-title .l3 sup{font-size:.6em}
 /* interactive panels */
-.panel{position:absolute;left:16px;right:16px;top:74px;bottom:56px;display:grid;grid-template-columns:226px 1fr 296px;gap:12px}
+.panel{position:absolute;left:16px;right:16px;top:70px;bottom:62px;display:grid;grid-template-columns:226px 1fr 296px;gap:12px}
 .ctrl{font-size:13px;overflow:hidden;border-right:1px solid var(--line);padding-right:10px}
 .ctrl label.h{display:block;font-weight:700;font-size:12px;letter-spacing:.3px;text-transform:uppercase;color:var(--navy);margin:8px 0 3px}
 .ctrl select{width:100%;font:inherit;font-size:13px;padding:2px 3px;border:1px solid #b9bbc8;border-radius:3px;background:#fff;color:var(--ink)}
@@ -319,7 +334,7 @@ table.t th{background:var(--navy);color:#fff;font-weight:600}
 #bal-ctrl label.h{margin:6px 0 2px}
 #s-bal .panel{grid-template-columns:210px 1fr 332px}
 .side td .ci{display:block;font-size:10.5px;color:var(--muted)}
-.fn{position:absolute;left:210px;right:90px;bottom:16px;font-size:11.5px;color:var(--muted);line-height:1.3}
+.fn{position:absolute;left:22px;right:200px;bottom:14px;font-size:11.5px;color:var(--muted);line-height:1.3}
 svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
 #tip{position:fixed;pointer-events:none;background:#fff;border:1px solid var(--navy);color:var(--ink);font:12px/1.35 Montserrat,"Helvetica Neue",Arial,sans-serif;
   padding:6px 8px;max-width:320px;display:none;z-index:10;box-shadow:0 2px 6px rgba(0,0,0,.15)}
@@ -333,34 +348,40 @@ svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
 
 <!-- 1 -->
 <section class="slide" id="s-title">
-  <img class="tlogo" alt="CarDS Lab logo" src="data:image/png;base64,__LOGO__">
+  <img class="tlogo" alt="CarDS Lab logo" src="__LOGO__">
   <div class="l1">CarDS Lab Presentation</div>
-  <div class="l2">ECG-TTE</div>
+  <div class="l2">Target Trial Emulation Using ECG Embeddings</div>
   <div class="l3">October 1<sup>st</sup>, 2026</div>
 </section>
 
 <!-- 2 -->
 <section class="slide" data-title="Background">
   <div class="body">
-    <h2>Does X cause Y?</h2>
-    <svg id="svg-rct" width="1184" height="360" viewBox="0 0 1184 360"></svg>
-    <p style="margin-top:6px">Randomization balances measured and unmeasured characteristics: <i>ceteris paribus</i>.</p>
-    <p>RCTs are costly and slow, and often exclude older, multimorbid and underrepresented patients.</p>
+    <div style="display:flex;align-items:baseline;gap:48px"><h2>Does X cause Y?</h2><p class="red" style="font-size:24px;margin:0"><i>Ceteris paribus</i>: all other things being equal</p></div>
+    <div style="display:grid;grid-template-columns:470px 1fr;gap:56px">
+      <div><svg id="svg-rct" width="470" height="396" viewBox="120 0 340 286"></svg>
+        <p style="margin-top:8px">Randomization balances measured and unmeasured characteristics.</p></div>
+      <div>
+        <div class="build" data-step="1"><p style="font-weight:700;margin-bottom:6px">But RCTs are</p>
+          <ol style="margin:0 0 10px;padding-left:30px"><li style="font-size:20px;margin:0 0 6px">Costly</li><li style="font-size:20px;margin:0 0 6px">Slow</li><li style="font-size:20px;margin:0 0 6px">Often exclude multimorbid and underrepresented patients</li></ol></div>
+        <div class="build" data-step="2"><svg id="svg-tte" width="500" height="335" viewBox="640 0 500 335"></svg></div>
+      </div>
+    </div>
   </div>
 </section>
 
 <!-- 3 -->
 <section class="slide" data-title="Problem">
   <div class="body">
-    <h2>Does propensity score matching achieve <i>ceteris paribus</i>?</h2>
+    <h2>What is propensity score matching?</h2>
     <div style="display:grid;grid-template-columns:600px 1fr;gap:40px">
       <svg id="svg-psm" width="600" height="420" viewBox="0 0 600 420"></svg>
-      <div style="padding-top:18px">
-        <p>Propensity scores (PS) balance only what is measured.</p>
-        <p>Claims record diagnoses, procedures and prescriptions consistently.</p>
-        <p>EHR labs, vital signs and imaging are missing for many patients, and not at random.</p>
-        <p>Many cardiovascular determinants of treatment and prognosis are <span class="red">physiological</span>.</p>
-      </div>
+      <div style="padding-top:18px"><ul>
+        <li>Propensity scores (PS) balance only what is measured.</li>
+        <li>Claims record diagnoses, procedures and prescriptions consistently.</li>
+        <li>EHR labs, vital signs and imaging are missing for many patients, and not at random.</li>
+        <li>Many cardiovascular determinants of treatment and prognosis are <span class="red">physiological</span>.</li>
+      </ul></div>
     </div>
   </div>
 </section>
@@ -368,12 +389,14 @@ svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
 <!-- 4 -->
 <section class="slide" data-title="AI-ECG">
   <div class="body">
-    <h2>The 12-lead ECG as a probe of physiology</h2>
+    <h2>12-lead ECG as a substrate for cardiac physiology</h2>
     <svg id="svg-ecg" width="1184" height="250" viewBox="0 0 1184 250"></svg>
-    <p style="margin-top:16px">Inexpensive and recorded routinely, for most patients.</p>
-    <p>AI-ECG detects LV dysfunction, structural heart disease and other latent phenotypes.</p>
-    <p>Foundation-model embeddings: general-purpose representations of cardiac physiology.</p>
-    <p><b>Question:</b> does an ECG embedding capture confounding that structured data miss?</p>
+    <ul style="margin-top:16px">
+      <li>Inexpensive and recorded routinely, for most patients.</li>
+      <li>AI-ECG detects LV dysfunction, structural heart disease and other latent phenotypes.</li>
+      <li>Foundation-model embeddings: general-purpose representations of cardiac physiology.</li>
+    </ul>
+    <p style="margin-top:14px"><b>Question:</b> can an ECG embedding capture confounding that structured data miss?</p>
   </div>
 </section>
 
@@ -394,13 +417,13 @@ svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
   <div class="body">
     <h2>38 target trial emulations in Yale New Haven Health System EHR data</h2>
     <svg id="svg-trials" width="1184" height="350" viewBox="0 -20 1184 350"></svg>
-    <p style="margin-top:10px">New-user, active-comparator designs; index dates 2011–2024; outcome = the trial's primary endpoint.</p>
-    <p id="qual-count">Emulation quality (design items only): see next slides.</p>
+    <div class="build" data-step="3"><p style="margin-top:10px">New-user, active-comparator designs; index dates 2011–2024; outcome = the trial's primary endpoint.</p>
+    <p id="qual-count">Emulation quality (design items only): see next slides.</p></div>
   </div>
 </section>
 
 <!-- 6b -->
-<section class="slide" data-title="Emulation quality">
+<section class="slide" data-title="Emulation quality (supplementary table)">
   <div class="body">
     <h2>Emulation quality of the 38 trials</h2>
     <p class="small" style="margin:0 0 8px">Points = 1 per design flag (in-hospital start, run-in, baseline-therapy switch, follow-up ≥48 mo, time-zero issue) + comparator and outcome fidelity (moderate 1, poor 2). A poor item or ≥2 flags caps the tier at Moderate. Rated from trial protocols, blind to all results.</p>
@@ -410,7 +433,7 @@ svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
 </section>
 
 <!-- 6c -->
-<section class="slide" data-title="Emulation quality: item-level breakdown">
+<section class="slide" data-title="Emulation quality: item-level breakdown (supplementary table)">
   <div class="body">
     <div id="qual-items" class="qitems"></div>
     <p class="xs" style="margin-top:6px">✓ = design flag present. F1 in-hospital start not mirrored · F2 responder/tolerability run-in · F3 baseline-therapy switch at randomization · F4 follow-up ≥48 mo · F5 other time-zero issue. Comparator/outcome: G good (0), M moderate (1), P poor (2; placebo proxy, hypothesis-changing substitution, or endpoint not ascertainable). Tier: 0 Excellent, 1–2 Good, 3 Moderate, ≥4 Limited; a poor item or ≥2 flags caps the tier at Moderate. Design items only, blind to results (docs/v19/QUALITY_REAUDIT.md).</p>
@@ -421,39 +444,24 @@ svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
 <section class="slide" data-title="Study design: PS ladder">
   <div class="body">
     <h2>Six PS specifications, each with and without the ECG</h2>
-    <svg id="svg-ladder" width="1184" height="430" viewBox="0 0 1184 430"></svg>
-    <p class="small" style="margin-top:4px">L2-penalized logistic PS; 1:1 greedy nearest-neighbour matching on the PS logit, caliper 0.2 SD. All other choices held constant across arms.</p>
-  </div>
-</section>
-
-<!-- 8 -->
-<section class="slide" data-title="Methods overview">
-  <div class="body">
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:26px;margin-top:10px">
-      <div class="card" style="height:260px"><h3><span class="tag">1</span>Held-out balance</h3>
-        <p>58 characteristics that no PS uses: coded-record summaries, vital signs, labs, 35 echo measures.</p>
-        <p>Endpoint: % with |SMD| &lt; 0.1 after matching.</p></div>
-      <div class="card" style="height:260px"><h3><span class="tag">2</span>Agreement with RCT</h3>
-        <p>Emulated vs published RCT hazard ratio.</p>
-        <p>|Δ log HR|, statistical consistency, and a benchmark-shuffle test for trial-specific agreement.</p></div>
-      <div class="card" style="height:260px"><h3><span class="tag">3</span>Plasmode simulation</h3>
-        <p>Known true HR; a measured confounder hidden from every PS.</p>
-        <p>Endpoint: % of bias removed by adding the ECG.</p></div>
-    </div>
-    <p style="margin-top:26px">Trials are the unit of replication: paired sign-flip tests across trials.</p>
+    <svg id="svg-ladder" width="1184" height="370" viewBox="0 0 1184 370"></svg>
+    <p class="small" style="margin:2px 0 3px">L2-penalized logistic PS; 1:1 greedy nearest-neighbour matching on the PS logit, caliper 0.2 SD. All other choices held constant across arms.</p>
+    <p class="small" style="margin:0 0 3px"><b>hdPS</b>: empirical selection of the 200 code features (diagnoses, procedures, drugs, lab orders; once / sporadic / frequent) with the largest prevalence ratio between arms, added to the sparse PS. Schneeweiss S, et al. <i>Epidemiology</i> 2009;20:512–522.</p>
+    <p class="small" style="margin:0"><b>Clinical PS</b>: median 32 covariates per trial (range 28–37): 24 in every trial (age, sex, index year; 9 comorbidities; LVEF, SBP, DBP, heart rate, BMI, creatinine, K, Na, Hb; 3 visit counts) plus 3–10 trial-specific medication orders and extra diagnoses.</p>
   </div>
 </section>
 
 <!-- 9 -->
-<section class="slide" data-title="Method 1: held-out balance">
+<section class="slide" data-title="Covariate balancing">
   <div class="body">
     <div style="display:grid;grid-template-columns:1fr 500px;gap:36px">
-      <div>
-        <p>SMD = (mean<sub>T</sub> − mean<sub>C</sub>) / pooled SD before matching. "Held-out": not in the PS being evaluated.</p>
-        <p>Per trial: % of held-out characteristics with |SMD| &lt; 0.1; arms compared within trial; one-sided sign-flip test across trials. Placebo: ECG embeddings permuted between patients.</p>
-        <p><b>Primary panel (58).</b> Fixed before results. Directly measured physiology most relevant to cardiac confounding and to what an ECG can reflect: 35 echocardiographic measures, vital signs, laboratory values (incl. NT-proBNP), plus coded-record summaries.</p>
-        <p><b>Expanded panel (~330 per trial).</b> Assembled afterwards from the literature: comorbidity indices, drug classes, healthcare use, devices, additional labs. Mostly coded-record items, partly proxied by PS diagnoses; excludes PS variables, treatment-revealing and ECG-proximal items. Used as a sensitivity analysis.</p>
-      </div>
+      <div><ul>
+        <li><b>SMD = (mean<sub>T</sub> − mean<sub>C</sub>) / pooled SD</b>, pooled SD before matching</li>
+        <li>Held-out: characteristics not in the PS being evaluated</li>
+        <li>Per trial: % with |SMD| &lt; 0.1; paired sign-flip test across trials; placebo: permuted ECG</li>
+        <li>Primary panel (58): fixed before results; measured physiology most relevant to cardiac confounding</li>
+        <li>Expanded panel (~330 per trial): assembled afterwards from the literature; mostly coded items; sensitivity analysis</li>
+      </ul></div>
       <div><table class="t" id="tab-domains"></table><table class="t" id="tab-buckets" style="margin-top:10px"></table></div>
     </div>
   </div>
@@ -588,7 +596,7 @@ svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
 <script>
 "use strict";
 const D = __DATA__;
-const LOGO = "data:image/png;base64,__LOGO__";
+const LOGO = "__LOGO__";
 const NAVY = "#0E103C", RED = "#DC5A55";
 const ARM = {
   unmatched: {lab: "Unmatched", col: "#8a8d99", mk: "x"},
@@ -1067,18 +1075,18 @@ function ecgPath(x0, y0, w, beats, amp) {
 }
 function drawStatic() {
   /* RCT vs TTE */
-  let s = `<text x="290" y="24" font-size="24" font-weight="700" text-anchor="middle" fill="${NAVY}">RCT</text><text x="890" y="24" font-size="24" font-weight="700" text-anchor="middle" fill="${NAVY}">Target trial emulation</text>`;
+  let s = `<text x="290" y="24" font-size="24" font-weight="700" text-anchor="middle" fill="${NAVY}">RCT</text>`;
   s += box(170, 44, 240, 50, "Eligible population") + arrow(290, 94, 290, 132) + `<text x="302" y="120" font-size="15" fill="${RED}" font-style="italic">randomization</text>`;
   s += box(140, 134, 140, 46, "Treatment", {fill: NAVY, col: "#fff"}) + box(300, 134, 140, 46, "Control", {fill: NAVY, col: "#fff"});
   s += arrow(210, 180, 270, 222) + arrow(370, 180, 310, 222) + box(170, 224, 240, 50, "Causal effect", {bold: true});
-  s += `<text x="290" y="310" font-size="16" text-anchor="middle" fill="${NAVY}"><tspan font-style="italic">ceteris paribus</tspan>: all other things being equal</text>`;
-  s += `<line x1="592" x2="592" y1="10" y2="330" stroke="${"#dcdde5"}" stroke-width="2"/>`;
+  $("#svg-rct").innerHTML = s;
+  s = `<text x="890" y="24" font-size="24" font-weight="700" text-anchor="middle" fill="${NAVY}">Target trial emulation</text>`;
   s += box(730, 44, 320, 50, "Real-world data (EHR, registry, claims)", {fs: 16}) + arrow(890, 94, 890, 112);
   s += box(770, 114, 240, 40, "Eligibility criteria", {fs: 16}) + arrow(890, 154, 890, 172);
   s += box(730, 174, 320, 44, "PS matching on measured confounders", {fs: 16, stroke: RED}) + arrow(840, 218, 800, 240) + arrow(940, 218, 980, 240);
   s += box(700, 242, 180, 46, "Treatment received", {fill: NAVY, col: "#fff", fs: 16}) + box(900, 242, 180, 46, "Control received", {fill: NAVY, col: "#fff", fs: 16});
   s += `<text x="890" y="316" font-size="16" text-anchor="middle" fill="${NAVY}">specify the trial protocol, emulate it in routine-care data</text>`;
-  $("#svg-rct").innerHTML = s;
+  $("#svg-tte").innerHTML = s;
   /* PSM problem */
   s = `<text x="225" y="24" font-size="19" font-weight="700" text-anchor="middle" fill="${NAVY}">Treated</text><text x="475" y="24" font-size="19" font-weight="700" text-anchor="middle" fill="${NAVY}">Comparator</text>`;
   s += `<text x="0" y="112" font-size="15" fill="${NAVY}" font-weight="700">structured</text>`;
@@ -1087,7 +1095,6 @@ function drawStatic() {
   s += `<text x="0" y="274" font-size="15" fill="${RED}" font-weight="700">unmeasured</text>`;
   s += box(125, 206, 200, 150, "LV function\nCongestion\nAtrial substrate\nConduction", {fs: 16, fill: RED, col: "#fff", stroke: RED}) + box(375, 206, 200, 150, "LV function\nCongestion\nAtrial substrate\nConduction", {fs: 16, fill: RED, col: "#fff", stroke: RED});
   s += `<text x="350" y="292" font-size="34" text-anchor="middle" fill="${RED}">?</text>`;
-  s += `<text x="350" y="396" font-size="15" text-anchor="middle" fill="${NAVY}">The PS balances the top row; the bottom row is not guaranteed.</text>`;
   $("#svg-psm").innerHTML = s;
   /* ECG pipeline */
   s = `<rect x="0" y="30" width="330" height="170" fill="#fff" stroke="${NAVY}" stroke-width="2"/>`;
@@ -1100,20 +1107,21 @@ function drawStatic() {
   s += arrow(945, 115, 1000, 115) + box(1005, 70, 175, 90, "Added to\nthe PS", {fs: 17, bold: true, stroke: RED});
   $("#svg-ecg").innerHTML = s;
   /* trials */
-  s = box(0, 20, 215, 90, "99 candidate\ncardiovascular RCTs", {fs: 17, bold: true}) + arrow(220, 65, 258, 65);
-  s += `<rect x="262" y="0" width="460" height="200" fill="#f5f5f8" stroke="none"/>`;
+  s = box(1, 20, 214, 90, "99 candidate\ncardiovascular RCTs", {fs: 17, bold: true});
+  s += `<g class="build" data-step="1">` + arrow(220, 65, 258, 65) + `<rect x="262" y="-14" width="460" height="220" fill="#f5f5f8" stroke="none"/>`;
+  s += `<text x="276" y="12" font-size="17" font-weight="700" fill="${NAVY}">Feasibility criteria</text>`;
   const crit = ["Active comparator (or accepted active proxy)", "Primary endpoint ascertainable from EHR", "Strategies identifiable from orders or procedures", "≥300 with an ECG in the smaller arm", "≥50 primary-outcome events", "No near-duplicate cohort (>80% shared records)"];
-  crit.forEach((c, i) => s += `<text x="276" y="${30 + i * 30}" font-size="16" fill="${NAVY}">– ${esc(c)}</text>`);
-  s += arrow(728, 65, 768, 65) + box(772, 20, 140, 90, "38\nemulated", {fs: 20, bold: true});
+  crit.forEach((c, i) => s += `<text x="276" y="${42 + i * 28}" font-size="16" fill="${NAVY}">– ${esc(c)}</text>`);
+  s += `</g><g class="build" data-step="2">` + arrow(728, 65, 768, 65) + box(772, 20, 140, 90, "38\nemulated", {fs: 20, bold: true});
   s += arrow(842, 114, 842, 150) + box(772, 154, 140, 90, "32\nanalysed", {fs: 20, bold: true, fill: NAVY, col: "#fff"});
   const lim = D.trials.filter(t => t.qt.tier === "Limited").map(t => t.name);
-  s += `<text x="832" y="130" font-size="13" text-anchor="end" fill="${RED}">− ${lim.length} limited</text><text x="832" y="145" font-size="13" text-anchor="end" fill="${RED}">quality</text>`;
+  s += `<text x="832" y="130" font-size="13" text-anchor="end" fill="${RED}">− ${lim.length} limited</text><text x="832" y="145" font-size="13" text-anchor="end" fill="${RED}">quality</text></g><g class="build" data-step="3">`;
   s += `<text x="0" y="275" font-size="14" fill="${NAVY}">Excluded for limited emulation quality (≥4 design points): ${esc(lim.join(", "))}.</text>`;
   const AR6 = ["AF", "Diabetes", "HF", "Hypertension", "ACS / MI", "Other"];
   const n38 = a => D.trials.filter(t => t.area === a).length, n32 = a => D.trials.filter(t => t.area === a && t.qt.tier !== "Limited").length;
   AR6.forEach((a, i) => { const y = 24 + i * 29, A = n38(a), B = n32(a);
     s += `<text x="1032" y="${y + 15}" font-size="15" text-anchor="end" fill="${NAVY}">${a}</text><rect x="1040" y="${y + 2}" width="${A * 8}" height="18" fill="#c9cbd8"/><rect x="1040" y="${y + 2}" width="${B * 8}" height="18" fill="${a === "AF" ? RED : NAVY}"/><text x="${1046 + A * 8}" y="${y + 16}" font-size="14" fill="${NAVY}">${B}${A !== B ? " / " + A : ""}</text>`; });
-  s += `<text x="1040" y="-4" font-size="14" font-weight="700" fill="${NAVY}">Clinical area</text><text x="1040" y="12" font-size="12" fill="${NAVY}">analysed / emulated</text>`;
+  s += `<text x="1040" y="-4" font-size="14" font-weight="700" fill="${NAVY}">Clinical area</text><text x="1040" y="12" font-size="12" fill="${NAVY}">analysed / emulated</text></g>`;
   $("#svg-trials").innerHTML = s;
   /* emulation quality */
   (function () {
@@ -1145,18 +1153,18 @@ function drawStatic() {
   })();
   /* ladder */
   const L = [["P1", "Demographics: age, sex, index year", "primary"], ["P5", "+ 5 diagnoses: HTN, T2D, CAD, AF, HF", ""], ["P2", "+ obesity", ""],
-    ["Sparse", "Demographics + 9–13 CV diagnoses (prior year)", ""], ["hdPS", "+ 200 codes most associated with treatment", ""], ["Clinical", "+ vitals, labs, LVEF, meds, healthcare use", ""]];
+    ["Sparse", "Demographics + 9–13 CV diagnoses (prior year)", ""], ["hdPS", "+ 200 codes most associated with treatment", ""], ["Clinical", "+ LVEF, vitals, labs, meds, visits (32 vars)", ""]];
   s = `<text x="0" y="18" font-size="15" font-weight="700" fill="${NAVY}">PS specification (structured data, thin → rich)</text>`;
-  L.forEach(([k, t, tag], i) => { const y = 30 + i * 62, x = i * 26;
-    s += `<rect x="${x}" y="${y}" width="${600 - x}" height="52" fill="${NAVY}" fill-opacity="${0.12 + i * 0.14}"/><text x="${x + 12}" y="${y + 32}" font-size="17" font-weight="700" fill="${i > 2 ? "#fff" : NAVY}">${k}</text><text x="${x + 100}" y="${y + 32}" font-size="15" fill="${i > 2 ? "#fff" : NAVY}">${esc(t)}</text>`;
-    if (tag) s += `<text x="${600 - 10}" y="${y + 32}" font-size="13" text-anchor="end" font-weight="700" fill="${RED}">${tag}</text>`; });
-  s += arrow(610, 205, 660, 205);
+  L.forEach(([k, t, tag], i) => { const y = 30 + i * 56, x = i * 26;
+    s += `<rect x="${x}" y="${y}" width="${600 - x}" height="48" fill="${NAVY}" fill-opacity="${0.12 + i * 0.14}"/><text x="${x + 12}" y="${y + 30}" font-size="17" font-weight="700" fill="${i > 2 ? "#fff" : NAVY}">${k}</text><text x="${x + 100}" y="${y + 30}" font-size="15" fill="${i > 2 ? "#fff" : NAVY}">${esc(t)}</text>`;
+    if (tag) s += `<text x="${600 - 10}" y="${y + 30}" font-size="13" text-anchor="end" font-weight="700" fill="${RED}">${tag}</text>`; });
+  s += `<g class="build" data-step="1">` + arrow(610, 190, 660, 190);
   s += `<text x="670" y="18" font-size="15" font-weight="700" fill="${NAVY}">Arms at every rung</text>`;
   const AR = [["PS alone", "reference", NAVY, false], ["+ ECG", "32 PCs of a 256-d BCL signal-model embedding", RED, false], ["+ permuted ECG", "placebo: embeddings shuffled between patients", "#d69a00", true],
     ["+ noise", "placebo: independent Gaussian columns", "#7a6a58", true], ["+ CLMBR-T", "exploratory comparator: structured-EHR foundation model, 64 PCs", "#2a78d6", false], ["+ CLMBR-T + ECG", "exploratory comparator", "#1baf7a", false]];
-  AR.forEach(([a, t, c, hol], i) => { const y = 30 + i * 62;
-    s += `<rect x="670" y="${y}" width="514" height="52" fill="#fff" stroke="${c}" stroke-width="2" ${hol ? 'stroke-dasharray="6 4"' : ""}/><text x="684" y="${y + 22}" font-size="16" font-weight="700" fill="${NAVY}">${a}</text><text x="684" y="${y + 42}" font-size="13.5" fill="${NAVY}">${esc(t)}</text>`; });
-  $("#svg-ladder").innerHTML = s;
+  AR.forEach(([a, t, c, hol], i) => { const y = 30 + i * 56;
+    s += `<rect x="670" y="${y}" width="512" height="48" fill="#fff" stroke="${c}" stroke-width="2" ${hol ? 'stroke-dasharray="6 4"' : ""}/><text x="684" y="${y + 20}" font-size="16" font-weight="700" fill="${NAVY}">${a}</text><text x="684" y="${y + 39}" font-size="13.5" fill="${NAVY}">${esc(t)}</text>`; });
+  $("#svg-ladder").innerHTML = s + `</g>`;
   /* domain table (method 1) */
   const cnt = {}; D.vars.forEach(v => cnt[v.g] = (cnt[v.g] || 0) + 1);
   const ex = {"Coded record": "medications, healthcare use, other codes, prognostic score", "Vitals & core labs": "LVEF, BP, heart rate, BMI, creatinine, K, Na, Hb", "Other labs": "NT-proBNP, eGFR, HbA1c, troponin, LDL, …"};
@@ -1194,11 +1202,19 @@ function drawStatic() {
 const slides = [...document.querySelectorAll(".slide")];
 slides.forEach((sl, i) => {
   if (!sl.dataset.title) return;
-  sl.insertAdjacentHTML("afterbegin", `<div class="ttl">${sl.dataset.title}</div><div class="num">${i + 1}</div><div class="foot"><b>CarDS</b>Lab</div><img class="logo" alt="" src="${LOGO}">`);
+  sl.insertAdjacentHTML("afterbegin", `<div class="ttl">${sl.dataset.title}</div><div class="rule top"></div><div class="num">${i + 1}</div>` +
+    `<div class="rule bot"></div><div class="foot"><b>CarDS</b>Lab</div><img class="logo" alt="" src="${LOGO}">`);
 });
-let cur = 0;
-function show(i) {
+let cur = 0, step = 0;
+/* click builds: elements with class "build" and data-step k are shown once the slide's step reaches k.
+   Entering a slide forwards starts at step 0; stepping back into it shows it fully built. */
+const nSteps = sl => Math.max(0, ...[...sl.querySelectorAll(".build")].map(e => +e.dataset.step || 0));
+function applyBuild() { slides[cur].querySelectorAll(".build").forEach(e => e.classList.toggle("hid", (+e.dataset.step || 0) > step)); }
+function next() { if (step < nSteps(slides[cur])) { step++; applyBuild(); } else if (cur < slides.length - 1) show(cur + 1); }
+function prev() { if (step > 0) { step--; applyBuild(); } else if (cur > 0) show(cur - 1, true); }
+function show(i, built) {
   cur = Math.max(0, Math.min(slides.length - 1, i));
+  step = built ? nSteps(slides[cur]) : 0; applyBuild();
   slides.forEach((s, k) => s.classList.toggle("active", k === cur));
   $("#nav-count").textContent = `${cur + 1} / ${slides.length}`;
   tip.style.display = "none";
@@ -1208,14 +1224,16 @@ function fit() { const s = Math.min(innerWidth / 1280, innerHeight / 720); $("#s
 addEventListener("resize", fit);
 addEventListener("keydown", e => {
   const tag = (e.target.tagName || "").toLowerCase(), inForm = tag === "select" || tag === "input";
-  if (e.key === "PageDown" || (!inForm && (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === " "))) { e.preventDefault(); if (inForm) e.target.blur(); show(cur + 1); }
-  else if (e.key === "PageUp" || (!inForm && (e.key === "ArrowLeft" || e.key === "ArrowUp"))) { e.preventDefault(); if (inForm) e.target.blur(); show(cur - 1); }
+  if (e.key === "PageDown" || (!inForm && (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === " "))) { e.preventDefault(); if (inForm) e.target.blur(); next(); }
+  else if (e.key === "PageUp" || (!inForm && (e.key === "ArrowLeft" || e.key === "ArrowUp"))) { e.preventDefault(); if (inForm) e.target.blur(); prev(); }
   else if (!inForm && e.key === "Home") show(0);
   else if (!inForm && e.key === "End") show(slides.length - 1);
   else if (!inForm && (e.key === "f" || e.key === "F")) { if (!document.fullscreenElement) document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
 });
-$("#nav-prev").onclick = () => show(cur - 1);
-$("#nav-next").onclick = () => show(cur + 1);
+$("#nav-prev").onclick = prev;
+$("#nav-next").onclick = next;
+/* a click on a slide with builds (outside any control) reveals the next step */
+$("#stage").addEventListener("click", e => { if (nSteps(slides[cur]) && !e.target.closest("select,input,label,button,a,.ctrl,.side")) next(); });
 /* ---------- agreement by emulation quality ---------- */
 const SPLITS = {tier2: ["Excellent + Good", t => ["Excellent", "Good"].includes(TIER(t)), "Moderate + Limited"],
   tier3: null, cls: ["High fidelity (3-class)", t => t.qt.cls !== "Lower", "Lower fidelity (3-class)"]};
