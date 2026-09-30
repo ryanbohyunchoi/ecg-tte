@@ -267,6 +267,9 @@ body{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif;color:va
 /* click builds: .build[data-step=k] appears at step >= k */
 .build{transition:opacity .25s}
 .build.hid{opacity:0;visibility:hidden}
+.bout{transition:opacity .3s}.bout.gone{opacity:0}
+.mv{transition:transform .9s ease-in-out}
+ol.aims{margin:0;padding-left:34px}ol.aims li{font-size:24px;line-height:1.4;margin:0 0 22px}
 .body{position:absolute;left:48px;right:48px;top:92px;bottom:74px}
 h2{font-size:30px;font-weight:700;margin:0 0 18px 0}
 p,li{font-size:22px;line-height:1.38;margin:0 0 12px 0}
@@ -330,6 +333,7 @@ table.t th{background:var(--navy);color:#fff;font-weight:600}
 .side td:first-child,.side th:first-child{text-align:left}
 .side .note{font-size:11.5px;color:var(--muted);line-height:1.35;margin:6px 0}
 .side .hl{background:#fbeceb}
+.side .empty{margin-top:40px;font-size:17px;font-weight:700;color:var(--navy);text-align:center}
 .qv{display:flex;gap:8px;font-size:13px}.qv label{display:flex;align-items:center;gap:2px;cursor:pointer;white-space:nowrap}.qv input{margin:0}
 #bal-ctrl label.h{margin:6px 0 2px}
 #s-bal .panel{grid-template-columns:210px 1fr 332px}
@@ -359,8 +363,7 @@ svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
   <div class="body">
     <div style="display:flex;align-items:baseline;gap:48px"><h2>Does X cause Y?</h2><p class="red" style="font-size:24px;margin:0"><i>Ceteris paribus</i>: all other things being equal</p></div>
     <div style="display:grid;grid-template-columns:470px 1fr;gap:56px">
-      <div><svg id="svg-rct" width="470" height="396" viewBox="120 0 340 286"></svg>
-        <p style="margin-top:8px">Randomization balances measured and unmeasured characteristics.</p></div>
+      <div><svg id="svg-rct" width="470" height="396" viewBox="120 0 340 286"></svg></div>
       <div>
         <div class="build" data-step="1"><p style="font-weight:700;margin-bottom:6px">But RCTs are</p>
           <ol style="margin:0 0 10px;padding-left:30px"><li style="font-size:20px;margin:0 0 6px">Costly</li><li style="font-size:20px;margin:0 0 6px">Slow</li><li style="font-size:20px;margin:0 0 6px">Often exclude multimorbid and underrepresented patients</li></ol></div>
@@ -377,10 +380,10 @@ svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
     <div style="display:grid;grid-template-columns:600px 1fr;gap:40px">
       <svg id="svg-psm" width="600" height="420" viewBox="0 0 600 420"></svg>
       <div style="padding-top:18px"><ul>
-        <li>Propensity scores (PS) balance only what is measured.</li>
-        <li>Claims record diagnoses, procedures and prescriptions consistently.</li>
-        <li>EHR labs, vital signs and imaging are missing for many patients, and not at random.</li>
-        <li>Many cardiovascular determinants of treatment and prognosis are <span class="red">physiological</span>.</li>
+        <li class="build" data-step="1">Propensity scores (PS) balance only what is measured.</li>
+        <li class="build" data-step="2">Claims record diagnoses, procedures and prescriptions consistently.</li>
+        <li class="build" data-step="3">EHR labs, vital signs and imaging are missing for many patients, and not at random.</li>
+        <li class="build" data-step="4">Many cardiovascular determinants of treatment and prognosis are <span class="red">physiological</span>.</li>
       </ul></div>
     </div>
   </div>
@@ -390,25 +393,25 @@ svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
 <section class="slide" data-title="AI-ECG">
   <div class="body">
     <h2>12-lead ECG as a substrate for cardiac physiology</h2>
-    <svg id="svg-ecg" width="1184" height="250" viewBox="0 0 1184 250"></svg>
-    <ul style="margin-top:16px">
+    <ul>
       <li>Inexpensive and recorded routinely, for most patients.</li>
       <li>AI-ECG detects LV dysfunction, structural heart disease and other latent phenotypes.</li>
       <li>Foundation-model embeddings: general-purpose representations of cardiac physiology.</li>
     </ul>
-    <p style="margin-top:14px"><b>Question:</b> can an ECG embedding capture confounding that structured data miss?</p>
+    <svg id="svg-ecg" width="1184" height="220" viewBox="0 10 1184 220" style="margin-top:18px"></svg>
+    <p style="margin-top:18px"><b>Question:</b> can an ECG embedding capture confounding that structured data miss?</p>
   </div>
 </section>
 
 <!-- 5 -->
 <section class="slide" data-title="Aims and hypotheses">
   <div class="body">
-    <table class="t">
-      <tr><th style="width:250px">Aim</th><th>Hypothesis: adding the ECG embedding to the PS ...</th></tr>
-      <tr><td><b>1. Balance</b><br><span class="small">held-out characteristics</span></td><td>improves balance on clinical, laboratory and echocardiographic characteristics that no PS uses; a permuted-ECG placebo does not</td></tr>
-      <tr><td><b>2. Agreement</b><br><span class="small">with RCT results</span></td><td>moves emulated hazard ratios toward each trial's own RCT result, beyond generic attenuation</td></tr>
-      <tr><td><b>3. Bias removal</b><br><span class="small">known truth (plasmode)</span></td><td>removes part of the bias from a hidden physiological confounder, in proportion to how well the ECG encodes it</td></tr>
-    </table>
+    <p style="margin-bottom:18px">Adding the ECG embedding to the propensity score:</p>
+    <ol class="aims">
+      <li><b>Balance:</b> improves balance on clinical, laboratory and echocardiographic characteristics not in the PS; a permuted-ECG placebo does not.</li>
+      <li><b>Agreement with RCT results:</b> moves emulated hazard ratios toward each trial's own RCT result, beyond generic attenuation.</li>
+      <li><b>Bias removal against a known truth (plasmode):</b> removes part of the bias from a hidden physiological confounder, in proportion to how well the ECG encodes it.</li>
+    </ol>
   </div>
 </section>
 
@@ -445,24 +448,18 @@ svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
   <div class="body">
     <h2>Six PS specifications, each with and without the ECG</h2>
     <svg id="svg-ladder" width="1184" height="370" viewBox="0 0 1184 370"></svg>
-    <p class="small" style="margin:2px 0 3px">L2-penalized logistic PS; 1:1 greedy nearest-neighbour matching on the PS logit, caliper 0.2 SD. All other choices held constant across arms.</p>
+    <div class="build" data-step="2"><p class="small" style="margin:2px 0 3px">L2-penalized logistic PS; 1:1 greedy nearest-neighbour matching on the PS logit, caliper 0.2 SD. All other choices held constant across arms.</p>
     <p class="small" style="margin:0 0 3px"><b>hdPS</b>: empirical selection of the 200 code features (diagnoses, procedures, drugs, lab orders; once / sporadic / frequent) with the largest prevalence ratio between arms, added to the sparse PS. Schneeweiss S, et al. <i>Epidemiology</i> 2009;20:512–522.</p>
-    <p class="small" style="margin:0"><b>Clinical PS</b>: median 32 covariates per trial (range 28–37): 24 in every trial (age, sex, index year; 9 comorbidities; LVEF, SBP, DBP, heart rate, BMI, creatinine, K, Na, Hb; 3 visit counts) plus 3–10 trial-specific medication orders and extra diagnoses.</p>
+    <p class="small" style="margin:0"><b>Clinical PS</b>: median 32 covariates per trial (range 28–37): 24 in every trial (age, sex, index year; 9 comorbidities; LVEF, SBP, DBP, heart rate, BMI, creatinine, K, Na, Hb; 3 visit counts) plus 3–10 trial-specific medication orders and extra diagnoses.</p></div>
   </div>
 </section>
 
 <!-- 9 -->
 <section class="slide" data-title="Covariate balancing">
   <div class="body">
-    <div style="display:grid;grid-template-columns:1fr 500px;gap:36px">
-      <div><ul>
-        <li><b>SMD = (mean<sub>T</sub> − mean<sub>C</sub>) / pooled SD</b>, pooled SD before matching</li>
-        <li>Held-out: characteristics not in the PS being evaluated</li>
-        <li>Per trial: % with |SMD| &lt; 0.1; paired sign-flip test across trials; placebo: permuted ECG</li>
-        <li>Primary panel (58): fixed before results; measured physiology most relevant to cardiac confounding</li>
-        <li>Expanded panel (~330 per trial): assembled afterwards from the literature; mostly coded items; sensitivity analysis</li>
-      </ul></div>
-      <div><table class="t" id="tab-domains"></table><table class="t" id="tab-buckets" style="margin-top:10px"></table></div>
+    <p style="font-size:26px;margin:0 0 26px"><b>SMD = (mean<sub>T</sub> − mean<sub>C</sub>) / pooled SD</b></p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start">
+      <table class="t" id="tab-domains"></table><table class="t" id="tab-buckets"></table>
     </div>
   </div>
 </section>
@@ -481,7 +478,7 @@ svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
   <div class="body">
     <div style="display:grid;grid-template-columns:1fr 430px;gap:40px">
       <div>
-        <p>Emulated HR: Cox model in the matched cohort, robust variance clustered on matched pairs. Reference: published RCT HR (primary endpoint).</p>
+        <p><b>Emulated HR:</b> Cox model in the matched cohort, robust variance clustered on matched pairs. Reference: published RCT HR (primary endpoint).</p>
         <p><b>Distance:</b> |Δ log HR| = |log HR<sub>emulated</sub> − log HR<sub>RCT</sub>|.</p>
         <p><b>Consistency:</b> |z| &lt; 1.96, z = Δ / √(SE<sub>emulated</sub>² + SE<sub>RCT</sub>²).</p>
         <p><b>Benchmark shuffle:</b> reassign RCT results at random among trials. If the gain is as large with wrong benchmarks, it is generic attenuation, not trial-specific agreement.</p>
@@ -493,21 +490,18 @@ svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
 
 <!-- 12 -->
 <section class="slide" data-title="Results 2: trial emulation explorer" id="s-emu">
-  <div class="panel" style="bottom:66px">
+  <div class="panel">
     <div class="ctrl" id="emu-ctrl"></div>
     <div class="chart"><svg id="emu-svg" width="714" height="580"></svg></div>
     <div class="side" id="emu-sum"></div>
   </div>
-  <div class="fn">Trial-type categories were defined post hoc. The AF signal did not replicate in 5 prespecified AF trials (FRAIL-AF, LAAOS III, PROTECT AF, RAFT-AF, ACTIVE W; P1 |Δ| 0.254 → 0.199, 3/5 closer, p = 0.19; benchmark shuffle p = 0.28).</div>
 </section>
 
 <section class="slide" data-title="Agreement with RCTs by emulation quality" id="s-agq">
-  <div class="panel" style="bottom:66px">
+  <div class="panel" style="grid-template-columns:226px 1fr">
     <div class="ctrl" id="agq-ctrl"></div>
     <div class="chart" style="padding:4px 10px"><svg id="agq-svg" width="714" height="330"></svg><div id="agq-tab"></div></div>
-    <div class="side" id="agq-note"></div>
   </div>
-  <div class="fn">Quality groups from design items only (docs/v19/QUALITY_REAUDIT.md). RCT-DUPLICATE (Wang, JAMA 2023; post hoc): closely vs not closely emulated trials, r 0.93 vs 0.53, estimate agreement 88% vs 50%, standardized-difference agreement 88% vs 69%. Descriptive; no between-group test.</div>
 </section>
 
 <!-- 13 -->
@@ -567,25 +561,14 @@ svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
 </section>
 
 <!-- 17 -->
-<section class="slide" data-title="Limitations and next steps">
-  <div class="body grid2">
-    <div>
-      <h2>Limitations</h2>
-      <ul>
-        <li>One health system.</li>
-        <li>RCT results are imperfect benchmarks; trial-type categories were post hoc.</li>
-        <li>General-purpose ECG embedding: R² ≤ 0.35 for any confounder.</li>
-        <li>Most analyses exploratory; CLMBR-T comparison tentative.</li>
-      </ul>
-    </div>
-    <div>
-      <h2>Next steps</h2>
-      <ul>
-        <li>External validation: MIMIC-IV, UK Biobank.</li>
-        <li>Better ECG representations (task-specific, higher R² for physiology).</li>
-        <li>Manuscript: JAMA Cardiology submission.</li>
-      </ul>
-    </div>
+<section class="slide" data-title="Limitations">
+  <div class="body">
+    <ul>
+      <li>One health system.</li>
+      <li>RCT results are imperfect benchmarks; trial-type categories were post hoc.</li>
+      <li>General-purpose ECG embedding: R² ≤ 0.35 for any confounder.</li>
+      <li>Most analyses exploratory; CLMBR-T comparison tentative.</li>
+    </ul>
   </div>
 </section>
 
@@ -697,6 +680,7 @@ function trialSet(v) {
 function armBoxes(name, arms, defs) {
   return arms.map(a => `<label class="cb" data-arm="${a}"><input type="checkbox" name="${name}" value="${a}" ${defs.includes(a) ? "checked" : ""}>${swatch(a)}${ARM[a].lab}</label>`).join("");
 }
+const EMPTY = msg => `<div class="empty">${msg}</div>`;
 const checked = name => [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(x => x.value);
 const rungSel = id => `<select id="${id}">` + Object.entries(RUNG).map(([k, v]) => `<option value="${k}">${v}</option>`).join("") + `</select>`;
 
@@ -712,7 +696,7 @@ function balInit() {
   $("#bal-ctrl").innerHTML = `
   <label class="h">PS base</label>${rungSel("bal-rung")}
   <label class="h">Comparison arms</label>
-  <div id="bal-arms">${armBoxes("bal-arm", ["unmatched", "base", "ECG", "CLMBR", "CLMBR+ECG", "shufECG", "noise96"], ["base", "ECG", "shufECG"])}</div>
+  <div id="bal-arms">${armBoxes("bal-arm", ["unmatched", "base", "ECG", "CLMBR", "CLMBR+ECG", "shufECG", "noise96"], [])}</div>
   <label class="h">Quick view</label>
   <div id="bal-qv" class="qv"><label><input type="radio" name="bal-qv" value="all" checked>All</label><label><input type="radio" name="bal-qv" value="phys">Physiology</label><label><input type="radio" name="bal-qv" value="echo">Echo</label></div>
   <label class="h">Variable set</label>
@@ -834,6 +818,7 @@ function balUpdate() {
   s += `<text x="${(ml + W - mr) / 2}" y="${y0 + 33}" font-size="12" text-anchor="middle" fill="${NAVY}">|standardized mean difference|</text>`;
   const thr = +$("#bal-thr").value, thrL = thr.toFixed(2);
   if ($("#bal-ref").checked && thr <= xmax) s += `<line x1="${xs(thr)}" x2="${xs(thr)}" y1="${mt}" y2="${y0}" stroke="${RED}" stroke-dasharray="4 3" stroke-width="1.2" pointer-events="none"/>`;
+  if (!arms.length) s += `<text x="${(ml + W - mr) / 2}" y="${mt + ph / 2}" font-size="20" font-weight="700" text-anchor="middle" fill="${NAVY}" pointer-events="none"><tspan style="paint-order:stroke" stroke="#fff" stroke-width="6">Select comparison arms</tspan></text>`;
   $("#bal-svg").innerHTML = s;
   /* summary: per-trial % of selected variables with |SMD| < thr, averaged across trials */
   const pct = a => T.map(t => { let n = 0, k = 0; for (const v of vars) { const x = get(a, t, v.j); if (fin(x)) { n++; if (x < thr) k++; } } return n ? 100 * k / n : NaN; });
@@ -846,7 +831,7 @@ function balUpdate() {
   let h = `<h4>Balance, |SMD| &lt; ${thrL}</h4><table><tr><th>Arm</th><th>mean |SMD|</th><th>% vars</th><th>trials</th></tr>`;
   for (const a of arms) { const m = trialMean(a);
     h += `<tr><td>${swatch(a)} ${SL[a]}</td><td>${f3(mean(m))}</td><td>${f1(mean(P[a]))}</td><td>${nBel(m)}/${nOk(m)}</td></tr>`; }
-  h += `</table><div class="note">% vars: shown variables below the threshold (mean over trials). Trials: trials whose mean |SMD| is below it${nAll ? "" : "; no trial had every shown variable below it"}.</div>`;
+  h += `</table>`;
   /* relative reduction in mean |SMD| vs a reference arm: 100 * (1 - mean_t m_arm / mean_t m_ref), with a
      percentile bootstrap over trials (2,000 resamples, fixed seed) */
   const MS = {}; for (const a of arms) MS[a] = trialMean(a);
@@ -869,12 +854,7 @@ function balUpdate() {
   if (M.rank === "gain") h += `<div class="note" style="color:${RED}">Variables chosen by ECG gain: the comparisons below are descriptive (selected on the result), so p is not shown.</div>`;
   const cU = arms.filter(a => a !== "unmatched"), cB = arms.filter(a => a !== "base" && a !== "unmatched");
   if (arms.includes("base") && cB.length) h += paired("base", "PS alone", cB);
-  if (arms.includes("base") && cB.length)
-    h += `<div class="note">Δ pts: change in % vars below the threshold; better: trials in which it rose; p: one-sided exact sign-flip test across trials. Mean |SMD| reduction: 1 − arm / reference mean |SMD| (no threshold), 95% CI by bootstrap over trials.</div>`;
-  else h += `<div class="note">Select "PS alone" and another arm to see paired comparisons.</div>`;
-  h += `<div class="note">${M.exp ? "Expanded panel: about 330 pre-index characteristics per trial (comorbidities, medications, healthcare use, labs, devices, scores, preventive care), excluding variables in or derived from the selected PS, hdPS-selected codes and ECG-proximal variables." :
-    "Primary panel: 58 characteristics not in any P-rung PS. At the clinical rung, variables in that PS are excluded."} Summary statistics only; no patient-level data.</div>`;
-  $("#bal-sum").innerHTML = h;
+  $("#bal-sum").innerHTML = arms.length ? h : EMPTY("Select comparison arms");
 }
 
 /* =========================================================
@@ -886,12 +866,11 @@ function emuInit() {
   <label class="h">Analysis</label>${sel("emu-est", `<option value="itt">Primary: all initiators (ITT)</option><option value="outpt">Outpatient initiators only</option><option value="pp_ipcw_365">Per-protocol (IPCW, 365-d grace)</option><option value="pp_ipcw_switch">Switch-only censoring (IPCW)</option><option value="landmark90">90-day landmark</option><option value="runin90">90-day run-in (repeat order)</option>`)}
   <label class="h">PS base</label>${rungSel("emu-rung")}
   <label class="h">Methods</label>
-  <div id="emu-arms">${armBoxes("emu-arm", ["unmatched", "base", "ECG", "CLMBR", "CLMBR+ECG", "shufECG", "noise96"], ["base", "ECG"])}</div>
+  <div id="emu-arms">${armBoxes("emu-arm", ["unmatched", "base", "ECG", "CLMBR", "CLMBR+ECG", "shufECG", "noise96"], [])}</div>
   <label class="h">Clinical area</label>${sel("emu-area", `<option value="all">All</option>` + AREAS.map(a => `<option>${a}</option>`).join(""))}
   <label class="h">Emulation quality</label>${sel("emu-q", `<option value="all">All</option><optgroup label="Tier (points)"><option value="t:Excellent,Good,Moderate">Analysed set: excluding limited (32)</option><option value="t:Excellent">Excellent</option><option value="t:Good">Good</option><option value="t:Excellent,Good">Excellent or good</option><option value="t:Moderate">Moderate</option><option value="t:Limited">Limited</option><option value="t:Moderate,Limited">Moderate or limited</option></optgroup><optgroup label="3-class rule (adjudicated)"><option value="c:High (strict)">High (strict)</option><option value="c:High (strict),High">High, incl. strict</option><option value="c:Lower">Lower</option></optgroup>`)}
   <label class="h">ECG relevance</label>${sel("emu-e", `<option value="all">All</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option><option value="high,medium">High or medium</option>`)}
-  <label class="h">Sort by</label>${sel("emu-sort", `<option value="area">Area, then RCT HR</option><option value="rct">RCT HR</option><option value="gap">|Δ| with PS alone</option><option value="chg">Change in |Δ| with ECG</option><option value="name">Name</option>`)}
-  <div class="xs" style="margin-top:10px">Grey band: RCT 95% CI; black bar: RCT HR. Markers: emulated HR with 95% CI. Hover a row for values.</div>`;
+  <label class="h">Sort by</label>${sel("emu-sort", `<option value="area">Area, then RCT HR</option><option value="rct">RCT HR</option><option value="gap">|Δ| with PS alone</option><option value="chg">Change in |Δ| with ECG</option><option value="name">Name</option>`)}`;
   for (const id of ["emu-est", "emu-rung", "emu-area", "emu-q", "emu-e", "emu-sort"]) $("#" + id).onchange = emuUpdate;
   $("#emu-arms").onchange = emuUpdate;
   bindTips($("#emu-svg"));
@@ -982,10 +961,9 @@ function emuUpdate() {
       const la = ok.map(t => emuEst(rung, a, t)[0]), lb = ok.map(t => emuEst(rung, "base", t)[0]), rb = ok.map(t => D.trials[t].rb);
       h += `<tr class="${a === "ECG" ? "hl" : ""}"><td>${ARM[a].lab}</td><td>${d.filter(x => x > 0).length}/${d.length}</td><td>${fmtp(signflip(d))}</td><td>${fmtp(benchShuffle(la, lb, rb, 2000))}</td></tr>`;
     }
-    h += `</table><div class="note"><b>closer</b>: smaller |Δ log HR| than PS alone. <b>sign-flip p</b>: one-sided exact test on paired |Δ| reductions. <b>shuffle p</b>: RCT results randomly reassigned among the selected trials (2,000 draws); a large p means generic attenuation, not movement toward each trial's own result.</div>`;
-  } else h += `<div class="note">Select "PS alone" and another method (and ≥2 trials) for paired tests.</div>`;
-  h += `<div class="note">r: Pearson correlation of emulated vs RCT log HRs. est.: estimate agreement (emulated HR within the RCT 95% CI). std.: standardized-difference agreement (|z| &lt; 1.96 using both SEs). Counts are trials. p values unadjusted (exploratory).${est !== "itt" ? " Sensitivity analysis: trials without an estimate (procedure arms; run-in with too few patients kept; outpatient cohorts too small) are dropped." : ""}</div>`;
-  $("#emu-sum").innerHTML = h;
+    h += `</table>`;
+  }
+  $("#emu-sum").innerHTML = arms.length ? h : EMPTY("Select methods to compare with the RCTs");
 }
 
 /* =========================================================
@@ -1085,7 +1063,6 @@ function drawStatic() {
   s += box(770, 114, 240, 40, "Eligibility criteria", {fs: 16}) + arrow(890, 154, 890, 172);
   s += box(730, 174, 320, 44, "PS matching on measured confounders", {fs: 16, stroke: RED}) + arrow(840, 218, 800, 240) + arrow(940, 218, 980, 240);
   s += box(700, 242, 180, 46, "Treatment received", {fill: NAVY, col: "#fff", fs: 16}) + box(900, 242, 180, 46, "Control received", {fill: NAVY, col: "#fff", fs: 16});
-  s += `<text x="890" y="316" font-size="16" text-anchor="middle" fill="${NAVY}">specify the trial protocol, emulate it in routine-care data</text>`;
   $("#svg-tte").innerHTML = s;
   /* PSM problem */
   s = `<text x="225" y="24" font-size="19" font-weight="700" text-anchor="middle" fill="${NAVY}">Treated</text><text x="475" y="24" font-size="19" font-weight="700" text-anchor="middle" fill="${NAVY}">Comparator</text>`;
@@ -1099,7 +1076,6 @@ function drawStatic() {
   /* ECG pipeline */
   s = `<rect x="0" y="30" width="330" height="170" fill="#fff" stroke="${NAVY}" stroke-width="2"/>`;
   for (let r = 0; r < 3; r++) s += `<path d="${ecgPath(12, 75 + r * 50, 306, 3, 32)}" fill="none" stroke="${RED}" stroke-width="2"/>`;
-  s += `<text x="165" y="226" font-size="16" text-anchor="middle" fill="${NAVY}">Raw 12-lead ECG (≤365 d before index)</text>`;
   s += arrow(340, 115, 400, 115) + box(405, 60, 250, 110, "Self-supervised\nECG encoder (BCL,\nsignal model)", {fill: NAVY, col: "#fff", fs: 16});
   s += arrow(660, 115, 720, 115);
   for (let i = 0; i < 16; i++) s += `<rect x="${728 + i * 13}" y="95" width="11" height="40" fill="${NAVY}" fill-opacity="${0.25 + 0.7 * Math.abs(Math.sin(i * 1.7))}"/>`;
@@ -1175,12 +1151,18 @@ function drawStatic() {
   const bc = {}; D.exp.vars.forEach(v => bc[v.b] = (bc[v.b] || 0) + 1);
   let tb2 = `<tr><th>Expanded panel bucket</th><th>n</th></tr>`; for (const b of D.exp.buckets) if (bc[b]) tb2 += `<tr><td>${esc(b)}</td><td>${bc[b]}</td></tr>`;
   $("#tab-buckets").innerHTML = tb2 + `<tr><td><b>Total (union across trials)</b></td><td><b>${D.exp.vars.length}</b></td></tr>`;
-  /* shuffle schematic */
+  /* shuffle schematic: step 0 = each emulation paired with its own RCT; step 1 = RCT results permuted among trials */
   s = `<text x="0" y="20" font-size="16" font-weight="700" fill="${NAVY}">Benchmark shuffle</text>`;
+  s += `<text x="0" y="44" font-size="14" fill="${NAVY}" class="bout" data-step="1">Each emulation vs its own RCT</text>`;
+  s += `<text x="0" y="44" font-size="14" fill="${RED}" class="build" data-step="1">RCT results reassigned at random</text>`;
   const tr = [["Trial A", "0.79"], ["Trial B", "1.15"], ["Trial C", "0.66"], ["Trial D", "1.02"]], sh = [2, 3, 0, 1];
-  tr.forEach(([n, h], i) => { const y = 50 + i * 70;
-    s += box(0, y, 110, 44, n, {fs: 15}) + box(300, y, 120, 44, "RCT " + tr[sh[i]][1], {fs: 15, stroke: RED}) + `<line x1="112" y1="${y + 22}" x2="296" y2="${50 + sh.indexOf(i) * 70 + 22}" stroke="#c9cad4"/>` + arrow(112, y + 22, 296, y + 22, "#c9cad4", "4 4"); });
-  s += `<text x="0" y="345" font-size="14" fill="${NAVY}">Recompute the |Δ| reduction against</text><text x="0" y="365" font-size="14" fill="${NAVY}">wrong benchmarks, many times.</text><text x="0" y="390" font-size="14" fill="${RED}">Observed gain must beat this null.</text>`;
+  tr.forEach(([n], i) => { const y = 66 + i * 76;
+    s += box(2, y, 110, 44, n, {fs: 15});
+    s += `<g class="bout" data-step="1">` + arrow(112, y + 22, 296, y + 22, NAVY) + `</g>`;
+    s += `<g class="build" data-step="1" style="transition-delay:.8s">` + arrow(112, y + 22, 296, y + 22, RED, "5 4") + `</g>`; });
+  /* RCT box k starts in row k and moves to the row whose trial now receives it */
+  tr.forEach(([, h], k) => { const dy = (sh.indexOf(k) - k) * 76;
+    s += `<g class="mv" data-step="1" style="--to:translate(0px,${dy}px)">` + box(300, 66 + k * 76, 120, 44, "RCT " + h, {fs: 15, stroke: RED}) + `</g>`; });
   $("#svg-shuffle").innerHTML = s;
   /* plasmode */
   s = box(0, 30, 250, 110, "Real cohort\ncovariates, ECGs,\nfollow-up kept", {fs: 17});
@@ -1208,8 +1190,13 @@ slides.forEach((sl, i) => {
 let cur = 0, step = 0;
 /* click builds: elements with class "build" and data-step k are shown once the slide's step reaches k.
    Entering a slide forwards starts at step 0; stepping back into it shows it fully built. */
-const nSteps = sl => Math.max(0, ...[...sl.querySelectorAll(".build")].map(e => +e.dataset.step || 0));
-function applyBuild() { slides[cur].querySelectorAll(".build").forEach(e => e.classList.toggle("hid", (+e.dataset.step || 0) > step)); }
+const nSteps = sl => Math.max(0, ...[...sl.querySelectorAll(".build,.bout,.mv")].map(e => +e.dataset.step || 0));
+function applyBuild() {
+  const sl = slides[cur];
+  sl.querySelectorAll(".build").forEach(e => e.classList.toggle("hid", (+e.dataset.step || 0) > step));
+  sl.querySelectorAll(".bout").forEach(e => e.classList.toggle("gone", (+e.dataset.step || 0) <= step));
+  sl.querySelectorAll(".mv").forEach(e => { e.style.transform = (+e.dataset.step || 0) <= step ? e.style.getPropertyValue("--to") : "translate(0px,0px)"; });
+}
 function next() { if (step < nSteps(slides[cur])) { step++; applyBuild(); } else if (cur < slides.length - 1) show(cur + 1); }
 function prev() { if (step > 0) { step--; applyBuild(); } else if (cur > 0) show(cur - 1, true); }
 function show(i, built) {
@@ -1281,7 +1268,6 @@ function agqUpdate() {
   let h = `<table class="t" style="margin-top:6px"><tr><th>Group</th><th>Method</th><th>n</th><th>r</th><th>Estimate agr.</th><th>Std-diff agr.</th><th>mean |Δ|</th></tr>`;
   R.forEach(([g, T, M]) => M.forEach((m, k) => h += `<tr><td>${k ? "" : esc(g)}</td><td>${swatch(arms[k])} ${ARM[arms[k]].lab}</td><td>${m.n}</td><td>${f2(m.r)}</td><td>${pc(m.ea)}</td><td>${pc(m.sd)}</td><td>${f3(m.gap)}</td></tr>`));
   $("#agq-tab").innerHTML = h + `</table>`;
-  $("#agq-note").innerHTML = `<h4>Metrics (as RCT-DUPLICATE)</h4><div class="note"><b>r</b>: Pearson correlation of emulated vs RCT log HRs across trials.<br><b>Estimate agreement</b>: emulated HR inside the RCT 95% CI.<br><b>Std-diff agreement</b>: |z| &lt; 1.96 using both SEs.<br><b>mean |Δ|</b>: mean |log HR − RCT log HR|.</div><div class="note">Groups are descriptive (design items, blind to results); small groups give unstable r. No multiplicity adjustment.</div>`;
 }
 
 drawStatic(); balInit(); emuInit(); agqInit(); simInit(); fit();
