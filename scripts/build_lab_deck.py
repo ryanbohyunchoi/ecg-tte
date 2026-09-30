@@ -223,13 +223,238 @@ def reference_values(D):
     return out
 
 
+
+# ---- External validation slides (MIMIC-IV, UK Biobank); aggregates from the v2.0 audit folders ----
+EXT_M = A / "claude-v20-mimic-replication"
+EXT_U = A / "claude-v20-ukb-analysis"
+MNAME = {"plato": "PLATO", "aristotle": "ARISTOTLE", "rocket_af": "ROCKET AF", "transform_hf": "TRANSFORM-HF",
+         "comet": "COMET", "soap2": "SOAP II", "elite2": "ELITE II", "peptic": "PEPTIC (neg. control)"}
+UNAME = {"ontarget": "ONTARGET", "ascot": "ASCOT-BPLA", "allhat": "ALLHAT", "life": "LIFE", "value": "VALUE"}
+EXT_ARMS = [("base", "PS alone", "#0d1040", "dot"), ("ECG", "+ ECG", "#d9534f", "dot"), ("permECG", "+ permuted ECG", "#c9a227", "tri")]
+
+
+def _forest(rows, arms, W=700, lo=0.2, hi=5.0):
+    """rows: [(label, rct_hr, rct_lo, rct_hi, {arm: (hr, lo, hi)})]; arms: [(key, label, colour, marker)]."""
+    import math
+    ml, mr, mt, rh = 190, 20, 26, 44
+    H = mt + rh * len(rows) + 46
+    xs = lambda v: ml + (math.log(min(max(v, lo), hi)) - math.log(lo)) / (math.log(hi) - math.log(lo)) * (W - ml - mr)
+    out = [f'<svg viewBox="0 0 {W} {H}" style="width:100%;height:auto">']
+    out.append(f'<line x1="{xs(1):.1f}" x2="{xs(1):.1f}" y1="{mt - 6}" y2="{mt + rh * len(rows)}" stroke="#888" stroke-dasharray="3 3"/>')
+    for i, (lab, r, rl, rhh, est) in enumerate(rows):
+        y = mt + i * rh + rh / 2
+        if i % 2 == 0:
+            out.append(f'<rect x="{ml}" y="{mt + i * rh}" width="{W - ml - mr}" height="{rh}" fill="#f5f5f8"/>')
+        out.append(f'<text x="{ml - 8}" y="{y + 5:.1f}" font-size="14" text-anchor="end" fill="#0d1040">{lab}</text>')
+        if r:
+            out.append(f'<rect x="{xs(rl):.1f}" y="{y - rh / 2 + 4:.1f}" width="{max(xs(rhh) - xs(rl), 1):.1f}" height="{rh - 8}" fill="#d9dbe6"/>')
+            out.append(f'<line x1="{xs(r):.1f}" x2="{xs(r):.1f}" y1="{y - rh / 2 + 4:.1f}" y2="{y + rh / 2 - 4:.1f}" stroke="#0d1040" stroke-width="2.5"/>')
+        for k, (a, _, col, mk) in enumerate(arms):
+            if a not in est:
+                continue
+            h, l_, u_ = est[a]
+            yy = y - 10 + k * 10
+            out.append(f'<line x1="{xs(l_):.1f}" x2="{xs(u_):.1f}" y1="{yy:.1f}" y2="{yy:.1f}" stroke="{col}" stroke-width="1.4"/>')
+            if mk == "tri":
+                out.append(f'<path d="M{xs(h):.1f} {yy - 5:.1f} L{xs(h) + 5:.1f} {yy + 4:.1f} L{xs(h) - 5:.1f} {yy + 4:.1f} Z" fill="#fff" stroke="{col}" stroke-width="1.5"/>')
+            else:
+                out.append(f'<circle cx="{xs(h):.1f}" cy="{yy:.1f}" r="4.5" fill="{col}"/>')
+    yb = mt + rh * len(rows)
+    out.append(f'<line x1="{ml}" x2="{W - mr}" y1="{yb}" y2="{yb}" stroke="#0d1040"/>')
+    for v in (0.25, 0.5, 1, 2, 4):
+        out.append(f'<text x="{xs(v):.1f}" y="{yb + 17}" font-size="12" text-anchor="middle" fill="#0d1040">{v}</text>')
+    out.append(f'<text x="{(ml + W - mr) / 2}" y="{yb + 36}" font-size="12.5" text-anchor="middle" fill="#0d1040">Hazard ratio (log scale); grey band = RCT 95% CI, black bar = RCT estimate</text>')
+    out.append("</svg>")
+    return "".join(out)
+
+
+def _legend(arms):
+    it = []
+    for _, lab, col, mk in arms:
+        sym = (f'<svg width="14" height="12"><path d="M7 1 L13 11 L1 11 Z" fill="#fff" stroke="{col}" stroke-width="1.5"/></svg>' if mk == "tri"
+               else f'<svg width="12" height="12"><circle cx="6" cy="6" r="5" fill="{col}"/></svg>')
+        it.append(f'<span style="margin-right:16px">{sym} {lab}</span>')
+    return '<div style="font-size:15px;margin:2px 0 6px">' + "".join(it) + "</div>"
+
+
+def _slide(title, body):
+    return f'<section class="slide" data-title="{title}">\n  <div class="body">\n{body}\n  </div>\n</section>\n'
+
+
+def external_html():
+    """Six external-validation slides built from aggregate audit outputs; empty string if outputs are missing."""
+    import math
+    if not ((EXT_M / "summary/summary.json").exists() and (EXT_U / "emu_pooled_balance.csv").exists()):
+        return ""
+    Sm = json.load(open(EXT_M / "summary/summary.json"))
+    f1 = lambda x: f"{x:.1f}"
+    out = []
+    # 1. overview
+    out.append(_slide("External validation: data sets", """
+    <table class="t">
+      <tr><th></th><th>MIMIC-IV (Beth Israel Deaconess)</th><th>UK Biobank</th></tr>
+      <tr><td><b>Setting</b></td><td>Hospital and ICU cohort; ECGs to 2019</td><td>Community cohort; imaging visit 2014–2024</td></tr>
+      <tr><td><b>Trials</b></td><td>7 cardiovascular (PLATO, ARISTOTLE, ROCKET AF, TRANSFORM-HF, COMET, SOAP II, ELITE II) and PEPTIC as a negative control</td><td>5 antihypertensive (ONTARGET, ASCOT-BPLA, ALLHAT, LIFE, VALUE); new use since baseline</td></tr>
+      <tr><td><b>ECG</b></td><td>Same BCL encoder, 32 PCs; ECG before time zero</td><td>Same encoder; ECG at the imaging visit, <span class="red">after initiation</span></td></tr>
+      <tr><td><b>Held-out panel</b></td><td>26 labs, vitals, ventilation and utilisation</td><td>Pre-exposure baseline biomarkers, BP, BMI; cardiac MRI (secondary)</td></tr>
+      <tr><td><b>Analyses</b></td><td>Covariate balance; trial emulation vs RCT</td><td>Covariate balance; trial emulation vs RCT; plasmode with MRI LV measures as the hidden confounder</td></tr>
+    </table>"""))
+    # 2. MIMIC balance
+    prim = ["plato", "aristotle", "rocket_af", "transform_hf", "comet", "soap2", "elite2", "peptic"]
+    arms_df = {}
+    for t in prim:
+        d = pd.read_csv(EXT_M / f"results/{t}_arms.csv")
+        arms_df[t] = d[(d.base == "demo") & (d["pop"] == "all")].set_index("arm")
+    rows = "".join(
+        f'<tr><td>{MNAME[t]}</td><td>{int(d.loc["base", "n_pairs"]):,}</td><td>{f1(d.loc["base", "pct_bal"])}</td>'
+        f'<td><b>{f1(d.loc["ECG", "pct_bal"])}</b></td><td>{f1(d.loc["permECG", "pct_bal"])}</td></tr>' for t, d in arms_df.items())
+    B = Sm["balance"]
+    lad = ""
+    for rung, lab in (("demo", "Demographic PS"), ("sparse", "Sparse PS"), ("hdPS200", "hdPS"), ("clinical", "Clinical-lite PS")):
+        b = B[f"primary7|{rung}|all"]
+        lad += (f'<tr><td>{lab}</td><td><b>{f1(b["relred_ECG"])}%</b> ({f1(b["relred_ECG_ci"][0])} to {f1(b["relred_ECG_ci"][1])})</td>'
+                f'<td>{b["lower_smd_ECG"]}</td><td>{f1(b["relred_permECG"])}%</td></tr>')
+    b0, bn = B["primary7|demo|all"], B["primary7|demo|no_index_day_ecg"]
+    out.append(_slide("External validation: MIMIC-IV covariate balance", f"""
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:34px">
+      <div>
+        <p style="font-size:19px;margin:0 0 8px">% of 26 held-out characteristics with |SMD| &lt; 0.1 (demographic PS)</p>
+        <table class="t tsm"><tr><th>Trial</th><th>Pairs</th><th>PS alone</th><th>+ ECG</th><th>+ permuted</th></tr>{rows}</table>
+      </div>
+      <div>
+        <p style="font-size:19px;margin:0 0 8px">Relative reduction in mean |SMD| with ECG (7 CV trials)</p>
+        <table class="t tsm"><tr><th>Base PS</th><th>+ ECG (95% CI)</th><th>Trials lower</th><th>+ permuted</th></tr>{lad}</table>
+        <ul style="font-size:19px;margin-top:16px">
+          <li>Demographic PS: {f1(b0["pct_bal_base"])}% → <b>{f1(b0["pct_bal_ECG"])}%</b> balanced ({b0["better_ECG"]} trials; p = {b0["p_ECG"]:.3f}); Yale: 12.6% reduction</li>
+          <li>Excluding index-day ECGs: {f1(bn["relred_ECG"])}% ({f1(bn["relred_ECG_ci"][0])} to {f1(bn["relred_ECG_ci"][1])})</li>
+          <li>The gain shrinks as the PS gets richer, as in Yale</li>
+        </ul>
+      </div>
+    </div>"""))
+    # 3. MIMIC emulation
+    frows = []
+    for t, d in arms_df.items():
+        rb, rs = float(d.iloc[0].rct_loghr), float(d.iloc[0].rct_se)
+        est = {a: tuple(math.exp(d.loc[a, "loghr"] + z * d.loc[a, "se"]) for z in (0, -1.96, 1.96)) for a in ("base", "ECG", "permECG")}
+        meas = str(d.iloc[0].rct_measure).split(" ")[0]
+        frows.append((MNAME[t] + ("" if meas == "HR" else f" [{meas}]"), math.exp(rb), math.exp(rb - 1.96 * rs), math.exp(rb + 1.96 * rs), est))
+    Ag = Sm["agreement"]
+    arows = ""
+    for rung, lab in (("demo", "Demographic"), ("clinical", "Clinical-lite")):
+        g = Ag[f"primary7|{rung}|all"]
+        for a, al in (("base", "PS alone"), ("ECG", "+ ECG"), ("permECG", "+ permuted")):
+            x = g[a]
+            arows += (f'<tr><td>{lab if a == "base" else ""}</td><td>{al}</td><td>{x["mean_abs_diff"]:.3f}</td><td>{x["r"]:.2f}</td>'
+                      f'<td>{x["est_agree"]}</td><td>{x["std_agree"]}</td></tr>')
+    gd, gc = Ag["primary7|demo|all"]["ECG_vs_base"], Ag["primary7|clinical|all"]["ECG_vs_base"]
+    pep = arms_df["peptic"]
+    ph = lambda a: math.exp(pep.loc[a, "loghr"])
+    out.append(_slide("External validation: MIMIC-IV trial emulation", f"""
+    <div style="display:grid;grid-template-columns:1.15fr 1fr;gap:28px">
+      <div>{_legend(EXT_ARMS)}{_forest(frows, EXT_ARMS)}</div>
+      <div>
+        <table class="t tsm"><tr><th>PS</th><th>Arm</th><th>mean |Δ|</th><th>r</th><th>Est. agr.</th><th>Std-diff agr.</th></tr>{arows}</table>
+        <ul style="font-size:18px;margin-top:14px">
+          <li>Demographic PS: ECG closer in {gd["closer"]} trials (p = {gd["p"]:.2f})</li>
+          <li>Clinical-lite PS: {gc["closer"]} closer (p = {gc["p"]:.2f}); the permuted ECG also helps</li>
+          <li>PEPTIC (expected null): demographic PS HR {ph("base"):.2f} → {ph("ECG"):.2f} with ECG (permuted {ph("permECG"):.2f}); clinical-lite PS reaches the null</li>
+        </ul>
+      </div>
+    </div>"""))
+    # 4. UKB balance
+    eb = pd.read_csv(EXT_U / "emu_balance.csv")
+    eb = eb[eb.design == "d2"]
+    ub = ""
+    for t in UNAME:
+        g = eb[eb.trial == t].set_index(["panel", "arm"]).mean_abs_smd
+        v = lambda pnl, a: f'{g.get((pnl, a), float("nan")):.3f}'
+        ub += (f'<tr><td>{UNAME[t]}</td><td>{v("A_i0", "demo")}</td><td><b>{v("A_i0", "demo+ECG")}</b></td><td>{v("A_i0", "demo+permECG")}</td>'
+               f'<td>{v("B_cmr_i2", "demo")}</td><td><b>{v("B_cmr_i2", "demo+ECG")}</b></td><td>{v("B_cmr_i2", "demo+permECG")}</td></tr>')
+    pb = pd.read_csv(EXT_U / "emu_pooled_balance.csv").set_index(["design", "panel", "arm"])
+    ci = lambda r: f"{r.rel_reduction_pct:.1f}% ({r.ci_lo:.1f} to {r.ci_hi:.1f})"
+    x1, x1p = pb.loc[("d2", "A_i0", "demo+ECG")], pb.loc[("d2", "A_i0", "demo+permECG")]
+    x2, x2p = pb.loc[("d2", "B_cmr_i2", "demo+ECG")], pb.loc[("d2", "B_cmr_i2", "demo+permECG")]
+    y2, y2p = pb.loc[("d1", "B_cmr_i2", "demo+ECG")], pb.loc[("d1", "B_cmr_i2", "demo+permECG")]
+    out.append(_slide("External validation: UK Biobank covariate balance", f"""
+    <p style="font-size:19px;margin:0 0 8px">Mean |SMD| after matching (demographic PS); new use since baseline</p>
+    <table class="t tsm"><tr><th>Trial</th><th>Baseline panel: PS alone</th><th>+ ECG</th><th>+ permuted</th><th>Cardiac MRI panel: PS alone</th><th>+ ECG</th><th>+ permuted</th></tr>{ub}</table>
+    <ul style="font-size:19px;margin-top:14px">
+      <li>Pre-exposure baseline panel: ECG reduction {ci(x1)}; permuted {x1p.rel_reduction_pct:.1f}%. <b>No ECG-specific gain</b></li>
+      <li>Cardiac MRI panel: {ci(x2)} (permuted {x2p.rel_reduction_pct:.1f}%); prevalent-use design {ci(y2)} (permuted {y2p.rel_reduction_pct:.1f}%)</li>
+      <li><span class="red">ECG and MRI are recorded after initiation</span>, so MRI balance reflects current physiology, including drug effects</li>
+    </ul>"""))
+    # 5. UKB emulation
+    ee = pd.read_csv(EXT_U / "emu_estimates.csv")
+    ee = ee[ee.design == "d2"]
+    amap = {"demo": "base", "demo+ECG": "ECG", "demo+permECG": "permECG"}
+    urows = []
+    for t in UNAME:
+        g = ee[ee.trial == t].set_index("arm")
+        est = {amap[a]: (g.loc[a, "hr"], g.loc[a, "lo"], g.loc[a, "hi"]) for a in amap if a in g.index}
+        r0 = g.iloc[0]
+        urows.append((UNAME[t], r0.rct_hr, r0.rct_lo, r0.rct_hi, est))
+    pe = pd.read_csv(EXT_U / "emu_pooled_emulation.csv")
+    erows = ""
+    for d_, lab in (("d2", "New use (5)"), ("d1", "Prevalent use (6)")):
+        for a, al in (("demo", "PS alone"), ("demo+ECG", "+ ECG"), ("demo+permECG", "+ permuted")):
+            r = pe[(pe.design == d_) & (pe.arm == a)]
+            if len(r):
+                r = r.iloc[0]
+                erows += (f'<tr><td>{lab if a == "demo" else ""}</td><td>{al}</td><td>{r.mean_abs_dlog:.3f}</td><td>{r.pearson_r:.2f}</td>'
+                          f'<td>{int(r.est_agree)}/{int(r.k)}</td><td>{int(r.std_agree)}/{int(r.k)}</td></tr>')
+    out.append(_slide("External validation: UK Biobank trial emulation", f"""
+    <div style="display:grid;grid-template-columns:1.15fr 1fr;gap:28px">
+      <div>{_legend(EXT_ARMS)}{_forest(urows, EXT_ARMS)}</div>
+      <div>
+        <table class="t tsm"><tr><th>Design</th><th>Arm</th><th>mean |Δ|</th><th>r</th><th>Est. agr.</th><th>Std-diff agr.</th></tr>{erows}</table>
+        <ul style="font-size:18px;margin-top:14px">
+          <li>New-use design: no ECG-specific improvement; the permuted ECG does as well</li>
+          <li>Prevalent-use design: ECG closer in 5/6 trials, but the cohorts overlap heavily (ALLHAT, ASCOT and VALUE share 62–75% of records)</li>
+          <li>Absolute agreement is poor (e.g. ASCOT HR about 0.5 vs RCT 0.90)</li>
+        </ul>
+      </div>
+    </div>"""))
+    # 6. UKB CMR plasmode (no polygenic scores)
+    pt = pd.read_csv(EXT_U / "pooled_trtC.csv")
+    pm = pd.read_csv(EXT_U / "pooled_main.csv")
+    g1 = lambda a, c: float(pt[(pt.analysis == "raw") & (pt.arm == a) & (pt.conf == c)].pct_vs_unmatched.iloc[0])
+    g2 = lambda a, c: float(pm[(pm.analysis == "null-corrected") & (pm.arm == a) & (pm.conf == c)].pct_vs_base.iloc[0])
+    r2 = pd.read_csv(EXT_U / "prep_conf.csv").groupby("conf").r2_ecg.agg(["min", "max"])
+    confs = [("lvef", "LVEF"), ("lvedvi", "LV end-diastolic volume index"), ("lvmi", "LV mass index"), ("all", "All three")]
+    bars = [("ECG-only PS", lambda c: g1("ECGonly", c), "#d9534f"), ("ECG added to demographic PS", lambda c: g2("ECG", c), "#8f2d2a"),
+            ("Permuted-ECG-only PS", lambda c: g1("shufECGonly", c), "#c9a227"), ("Oracle (MRI measure)", lambda c: g1("oracleonly", c), "#0d1040")]
+    W, ml, bw = 1100, 60, 38
+    ys = lambda v: 270 - max(min(v, 100), -5) / 100 * 240
+    svg = [f'<svg viewBox="0 0 {W} 330" style="width:100%;height:auto">']
+    for v in (0, 25, 50, 75, 100):
+        svg.append(f'<line x1="{ml}" x2="{W - 10}" y1="{ys(v):.1f}" y2="{ys(v):.1f}" stroke="#e3e4ec"/><text x="{ml - 6}" y="{ys(v) + 4:.1f}" font-size="13" text-anchor="end" fill="#0d1040">{v}%</text>')
+    grp = (W - ml - 20) / len(confs)
+    for i, (c, lab) in enumerate(confs):
+        x0 = ml + i * grp + (grp - len(bars) * bw) / 2
+        for k, (_, fn, col) in enumerate(bars):
+            v = fn(c)
+            svg.append(f'<rect x="{x0 + k * bw:.1f}" y="{min(ys(v), ys(0)):.1f}" width="{bw - 4}" height="{abs(ys(0) - ys(v)):.1f}" fill="{col}"/>')
+            svg.append(f'<text x="{x0 + k * bw + (bw - 4) / 2:.1f}" y="{min(ys(v), ys(0)) - 5:.1f}" font-size="13" text-anchor="middle" fill="#0d1040">{int(round(v))}</text>')
+        svg.append(f'<text x="{ml + i * grp + grp / 2:.1f}" y="292" font-size="15" text-anchor="middle" fill="#0d1040">{lab}</text>')
+        if c in r2.index:
+            svg.append(f'<text x="{ml + i * grp + grp / 2:.1f}" y="312" font-size="13" text-anchor="middle" fill="#555">ECG R² {r2.loc[c, "min"]:.2f}–{r2.loc[c, "max"]:.2f}</text>')
+    svg.append("</svg>")
+    leg = "".join(f'<span style="margin-right:16px"><span style="display:inline-block;width:12px;height:12px;background:{col};margin-right:5px"></span>{bl}</span>' for bl, _, col in bars)
+    out.append(_slide("External validation: UK Biobank MRI plasmode", f"""
+    <p style="font-size:19px;margin:0 0 6px">% of bias removed when a cardiac MRI measure is the hidden confounder (true HR 0.80; 3 cohorts; 50 replicates per cell)</p>
+    <div style="font-size:15px;margin-bottom:4px">{leg}</div>
+    {"".join(svg)}
+    <p style="font-size:18px;margin-top:4px">The ECG alone removes {g1("ECGonly", "all"):.0f}% of the bias overall ({g1("ECGonly", "lvef"):.0f}% for LVEF), roughly 100 × its R², as in the Yale simulation. Permuted ECG ≈ 0; oracle ≈ {g1("oracleonly", "all"):.0f}%.</p>"""))
+    return "".join(out)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--pptx-media", default=None)
     ap.add_argument("--copy-to", default=None)
     args = ap.parse_args()
     D = build_data()
-    html = TEMPLATE.replace("__LOGO__", logo_uri(args.pptx_media)).replace("__DATA__", json.dumps(D, separators=(",", ":")))
+    html = TEMPLATE.replace("__EXTERNAL__", external_html()).replace("__LOGO__", logo_uri(args.pptx_media)).replace("__DATA__", json.dumps(D, separators=(",", ":")))
     for bad in ("http://", "https://", "@import", "<link"):
         assert bad not in html.replace("http://www.w3.org/2000/svg", ""), bad
     OUT.parent.mkdir(parents=True, exist_ok=True)
@@ -308,6 +533,8 @@ table.t td,table.t th{font-size:19px;padding:10px 12px;border-bottom:1px solid v
 #agq-tab table.t td,#agq-tab table.t th{font-size:12.5px;padding:3px 8px}
 #tab-domains td,#tab-domains th,#tab-buckets td,#tab-buckets th{font-size:14px;padding:4px 8px}
 table.t th{background:var(--navy);color:#fff;font-weight:600}
+table.t.tsm td,table.t.tsm th{font-size:15px;padding:5px 8px}
+table.t.tsm td:not(:first-child){white-space:nowrap}
 /* title slide */
 #s-title .tlogo{position:absolute;left:539px;top:212px;width:202px;height:204px}
 #s-title .l1{position:absolute;left:0;right:0;top:452px;text-align:center;font-size:32px;font-weight:700;color:var(--navy)}
@@ -549,12 +776,14 @@ svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
 </section>
 
 <!-- 16 -->
+__EXTERNAL__
 <section class="slide" data-title="Summary">
   <div class="body">
     <ol style="margin:0;padding-left:30px">
       <li><b>Balance.</b> With a demographic PS, held-out characteristics with |SMD| &lt; 0.1 rose from 51% to 57% (28/38 trials, p = 0.0002); permuted ECG: 51% → 52%. The gain shrinks as the PS gets richer (clinical PS: +1.3 points, p = 0.20).</li>
       <li><b>RCT agreement.</b> Mean |Δ log HR| fell from 0.26 to 0.21 (25/38 closer, p = 0.002), but benchmark shuffle p = 0.22: mostly <span class="red">generic attenuation</span>, not trial-specific. The AF signal did not replicate in 5 prespecified AF trials.</li>
       <li><b>Known truth.</b> The ECG removed 14% of hidden-confounder bias (oracle 93%; placebos 0–1.5%), roughly 100 × the ECG's R² for the confounder.</li>
+      <li><b>External validation.</b> MIMIC-IV: balance gain replicated (mean |SMD| −10.3%, 7/7 trials; permuted ECG none), RCT agreement not reliably improved. UK Biobank MRI plasmode: the ECG alone removed 36% of hidden LV-structure bias (LVEF 24%), about 100 × R².</li>
       <li><b>Comparator.</b> CLMBR-T (structured-EHR model; exploratory) gave larger balance gains (+10.9 points at P1); ECG added +2.2 on top.</li>
     </ol>
   </div>
