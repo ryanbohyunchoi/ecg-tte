@@ -413,34 +413,36 @@ def balance():
 
 # ---------------------------------------------------------------- figure
 def figure():
+    """Committed figure: ECG-based arms only (PGS arms dropped per PI, 2026-09-30; their outputs stay in OUT)."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     P = pd.read_csv(OUT / "prep_conf.csv")
     Cl = pd.read_csv(OUT / "cells_trtC.csv")
     fig, ax = plt.subplots(1, 2, figsize=(11, 4.4))
-    for arm, r2col, col, mk in (("ECGonly", "r2_ecg", "#d9544f", "o"), ("PGSonly", "r2_pgs", "#0d0f3a", "s"),
-                                ("PGSECGonly", "r2_pgs_ecg", "#7a7fb0", "^")):
+    for arm, r2col, col, mk in (("ECGonly", "r2_ecg", "#d9544f", "o"), ("shufECGonly", "r2_shuf", "#9aa0b8", "s")):
         d = Cl[Cl.arm == arm].merge(P, on=["cohort", "conf"])
-        ax[0].scatter(d[r2col], d.pct_vs_unmatched, c=col, marker=mk, label=LAB[arm], s=45)
+        ax[0].scatter(d[r2col].clip(lower=0), d.pct_vs_unmatched, c=col, marker=mk, label=LAB[arm], s=45)
     x = np.linspace(0, 0.45, 10)
     ax[0].plot(x, 100 * x, "--", c="grey", lw=1, label="y = 100 × R²")
-    ax[0].set_xlabel("Cross-fitted R² of proxy for the CMR confounder")
+    ax[0].set_xlabel("Cross-fitted R² of the ECG for the CMR confounder")
     ax[0].set_ylabel("% of confounder-induced bias removed (vs unmatched)")
     ax[0].legend(fontsize=8, frameon=False)
-    ax[0].set_title("a  Proxy strength and bias removed (treatment driven by C)", fontsize=10, loc="left")
+    ax[0].set_title("a  ECG-only PS (treatment driven by C)", fontsize=10, loc="left")
     S = pd.read_csv(OUT / "pooled_main.csv")
     S = S[(S.analysis == "null-corrected")]
-    arms = ["ECG", "PGS", "PGSECG", "oracle"]
+    arms = ["ECG", "shufECG", "oracle"]
+    cols = {"ECG": "#d9544f", "shufECG": "#9aa0b8", "oracle": "#0d0f3a"}
     confs = list(CONF)
-    w = 0.2
+    w = 0.26
     for j, a in enumerate(arms):
         vals = [S[(S.conf == k) & (S.arm == a)].pct_vs_base.squeeze() for k in confs]
-        ax[1].bar(np.arange(len(confs)) + (j - 1.5) * w, vals, w, label=LAB[a].replace("Demographic PS", "Demo PS"))
+        ax[1].bar(np.arange(len(confs)) + (j - 1) * w, vals, w, color=cols[a], label=LAB[a].replace("Demographic PS", "Demo PS"))
+    ax[1].axhline(0, c="k", lw=0.6)
     ax[1].set_xticks(np.arange(len(confs)), [CONF[k][0] for k in confs], fontsize=9)
     ax[1].set_ylabel("% of demographic-PS bias removed (null-corrected)")
-    ax[1].set_ylim(-10, 122)
-    ax[1].legend(fontsize=8, frameon=False, ncol=2, loc="upper center")
+    ax[1].set_ylim(-10, 115)
+    ax[1].legend(fontsize=8, frameon=False, ncol=3, loc="upper center")
     ax[1].set_title("b  Added to the demographic PS", fontsize=10, loc="left")
     fig.tight_layout()
     fig.savefig(DOCS / "UKB_CMR_plasmode.png", dpi=160)
