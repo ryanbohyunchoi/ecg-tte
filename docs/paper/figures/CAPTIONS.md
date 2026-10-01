@@ -20,7 +20,7 @@ An external validation in MIMIC-IV used 7 cardiovascular trials meeting the same
 - B, The same measure by PS specification: demographic, five-diagnosis, high-dimensional and clinical. For the clinical PS, characteristics included in that PS are excluded.
 - C, External replication in MIMIC-IV across 7 trials. The demographic PS gave 10.3% (6.4%–14.5%). Clinical-lite denotes the PS available in MIMIC-IV.
 
-Relative reduction is 1 minus the ratio of mean |SMD| with and without the added components, averaged across trials. The 95% CIs are from bootstrap resampling of trials (4,000 resamples in panels A and B).
+Relative reduction is 1 minus the ratio of the across-trial mean of the mean |SMD| with the added components to that without them. The 95% CIs are from 4,000 bootstrap resamples of trials.
 
 **Figure 3. Agreement of Emulated and RCT Hazard Ratios**
 - A, Emulated vs RCT HRs for 32 trials with the demographic PS alone (open circles) and with the ECG embedding (red). Grey segments join the two estimates for each trial; the dashed line is the line of identity.
@@ -59,7 +59,7 @@ Selection of the 38 emulated and 32 analysed trials from 99 candidate RCTs, with
 Median |SMD| after matching across 32 trials with the demographic PS alone (open circles), with the ECG embedding (red) and with the permuted-ECG placebo (gold triangles), grouped by domain. The dashed line marks |SMD| = 0.1.
 
 **eFigure 3. Balance on the Expanded Panel by Domain**
-Relative reduction in mean |SMD| with the ECG embedding (red) and the permuted-ECG placebo (gold) across about 330 additional pre-index characteristics per trial (344 with data in the primary set), by domain, for the demographic PS in 32 trials. Overall reduction: 9.8% (95% CI, 6.3%–13.1%). The 95% CIs are from bootstrap resampling of trials.
+Relative reduction in mean |SMD| with the ECG embedding (red) and the permuted-ECG placebo (gold) across about 330 additional pre-index characteristics per trial (344 with data in the primary set), by domain, for the demographic PS in 32 trials. Overall reduction: 9.8% (95% CI, 6.3%–13.2%). The 95% CIs are from bootstrap resampling of trials.
 
 **eFigure 4. Emulated and RCT Hazard Ratios for All 38 Emulated Trials**
 Emulated HRs (95% CI) with the demographic PS alone (open circles) and with the ECG embedding (red), against the RCT estimate (bar) and 95% CI (grey band). Trials are ordered by emulation-quality tier. The 6 limited-quality emulations (grey labels) are excluded from the primary analyses.
