@@ -519,8 +519,8 @@ def efigure4():
     save(fig, OUTS / "efigure4_forest_38")
 
 
-# ---------------------------------------------------------------- eFigure 5: sensitivity analyses
-def efigure5():
+# ---------------------------------------------------------------- eFigure 8: sensitivity analyses
+def efigure8_sens():
     S = pd.read_csv(A / "claude-v19-sens-outpatient/summary.csv")
     fig = plt.figure(figsize=(7.2, 3.0))
     gs = fig.add_gridspec(1, 2, width_ratios=[0.8, 1.4], wspace=0.35)
@@ -565,7 +565,7 @@ def efigure5():
               frameon=False, loc="upper left", fontsize=6.5)
     ax.set_title("Primary set (32 trials; estimable trials shown); demographic PS", loc="left", fontsize=7, color=GREY)
     letter(ax, "B", x=-0.12)
-    save(fig, OUTS / "efigure5_sensitivity")
+    save(fig, OUTS / "efigure8_sensitivity")
 
 
 # ---------------------------------------------------------------- eFigure 6: echo subset
@@ -667,8 +667,8 @@ def efigure7():
     save(fig, OUTS / "efigure7_mimic_per_trial")
 
 
-# ---------------------------------------------------------------- eFigure 8: simulation robustness
-def efigure8():
+# ---------------------------------------------------------------- eFigure 5: simulation robustness
+def efigure5_sim():
     E = A / "claude-v20-g2-ext"
     fig = plt.figure(figsize=(7.2, 3.0))
     gs = fig.add_gridspec(1, 2, wspace=0.35)
@@ -701,10 +701,10 @@ def efigure8():
     ax.set_ylim(40, 100)
     letter(ax, "B", x=-0.2)
     CHECK["efig8B coverage ECG/oracle"] = (round(pf.loc["ECG", "coverage"], 1), round(pf.loc["oracle", "coverage"], 1))
-    save(fig, OUTS / "efigure8_simulation_robustness")
+    save(fig, OUTS / "efigure5_simulation_robustness")
 
 
 if __name__ == "__main__":
-    for f in (figure1, figure2, figure3, figure4, efigure1, efigure2, efigure3, efigure4, efigure5, efigure6, efigure7, efigure8):
+    for f in (figure1, figure2, figure3, figure4, efigure1, efigure2, efigure3, efigure4, efigure5_sim, efigure6, efigure7, efigure8_sens):
         f()
     print(json.dumps(CHECK, indent=1, default=str))

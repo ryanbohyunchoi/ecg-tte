@@ -64,16 +64,9 @@ Relative reduction in mean |SMD| with the ECG embedding (red) and the permuted-E
 **eFigure 4. Emulated and RCT Hazard Ratios for All 38 Emulated Trials**
 Emulated HRs (95% CI) with the demographic PS alone (open circles) and with the ECG embedding (red), against the RCT estimate (bar) and 95% CI (grey band). Trials are ordered by emulation-quality tier. The 6 limited-quality emulations (grey labels) are excluded from the primary analyses.
 
-**eFigure 5. Sensitivity Analyses**
-- A, Proportion of held-out characteristics with |SMD| < 0.1 in 29 trials whose RCTs enrolled outpatients, among all initiators and among patients initiating treatment outside an inpatient stay. Bars show the demographic PS alone, with the ECG and with the permuted ECG. Labels give the gain with the ECG, the number of trials improved and the sign-flip P value.
-- B, Mean absolute difference from the RCT log HR, with and without the ECG (demographic PS), for:
-  - the initiation (primary) estimand;
-  - outpatient initiators;
-  - per-protocol and switch-only estimands with inverse-probability-of-censoring weights;
-  - a 90-day landmark;
-  - a 90-day run-in.
-
-  Each estimand is shown for the trials of the primary set in which it was estimable (n shown).
+**eFigure 5. Robustness of the Plasmode Simulation**
+- A, Percentage of demographic-PS bias removed (all confounders) by adding the ECG embedding, by a PS of the ECG alone and by the oracle, at true HRs of 0.6, 0.8 and 1.0 (common random numbers; ±1.96 Monte Carlo SEs). Adding the ECG removed 14.2% at each true HR.
+- B, Coverage of the true effect by nominal 95% CIs for each PS specification, with and without the ECG (clinical orientation, all confounders). The dashed line marks 95%.
 
 **eFigure 6. Echocardiography Subset: Real-Data Counterpart of the Simulation**
 - A, Among patients with a pre-index LVEF (or NT-proBNP) measurement, the proportion of the imbalance in that measure closed by adding the ECG embedding (solid bars) or the permuted-ECG placebo (hatched), relative to the imbalance closed by adjusting for the measure itself, by PS specification. Demographic PS: 60% for LVEF and 39% for NT-proBNP; placebo about 3% and −4%.
@@ -87,6 +80,13 @@ Primary set of 32 trials; 20 trials in the LVEF subset and 16 in the NT-proBNP s
 
 PEPTIC (proton pump inhibitor vs histamine-2 receptor antagonist) is a negative-control trial with an expected null effect.
 
-**eFigure 8. Robustness of the Plasmode Simulation**
-- A, Percentage of demographic-PS bias removed (all confounders) by adding the ECG embedding, by a PS of the ECG alone and by the oracle, at true HRs of 0.6, 0.8 and 1.0 (common random numbers; ±1.96 Monte Carlo SEs). Adding the ECG removed 14.2% at each true HR.
-- B, Coverage of the true effect by nominal 95% CIs for each PS specification, with and without the ECG (clinical orientation, all confounders). The dashed line marks 95%.
+**eFigure 8. Sensitivity Analyses**
+- A, Proportion of held-out characteristics with |SMD| < 0.1 in the 29 of 38 emulated trials (including the 6 limited-quality emulations) whose RCTs enrolled outpatients, among all initiators and among patients initiating treatment outside an inpatient stay. Bars show the demographic PS alone, with the ECG and with the permuted ECG. Labels give the gain with the ECG, the number of trials improved and the sign-flip P value.
+- B, Mean absolute difference from the RCT log HR, with and without the ECG (demographic PS), for:
+  - the initiation (primary) estimand;
+  - outpatient initiators;
+  - per-protocol and switch-only estimands with inverse-probability-of-censoring weights;
+  - a 90-day landmark;
+  - a 90-day run-in.
+
+  Each estimand is shown for the trials of the primary set in which it was estimable (n shown).
