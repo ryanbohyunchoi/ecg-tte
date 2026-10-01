@@ -36,7 +36,7 @@ A = Path("/mnt/raid0/rbc58/ecg-tte/audits")
 OUTM = ROOT / "docs/paper/figures/main"
 OUTS = ROOT / "docs/paper/figures/supplementary"
 NAVY, RED, GOLD, GREY, LGREY, DRED = "#0d1040", "#d9534f", "#c9a227", "#7a7c8c", "#d9dbe6", "#8f2d2a"
-RUNGS = [("P1", "Demographic"), ("P5", "Five-diagnosis"), ("hdPS200", "High-dimensional"), ("clinical", "Clinical")]
+RUNGS = [("P1", "PS-Demo"), ("P5", "PS-CVD5"), ("hdPS200", "hdPS"), ("clinical", "PS-Clinical")]
 CONFS = [("lvef", "LVEF"), ("ntprobnp", "NT-proBNP"), ("bmi", "BMI"), ("egfr", "eGFR"), ("all", "All")]
 NB = 4000
 plt.rcParams.update({"font.family": "Nimbus Sans", "font.size": 8, "axes.labelsize": 8, "axes.titlesize": 8,
@@ -185,7 +185,7 @@ def figure1():
     # data sources and representation
     box(30, 49, 30, 10, "YNHHS EHR (OMOP), 2011–2024\n+ raw 12-lead ECG (≤365 d before t0)\n+ echocardiography reports\n+ state death records", fs=6.3)
     arrow(45, 49, 45, 45.5)
-    box(30, 31, 30, 14.5, "AI-ECG encoder (BCL, self-supervised)\n256-d embedding → 32 PCs\n\nPS: demographic → five-diagnosis →\nhigh-dimensional → clinical,\neach with vs without ECG;\n1:1 caliper matching", fs=6.1)
+    box(30, 31, 30, 14.5, "AI-ECG encoder (BCL, self-supervised)\n256-d embedding → 32 PCs\n\nPS: PS-Demo → PS-CVD5 →\nhdPS → PS-Clinical,\neach with vs without ECG;\n1:1 caliper matching", fs=6.1)
     arrow(26, 27.5, 29.5, 33)
     # analyses
     box(64.5, 48, 35, 11, "1  Covariate balance\nheld-out characteristics not in the PS\n(58 primary; ~330 expanded);\npermuted-ECG placebo", fs=6.1)
@@ -246,7 +246,7 @@ def figure2():
     # C: MIMIC-IV
     S = json.load(open(A / "claude-v20-mimic-replication/summary/summary.json"))["balance"]
     ax = fig.add_subplot(gs[1, 1])
-    mr = [("demo", "Demographic"), ("hdPS200", "High-dimensional"), ("clinical", "Clinical-lite")]
+    mr = [("demo", "PS-Demo"), ("hdPS200", "hdPS"), ("clinical", "PS-Clinical-lite")]
     for k, (rg, lab) in enumerate(mr):
         y = len(mr) - 1 - k
         for a, col, mk, dy in (("ECG", RED, "o", 0.13), ("permECG", GOLD, "^", -0.13)):
@@ -283,7 +283,7 @@ def figure3():
     ax.set_xlim(np.log(0.5), np.log(2.0))
     ax.set_ylim(*lim)
     ax.set_xlabel("RCT hazard ratio")
-    ax.set_ylabel("Emulated hazard ratio (demographic PS)")
+    ax.set_ylabel("Emulated hazard ratio (PS-Demo)")
     gb, ge = agree(Lb[I32], Sb[I32], RB[I32], RS[I32]), agree(Le[I32], Se[I32], RB[I32], RS[I32])
     CHECK["fig3A gap base/ECG"] = (round(gb["gap"], 3), round(ge["gap"], 3))
     ax.text(0.02, 0.97, f"Mean |Δ log HR|: PS alone {gb['gap']:.3f}; + ECG {ge['gap']:.3f}\nr: {gb['r']:.2f} → {ge['r']:.2f}",
@@ -305,7 +305,7 @@ def figure3():
         ax.bar(k + 0.18, de.mean(), 0.34, color=RED)
         ax.text(k, max(db.mean(), de.mean()) + 0.01, f"{int((de < db).sum())}/{len(ok)}\n{fmt_p(p)}\nperm. {ps:.2f}".replace("0.", "."),
                 ha="center", fontsize=5.4, va="bottom")
-    ax.set_xticks(xs, ["Demog.", "5-dx", "High-dim.", "Clinical"], rotation=35, ha="right")
+    ax.set_xticks(xs, ["PS-Demo", "PS-CVD5", "hdPS", "PS-Clinical"], rotation=35, ha="right")
     ax.set_ylabel("Mean |Δ log HR| vs RCT")
     ax.set_ylim(0, 0.42)
     ax.legend(handles=[Patch(facecolor="white", edgecolor=NAVY, label="PS alone"), Patch(facecolor=RED, label="+ ECG")],
@@ -314,8 +314,8 @@ def figure3():
     # C: by quality
     grp = [("Excellent or good (15)", [i for i in I32 if TIER[i] in ("Excellent", "Good")]),
            ("Moderate (17)", [i for i in I32 if TIER[i] == "Moderate"])]
-    meth = [("P1", "base", "Demographic PS", "white", NAVY), ("P1", "ECG", "Demographic + ECG", RED, RED),
-            ("clinical", "base", "Clinical PS", "#b9bbd0", NAVY), ("clinical", "ECG", "Clinical + ECG", DRED, DRED)]
+    meth = [("P1", "base", "PS-Demo", "white", NAVY), ("P1", "ECG", "PS-Demo + ECG", RED, RED),
+            ("clinical", "base", "PS-Clinical", "#b9bbd0", NAVY), ("clinical", "ECG", "PS-Clinical + ECG", DRED, DRED)]
     for m, (key, title, scale) in enumerate((("r", "Pearson r", 1), ("ea", "Estimate agreement, %", 100), ("sd", "Std. difference agreement, %", 100))):
         ax = fig.add_subplot(gs[1, m])
         for gi, (glab, idx) in enumerate(grp):
@@ -371,8 +371,8 @@ def figure4():
     letter(ax, "A", x=-0.2)
     CHECK["fig4A cells"] = len(rel)
     ax = fig.add_subplot(gs[0, 1])
-    bars = [("PS of ECG alone", RED), ("ECG added to demographic PS", DRED), ("ECG added to high-dim. PS", "#e8a29f"),
-            ("ECG added to clinical PS", "#b06b68"), ("Oracle (confounder itself)", NAVY)]
+    bars = [("PS of ECG alone", RED), ("ECG added to PS-Demo", DRED), ("ECG added to hdPS", "#e8a29f"),
+            ("ECG added to PS-Clinical", "#b06b68"), ("Oracle (confounder itself)", NAVY)]
 
     def v_only(arm, c):
         r = tc[(tc.analysis == "raw") & (tc.arm == arm) & (tc.conf == c)].iloc[0]
@@ -453,7 +453,7 @@ def efigure2():
         prev = g
     ax.set_xlim(0, 0.42)
     ax.set_ylim(-1, len(names))
-    ax.set_xlabel("|SMD| after matching (median across 32 trials; demographic PS)")
+    ax.set_xlabel("|SMD| after matching (median across 32 trials; PS-Demo)")
     ax.legend(loc="lower center", frameon=False, bbox_to_anchor=(0.5, 1.0), ncol=3)
     save(fig, OUTS / "efigure2_loveplot_58")
 
@@ -479,7 +479,7 @@ def efigure3():
                     CHECK[f"efig3 all {a}"] = (round(e, 1), round(lo, 1), round(hi, 1))
     ax.axvline(0, color=GREY, ls="--", lw=0.8)
     ax.set_yticks(range(len(rows))[::-1], [f"{b} ({len(c)})" for b, c in rows])
-    ax.set_xlabel("Relative reduction in mean |SMD| vs demographic PS alone, % (95% CI); 32 trials")
+    ax.set_xlabel("Relative reduction in mean |SMD| vs PS-Demo alone, % (95% CI); 32 trials")
     ax.plot([], [], "o", color=RED, label="+ ECG")
     ax.plot([], [], "^", color=GOLD, mfc="white", label="+ permuted ECG")
     ax.legend(frameon=False, loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=2)
@@ -513,7 +513,7 @@ def efigure4():
     ax.spines["left"].set_visible(False)
     ax.set_ylim(-1, len(order))
     ax.set_xlabel("Hazard ratio (log scale); grey band, RCT 95% CI; bar, RCT estimate")
-    ax.plot([], [], "o", color=NAVY, mfc="white", label="PS alone (demographic)")
+    ax.plot([], [], "o", color=NAVY, mfc="white", label="PS-Demo alone")
     ax.plot([], [], "o", color=RED, label="+ ECG")
     ax.legend(frameon=False, loc="upper center", bbox_to_anchor=(0.5, 1.04), ncol=2)
     save(fig, OUTS / "efigure4_forest_38")
@@ -536,7 +536,7 @@ def efigure8_sens():
     ax.set_xticks([0, 1], [l for _, l in sets])
     ax.set_ylim(40, 66)
     ax.set_ylabel("% held-out characteristics |SMD| < 0.1")
-    ax.set_title("29 outpatient-RCT trials; demographic PS", loc="left", fontsize=7, color=GREY)
+    ax.set_title("29 outpatient-RCT trials; PS-Demo", loc="left", fontsize=7, color=GREY)
     ax.legend(handles=[Patch(facecolor="white", edgecolor=NAVY, label="PS alone"), Patch(facecolor=RED, label="+ ECG"),
                        Patch(facecolor="white", edgecolor=GOLD, hatch="///", label="+ permuted ECG")], frameon=False, fontsize=6, loc="upper right")
     letter(ax, "A", x=-0.3)
@@ -563,7 +563,7 @@ def efigure8_sens():
     ax.set_ylim(0, 0.62)
     ax.legend(handles=[Patch(facecolor="white", edgecolor=NAVY, label="PS alone"), Patch(facecolor=RED, label="+ ECG")],
               frameon=False, loc="upper left", fontsize=6.5)
-    ax.set_title("Primary set (32 trials; estimable trials shown); demographic PS", loc="left", fontsize=7, color=GREY)
+    ax.set_title("Primary set (32 trials; estimable trials shown); PS-Demo", loc="left", fontsize=7, color=GREY)
     letter(ax, "B", x=-0.12)
     save(fig, OUTS / "efigure8_sensitivity")
 
@@ -575,7 +575,7 @@ def efigure6():
     fig = plt.figure(figsize=(7.2, 3.0))
     gs = fig.add_gridspec(1, 2, wspace=0.35)
     ax = fig.add_subplot(gs[0, 0])
-    rl = [("P1", "Demog."), ("P5", "5-dx"), ("hdPS200", "High-dim."), ("clinical", "Clinical")]
+    rl = [("P1", "PS-Demo"), ("P5", "PS-CVD5"), ("hdPS200", "hdPS"), ("clinical", "PS-Clinical")]
     for si, (sub, lab, off) in enumerate((("E", "LVEF subset", -0.2), ("N", "NT-proBNP subset", 0.2))):
         for k, (rg, _) in enumerate(rl):
             r = P[(P.subset == sub) & (P.rung == rg)]
@@ -677,20 +677,20 @@ def efigure5_sim():
     for k, (f, lab) in enumerate(files):
         p = pd.read_csv(E / f)
         p = p[(p.analysis == "raw") & (p.conf == "all")].set_index("arm")
-        for j, (a, col, nm) in enumerate((("ECG", RED, "Demographic PS + ECG"), ("ECGonly", DRED, "PS of ECG alone"), ("oracle", NAVY, "Oracle"))):
+        for j, (a, col, nm) in enumerate((("ECG", RED, "PS-Demo + ECG"), ("ECGonly", DRED, "PS of ECG alone"), ("oracle", NAVY, "Oracle"))):
             ax.bar(k + (j - 1) * 0.26, p.loc[a, "pct_vs_base"], 0.24, color=col, yerr=1.96 * p.loc[a, "mcse_vs_base"],
                    error_kw=dict(lw=0.6, capsize=1.2), label=nm if k == 0 else None)
         CHECK[f"efig8A hr{lab}"] = round(p.loc["ECG", "pct_vs_base"], 1)
     ax.set_xticks(range(len(files)), [f"True HR {l}" for _, l in files])
-    ax.set_ylabel("% of demographic-PS bias removed (± 1.96 MCSE)")
+    ax.set_ylabel("% of PS-Demo bias removed (± 1.96 MCSE)")
     ax.set_ylim(0, 105)
     ax.legend(frameon=False, fontsize=6.0, loc="upper center", bbox_to_anchor=(0.5, -0.1), ncol=3)
     letter(ax, "A", x=-0.2)
     ax = fig.add_subplot(gs[0, 1])
     pf = pd.read_csv(E / "performance_cliniorient.csv")
     pf = pf[pf.conf == "all"].set_index("arm")
-    arms = [("unmatched", "Unmatched"), ("base", "Demographic"), ("ECG", "+ ECG"), ("ECGonly", "ECG alone"), ("hdPS", "High-dim."),
-            ("hdPSECG", "+ ECG"), ("clin", "Clinical"), ("clinECG", "+ ECG"), ("oracle", "Oracle")]
+    arms = [("unmatched", "Unmatched"), ("base", "PS-Demo"), ("ECG", "+ ECG"), ("ECGonly", "ECG alone"), ("hdPS", "hdPS"),
+            ("hdPSECG", "+ ECG"), ("clin", "PS-Clinical"), ("clinECG", "+ ECG"), ("oracle", "Oracle")]
     cols = [GREY, NAVY, RED, DRED, NAVY, RED, NAVY, RED, NAVY]
     for k, ((a, lab), c) in enumerate(zip(arms, cols)):
         ax.bar(k, pf.loc[a, "coverage"], 0.7, color=c if "ECG" in a or a == "oracle" else "white", edgecolor=c,
