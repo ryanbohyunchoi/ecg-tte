@@ -124,7 +124,8 @@ def build_data():
         qual = "strict" if s["fidelity_include_strict"] else ("high" if s["fidelity_include"] else "lower")
         nm = T1NAME[k]
         t1 = T1[nm]
-        assert {"strict": "High (strict)", "high": "High", "lower": "Lower"}[qual] == t1["qual"], (k, qual, t1["qual"])
+        # Table 1 now carries the four adjudicated tiers, e.g. "Good (1)"; check them against quality_tiers.json
+        assert t1["qual"].split(" (")[0] == QT[k]["tier"].split(" - ")[0], (k, t1["qual"], QT[k]["tier"])
         trials.append(dict(id=r.trial, name=SHORT.get(nm, nm), full=nm, area=AREA[r.category], qual=qual,
                            ecg=s["ecg_relevance"], rb=r4(r.rb), rs=r4(r.rs), hr=t1["hr"], ic=f"{t1['i']} vs {t1['c']}",
                            outcome=t1["outcome"], set=r.set,

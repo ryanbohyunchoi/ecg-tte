@@ -16,11 +16,11 @@ Of 99 candidate cardiovascular RCTs, 38 met the feasibility criteria and were em
 An external validation in MIMIC-IV used 7 cardiovascular trials meeting the same feasibility criteria, plus PEPTIC as a negative-control trial.
 
 **Figure 2. Balance on Held-Out Characteristics With and Without the ECG Embedding**
-- A, Relative reduction in mean |SMD| of held-out characteristics when the ECG embedding (red circles) or a permuted-ECG placebo (gold triangles) was added to the demographic PS, overall (58 characteristics; 11.4%; 95% CI, 6.3%–15.9%) and by domain, across 32 trials.
-- B, The same measure by PS specification: demographic, five-diagnosis, high-dimensional and clinical. For the clinical PS, characteristics included in that PS are excluded.
+- A, Relative reduction in mean |SMD| of held-out characteristics when the ECG embedding (red circles) or a permuted-ECG placebo (gold triangles) was added to the demographic PS, overall (58 characteristics; 11.4%; 95% CI, 6.3%–16.0%) and by domain, across 32 trials. The left ventricular systolic function estimate (14.6%) has a 95% CI that includes 0 (−0.5% to 27.3%).
+- B, The same measure by PS specification: demographic (11.4%), five-diagnosis (9.0%), high-dimensional (7.6%; 1.9%–12.8%) and clinical (−1.2%). For the clinical PS, characteristics included in that PS are excluded.
 - C, External replication in MIMIC-IV across 7 trials. The demographic PS gave 10.3% (6.4%–14.5%). Clinical-lite denotes the PS available in MIMIC-IV.
 
-Relative reduction is 1 minus the ratio of the across-trial mean of the mean |SMD| with the added components to that without them. The 95% CIs are from 4,000 bootstrap resamples of trials.
+Relative reduction is 1 minus the ratio of the across-trial mean of the mean |SMD| with the added components to that without them. The 95% CIs are percentile intervals from 4,000 bootstrap resamples of trials with a fixed seed. Within each trial, only characteristics observed in both compared arms are used.
 
 **Figure 3. Agreement of Emulated and RCT Hazard Ratios**
 - A, Emulated vs RCT HRs for 32 trials with the demographic PS alone (open circles) and with the ECG embedding (red). Grey segments join the two estimates for each trial; the dashed line is the line of identity.

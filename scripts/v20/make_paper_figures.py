@@ -128,10 +128,22 @@ VG = [v["g"] for v in D["vars"]]
 GROUPS = list(dict.fromkeys(VG))
 
 
+CI32 = pd.read_csv(A / "claude-v20-sens-primary32/ci.csv")
+
+
+def ci(source, set_, rung, domain, arm):
+    """Fixed-seed, paired-variable bootstrap CIs from SENS_PRIMARY32 (4,000 resamples; ratio of across-trial means)."""
+    r = CI32[(CI32.source == source) & (CI32.set == set_) & (CI32.rung == rung) & (CI32.domain == domain) & (CI32.arm == arm)]
+    assert len(r) == 1, (source, set_, rung, domain, arm)
+    r = r.iloc[0]
+    return float(r.est), float(r.lo), float(r.hi)
+
+
 def tmean(rung, arm, cols=None):
     """Per-trial mean |SMD| over the 58-panel cells; cells where PS-alone |SMD| is missing are masked in every arm (as the deck)."""
     M = arr(D["bal"][rung][arm])
-    M[np.isnan(arr(D["bal"][rung]["base"]))] = np.nan
+    # paired variable sets (as SENS_PRIMARY32): a cell counts only if observed under both PS alone and the ECG arm
+    M[np.isnan(arr(D["bal"][rung]["base"])) | np.isnan(arr(D["bal"][rung]["ECG"]))] = np.nan
     if cols is not None:
         M = M[:, cols]
     with np.errstate(all="ignore"):
@@ -198,9 +210,8 @@ def figure2():
     labs, ys = [], []
     for k, (g, cols) in enumerate(rows):
         y = len(rows) - 1 - k
-        b = tmean("P1", "base", cols)
         for a, col, mk, dy in (("ECG", RED, "o", 0.13), ("shufECG", GOLD, "^", -0.13)):
-            e, lo, hi = relred(b, tmean("P1", a, cols), I32, rng)
+            e, lo, hi = ci("YNHHS", "S32", "P1", "All 58" if k == 0 else g, a)
             ax.plot([lo, hi], [y + dy, y + dy], color=col, lw=1.2)
             ax.plot(e, y + dy, mk, color=col, mfc=col if mk == "o" else "white", ms=5)
             if a == "ECG":
@@ -221,9 +232,8 @@ def figure2():
     ax = fig.add_subplot(gs[1, 0])
     for k, (rg, lab) in enumerate(RUNGS):
         y = len(RUNGS) - 1 - k
-        b = tmean(rg, "base")
         for a, col, mk, dy in (("ECG", RED, "o", 0.13), ("shufECG", GOLD, "^", -0.13)):
-            e, lo, hi = relred(b, tmean(rg, a), I32, rng)
+            e, lo, hi = ci("YNHHS", "S32", rg, "All 58", a)
             ax.plot([lo, hi], [y + dy, y + dy], color=col, lw=1.2)
             ax.plot(e, y + dy, mk, color=col, mfc=col if mk == "o" else "white", ms=5)
             CHECK[f"fig2B {rg} {a}"] = (round(e, 1), round(lo, 1), round(hi, 1))
@@ -239,9 +249,8 @@ def figure2():
     mr = [("demo", "Demographic"), ("hdPS200", "High-dimensional"), ("clinical", "Clinical-lite")]
     for k, (rg, lab) in enumerate(mr):
         y = len(mr) - 1 - k
-        b = S[f"primary7|{rg}|all"]
         for a, col, mk, dy in (("ECG", RED, "o", 0.13), ("permECG", GOLD, "^", -0.13)):
-            e, (lo, hi) = b[f"relred_{a}"], b[f"relred_{a}_ci"]
+            e, lo, hi = ci("MIMIC-IV", "7 CV trials (all)", rg, "26 held-out", a)
             ax.plot([lo, hi], [y + dy, y + dy], color=col, lw=1.2)
             ax.plot(e, y + dy, mk, color=col, mfc=col if mk == "o" else "white", ms=5)
             CHECK[f"fig2C mimic {rg} {a}"] = (round(e, 1), round(lo, 1), round(hi, 1))
@@ -339,7 +348,7 @@ def figure4():
     gs = fig.add_gridspec(1, 2, width_ratios=[1, 1.35], wspace=0.32)
     ax = fig.add_subplot(gs[0, 0])
     cc = {"lvef": RED, "ntprobnp": NAVY, "bmi": GOLD, "egfr": GREY}
-    lo_, hi_ = -40, 100
+    lo_, hi_ = -20, 100
     for c, lab in CONFS[:4]:
         r = rel[rel.conf == c]
         y = r.prb_ECG.clip(lo_, hi_)
@@ -347,7 +356,7 @@ def figure4():
     ncl = int(((rel.prb_ECG < lo_) | (rel.prb_ECG > hi_)).sum())
     xx = np.linspace(0, 0.4, 10)
     ax.plot(xx, 100 * xx, color=NAVY, lw=0.9, ls="--")
-    ax.text(0.335, 100 * 0.335 + 3, "100 × R²", fontsize=6.5, ha="right")
+    ax.text(0.398, 22, "100 × R²", fontsize=6.5, ha="right")
     ax.axhline(rel.prb_oracle.median(), color=NAVY, lw=0.6, ls=":")
     ax.text(0.005, rel.prb_oracle.median() + 2, f"oracle median {rel.prb_oracle.median():.0f}%", fontsize=6.3)
     ax.axhline(rel.prb_shufECG.median(), color=GOLD, lw=0.6, ls=":")
