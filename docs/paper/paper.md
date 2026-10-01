@@ -292,7 +292,7 @@ MIMIC-IV contains deidentified EHR data for patients admitted to the emergency d
   9. **Simulation, "simplify and clarify":** shortened to the ECG-alone result, the added value over each PS, the R² relationship and coverage. Robustness moved to eFigure 8.
   10. **Sensitivity, "add MIMIC validation":** new "External validation" Results subsection with balance, agreement and the negative control. Sensitivity analyses are in prose; missing items carry "[results to be added]".
   - **eTable numbering is provisional (3–11).** Build the eTables to match.
-  - **UK Biobank:** a UKB cardiac-MRI plasmode is available if the PI wants it in the supplement (ECG-only PS removed 36% of the bias from hidden LV-structure confounders and 24% for LVEF; oracle 97%; docs/v20/UKB_ANALYSIS.md). It is not in the manuscript. UKB real-exposure emulations were uninformative because the ECG follows initiation.
+  - **UK Biobank:** excluded from the manuscript entirely (PI decision, 2026-10-01).
 
 - **Simulation results (2026-09-30):** from `docs/v20/G2_EXTENSION.md` (commit 625542c; aggregates in `audits/claude-v20-g2-ext/`).
   - The ECG-only numbers use the clean design (treatment driven by C only) in the clinical orientation. The added-share numbers are null-corrected.
