@@ -3,6 +3,7 @@
 Status: **observed inventory, not a source decision.** Per `docs/RESTART_PLAN.md`, raw
 JDAT remains the intended source of truth. OMOP gold is a candidate convenience layer
 for covariates and endpoints. Its mappings have not been validated against JDAT.
+Full map of all accessible data: [DATA_ACCESS_MAP.md](DATA_ACCESS_MAP.md).
 Related: `RUN_RBC_OMOP_DISCOVERY.md`, `RUN_EXISTING_OMOP_AUDIT.md`,
 `CARDS_MISC_OMOP_PSM_AUDIT.md`.
 

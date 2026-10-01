@@ -47,6 +47,8 @@ Current user-selected starting population: [broad COMET-inspired HF OR EF<40 coh
 - [Current handoff](handoff.md) (history: [docs/HANDOFF_HISTORY.md](docs/HANDOFF_HISTORY.md)).
 - [Proposed study strategy](docs/STRATEGY.md), [ECG model status](docs/ECG_MODEL.md),
   [OMOP/multimodal source survey](docs/DATA_SOURCES.md).
+- [Data access map](docs/DATA_ACCESS_MAP.md): every dataset we can use (Yale, MIMIC-IV, UK Biobank,
+  NHLBI BioData Catalyst dbGaP accessions), where it lives, and the read/write rules.
 - [Detailed restart plan](docs/RESTART_PLAN.md): questions, experimental design,
   statistical comparison, implementation sequence, and completion gates.
 - [Raw JDAT investigation](docs/RAW_JDAT_INVESTIGATION.md): source inventory,
