@@ -44,7 +44,7 @@ Here, we evaluated whether AI-ECG embeddings capture confounding missed by struc
 
 ### Data sources
 
-We used electronic health record (EHR) data from the Yale New Haven Health System (YNHHS), a large academic health system in Connecticut. We mapped the structured EHR data to the Observational Medical Outcomes Partnership (OMOP) common data model. We linked these data to structured echocardiography reports, raw 12-lead ECG signals and state vital statistics records (eMethods 1). We included patients with index dates from 2011 through 2024. The Yale Institutional Review Board approved the study (protocol number [ ]) and waived informed consent for this secondary analysis of existing data.
+We used electronic health record (EHR) data from the Yale New Haven Health System (YNHHS), a large academic health system in Connecticut. We mapped the structured EHR data to the Observational Medical Outcomes Partnership (OMOP) common data model. We linked these data to structured echocardiography reports, raw 12-lead ECG signals and state vital statistics records (eMethods 1). We included patients with index dates from 2011 through 2024. The Yale Institutional Review Board approved the study (protocol number [ ]) and waived informed consent for this secondary analysis of existing data. For external validation, we used MIMIC-IV (version 3.1) and MIMIC-IV-ECG (version 1.0), deidentified EHR and 12-lead ECG data from patients treated at Beth Israel Deaconess Medical Center, Boston, Massachusetts (eMethods 11).^16,17^
 
 ### Trial selection and target trial specification
 
@@ -76,76 +76,37 @@ Emulated HRs were estimated with Cox proportional hazards models with robust var
 
 The true effect is unknown in real data. We therefore used plasmode simulations,^15^ which retain each trial's real covariates, ECGs and follow-up while simulating treatment and outcome with a known HR. A measured physiological variable, LVEF, NT-proBNP, body mass index or estimated glomerular filtration rate, was made to drive both treatment and outcome and was withheld from every PS, so that it acted as an unmeasured confounder. We quantified the proportion of the resulting bias removed by a PS built from the ECG embedding alone, and by adding the ECG to the demographic, high-dimensional and clinical PS, relative to adjusting for the confounder itself, and related it to how well the ECG predicted the confounder in the real data (eMethods 7). We also examined residual ECG-phenotype imbalance across successive design steps and the prognostic value of an AI-ECG risk score for trial enrichment (eMethods 8).
 
+### External validation
+
+We applied the same feasibility criteria to trials whose treatment strategies are typically initiated in hospital, as MIMIC-IV captures inpatient care. Seven cardiovascular trials met these criteria (PLATO, ARISTOTLE, ROCKET AF, TRANSFORM-HF, COMET, SOAP II and ELITE II). PEPTIC, which compared proton pump inhibitors with histamine-2 receptor antagonists in mechanically ventilated patients and found no significant difference in mortality, served as a negative-control trial. ECGs were encoded with the same model. Balance was assessed on 26 held-out characteristics comprising core laboratory values and vital signs, additional laboratory values including NT-proBNP and troponin, mechanical ventilation and healthcare use. The demographic, high-dimensional and clinical PS specifications, matching and outcome analyses followed the primary analysis, and a sensitivity analysis excluded patients whose ECG was recorded on the index day. The analysis plan was specified before results were computed (eMethods 11).
+
+
 ### Statistical analysis
 
 Trials were the unit of analysis. For each trial, we computed the proportion of held-out characteristics with |SMD| <0.1 and the mean |SMD|, and summarized each PS specification across trials. The effect of adding the ECG was expressed as the change in the proportion of balanced characteristics and as the relative reduction in mean |SMD|, with 95% CIs from bootstrap resampling of trials. Paired differences between specifications were tested with exact one-sided sign-flip permutation tests across trials. We assessed robustness to clustering of trials that shared a comparator, with leave-one-trial-out analyses and in split-sample halves, and controlled the false discovery rate within analysis families. Agreement with RCTs was described by emulation quality. Analyses of all 38 emulated trials, the expanded panel and the additional PS augmentations are reported as sensitivity analyses. Sensitivity analyses varied the caliper, matching ratio and weighting approach, the number of ECG components, the variable panel, and the estimand (per-protocol and switch-only estimands with inverse-probability-of-censoring weights, 90-day landmark and run-in analyses), and restricted cohorts to patients initiating treatment as outpatients (eMethods 5, 6 and 9). This study was exploratory, and all analyses are reported. Headline estimates were re-derived in independent audits. Analyses were performed in Python 3.11 (eMethods 10).
 
 ## Results
 
-*Draft outline with preliminary numbers (2026-09-30), taken from the analysis outputs. The primary set is the 32 trials; figures in parentheses are for all 38 emulated trials. Numbers must be re-verified against the audit tables before submission. Bracketed items are still to be filled in.*
-
 ### Trial selection and study cohorts
-Of 99 candidate RCTs, 38 met the feasibility criteria and were emulated. After quality grading, 32 were retained: 3 excellent, 12 good and 17 moderate emulations; 6 limited emulations were excluded (eFigure 1; Table 1). The 32 trials included [n] patients with an ECG (median [n] per trial; range [ ]), of whom [n] were retained after 1:1 matching with the demographic PS [add from the cohort tables, with counts 1–10 suppressed].
+
+Of 99 candidate RCTs, 38 met the feasibility criteria and were emulated. After quality grading, 32 were retained: 3 excellent, 12 good and 17 moderate emulations; 6 limited emulations were excluded (eFigure 1; Table 1). The 32 trials included [n] patients with an ECG (median [n] per trial; range [ ]), of whom [n] were retained after 1:1 matching with the demographic PS (Figure 1; eTable 3). In MIMIC-IV, 7 cardiovascular trials and 1 negative-control trial met the feasibility criteria, with 441 to 1,841 matched pairs per cardiovascular trial (eTable 4).
 
 ### Covariate balance
-With the demographic PS, adding the ECG embedding reduced the mean |SMD| across the 58 held-out characteristics from 0.142 to 0.126, a relative reduction of 11.4% (95% CI, 6.3%–15.9%). The proportion of characteristics with |SMD| <0.1 increased from 49.8% to 55.0% (+5.2 percentage points; 22 of 32 trials; P = .002). The permuted-ECG placebo produced no improvement (−0.6%). For all 38 trials, the results were 12.6% (8.0%–16.7%) and +5.8 points (28 of 38).
-
-The improvement was concentrated in measures of cardiac structure and function (Figure 1). Relative reductions in mean |SMD| were:
-- LV structure, 24.6% (95% CI, 14.6%–32.5%);
-- diastolic function and left atrium, 17.7% (8.1%–26.2%);
-- LV systolic function, 14.6% (0.1%–27.2%);
-- vital signs and core laboratory values, 13.9%;
-- right ventricle and pulmonary pressures, 13.0%.
-
-There was no improvement for valvular and aortic measures (1.3%; −12.2% to 13.0%) or other laboratory values (−0.9%). On the expanded panel of about 330 characteristics, the reduction was 9.8% (6.3%–13.2%).
-
-The added value of the ECG declined as the structured PS became richer:
-- five-diagnosis PS, 9.0% (4.9%–13.2%);
-- high-dimensional PS, 8.1% (2.3%–12.9%);
-- clinical PS, −1.1% (−6.2% to 4.0%), which already includes LVEF and core physiology.
-
-On the expanded panel, which is largely made up of coded characteristics, the added value was small with the high-dimensional PS (1.5%; −1.0% to 4.6%) and the clinical PS (2.7%; 0.4%–5.0%).
+Across the 58 held-out characteristics, adding the ECG embedding to the demographic PS reduced the mean |SMD| from 0.142 to 0.126, a relative reduction of 11.4% (95% CI, 6.3%–15.9%), and increased the proportion of characteristics with an |SMD| <0.1 from 49.8% to 55.0% (22 of 32 trials improved; P = .002) (Figure 2). The permuted-ECG placebo did not improve balance (relative reduction, −0.6%). The improvement was concentrated in measures of cardiac structure and function, with relative reductions in mean |SMD| of 24.6% (95% CI, 14.6%–32.5%) for left ventricular structure, 17.7% (8.1%–26.2%) for diastolic function and left atrial size, 14.6% (0.1%–27.2%) for left ventricular systolic function, 13.9% for vital signs and core laboratory values, and 13.0% for right ventricular and pulmonary measures. There was no improvement for valvular and aortic measures (1.3%; 95% CI, −12.2% to 13.0%) or for other laboratory values (−0.9%) (eFigure 2). The added value of the ECG declined as the structured PS became richer, from 9.0% (95% CI, 4.9%–13.2%) with the five-diagnosis PS to 8.1% (2.3%–12.9%) with the high-dimensional PS and −1.1% (−6.2% to 4.0%) with the clinical PS, which already includes LVEF and core physiology. Results were similar in the expanded panel of approximately 330 characteristics (relative reduction, 9.8%; 95% CI, 6.3%–13.2%) and in all 38 emulated trials (12.6%; 8.0%–16.7%) (eTable 5; eFigure 3).
 
 ### Agreement with RCT results
-With the demographic PS, adding the ECG reduced the mean absolute difference between emulated and RCT log HRs from 0.251 to 0.205 (20 of 32 trials closer; P = .008). It also increased:
-- the correlation with RCT estimates, from 0.51 to 0.59;
-- estimate agreement, from 15 to 18 of 32 trials (47% to 56%);
-- standardized difference agreement, from 20 to 27 of 32 trials (63% to 84%).
+With the demographic PS, adding the ECG reduced the mean absolute difference between emulated and RCT log HRs from 0.251 to 0.205 (20 of 32 trials closer; P = .008), increased the correlation with RCT estimates from 0.51 to 0.59, and increased standardized difference agreement from 20 to 27 of 32 trials (Figure 3; eFigure 4). This improvement was not specific to each trial's own RCT result (benchmark-permutation P = .27), indicating that it largely reflected attenuation of extreme estimates rather than trial-specific correction. Gains were smaller with richer PS specifications, for which the mean absolute difference changed from 0.226 to 0.196 with the five-diagnosis PS (P = .049), from 0.181 to 0.167 with the high-dimensional PS (P = .20), and from 0.158 to 0.155 with the clinical PS (P = .42). Agreement metrics for each specification and for all 38 emulated trials are shown in eTable 6.
 
-In the benchmark-permutation test, the improvement was not specific to each trial's own RCT result (P = .27). This indicates that the improvement largely reflected attenuation of extreme estimates rather than trial-specific correction.
-
-Gains were smaller with richer PS:
-- five-diagnosis PS, 0.226 to 0.196 (P = .049);
-- high-dimensional PS, 0.181 to 0.167 (P = .20);
-- clinical PS, 0.158 to 0.155 (P = .42).
-
-The clinical PS alone had the closest agreement: r = 0.56, estimate agreement 69% and standardized difference agreement 84% (Figure 2). For all 38 trials, the demographic PS difference fell from 0.258 to 0.207 (25 of 38 closer; P = .002; permutation P = .22).
-
-### Agreement by emulation quality
-Agreement was higher in trials with excellent or good emulation quality (n = 15) than in those with moderate quality (n = 17). With the clinical PS alone:
-- correlation 0.83 vs 0.39;
-- estimate agreement 80% vs 59%;
-- standardized difference agreement 100% vs 71%.
-
-With the demographic PS in excellent or good emulations, adding the ECG increased standardized difference agreement from 67% to 93% and estimate agreement from 40% to 67% (11 of 15 trials closer; P = .009). In moderate emulations the changes were smaller (9 of 17 closer; P = .13). These comparisons were post hoc.
+Agreement with RCT results was closer for emulations rated excellent or good (n = 15) than for those rated moderate (n = 17); with the clinical PS, the correlation with RCT estimates was 0.83 vs 0.39 and standardized difference agreement was 100% vs 71%. Among excellent or good emulations, adding the ECG to the demographic PS increased standardized difference agreement from 67% to 93% (11 of 15 trials closer; P = .009), whereas changes among moderate emulations were smaller (9 of 17 trials closer; P = .13) (Figure 3; eTable 7). These comparisons were post hoc.
 
 ### Simulation
-In plasmode simulations across 107 trial–confounder combinations in 31 trials, a PS built from the ECG embedding alone removed 27.9% of the bias from an unmeasured LVEF confounder. It removed 22.2% for NT-proBNP, 17.5% for body mass index and 9.7% for estimated glomerular filtration rate, or 18.0% overall. By comparison, adjustment for the confounder itself (oracle) removed 93.1% and a PS built from the permuted ECG removed −0.2% (Monte Carlo SE ≤0.6 percentage points). For LVEF, the ECG alone reduced bias in the log HR from 0.23 to 0.16, and CI coverage of the true effect increased from 52% to 71% (oracle, 95%).
+In plasmode simulations across 107 trial–confounder combinations in 31 trials, a PS built from the ECG embedding alone removed 18.0% of the bias from an unmeasured physiological confounder, including 27.9% for LVEF, 22.2% for NT-proBNP, 17.5% for body mass index and 9.7% for estimated glomerular filtration rate (Figure 4). Adjustment for the confounder itself removed 93.1% of the bias, and the permuted-ECG placebo removed none (−0.2%). When added to a PS, the ECG removed a further 14.9% of the remaining bias with the demographic PS, 8.6% with the high-dimensional PS and 11.7% with the clinical PS from which the confounder was withheld (22.4%, 13.0% and 13.7%, respectively, for LVEF). The proportion of bias removed tracked how well the ECG predicted the confounder in the real data, approximately 100 × R² (median R², 0.26 for LVEF, 0.22 for body mass index, 0.20 for NT-proBNP and 0.04 for estimated glomerular filtration rate). Coverage of the true effect remained below nominal for every PS that included the ECG (68%–83%; oracle, 95%), and results did not depend on the true HR (eFigure 8).
 
-Adding the ECG to a PS removed a further proportion of the bias that the PS left:
-- demographic PS, 14.9%;
-- high-dimensional PS, 8.6%;
-- clinical PS without the confounder, 11.7%.
-
-For LVEF, the corresponding values were 22.4%, 13.0% and 13.7%. The high-dimensional PS with the ECG removed 45% of the bias overall and 37% for LVEF, and coverage remained 68% to 83% for every PS that included the ECG. Structured codes were informative proxies for renal function, removing about half of the bias from estimated glomerular filtration rate, to which the ECG added little. Bias removal by the ECG tracked how well it predicted the confounder, approximately 100 × R² (median R²: LVEF 0.26, body mass index 0.22, NT-proBNP 0.20, estimated glomerular filtration rate 0.04). The proportion of bias removed was the same at true HRs of 0.6, 0.8 and 1.0 (14.2% each when the ECG was added to the demographic PS).
+### External validation
+In MIMIC-IV, adding the ECG embedding to the demographic PS reduced the mean |SMD| across the 26 held-out characteristics by 10.3% (95% CI, 6.4%–14.5%), with improvement in all 7 cardiovascular trials (P = .008), and increased the proportion of balanced characteristics from 41.2% to 51.6% (Figure 2; eFigure 7). The permuted-ECG placebo did not improve balance (−2.5%). The reduction was 14.5% (95% CI, 9.7%–19.7%) after excluding patients whose ECG was recorded on the index day, and, as in the primary analysis, it was smaller with the high-dimensional PS (7.5%; −0.5% to 15.9%) and the clinical PS (1.2%; −9.6% to 10.8%). Agreement with RCT results improved directionally with the ECG for every PS specification but not significantly (demographic PS, mean absolute difference 0.337 to 0.315; 4 of 7 trials closer; P = .27), and the ECG outperformed the permuted-ECG placebo for 3 of 4 specifications (eTable 8). In the negative-control trial, the demographic PS yielded an HR of 1.53 (95% CI, 1.36–1.71) against an RCT relative risk of 1.05. Adding the ECG moved the estimate toward the null (HR, 1.39; 95% CI, 1.24–1.56), whereas the permuted-ECG placebo did not (HR, 1.61).
 
 ### Sensitivity analyses
-- **Outpatient initiators:** restricting to patients who started treatment as outpatients (29 trials) reduced the balance gain with the demographic PS to +2.3 percentage points (17 of 29 trials; P = .035), compared with +5.7 points for all initiators in the same trials. Part of the gain therefore reflects differences in care setting that the ECG captures.
-- **Alternative estimands:** results for the per-protocol, switch-only, 90-day landmark and run-in estimands are to be added (eMethods 9).
-- **Other matching and weighting approaches:** [ ].
-- **CLMBR-T:** [ ].
-- **Prespecified AF trials:** in the 5 prespecified AF trials, the demographic PS difference fell from 0.254 to 0.199 (3 of 5 trials closer; P = .19).
-- **Enrichment:** [ ].
+When cohorts were restricted to patients initiating treatment as outpatients (29 trials), the balance gain with the demographic PS was smaller (+2.3 percentage points; 17 of 29 trials; P = .035) than for all initiators in the same trials (+5.7 points), suggesting that part of the gain reflects differences in care setting captured by the ECG (eFigure 5). In the 5 prespecified AF trials, adding the ECG reduced the mean absolute difference from RCT results from 0.254 to 0.199 (3 of 5 trials closer; P = .19). Results for the per-protocol, switch-only, 90-day landmark and run-in estimands, alternative matching and weighting approaches, and CLMBR-T comparisons are reported in eTables 9 to 11 [results to be added].
 
 ## Tables and Figures
 
@@ -194,6 +155,8 @@ For LVEF, the corresponding values were 22.4%, 13.0% and 13.7%. The high-dimensi
 | Other        | PROVE IT-TIMI 22  | ACS within 30 d                                             | atorvastatin              | pravastatin                   | death, MI, UA rehospitalisation, revascularisation >= 30 d or stroke | 24        | 0.84 (0.74–0.95)                     | Lower             |
 
 
+
+
 *Abbreviations:*
 
 - ACEi, angiotensin-converting enzyme inhibitor; ARB, angiotensin receptor blocker;
@@ -209,11 +172,23 @@ For LVEF, the corresponding values were 22.4%, 13.0% and 13.7%. The high-dimensi
 - Emulation quality is from a blinded rating made before results were examined. High (strict) means no design flag; high means one flag with at least moderate comparator and outcome fidelity; lower means all others.
 - Full eligibility criteria, code lists and adaptations are given in eTable 1.
 
-**Figure 1.** Balance on held-out characteristics by domain (docs/abstract/ACC_2027/fig_A_loveplot) *(placeholder; final figure plan pending)*
+**Figure 1. Study design and trial selection.** Data sources, the two-stage selection of trials (99 candidates, 38 emulated, 32 analysed) and the MIMIC-IV external validation cohort. *(Draft: docs/paper/figures/main/)*
 
-**Figure 2.** Distance from the RCT result by trial type (fig_B_hr_gap) *(placeholder)*
+**Figure 2. Balance on held-out characteristics.** A, Relative reduction in mean |SMD| with the ECG embedding by characteristic domain (demographic PS; 32 trials). B, Relative reduction by PS specification, ECG vs permuted-ECG placebo. C, External validation in MIMIC-IV. *(Draft: docs/paper/figures/main/)*
 
-**Figure 3.** Simulation: bias removed vs ECG R² (fig_C_simulation) *(placeholder)*
+**Figure 3. Agreement of emulated and RCT results.** A, Emulated vs RCT log HRs with the PS alone and with the ECG embedding. B, Mean absolute difference from RCT log HRs by PS specification, with the benchmark-permutation null. C, Agreement by emulation quality. *(Draft: docs/paper/figures/main/)*
+
+**Figure 4. Plasmode simulation.** A, Proportion of bias removed by the ECG embedding vs the ECG's R² for the withheld confounder, by trial–confounder combination. B, Bias removed by the ECG alone and added to each PS, compared with adjustment for the confounder itself, by confounder. *(Draft: docs/paper/figures/main/)*
+
+**Supplementary figures** (docs/paper/figures/supplementary/):
+- eFigure 1, trial selection flow with exclusion reasons;
+- eFigure 2, per-characteristic balance (58 characteristics);
+- eFigure 3, expanded-panel balance by domain;
+- eFigure 4, per-trial emulated vs RCT HRs;
+- eFigure 5, sensitivity analyses (outpatient initiators and alternative estimands);
+- eFigure 6, echocardiography-subset analysis;
+- eFigure 7, MIMIC-IV per-trial balance and HRs;
+- eFigure 8, simulation robustness (true HRs of 0.6, 0.8 and 1.0; Monte Carlo standard errors).
 
 ## Discussion
 
@@ -236,6 +211,8 @@ For LVEF, the corresponding values were 22.4%, 13.0% and 13.7%. The high-dimensi
 13. Schneeweiss S, Rassen JA, Glynn RJ, Avorn J, Mogun H, Brookhart MA. High-dimensional propensity score adjustment in studies of treatment effects using health care claims data. *Epidemiology.* 2009;20:512–522.
 14. Austin PC. Balance diagnostics for comparing the distribution of baseline covariates between treatment groups in propensity-score matched samples. *Stat Med.* 2009;28:3083–3107.
 15. Franklin JM, Schneeweiss S, Polinski JM, Rassen JA. Plasmode simulation for the evaluation of pharmacoepidemiologic methods in complex healthcare databases. *Comput Stat Data Anal.* 2014;72:219–226. [verify]
+16. Johnson AEW, Bulgarelli L, Shen L, et al. MIMIC-IV, a freely accessible electronic health record dataset. *Sci Data.* 2023;10:1. [verify]
+17. Gow B, Pollard T, Nathanson LA, et al. MIMIC-IV-ECG: diagnostic electrocardiogram matched subset (version 1.0). PhysioNet. 2023. doi:10.13026/4nqg-sb35 [verify]
 
 
 
@@ -299,7 +276,24 @@ Core analyses used Python 3.11.16, with pandas 2.3.3, NumPy 2.4.6, DuckDB 1.5.5,
 
 
 
+### eMethods 11. External validation in MIMIC-IV
+MIMIC-IV contains deidentified EHR data for patients admitted to the emergency department or hospital at Beth Israel Deaconess Medical Center, and MIMIC-IV-ECG contains the matched diagnostic 12-lead ECG signals, which extend to approximately 2019.^16,17^ Candidate trials were screened against the feasibility criteria of the primary analysis, using the same thresholds: at least 300 patients with an ECG in the smaller treatment group and at least 50 primary-outcome events. Outcomes were restricted to those ascertainable in hospital data or from linked dates of death, which are complete for 1 year after discharge. Five trials (PLATO, ARISTOTLE, ROCKET AF, TRANSFORM-HF and COMET) had been built previously, and SOAP II (dopamine vs norepinephrine), ELITE II (angiotensin receptor blocker vs angiotensin-converting enzyme inhibitor in heart failure) and PEPTIC (proton pump inhibitor vs histamine-2 receptor antagonist in ventilated patients; negative control) were added from prespecified screen definitions. Before the new analyses, the previous estimates for the five existing trials were reproduced exactly. The ECG nearest before time zero was encoded with the same model and reduced to 32 principal components within each trial. The held-out panel comprised 26 characteristics: core laboratory values and vital signs (8), additional laboratory values (13; NT-proBNP, troponin T, lactate, albumin and others), mechanical ventilation at time zero (1) and healthcare use (4). The clinical PS included the core laboratory values, vital signs and healthcare use, which were therefore removed from its held-out panel. Laboratory values were compared among patients with an observed value, with indicators of missingness. Structured echocardiographic measurements were not used because their provenance could not be verified. Two RCT benchmarks were not HRs (SOAP II, odds ratio; PEPTIC, relative risk). Because 16% to 53% of ECGs were recorded on the index day, a sensitivity analysis excluded these patients.
+
 ### Draft notes (remove before submission)
+- **PI bracketed comments addressed (2026-10-01).** Backup: `…/paper/backup/paper_worktree_2026-10-01.md`.
+  1. **Data sources, "mention MIMIC-IV":** added an external-validation sentence and refs 16–17 (both [verify]).
+  2. **Methods, "external cohort validation":** new subsection "External validation" plus eMethods 11, from `docs/v20/MIMIC_REPLICATION.md` and `MIMIC_FEASIBILITY.md`.
+  3. **Results, "figures folder":** the folder is `docs/paper/figures/main` and `/supplementary`, being created by the figure agent. The figure plan moved to Tables and Figures (Figures 1–4, eFigures 1–8), and the bracket was removed from Results.
+  4. **Cohorts, "mention MIMIC-IV trials":** added the MIMIC-IV trial count and matched-pair range (eTable 4). The Yale [n] placeholders remain.
+  5. **Balance, "is 11.4% across all 58?":** rephrased as "Across the 58 held-out characteristics … reduced the mean |SMD| … a relative reduction of 11.4%".
+  6. **Results, "no bullet points; final-version prose":** all of Results is now prose (balance, agreement, quality, simulation, external validation, sensitivity). Secondary detail is referenced to eTables 5–11 and eFigures 2–8.
+  7. **Balance, "reference the supplements":** the expanded panel and 38-trial results point to eTable 5 and eFigure 3, the domain detail to eFigure 2.
+  8. **Agreement, "move clinical-PS info to supplement":** the clinical PS-alone agreement metrics and the 38-trial numbers moved to eTable 6. The clinical-PS comparison by quality tier is kept, as it carries the quality finding.
+  9. **Simulation, "simplify and clarify":** shortened to the ECG-alone result, the added value over each PS, the R² relationship and coverage. Robustness moved to eFigure 8.
+  10. **Sensitivity, "add MIMIC validation":** new "External validation" Results subsection with balance, agreement and the negative control. Sensitivity analyses are in prose; missing items carry "[results to be added]".
+  - **eTable numbering is provisional (3–11).** Build the eTables to match.
+  - **UK Biobank:** a UKB cardiac-MRI plasmode is available if the PI wants it in the supplement (ECG-only PS removed 36% of the bias from hidden LV-structure confounders and 24% for LVEF; oracle 97%; docs/v20/UKB_ANALYSIS.md). It is not in the manuscript. UKB real-exposure emulations were uninformative because the ECG follows initiation.
+
 - **Simulation results (2026-09-30):** from `docs/v20/G2_EXTENSION.md` (commit 625542c; aggregates in `audits/claude-v20-g2-ext/`).
   - The ECG-only numbers use the clean design (treatment driven by C only) in the clinical orientation. The added-share numbers are null-corrected.
   - The sparse-PS arms (added share 9.7% overall, 16.2% for LVEF) were run but are omitted from the manuscript, consistent with the simplified PS ladder.
@@ -311,7 +305,6 @@ Core analyses used Python 3.11.16, with pandas 2.3.3, NumPy 2.4.6, DuckDB 1.5.5,
   - **Outcomes:** split into "Covariate balance" and "Trial emulation analysis".
   - **Backups:** pre-edit backups are at `…/paper/backup/paper_worktree_2026-09-30*.md`.
   - **Results numbers:** from the deck data, the same sources as the audits. Relative-reduction CIs are a bootstrap over trials (4,000 resamples).
-
 - **Methods v4 (2026-09-30): updated to the analyses conducted through v1.9.**
   - Main-text Methods are back in prose (no bullets), keeping the PI's wording edits to the Introduction and Data sources. The previous working version is backed up at `/mnt/raid0/rbc58/ecg-tte/audits/claude-acc2027-abstract/paper/backup/paper_worktree_2026-09-30.md`.
   - New or changed:
