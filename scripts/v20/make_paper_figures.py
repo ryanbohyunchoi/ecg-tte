@@ -200,81 +200,130 @@ def figure1():
 
 
 # ---------------------------------------------------------------- Figure 2
+UNM = arr(D["bal"]["none"]["unmatched"])
+
+
+def _masked(rung):
+    """Unmatched, PS alone and PS + ECG |SMD| (trials x 58) on cells observed in all three (paired variable sets)."""
+    B, E = arr(D["bal"][rung]["base"]), arr(D["bal"][rung]["ECG"])
+    U = UNM.copy()
+    bad = np.isnan(B) | np.isnan(E) | np.isnan(U)
+    for M in (U, B, E):
+        M[bad] = np.nan
+    return U, B, E
+
+
+def _pct(M):
+    with np.errstate(all="ignore"):
+        return 100 * np.nansum(M < 0.1, 1) / np.isfinite(M).sum(1)
+
+
 def figure2():
-    rng = np.random.default_rng(0)
-    fig = plt.figure(figsize=(7.2, 6.2))
-    gs = fig.add_gridspec(2, 2, height_ratios=[1.25, 1], hspace=0.55, wspace=0.55)
-    # A: by domain
-    ax = fig.add_subplot(gs[0, :])
-    rows = [("All 58 characteristics", list(range(len(VG))))] + [(g, [j for j, x in enumerate(VG) if x == g]) for g in GROUPS]
-    labs, ys = [], []
+    """A love plot; B domain means; C PS ladder; D per-trial waterfall. Unmatched, PS alone and PS + ECG throughout; YNHHS 32 trials."""
+    fig = plt.figure(figsize=(7.4, 8.6))
+    gs = fig.add_gridspec(3, 2, width_ratios=[1.05, 1], height_ratios=[1, 1, 1], hspace=0.62, wspace=0.75)
+    U, B, E = _masked("P1")
+    U32, B32, E32 = U[I32], B[I32], E[I32]
+    sty = [("Unmatched", GREY, "x", None), ("PS-Demo", NAVY, "o", "white"), ("PS-Demo + ECG", RED, "o", RED)]
+    # A: love plot (median |SMD| across trials, per characteristic)
+    ax = fig.add_subplot(gs[:, 0])
+    names = [v["lab"] for v in D["vars"]]
+    med = [np.nanmedian(M, 0) for M in (U32, B32, E32)]
+    y = np.arange(len(names))[::-1]
+    for j in range(len(names)):
+        vals = [m[j] for m in med if np.isfinite(m[j])]
+        if vals:
+            ax.plot([min(vals), max(vals)], [y[j]] * 2, color=LGREY, lw=0.8, zorder=1)
+    for (lab, col, mk, fc), m in zip(sty, med):
+        if mk == "x":
+            ax.scatter(m, y, s=12, marker="x", color=col, lw=0.8, label=lab, zorder=2)
+        else:
+            ax.scatter(m, y, s=12, facecolors=fc, edgecolors=col, lw=0.8, label=lab, zorder=3 if fc == "white" else 4)
+    ax.axvline(0.1, color=RED, ls="--", lw=0.6)
+    ax.set_yticks(y, names, fontsize=5.0)
+    prev = None
+    for j, g in enumerate(VG):
+        if g != prev and j:
+            ax.axhline(y[j] + 0.5, color=LGREY, lw=0.5)
+        prev = g
+    ax.set_xlim(0, 0.42)
+    ax.set_ylim(-0.8, len(names) - 0.2)
+    ax.set_xlabel("|SMD| (median across 32 trials)")
+    ax.legend(loc="lower left", bbox_to_anchor=(-0.05, 1.005), ncol=3, frameon=False, fontsize=6.0, handletextpad=0.1, columnspacing=0.6)
+    letter(ax, "A", x=-0.62, y=1.02)
+    CHECK["fig2A median base/ECG all"] = (round(np.nanmedian(B32), 3), round(np.nanmedian(E32), 3))
+    # B: mean |SMD| by domain
+    ax = fig.add_subplot(gs[0, 1])
+    rows = [("All 58", list(range(len(VG))))] + [(g, [j for j, x in enumerate(VG) if x == g]) for g in GROUPS]
     for k, (g, cols) in enumerate(rows):
-        y = len(rows) - 1 - k
-        for a, col, mk, dy in (("ECG", RED, "o", 0.13), ("shufECG", GOLD, "^", -0.13)):
-            e, lo, hi = ci("YNHHS", "S32", "P1", "All 58" if k == 0 else g, a)
-            ax.plot([lo, hi], [y + dy, y + dy], color=col, lw=1.2)
-            ax.plot(e, y + dy, mk, color=col, mfc=col if mk == "o" else "white", ms=5)
-            if a == "ECG":
-                ax.text(max(hi, 0) + 1.5, y + dy, f"{e:.1f}%", va="center", fontsize=6.8, color=col)
-                if k == 0:
-                    CHECK["fig2A all58 P1 32"] = (round(e, 1), round(lo, 1), round(hi, 1))
-        labs.append(f"{g} ({len(cols)})")
-        ys.append(y)
-    ax.axvline(0, color=GREY, lw=0.8, ls="--")
-    ax.set_yticks(ys, labs)
-    ax.set_xlabel("Relative reduction in mean |SMD| vs PS alone, % (95% CI)")
-    ax.set_xlim(-25, 45)
-    ax.plot([], [], "o", color=RED, label="+ ECG")
-    ax.plot([], [], "^", color=GOLD, mfc="white", label="+ permuted ECG")
-    ax.legend(loc="lower right", frameon=False)
-    letter(ax, "A", x=-0.32)
-    # B: by PS specification
-    ax = fig.add_subplot(gs[1, 0])
-    for k, (rg, lab) in enumerate(RUNGS):
-        y = len(RUNGS) - 1 - k
-        for a, col, mk, dy in (("ECG", RED, "o", 0.13), ("shufECG", GOLD, "^", -0.13)):
-            e, lo, hi = ci("YNHHS", "S32", rg, "All 58", a)
-            ax.plot([lo, hi], [y + dy, y + dy], color=col, lw=1.2)
-            ax.plot(e, y + dy, mk, color=col, mfc=col if mk == "o" else "white", ms=5)
-            CHECK[f"fig2B {rg} {a}"] = (round(e, 1), round(lo, 1), round(hi, 1))
-    ax.axvline(0, color=GREY, lw=0.8, ls="--")
-    ax.set_yticks(range(len(RUNGS))[::-1], [l for _, l in RUNGS])
-    ax.set_xlabel("Relative reduction in mean |SMD|, % (95% CI)")
-    ax.set_xlim(-15, 25)
-    ax.set_title("YNHHS, 32 trials", loc="left", fontsize=7.5, color=GREY)
-    letter(ax, "B", x=-0.5)
-    # C: MIMIC-IV
-    S = json.load(open(A / "claude-v20-mimic-replication/summary/summary.json"))["balance"]
+        yy = len(rows) - 1 - k
+        with np.errstate(all="ignore"):
+            mm = [np.nanmean(np.nanmean(M[:, cols], 1)) for M in (U32, B32, E32)]
+        ax.plot([min(mm), max(mm)], [yy, yy], color=LGREY, lw=0.8, zorder=1)
+        for (lab, col, mk, fc), v in zip(sty, mm):
+            if mk == "x":
+                ax.plot(v, yy, "x", color=col, ms=4, mew=0.9, zorder=2)
+            else:
+                ax.plot(v, yy, "o", color=col, mfc=fc, ms=4, mew=0.9, zorder=3)
+        if k == 0:
+            CHECK["fig2B all58 U/B/E"] = tuple(round(v, 3) for v in mm)
+    ax.set_yticks(range(len(rows))[::-1], [f"{g} ({len(c)})" for g, c in rows], fontsize=6)
+    ax.axvline(0.1, color=RED, ls="--", lw=0.6)
+    ax.set_xlabel("Mean |SMD| (mean across 32 trials)")
+    letter(ax, "B", x=-0.75)
+    # C: PS ladder
     ax = fig.add_subplot(gs[1, 1])
-    mr = [("demo", "PS-Demo"), ("hdPS200", "hdPS"), ("clinical", "PS-Clinical-lite")]
-    for k, (rg, lab) in enumerate(mr):
-        y = len(mr) - 1 - k
-        for a, col, mk, dy in (("ECG", RED, "o", 0.13), ("permECG", GOLD, "^", -0.13)):
-            e, lo, hi = ci("MIMIC-IV", "7 CV trials (all)", rg, "26 held-out", a)
-            ax.plot([lo, hi], [y + dy, y + dy], color=col, lw=1.2)
-            ax.plot(e, y + dy, mk, color=col, mfc=col if mk == "o" else "white", ms=5)
-            CHECK[f"fig2C mimic {rg} {a}"] = (round(e, 1), round(lo, 1), round(hi, 1))
-    ax.axvline(0, color=GREY, lw=0.8, ls="--")
-    ax.set_yticks(range(len(mr))[::-1], [l for _, l in mr])
-    ax.set_xlabel("Relative reduction in mean |SMD|, % (95% CI)")
-    ax.set_xlim(-15, 25)
-    ax.set_title("MIMIC-IV, 7 trials", loc="left", fontsize=7.5, color=GREY)
-    letter(ax, "C", x=-0.5)
+    xs = np.arange(len(RUNGS))
+    series = {"U": [], "B": [], "E": []}
+    for rg, _ in RUNGS:
+        u, b, e = (M[I32] for M in _masked(rg))
+        with np.errstate(all="ignore"):
+            for key, M in (("U", u), ("B", b), ("E", e)):
+                series[key].append(np.nanmean(np.nanmean(M, 1)))
+    ax.plot(xs, series["U"], "x--", color=GREY, ms=4, mew=0.9, lw=0.8, label="Unmatched")
+    ax.plot(xs, series["B"], "o-", color=NAVY, mfc="white", ms=4, lw=0.9, label="PS alone")
+    ax.plot(xs, series["E"], "o-", color=RED, ms=4, lw=0.9, label="PS + ECG")
+    for k, (rg, _) in enumerate(RUNGS):
+        e_, lo, hi = ci("YNHHS", "S32", rg, "All 58", "ECG")
+        ax.text(k + 0.12, series["E"][k] - 0.004, (f"+{-e_:.1f}%" if e_ < 0 else f"−{e_:.1f}%"), ha="left", va="top", fontsize=5.6, color=RED)
+        CHECK[f"fig2C {rg} U/B/E rr"] = (round(series["U"][k], 3), round(series["B"][k], 3), round(series["E"][k], 3), round(e_, 1))
+    ax.set_xticks(xs, [l for _, l in RUNGS], rotation=30, ha="right", fontsize=6.5)
+    ax.set_xlim(-0.3, len(RUNGS) - 0.4)
+    ax.set_ylabel("Mean |SMD| (32 trials)")
+    lo_y = min(series["E"] + series["B"]) - 0.03
+    ax.set_ylim(max(0, lo_y), max(series["U"]) + 0.015)
+    ax.legend(frameon=False, fontsize=6.0, loc="upper right")
+    ax.text(0.02, 0.03, "labels: relative change in mean |SMD| with ECG", transform=ax.transAxes, fontsize=5.4, color=GREY)
+    letter(ax, "C", x=-0.42)
+    # D: per-trial waterfall of change in % balanced
+    ax = fig.add_subplot(gs[2, 1])
+    d = _pct(E32) - _pct(B32)
+    order = np.argsort(d)[::-1]
+    cols = [RED if x > 0 else (LGREY if x == 0 else GREY) for x in d[order]]
+    ax.bar(np.arange(len(d)), d[order], color=cols, width=0.8)
+    ax.axhline(0, color=NAVY, lw=0.6)
+    p = signflip_exact(d)
+    ax.text(0.98, 0.95, f"{int((d > 0).sum())} of {len(d)} trials improved\nmean +{d.mean():.1f} points; {fmt_p(p)}", transform=ax.transAxes, ha="right", va="top", fontsize=6.3)
+    ax.set_xticks([])
+    ax.set_xlabel("Trials (sorted)")
+    ax.set_ylabel("Change in % of characteristics\nwith |SMD| < 0.1 (PS-Demo + ECG vs PS-Demo)", fontsize=6.5)
+    letter(ax, "D", x=-0.42)
+    CHECK["fig2D improved/mean/p"] = (int((d > 0).sum()), round(d.mean(), 1), round(_pct(B32).mean(), 1), round(_pct(E32).mean(), 1), round(p, 4))
     save(fig, OUTM / "figure2_covariate_balance")
 
 
 # ---------------------------------------------------------------- Figure 3
 def figure3():
-    fig = plt.figure(figsize=(7.2, 6.4))
-    gs = fig.add_gridspec(2, 3, height_ratios=[1.2, 1], hspace=0.6, wspace=0.55)
+    fig = plt.figure(figsize=(7.2, 6.6))
+    gs = fig.add_gridspec(2, 2, width_ratios=[1.45, 1], height_ratios=[1.15, 1], hspace=0.55, wspace=0.35)
     # A: scatter
-    ax = fig.add_subplot(gs[0, :2])
+    ax = fig.add_subplot(gs[0, 0])
     Lb, Sb = est("P1", "base")
     Le, Se = est("P1", "ECG")
     for i in I32:
         ax.plot([RB[i], RB[i]], [Lb[i], Le[i]], color=LGREY, lw=0.8, zorder=1)
-    ax.scatter(RB[I32], Lb[I32], s=16, facecolors="white", edgecolors=NAVY, lw=0.9, zorder=2, label="PS alone")
-    ax.scatter(RB[I32], Le[I32], s=16, color=RED, zorder=3, label="PS + ECG")
+    ax.scatter(RB[I32], Lb[I32], s=16, facecolors="white", edgecolors=NAVY, lw=0.9, zorder=2, label="PS-Demo")
+    ax.scatter(RB[I32], Le[I32], s=16, color=RED, zorder=3, label="PS-Demo + ECG")
     lim = (np.log(0.3), np.log(3.2))
     ax.plot(lim, lim, color=GREY, ls="--", lw=0.8)
     ticks = [0.33, 0.5, 0.67, 1, 1.5, 2, 3]
@@ -283,54 +332,78 @@ def figure3():
     ax.set_xlim(np.log(0.5), np.log(2.0))
     ax.set_ylim(*lim)
     ax.set_xlabel("RCT hazard ratio")
-    ax.set_ylabel("Emulated hazard ratio (PS-Demo)")
+    ax.set_ylabel("Emulated hazard ratio")
     gb, ge = agree(Lb[I32], Sb[I32], RB[I32], RS[I32]), agree(Le[I32], Se[I32], RB[I32], RS[I32])
     CHECK["fig3A gap base/ECG"] = (round(gb["gap"], 3), round(ge["gap"], 3))
-    ax.text(0.02, 0.97, f"Mean |Δ log HR|: PS alone {gb['gap']:.3f}; + ECG {ge['gap']:.3f}\nr: {gb['r']:.2f} → {ge['r']:.2f}",
+    ax.text(0.02, 0.97, f"Mean |Δ log HR|: {gb['gap']:.3f} → {ge['gap']:.3f}\nr: {gb['r']:.2f} → {ge['r']:.2f}",
             transform=ax.transAxes, va="top", fontsize=7)
     ax.legend(loc="lower right", frameon=False)
     letter(ax, "A", x=-0.13)
-    # B: mean |Δ| by rung
-    ax = fig.add_subplot(gs[0, 2])
+    # B: mean |Δ| by PS specification
+    ax = fig.add_subplot(gs[0, 1])
     xs = np.arange(len(RUNGS))
     for k, (rg, lab) in enumerate(RUNGS):
-        Lb, Sb = est(rg, "base")
-        Le, Se = est(rg, "ECG")
-        ok = I32[np.isfinite(Lb[I32]) & np.isfinite(Le[I32])]
-        db, de = np.abs(Lb[ok] - RB[ok]), np.abs(Le[ok] - RB[ok])
+        Lb_, Sb_ = est(rg, "base")
+        Le_, Se_ = est(rg, "ECG")
+        ok = I32[np.isfinite(Lb_[I32]) & np.isfinite(Le_[I32])]
+        db, de = np.abs(Lb_[ok] - RB[ok]), np.abs(Le_[ok] - RB[ok])
         p = signflip_exact(db - de)
-        ps = bench_shuffle(Le[ok], Lb[ok], RB[ok])
+        ps = bench_shuffle(Le_[ok], Lb_[ok], RB[ok])
         CHECK[f"fig3B {rg}"] = (round(db.mean(), 3), round(de.mean(), 3), int((de < db).sum()), round(p, 4), round(ps, 3))
         ax.bar(k - 0.18, db.mean(), 0.34, color="white", edgecolor=NAVY, lw=0.9)
         ax.bar(k + 0.18, de.mean(), 0.34, color=RED)
         ax.text(k, max(db.mean(), de.mean()) + 0.01, f"{int((de < db).sum())}/{len(ok)}\n{fmt_p(p)}\nperm. {ps:.2f}".replace("0.", "."),
                 ha="center", fontsize=5.4, va="bottom")
-    ax.set_xticks(xs, ["PS-Demo", "PS-CVD5", "hdPS", "PS-Clinical"], rotation=35, ha="right")
+    ax.set_xticks(xs, [l for _, l in RUNGS], rotation=30, ha="right")
     ax.set_ylabel("Mean |Δ log HR| vs RCT")
     ax.set_ylim(0, 0.42)
-    ax.legend(handles=[Patch(facecolor="white", edgecolor=NAVY, label="PS alone"), Patch(facecolor=RED, label="+ ECG")],
+    ax.legend(handles=[Patch(facecolor="white", edgecolor=NAVY, label="PS alone"), Patch(facecolor=RED, label="PS + ECG")],
               loc="upper right", frameon=False, fontsize=6.3)
-    letter(ax, "B", x=-0.38)
-    # C: by quality
-    grp = [("Excellent or good (15)", [i for i in I32 if TIER[i] in ("Excellent", "Good")]),
-           ("Moderate (17)", [i for i in I32 if TIER[i] == "Moderate"])]
-    meth = [("P1", "base", "PS-Demo", "white", NAVY), ("P1", "ECG", "PS-Demo + ECG", RED, RED),
-            ("clinical", "base", "PS-Clinical", "#b9bbd0", NAVY), ("clinical", "ECG", "PS-Clinical + ECG", DRED, DRED)]
-    for m, (key, title, scale) in enumerate((("r", "Pearson r", 1), ("ea", "Estimate agreement, %", 100), ("sd", "Std. difference agreement, %", 100))):
-        ax = fig.add_subplot(gs[1, m])
-        for gi, (glab, idx) in enumerate(grp):
-            idx = np.array(idx)
-            for k, (rg, a, lab, fc, ec) in enumerate(meth):
-                L, SE = est(rg, a)
-                v = agree(L[idx], SE[idx], RB[idx], RS[idx])[key]
-                CHECK[f"fig3C {glab} {lab} {key}"] = round(v, 2)
-                ax.bar(gi + (k - 1.5) * 0.19, v, 0.18, color=fc, edgecolor=ec, lw=0.8, label=lab if gi == 0 else None)
-        ax.set_xticks([0, 1], ["Excellent/\ngood", "Moderate"])
-        ax.set_ylabel(title)
-        ax.set_ylim(0, 1.0 if scale == 1 else 105)
+    letter(ax, "B", x=-0.3)
+    # C: standardized difference agreement by emulation quality, every PS specification
+    ax = fig.add_subplot(gs[1, 0])
+    grp = [("Excellent or good (n = 15)", np.array([i for i in I32 if TIER[i] in ("Excellent", "Good")]), NAVY, -0.14),
+           ("Moderate (n = 17)", np.array([i for i in I32 if TIER[i] == "Moderate"]), GOLD, 0.14)]
+    for glab, idx, col, off in grp:
+        for k, (rg, _) in enumerate(RUNGS):
+            vb = agree(*est(rg, "base"), RB, RS) if False else None
+            Lb_, Sb_ = est(rg, "base")
+            Le_, Se_ = est(rg, "ECG")
+            b = agree(Lb_[idx], Sb_[idx], RB[idx], RS[idx])["sd"]
+            e = agree(Le_[idx], Se_[idx], RB[idx], RS[idx])["sd"]
+            ax.annotate("", xy=(k + off, e), xytext=(k + off, b), arrowprops=dict(arrowstyle="-|>", color=col, lw=0.9, mutation_scale=6))
+            ax.plot(k + off, b, "o", color=col, mfc="white", ms=4.5, mew=0.9, zorder=3)
+            ax.plot(k + off, e, "o", color=col, ms=4.5, zorder=4)
+            CHECK[f"fig3C {glab[:8]} {rg} sd"] = (round(b, 1), round(e, 1))
+        ax.plot([], [], "o", color=col, ms=4.5, label=glab)
+    ax.plot([], [], "o", color=GREY, mfc="white", ms=4.5, label="open: PS alone; filled: PS + ECG")
+    ax.set_xticks(xs, [l for _, l in RUNGS])
+    ax.set_ylabel("Standardized difference agreement, %")
+    ax.set_ylim(40, 105)
+    ax.legend(frameon=False, fontsize=6.0, loc="lower right")
+    letter(ax, "C", x=-0.13)
+    # D: overall RCT-DUPLICATE metrics by PS specification (32 trials)
+    sub = gs[1, 1].subgridspec(3, 1, hspace=0.35)
+    mets = [("r", "Pearson r", (0, 1)), ("ea", "Estimate\nagreement, %", (0, 100)), ("sd", "Std. difference\nagreement, %", (0, 100))]
+    for m, (key, lab, yl) in enumerate(mets):
+        ax = fig.add_subplot(sub[m, 0])
+        for k, (rg, _) in enumerate(RUNGS):
+            Lb_, Sb_ = est(rg, "base")
+            Le_, Se_ = est(rg, "ECG")
+            b = agree(Lb_[I32], Sb_[I32], RB[I32], RS[I32])[key]
+            e = agree(Le_[I32], Se_[I32], RB[I32], RS[I32])[key]
+            ax.bar(k - 0.18, b, 0.34, color="white", edgecolor=NAVY, lw=0.8)
+            ax.bar(k + 0.18, e, 0.34, color=RED)
+            CHECK[f"fig3D {rg} {key}"] = (round(b, 2), round(e, 2))
+        ax.set_ylim(*yl)
+        ax.set_ylabel(lab, fontsize=6.2)
+        ax.tick_params(axis="y", labelsize=6)
+        if m < 2:
+            ax.set_xticks(xs, [""] * len(xs))
+        else:
+            ax.set_xticks(xs, [l for _, l in RUNGS], rotation=30, ha="right", fontsize=6.3)
         if m == 0:
-            letter(ax, "C", x=-0.45)
-    fig.legend(*fig.axes[-1].get_legend_handles_labels(), loc="lower center", ncol=4, frameon=False, bbox_to_anchor=(0.5, -0.02))
+            letter(ax, "D", x=-0.38, y=1.08)
     save(fig, OUTM / "figure3_rct_agreement")
 
 
@@ -372,7 +445,7 @@ def figure4():
     CHECK["fig4A cells"] = len(rel)
     ax = fig.add_subplot(gs[0, 1])
     bars = [("PS of ECG alone", RED), ("ECG added to PS-Demo", DRED), ("ECG added to hdPS", "#e8a29f"),
-            ("ECG added to PS-Clinical", "#b06b68"), ("Oracle (confounder itself)", NAVY)]
+            ("ECG added to PS-Clinical", "#b06b68")]
 
     def v_only(arm, c):
         r = tc[(tc.analysis == "raw") & (tc.arm == arm) & (tc.conf == c)].iloc[0]
@@ -381,16 +454,17 @@ def figure4():
     def v_add(ps, c):
         r = av[(av.analysis == "null-corrected") & (av.ps == ps) & (av.conf == c)].iloc[0]
         return r.ecg_added_pct_of_ps_bias, r.mcse
-    w = 0.16
+    w = 0.19
     for i, (c, lab) in enumerate(CONFS):
-        vals = [v_only("ECGonly", c), v_add("base", c), v_add("hdPS", c), v_add("clin", c), v_only("oracle", c)]
+        vals = [v_only("ECGonly", c), v_add("base", c), v_add("hdPS", c), v_add("clin", c)]
+        CHECK[f"fig4B oracle {c}"] = round(v_only("oracle", c)[0], 1)
         for k, ((v, m), (bl, col)) in enumerate(zip(vals, bars)):
-            ax.bar(i + (k - 2) * w, v, w * 0.95, color=col, yerr=1.96 * m, error_kw=dict(lw=0.6, capsize=1.2), label=bl if i == 0 else None)
+            ax.bar(i + (k - 1.5) * w, v, w * 0.95, color=col, yerr=1.96 * m, error_kw=dict(lw=0.6, capsize=1.2), label=bl if i == 0 else None)
         CHECK[f"fig4B {c}"] = [round(v, 1) for v, _ in vals]
     ax.axhline(0, color=NAVY, lw=0.6)
     ax.set_xticks(range(len(CONFS)), [l for _, l in CONFS])
     ax.set_ylabel("% of confounder-induced bias removed")
-    ax.set_ylim(-5, 105)
+    ax.set_ylim(-5, 40)
     ax.legend(frameon=False, fontsize=6.0, loc="upper center", bbox_to_anchor=(0.5, -0.1), ncol=2)
     letter(ax, "B", x=-0.12)
     save(fig, OUTM / "figure4_plasmode")

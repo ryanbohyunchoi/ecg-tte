@@ -15,12 +15,13 @@ Of 99 candidate cardiovascular RCTs, 38 met the feasibility criteria and were em
 
 An external validation in MIMIC-IV used 7 cardiovascular trials meeting the same feasibility criteria, plus PEPTIC as a negative-control trial.
 
-**Figure 2. Balance on Held-Out Characteristics With and Without the ECG Embedding**
-- A, Relative reduction in mean |SMD| of held-out characteristics when the ECG embedding (red circles) or a permuted-ECG placebo (gold triangles) was added to PS-Demo, overall (58 characteristics; 11.4%; 95% CI, 6.3%–16.0%) and by domain, across 32 trials. The left ventricular systolic function estimate (14.6%) has a 95% CI that includes 0 (−0.5% to 27.3%).
-- B, The same measure by PS specification: PS-Demo (11.4%), PS-CVD5 (9.0%), hdPS (7.6%; 1.9%–12.8%) and PS-Clinical (−1.2%). For PS-Clinical, characteristics included in that PS are excluded.
-- C, External replication in MIMIC-IV across 7 trials. The PS-Demo gave 10.3% (6.4%–14.5%). Clinical-lite denotes the PS available in MIMIC-IV.
+**Figure 2. Balance on Held-Out Characteristics Before Matching, With PS-Demo and With PS-Demo + ECG (YNHHS, 32 Trials)**
+- A, Love plot of the 58 held-out characteristics: median |SMD| across trials before matching (grey crosses), after matching on PS-Demo (open circles) and after matching on PS-Demo + ECG (red), grouped by domain. The dashed line marks |SMD| = 0.1.
+- B, Mean |SMD| by domain (mean across trials of the per-trial mean). Overall, 0.143 unmatched, 0.142 with PS-Demo and 0.126 with PS-Demo + ECG (relative reduction, 11.4%; 95% CI, 6.3%–16.0%).
+- C, Mean |SMD| before matching and after matching on each PS specification with and without the ECG. Labels give the relative change in mean |SMD| with the ECG: −11.4% (PS-Demo), −9.0% (PS-CVD5), −7.6% (hdPS) and +1.2% (PS-Clinical). For PS-Clinical, characteristics included in that PS are excluded.
+- D, Change in the percentage of characteristics with |SMD| < 0.1 with PS-Demo + ECG vs PS-Demo in each trial, sorted. Balance improved in 22 of 32 trials (mean +5.2 percentage points; one-sided sign-flip P = .002).
 
-Relative reduction is 1 minus the ratio of the across-trial mean of the mean |SMD| with the added components to that without them. The 95% CIs are percentile intervals from 4,000 bootstrap resamples of trials with a fixed seed. Within each trial, only characteristics observed in both compared arms are used.
+Within each trial, only characteristics observed in all compared arms are used. Relative reductions and 95% CIs (4,000 bootstrap resamples of trials) are as in the Results. The permuted-ECG placebo is shown in eFigure 2, and the MIMIC-IV replication in eFigure 7.
 
 **Figure 3. Agreement of Emulated and RCT Hazard Ratios**
 - A, Emulated vs RCT HRs for 32 trials with PS-Demo alone (open circles) and with the ECG embedding (red). Grey segments join the two estimates for each trial; the dashed line is the line of identity.
@@ -28,24 +29,21 @@ Relative reduction is 1 minus the ratio of the across-trial mean of the mean |SM
   - the number of trials in which the ECG moved the estimate closer to the RCT;
   - the one-sided exact sign-flip P value;
   - the benchmark-permutation P value, in which RCT results were reassigned across trials 20,000 times.
-- C, RCT-DUPLICATE agreement metrics by emulation quality (excellent or good, n = 15; moderate, n = 17) for PS-Demo and PS-Clinical with and without the ECG:
-  - Pearson correlation of log HRs;
-  - estimate agreement (emulated HR within the RCT 95% CI);
-  - standardized difference agreement (|z| < 1.96).
-
-  Comparisons by emulation quality are post hoc.
+- C, Standardized difference agreement (|z| < 1.96) by emulation quality (excellent or good, n = 15; moderate, n = 17) for each PS specification, with the PS alone (open) and with the ECG (filled). Comparisons by emulation quality are post hoc.
+- D, RCT-DUPLICATE agreement metrics across the 32 trials for each PS specification, with the PS alone (open) and with the ECG (red): Pearson correlation of log HRs, estimate agreement (emulated HR within the RCT 95% CI) and standardized difference agreement.
 
 **Figure 4. Plasmode Simulation: Bias From an Unmeasured Physiological Confounder Removed by the ECG**
 - A, Percentage of the PS-Demo bias removed by adding the ECG embedding, against the ECG's cross-fitted partial R² for the withheld confounder in the real data, for 107 trial–confounder combinations in 31 trials. The dashed line is 100 × R². Dotted lines give the median for the oracle (adjustment for the confounder itself) and for the permuted-ECG placebo.
 - B, Percentage of confounder-induced bias removed, by confounder:
   - by a PS built from the ECG embedding alone (LVEF, 27.9%; all confounders, 18.0%);
-  - by adding the ECG to PS-Demo, the hdPS and PS-Clinical, as a share of the bias remaining after each PS (14.9%, 8.6% and 11.7%);
-  - by the oracle (93.1%).
+  - by adding the ECG to PS-Demo, the hdPS and PS-Clinical, as a share of the bias remaining after each PS (14.9%, 8.6% and 11.7%).
+
+  The oracle, adjustment for the confounder itself, removed 93.1% of the bias and is not shown.
 
   Error bars are ±1.96 Monte Carlo SEs.
 
 In both panels, LVEF and eGFR are oriented so that lower values increase treatment probability and hazard (clinical orientation; adopted after the initial design, see eMethods 7). NT-proBNP and BMI are identical in both orientations. In panel B:
-- the ECG-only and oracle values come from the design in which treatment depends on the confounder only;
+- the ECG-only (and oracle) values come from the design in which treatment depends on the confounder only;
 - the added-value bars use bias corrected for each arm's error in the no-confounding scenario.
 
 The true HR was 0.80.
