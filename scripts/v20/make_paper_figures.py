@@ -24,7 +24,8 @@ import pandas as pd
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
+import matplotlib.pyplot as plt
+from matplotlib.transforms import Bbox  # noqa: E402
 from matplotlib.patches import FancyBboxPatch, Patch  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
@@ -46,15 +47,52 @@ plt.rcParams.update({"font.family": "Nimbus Sans", "font.size": 8, "axes.labelsi
 
 
 # ---------------------------------------------------------------- helpers
+PANEL_LETTER = {}  # id(axes) -> panel letter, filled by letter()
+
+
+def save_panels(fig, path, pad=0.06):
+    """Export each lettered panel as its own PNG/PDF in <dir>/panels/<stem>_<letter>.*.
+    Axes without a letter join the most recently lettered panel (e.g. stacked sub-axes of one panel)."""
+    groups, cur = {}, None
+    for ax in fig.axes:
+        cur = PANEL_LETTER.get(id(ax), cur)
+        if cur is not None:
+            groups.setdefault(cur, []).append(ax)
+    if not groups:
+        return
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    out = path.parent / "panels"
+    out.mkdir(parents=True, exist_ok=True)
+    for lt, axs in groups.items():
+        bb = Bbox.union([a.get_tightbbox(r) for a in axs]).transformed(fig.dpi_scale_trans.inverted())
+        bb = Bbox.from_extents(bb.x0 - pad, bb.y0 - pad, bb.x1 + pad, bb.y1 + pad)
+        others = [a for a in fig.axes if a not in axs and a.get_visible()]
+        hidden_legends = [lg for lg in fig.legends if lg.get_visible()]
+        for a in others:
+            a.set_visible(False)
+        for lg in hidden_legends:
+            lg.set_visible(False)
+        for ext, kw in ((".png", dict(dpi=300)), (".pdf", {})):
+            fig.savefig(out / f"{path.name}_{lt}{ext}", bbox_inches=bb, **kw)
+        for a in others:
+            a.set_visible(True)
+        for lg in hidden_legends:
+            lg.set_visible(True)
+    print("  panels:", ", ".join(sorted(groups)))
+
+
 def save(fig, path):
     path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(path.with_suffix(".png"), dpi=300, bbox_inches="tight")
     fig.savefig(path.with_suffix(".pdf"), bbox_inches="tight")
+    save_panels(fig, path)
     plt.close(fig)
     print("wrote", path.relative_to(ROOT))
 
 
 def letter(ax, s, x=-0.12, y=1.04):
+    PANEL_LETTER[id(ax)] = s
     ax.text(x, y, s, transform=ax.transAxes, fontsize=10, fontweight="bold", va="bottom", ha="left")
 
 
