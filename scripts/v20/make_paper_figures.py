@@ -350,6 +350,41 @@ def figure2():
     save(fig, OUTM / "figure2_covariate_balance")
 
 
+def figure2D_by_quality():
+    """Exploratory: panel 2D grouped by emulation quality (sorted within tier). Saved alongside the panels."""
+    U, B, E = _masked("P1")
+    d_all = _pct(E[I32]) - _pct(B[I32])
+    tiers = [("Excellent", NAVY), ("Good", "#4a5a9a"), ("Moderate", GOLD)]
+    fig, ax = plt.subplots(figsize=(4.6, 2.9))
+    x0 = 0
+    for tier, col in tiers:
+        idx = [k for k, i in enumerate(I32) if TIER[i] == tier]
+        d = np.sort(d_all[idx])[::-1]
+        xs = x0 + np.arange(len(d))
+        ax.bar(xs, d, color=[col if v > 0 else LGREY for v in d], width=0.8, edgecolor=col, lw=0.4)
+        p = signflip_exact(d) if len(d) > 1 else np.nan
+        ax.text(x0 + (len(d) - 1) / 2, 22.5, f"{tier} (n = {len(d)})\n{int((d > 0).sum())}/{len(d)} improved\nmean {d.mean():+.1f} points" + (f"\n{fmt_p(p)}" if len(d) > 2 else ""),
+                ha="center", va="bottom", fontsize=5.4, color=col, linespacing=1.15)
+        CHECK[f"fig2D_q {tier}"] = (int((d > 0).sum()), len(d), round(d.mean(), 1), round(p, 3) if np.isfinite(p) else None)
+        x0 += len(d) + 1.5
+        if tier != "Moderate":
+            ax.axvline(x0 - 1.25, color=LGREY, lw=0.6, ls=":")
+    ax.axhline(0, color=NAVY, lw=0.6)
+    ax.set_xticks([])
+    ax.set_xlim(-2.2, x0 - 1)
+    ax.set_ylim(-20, 36)
+    ax.set_yticks([-20, -10, 0, 10, 20])
+    ax.set_xlabel("Trials, grouped by emulation quality (sorted within group)")
+    ax.set_ylabel("Change in % of characteristics\nwith |SMD| < 0.1 (PS-Demo + ECG vs PS-Demo)", fontsize=6.3)
+    letter(ax, "D", x=-0.16)
+    out = OUTM / "panels"
+    out.mkdir(parents=True, exist_ok=True)
+    for ext, kw in ((".png", dict(dpi=300)), (".pdf", {})):
+        fig.savefig(out / f"figure2_covariate_balance_D_by_quality{ext}", bbox_inches="tight", **kw)
+    plt.close(fig)
+    print("wrote panels/figure2_covariate_balance_D_by_quality")
+
+
 # ---------------------------------------------------------------- Figure 3
 def figure3():
     fig = plt.figure(figsize=(7.2, 6.6))
@@ -817,6 +852,6 @@ def efigure5_sim():
 
 
 if __name__ == "__main__":
-    for f in (figure1, figure2, figure3, figure4, efigure1, efigure2, efigure3, efigure4, efigure5_sim, efigure6, efigure7, efigure8_sens):
+    for f in (figure1, figure2, figure2D_by_quality, figure3, figure4, efigure1, efigure2, efigure3, efigure4, efigure5_sim, efigure6, efigure7, efigure8_sens):
         f()
     print(json.dumps(CHECK, indent=1, default=str))
