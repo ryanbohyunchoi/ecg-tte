@@ -15,38 +15,19 @@ Of 99 candidate cardiovascular RCTs, 38 met the feasibility criteria and were em
 
 An external validation in MIMIC-IV used 7 cardiovascular trials meeting the same feasibility criteria, plus PEPTIC as a negative-control trial.
 
-**Figure 2. Balance on Held-Out Characteristics Before Matching, With PS-Demo and With PS-Demo + ECG (YNHHS, 32 Trials)**
-- A, Love plot of the 58 held-out characteristics: median |SMD| across trials before matching (grey crosses), after matching on PS-Demo (open circles) and after matching on PS-Demo + ECG (red), grouped by domain. The dashed line marks |SMD| = 0.1.
-- B, Mean |SMD| by domain (mean across trials of the per-trial mean). Overall, 0.143 unmatched, 0.142 with PS-Demo and 0.126 with PS-Demo + ECG (relative reduction, 11.4%; 95% CI, 6.3%–16.0%).
-- C, Mean |SMD| before matching and after matching on each PS specification with and without the ECG. Labels give the relative change in mean |SMD| with the ECG: −11.4% (PS-Demo), −9.0% (PS-CVD5), −7.6% (hdPS) and +1.2% (PS-Clinical). For PS-Clinical, characteristics included in that PS are excluded.
-- D, Change in the percentage of characteristics with |SMD| < 0.1 with PS-Demo + ECG vs PS-Demo in each trial, sorted. Balance improved in 22 of 32 trials (mean +5.2 percentage points; one-sided sign-flip P = .002).
+**Figure 2. Balance on Held-Out Characteristics With and Without the ECG Embedding**
 
-Within each trial, only characteristics observed in all compared arms are used. Relative reductions and 95% CIs (4,000 bootstrap resamples of trials) are as in the Results. The permuted-ECG placebo is shown in eFigure 2, and the MIMIC-IV replication in eFigure 7.
+A, Median absolute standardized mean difference (|SMD|) across 32 trials for each of 58 held-out characteristics before matching (crosses), after matching on PS-Demo (open circles) and after matching on PS-Demo + ECG (filled circles); the dashed line marks |SMD| = 0.1. B, Mean |SMD| by characteristic domain. C, Mean |SMD| before matching and after matching on each PS specification without and with the ECG; labels give the relative change with the ECG. D, Change in the percentage of characteristics with |SMD| <0.1 after adding the ECG to PS-Demo in each trial (22 of 32 trials improved; P = .002).
 
 **Figure 3. Agreement of Emulated and RCT Hazard Ratios**
-- A, Emulated vs RCT HRs for 32 trials with PS-Demo alone (open circles) and with the ECG embedding (red). Grey segments join the two estimates for each trial; the dashed line is the line of identity.
-- B, Mean absolute difference between emulated and RCT log HRs by PS specification. Labels give:
-  - the number of trials in which the ECG moved the estimate closer to the RCT;
-  - the one-sided exact sign-flip P value;
-  - the benchmark-permutation P value, in which RCT results were reassigned across trials 20,000 times.
-- C, Standardized difference agreement (|z| < 1.96) by emulation quality (excellent or good, n = 15; moderate, n = 17) for each PS specification, with the PS alone (open) and with the ECG (filled). Comparisons by emulation quality are post hoc.
-- D, RCT-DUPLICATE agreement metrics across the 32 trials for each PS specification, with the PS alone (open) and with the ECG (red): Pearson correlation of log HRs, estimate agreement (emulated HR within the RCT 95% CI) and standardized difference agreement.
 
-**Figure 4. Plasmode Simulation: Bias From an Unmeasured Physiological Confounder Removed by the ECG**
-- A, Percentage of the PS-Demo bias removed by adding the ECG embedding, against the ECG's cross-fitted partial R² for the withheld confounder in the real data, for 107 trial–confounder combinations in 31 trials. The dashed line is 100 × R². Dotted lines give the median for the oracle (adjustment for the confounder itself) and for the permuted-ECG placebo.
-- B, Percentage of confounder-induced bias removed, by confounder:
-  - by a PS built from the ECG embedding alone (LVEF, 27.9%; all confounders, 18.0%);
-  - by adding the ECG to PS-Demo, the hdPS and PS-Clinical, as a share of the bias remaining after each PS (14.9%, 8.6% and 11.7%).
+A, Emulated vs RCT HRs for 32 trials with PS-Demo (open circles) and PS-Demo + ECG (filled circles); the dashed line is the line of identity. B, Mean absolute difference between emulated and RCT log HRs by PS specification; labels give the number of trials closer to the RCT with the ECG, the sign-flip P value and the benchmark-permutation P value. C, Standardized difference agreement by emulation quality (excellent or good, n = 15; moderate, n = 17) for each PS specification without (open) and with (filled) the ECG. D, Pearson correlation, estimate agreement and standardized difference agreement for each PS specification without and with the ECG.
 
-  The oracle, adjustment for the confounder itself, removed 93.1% of the bias and is not shown.
+**Figure 4. Bias From an Unmeasured Physiological Confounder Removed by the ECG in Plasmode Simulations**
 
-  Error bars are ±1.96 Monte Carlo SEs.
+A, Percentage of bias removed by adding the ECG to PS-Demo vs the ECG's partial R² for the withheld confounder in the real data, for 107 trial–confounder combinations in 31 trials; the dashed line is 100 × R², and dotted lines give the medians for adjustment for the confounder itself and for the permuted-ECG placebo. B, Percentage of confounder-induced bias removed by a PS of the ECG alone and by adding the ECG to PS-Demo, the hdPS and PS-Clinical, by confounder; error bars are ±1.96 Monte Carlo SEs. Adjustment for the confounder itself removed 93.1% of the bias (not shown).
 
-In both panels, LVEF and eGFR are oriented so that lower values increase treatment probability and hazard (clinical orientation; adopted after the initial design, see eMethods 7). NT-proBNP and BMI are identical in both orientations. In panel B:
-- the ECG-only (and oracle) values come from the design in which treatment depends on the confounder only;
-- the added-value bars use bias corrected for each arm's error in the no-confounding scenario.
-
-The true HR was 0.80.
+*Abbreviations for Figures 2–4:* BMI, body mass index; ECG, electrocardiogram; eGFR, estimated glomerular filtration rate; hdPS, high-dimensional propensity score; HR, hazard ratio; LVEF, left ventricular ejection fraction; NT-proBNP, N-terminal pro–B-type natriuretic peptide; PS, propensity score; RCT, randomized controlled trial; SMD, standardized mean difference.
 
 ## Supplementary figures
 
