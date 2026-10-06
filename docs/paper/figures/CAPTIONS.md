@@ -78,11 +78,9 @@ Primary set of 32 trials; 20 trials in the LVEF subset and 16 in the NT-proBNP s
 
 PEPTIC (proton pump inhibitor vs histamine-2 receptor antagonist) is a negative-control trial with an expected null effect.
 
-**eFigure 8. Sensitivity Analyses**
-- A, Proportion of held-out characteristics with |SMD| < 0.1 in the 29 of 38 emulated trials (including the 6 limited-quality emulations) whose RCTs enrolled outpatients, among all initiators and among patients initiating treatment outside an inpatient stay. Bars show PS-Demo alone, with the ECG and with the permuted ECG. Labels give the gain with the ECG, the number of trials improved and the sign-flip P value.
-- B, Mean absolute difference from the RCT log HR, with and without the ECG (PS-Demo), for:
+**eFigure 8. Alternative Estimands**
+- Mean absolute difference from the RCT log HR, with and without the ECG (PS-Demo), for:
   - the initiation (primary) estimand;
-  - outpatient initiators;
   - per-protocol and switch-only estimands with inverse-probability-of-censoring weights;
   - a 90-day landmark;
   - a 90-day run-in.

@@ -668,27 +668,9 @@ def efigure4():
 
 # ---------------------------------------------------------------- eFigure 8: sensitivity analyses
 def efigure8_sens():
-    S = pd.read_csv(A / "claude-v19-sens-outpatient/summary.csv")
-    fig = plt.figure(figsize=(7.2, 3.0))
-    gs = fig.add_gridspec(1, 2, width_ratios=[0.8, 1.4], wspace=0.35)
-    ax = fig.add_subplot(gs[0, 0])
-    sets = [("OUT-29 all (same trials)", "All initiators"), ("OUT-29 outpt", "Outpatient initiators")]
-    for k, (s, lab) in enumerate(sets):
-        r = S[(S.set == s) & (S.ps == "P1") & (S.metric == "lt01")].iloc[0]
-        ax.bar(k - 0.25, r.base, 0.24, color="white", edgecolor=NAVY)
-        ax.bar(k, r.ecg, 0.24, color=RED)
-        ax.bar(k + 0.25, r.shuf, 0.24, color="white", edgecolor=GOLD, hatch="///")
-        ax.text(k, max(r.base, r.ecg) + 1.2, f"+{r.d_ecg_minus_base:.1f} pts\n{r.k_better}; {fmt_p(r.p)}", ha="center", fontsize=6.2)
-        CHECK[f"efig5A {lab}"] = (round(r.base, 1), round(r.ecg, 1), round(r.d_ecg_minus_base, 1))
-    ax.set_xticks([0, 1], [l for _, l in sets])
-    ax.set_ylim(40, 66)
-    ax.set_ylabel("% held-out characteristics |SMD| < 0.1")
-    ax.set_title("29 outpatient-RCT trials; PS-Demo", loc="left", fontsize=7, color=GREY)
-    ax.legend(handles=[Patch(facecolor="white", edgecolor=NAVY, label="PS alone"), Patch(facecolor=RED, label="+ ECG"),
-                       Patch(facecolor="white", edgecolor=GOLD, hatch="///", label="+ permuted ECG")], frameon=False, fontsize=6, loc="upper right")
-    letter(ax, "A", x=-0.3)
-    ax = fig.add_subplot(gs[0, 1])
-    estims = [("itt", "Initiation\n(primary)"), ("outpt", "Outpatient\ninitiators"), ("pp_ipcw_365", "Per-protocol\n(IPCW)"),
+    """Alternative estimands (outpatient-initiator analysis removed per PI, 2026-10-06)."""
+    fig, ax = plt.subplots(figsize=(5.4, 3.0))
+    estims = [("itt", "Initiation\n(primary)"), ("pp_ipcw_365", "Per-protocol\n(IPCW)"),
               ("pp_ipcw_switch", "Switch-only\n(IPCW)"), ("landmark90", "90-day\nlandmark"), ("runin90", "90-day\nrun-in")]
 
     def getE(e, a):
@@ -711,7 +693,6 @@ def efigure8_sens():
     ax.legend(handles=[Patch(facecolor="white", edgecolor=NAVY, label="PS alone"), Patch(facecolor=RED, label="+ ECG")],
               frameon=False, loc="upper left", fontsize=6.5)
     ax.set_title("Primary set (32 trials; estimable trials shown); PS-Demo", loc="left", fontsize=7, color=GREY)
-    letter(ax, "B", x=-0.12)
     save(fig, OUTS / "efigure8_sensitivity")
 
 
