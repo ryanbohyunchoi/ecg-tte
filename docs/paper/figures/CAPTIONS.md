@@ -31,39 +31,54 @@ A, Percentage of bias removed by adding the ECG to PS-Demo vs the ECG's partial 
 
 ## Supplementary figures
 
-**eFigure 1. Trial Selection Flow**
-Selection of the 38 emulated and 32 analysed trials from 99 candidate RCTs, with reasons for exclusion and the 6 trials excluded for limited emulation quality. *Draft: counts by exclusion reason are placeholders to be filled from the screening log (docs/v17/candidates.json, docs/v18/af_candidates.json, scripts/trial_specs.py).*
+*Concise legends; these match docs/paper/supplement.md.*
 
-**eFigure 2. Balance on the 58 Held-Out Characteristics**
-Median |SMD| after matching across 32 trials with PS-Demo alone (open circles), with the ECG embedding (red) and with the permuted-ECG placebo (gold triangles), grouped by domain. The dashed line marks |SMD| = 0.1.
+### eFigure 1. Trial Selection
 
-**eFigure 3. Balance on the Expanded Panel by Domain**
-Relative reduction in mean |SMD| with the ECG embedding (red) and the permuted-ECG placebo (gold) across about 330 additional pre-index characteristics per trial (344 with data in the primary set), by domain, for PS-Demo in 32 trials. Overall reduction: 9.8% (95% CI, 6.3%–13.2%). The 95% CIs are from bootstrap resampling of trials.
+File: `supplementary/efigure1_trial_flow.png`
 
-**eFigure 4. Emulated and RCT Hazard Ratios for All 38 Emulated Trials**
-Emulated HRs (95% CI) with PS-Demo alone (open circles) and with the ECG embedding (red), against the RCT estimate (bar) and 95% CI (grey band). Trials are ordered by emulation-quality tier. The 6 limited-quality emulations (grey labels) are excluded from the primary analyses.
+Flow from 99 candidate RCTs to 38 emulated and 32 analysed trials, with reasons for exclusion and the 6 limited-quality emulations excluded after quality grading. [PI: add counts by exclusion reason from the screening log.]
 
-**eFigure 5. Robustness of the Plasmode Simulation**
-- A, Percentage of PS-Demo bias removed (all confounders) by adding the ECG embedding, by a PS of the ECG alone and by the oracle, at true HRs of 0.6, 0.8 and 1.0 (common random numbers; ±1.96 Monte Carlo SEs). Adding the ECG removed 14.2% at each true HR.
-- B, Coverage of the true effect by nominal 95% CIs for each PS specification, with and without the ECG (clinical orientation, all confounders). The dashed line marks 95%.
+### eFigure 2. Balance on the 58 Held-Out Characteristics With the Permuted-ECG Placebo
 
-**eFigure 6. Echocardiography Subset: Real-Data Counterpart of the Simulation**
-- A, Among patients with a pre-index LVEF (or NT-proBNP) measurement, the proportion of the imbalance in that measure closed by adding the ECG embedding (solid bars) or the permuted-ECG placebo (hatched), relative to the imbalance closed by adjusting for the measure itself, by PS specification. PS-Demo: 60% for LVEF and 39% for NT-proBNP; placebo about 3% and −4%.
-- B, Placebo-corrected share of the HR shift produced by adjusting for the measure that the ECG reproduces (F, 95% CI), against the plasmode prediction (partial R² of the ECG). The dashed line is the line of identity.
+File: `supplementary/efigure2_loveplot_58.png`
 
-Primary set of 32 trials; 20 trials in the LVEF subset and 16 in the NT-proBNP subset met the size criteria.
+Median absolute standardized mean difference (|SMD|) across 32 trials after matching on PS-Demo (open circles), PS-Demo + ECG (red) and PS-Demo + permuted ECG (gold triangles), grouped by domain. The dashed line marks |SMD| = 0.1.
 
-**eFigure 7. MIMIC-IV External Validation by Trial**
-- A, Proportion of 26 held-out characteristics (laboratory values, vital signs, ventilation and utilisation) with |SMD| < 0.1 with PS-Demo alone, with the ECG embedding and with the permuted ECG.
-- B, Emulated HRs vs the RCT estimate (bar) and 95% CI (grey band). [OR] and [RR] mark RCT benchmarks reported as odds ratio (SOAP II) or risk ratio (PEPTIC).
+### eFigure 3. Balance on the Expanded Panel
 
-PEPTIC (proton pump inhibitor vs histamine-2 receptor antagonist) is a negative-control trial with an expected null effect.
+File: `supplementary/efigure3_expanded_panel.png`
 
-**eFigure 8. Alternative Estimands**
-- Mean absolute difference from the RCT log HR, with and without the ECG (PS-Demo), for:
-  - the initiation (primary) estimand;
-  - per-protocol and switch-only estimands with inverse-probability-of-censoring weights;
-  - a 90-day landmark;
-  - a 90-day run-in.
+Relative reduction in mean |SMD| with the ECG (red) and the permuted-ECG placebo (gold), overall and by domain, for PS-Demo in 32 trials. Error bars are 95% CIs from bootstrap resampling of trials.
 
-  Each estimand is shown for the trials of the primary set in which it was estimable (n shown).
+### eFigure 4. Emulated and RCT Hazard Ratios for the 38 Emulated Trials
+
+File: `supplementary/efigure4_forest_38.png`
+
+Emulated HRs (95% CI) with PS-Demo (open circles) and PS-Demo + ECG (red) against the RCT estimate (bar) and 95% CI (grey band), ordered by emulation quality. Limited-quality emulations (grey labels) are excluded from the primary analyses.
+
+### eFigure 5. Robustness of the Plasmode Simulation
+
+File: `supplementary/efigure5_simulation_robustness.png`
+
+A, Percentage of bias removed (all confounders) by adding the ECG to PS-Demo, by a PS of the ECG alone and by adjustment for the confounder itself, at true HRs of 0.6, 0.8 and 1.0; error bars are ±1.96 Monte Carlo SEs. B, Coverage of nominal 95% CIs for each PS specification without and with the ECG; the dashed line marks 95%.
+
+### eFigure 6. External Validation in MIMIC-IV by Trial
+
+File: `supplementary/efigure6_mimic_per_trial.png`
+
+A, Percentage of 26 held-out characteristics with |SMD| <0.1 after matching on PS-Demo, PS-Demo + ECG and PS-Demo + permuted ECG. B, Emulated HRs (95% CI) against the RCT estimate (bar) and 95% CI (grey band). PEPTIC is a negative-control trial; [OR] and [RR] mark benchmarks reported as an odds ratio or relative risk.
+
+### eFigure 7. Alternative Estimands
+
+File: `supplementary/efigure7_estimands.png`
+
+Mean absolute difference between emulated and RCT log HRs with PS-Demo (open) and PS-Demo + ECG (red) for the initiation (primary), per-protocol, switch-only, 90-day landmark and 90-day run-in estimands, in the primary-set trials in which each was estimable (n shown).
+
+### eFigure 8. Comparison With Measured Physiology in Patients With Echocardiography
+
+File: `supplementary/efigure8_echo_subset.png`
+
+A, Share of the imbalance in LVEF or NT-proBNP closed by adding the ECG (solid bars) or the permuted ECG (hatched), relative to adjustment for the measured value itself, by PS specification. B, Placebo-corrected share of the HR shift reproduced by the ECG (95% CI) against the simulation prediction; the dashed line is the line of identity.
+
+*Abbreviations for eFigures:* ECG, electrocardiogram; hdPS, high-dimensional propensity score; HR, hazard ratio; LVEF, left ventricular ejection fraction; NT-proBNP, N-terminal pro–B-type natriuretic peptide; PS, propensity score; RCT, randomized controlled trial; SMD, standardized mean difference.

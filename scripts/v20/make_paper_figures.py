@@ -167,6 +167,7 @@ GROUPS = list(dict.fromkeys(VG))
 
 
 CI32 = pd.read_csv(A / "claude-v20-sens-primary32/ci.csv")
+SENSV = pd.read_csv(A / "claude-v20-sens-primary32/sensitivity.csv")
 
 
 def ci(source, set_, rung, domain, arm):
@@ -421,7 +422,8 @@ def figure3():
         ok = I32[np.isfinite(Lb_[I32]) & np.isfinite(Le_[I32])]
         db, de = np.abs(Lb_[ok] - RB[ok]), np.abs(Le_[ok] - RB[ok])
         p = signflip_exact(db - de)
-        ps = bench_shuffle(Le_[ok], Lb_[ok], RB[ok])
+        _sv = SENSV[(SENSV.set == "S32") & (SENSV.config == "main") & (SENSV.rung == rg) & (SENSV.contrast == "ECG vs base")]
+        ps = float(_sv.bshuf_p.iloc[0])  # same benchmark-permutation P as eTables 4 and 7 (SENS_PRIMARY32)
         CHECK[f"fig3B {rg}"] = (round(db.mean(), 3), round(de.mean(), 3), int((de < db).sum()), round(p, 4), round(ps, 3))
         ax.bar(k - 0.18, db.mean(), 0.34, color="white", edgecolor=NAVY, lw=0.9)
         ax.bar(k + 0.18, de.mean(), 0.34, color=RED)
@@ -617,9 +619,13 @@ def efigure3():
     for k, (b, cols) in enumerate(rows):
         yy = len(rows) - 1 - k
         with np.errstate(all="ignore"):
-            mb = np.nanmean(X["base"][:, cols], 1)
             for a, col, mk, dy in (("ECG", RED, "o", 0.13), ("shufECG", GOLD, "^", -0.13)):
-                e, lo, hi = relred(mb, np.nanmean(X[a][:, cols], 1), I32, rng)
+                Bm, Am = X["base"][:, cols].copy(), X[a][:, cols].copy()
+                bad = np.isnan(Bm) | np.isnan(Am)  # paired characteristics, as in eTable 3
+                Bm[bad] = np.nan
+                Am[bad] = np.nan
+                r_ = np.random.default_rng(20261006) if (k == 0 and a == "ECG") else rng  # overall ECG CI identical to eTable 3C
+                e, lo, hi = relred(np.nanmean(Bm, 1), np.nanmean(Am, 1), I32, r_)
                 ax.plot([lo, hi], [yy + dy] * 2, color=col, lw=1.2)
                 ax.plot(e, yy + dy, mk, color=col, mfc=col if mk == "o" else "white", ms=5)
                 if k == 0:
@@ -693,7 +699,7 @@ def efigure8_sens():
     ax.legend(handles=[Patch(facecolor="white", edgecolor=NAVY, label="PS alone"), Patch(facecolor=RED, label="+ ECG")],
               frameon=False, loc="upper left", fontsize=6.5)
     ax.set_title("Primary set (32 trials; estimable trials shown); PS-Demo", loc="left", fontsize=7, color=GREY)
-    save(fig, OUTS / "efigure8_sensitivity")
+    save(fig, OUTS / "efigure7_estimands")
 
 
 # ---------------------------------------------------------------- eFigure 6: echo subset
@@ -744,7 +750,7 @@ def efigure6():
     h += [plt.Line2D([], [], color=GREY, marker=mks[rg], ls="", label=lab) for rg, lab in rl]
     ax.legend(handles=h, frameon=False, fontsize=5.8, loc="upper left", ncol=2)
     letter(ax, "B", x=-0.2)
-    save(fig, OUTS / "efigure6_echo_subset")
+    save(fig, OUTS / "efigure8_echo_subset")
 
 
 # ---------------------------------------------------------------- eFigure 7: MIMIC-IV per trial
@@ -792,7 +798,7 @@ def efigure7():
     axA.plot([], [], "o", color=RED, label="+ ECG")
     axA.plot([], [], "^", color=GOLD, mfc="white", label="+ permuted ECG")
     fig.legend(*axA.get_legend_handles_labels(), loc="lower center", ncol=3, frameon=False, bbox_to_anchor=(0.5, -0.06))
-    save(fig, OUTS / "efigure7_mimic_per_trial")
+    save(fig, OUTS / "efigure6_mimic_per_trial")
 
 
 # ---------------------------------------------------------------- eFigure 5: simulation robustness
