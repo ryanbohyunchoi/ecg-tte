@@ -132,17 +132,22 @@ def design(D, rows_mask, base, arm, perm, C):
 
 def analyze(k):
     D = M.VA.TrialData(M.tdir(k))
+    F = pd.read_parquet(OUT / "flags" / f"{k}.parquet").set_index("pid").reindex(D.pids)
+    assert F.notna().all().all(), "flags missing for analysed pids"
+    C = {b: F[v].to_numpy(float) for b, v in CVD5.items()}
+    return run_trial(k, D, BASES, OUT / "results", C)
+
+
+def run_trial(k, D, bases, outdir, C=None):
+    """mimic_replication.analyze_trial for a given TrialData, list of bases (v20 BASES or CVD5 keys) and output dir."""
     rct = json.load(open(D.dir / "rct.json"))
     rb = np.log(rct["our_orientation"])
     rs = (np.log(rct["our_hi"]) - np.log(rct["our_lo"])) / (2 * 1.96)
     perm = np.random.default_rng(M.SEED).permutation(len(D.t))
     lag = D.lag if D.lag is not None else np.full(len(D.t), np.nan)
     pops = {"all": np.ones(len(D.t), bool), "no_index_day_ecg": ~(lag < 1)}
-    F = pd.read_parquet(OUT / "flags" / f"{k}.parquet").set_index("pid").reindex(D.pids)
-    assert F.notna().all().all(), "flags missing for analysed pids"
-    C = {b: F[v].to_numpy(float) for b, v in CVD5.items()}
     rows, vrows = [], []
-    for base in BASES:
+    for base in bases:
         V, cols, blk, MI, mi_cols = M.panel_for(D, k, base if base in M.BASES else "demo")
         for pop, mask in pops.items():
             if min((D.t[mask] == 1).sum(), (D.t[mask] == 0).sum()) < 50:
@@ -172,9 +177,9 @@ def analyze(k):
                 rows.append(row)
                 for c, bb, x, xu in zip(cols, blk, s, s_un):
                     vrows.append(dict(trial=k, base=base, arm=arm, pop=pop, var=c, block=bb, abs_smd=x, abs_smd_unmatched=xu))
-    (OUT / "results").mkdir(parents=True, exist_ok=True)
-    pd.DataFrame(rows).to_csv(OUT / "results" / f"{k}_arms.csv", index=False)
-    pd.DataFrame(vrows).to_csv(OUT / "results" / f"{k}_vars.csv", index=False)
+    outdir.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(rows).to_csv(outdir / f"{k}_arms.csv", index=False)
+    pd.DataFrame(vrows).to_csv(outdir / f"{k}_vars.csv", index=False)
     print(k, "done", flush=True)
     return k
 

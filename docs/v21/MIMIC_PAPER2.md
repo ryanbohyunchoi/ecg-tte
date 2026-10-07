@@ -37,14 +37,14 @@ This implements `HANDOFF_PAPER2.md` §3.6: a supplementary analysis, ECG only, w
    - **ECG vs PS-CVD5 alone:** mean |Δ log HR| went from 0.344 to 0.326 (4/7 closer; p = 0.27).
    - **Placebo:** the permuted ECG gave 0.323, as close as the real ECG.
 6. **Negative-control trial (PEPTIC; RCT RR 1.05).**
-   - **Result:** PS-CVD5 gives HR 1.51 (1.35–1.69). Adding the ECG moves it to 1.39 (1.24–1.56), and balance improves (30.8% → 42.3% of characteristics balanced).
+   - **Result:** PS-CVD5 gives HR 1.51 (1.35–1.69). Adding the ECG moves it to 1.39 (1.24–1.55), and balance improves (30.8% → 42.3% of characteristics balanced).
    - **Placebo:** the permuted ECG gives 1.60.
    - **Comparison with v20:** this is the same pattern as with the demographic PS.
 7. **Side finding: an inconsistency in v20, not caused by this analysis.**
    - **What differs:** in the v20 new trials (SOAP II, ELITE II and PEPTIC), the `dx` covariates and the hdPS panel `dx_` codes include **index-admission** discharge diagnoses (`mimic_build_new.py`: `admittime <= index admittime`). The 5 v1.5 trials were audit-fixed to **earlier admissions only** (`v15_mimic_auditfix.py`, AUDIT_V15 M2). The flag rebuild here reproduces each convention exactly (0 discordant patients).
    - **What it affects:** the v20 `sparse`, `hdPS200` and `clinical` results for those 3 trials. The primary v20 demographic analysis is unaffected.
    - **What it does not affect:** PS-CVD5 here uses earlier admissions for all 8 trials.
-   - **Action:** flag this to the user before the v20 ladder results for those trials are reused.
+   - **Action taken:** a window-fixed sensitivity re-run is in §6. Paper1's MIMIC numbers do not change materially.
 
 ## 1. Definitions
 
@@ -172,3 +172,66 @@ In every variant the permuted ECG moves |Δ log HR| about as much as the real EC
 6. **Echocardiography is not in the held-out panel** (as in v20: its provenance is unverified). The Yale primary 54-item non-coded panel has no MIMIC equivalent; the 26-item panel is used.
 7. **Multiplicity.** No FDR is applied here. This is a supplementary, single-family analysis, and the p values are nominal.
 8. **Scope.** Nothing in `paper.md`, `table1_picot.md` or the .docx was edited. Nothing was committed or pushed.
+
+## 6. Window-fix sensitivity for paper1's MIMIC numbers (reviewer item S5; added 2026-10-07)
+
+**Verdict: paper1's MIMIC numbers do not change materially.**
+- **Unchanged:** every PS-Demo number in `paper.md` line 91 is unaffected, because the demographic PS uses no diagnoses. That covers 10.3% (6.4–14.5), 7/7, P = .008, 41.2% → 51.6%, permuted −2.5%, the index-day exclusion 14.5% (9.5–19.8) and the 441–1,841 pairs.
+- **Changed:** the hdPS and PS-Clinical-lite gains move slightly upward. Both CIs still include 0, so the reading "smaller with the hdPS and PS-Clinical-lite" holds.
+- **Gate:** the 5 unchanged v1.5 trials reproduce v20 exactly in all four bases. The new trials' PS-Demo cells also reproduce exactly.
+
+**What was done.** `scripts/v21/mimic_window_fix.py` imports the v20 and v1.5 modules without modifying them. Outputs are in `audits/claude-v21-paper2/mimic/windowfix/`.
+- **Rebuilt for SOAP II, ELITE II and PEPTIC**, with the v1.5 audit-fix rules (`v15_mimic_auditfix.py`):
+  - the baseline `dx` flags, from earlier admissions only;
+  - the hdPS panel `dx_` codes, from earlier admissions with admittime in [t0 − 365 d, index admittime);
+  - the panel `px_` codes, with chartdate in [t0 − 365 d, index day) and the index admission excluded;
+  - ≥1% prevalence; `rx_` and `lab_` columns unchanged; no baseline column became constant.
+- **Re-run:** sparse, hdPS200 and clinical-lite ± ECG ± permuted ECG, in both populations.
+- **Recomputed:** the paper's CIs with `sens_primary32.relred_ci` (4,000 resamples, seed 20261001, the `paper.md` convention), and the v20 summary metrics with `mimic_summary`.
+  - Before any fix, both reproduce the v20 inputs exactly. For example, hdPS 7.5 (−0.4 to 16.2) and clinical-lite 1.2 (−9.1 to 11.8), as cited.
+- **Also:** `mimic_cvd5.py` was refactored, moving the analysis loop into `run_trial`. Its outputs are byte-identical (md5) to the first run.
+
+**Effect of the fix on the new trials' covariates** (prevalence, v20 → fixed):
+- HTN: SOAP II 70 → 37%, ELITE II 84 → 20%, PEPTIC 62 → 10%;
+- panel `dx_` codes: 419 → 207, 278 → 63 and 326 → 22;
+- panel `px_` codes: 37 → 24, 35 → 3 and 12 → 2.
+
+### `paper.md` line 91: exact replacement numbers (7 cardiovascular trials; 4,000-resample CI)
+
+| Quantity in line 91 | v20 (as published) | Window-fixed |
+|---|---|---|
+| PS-Demo + ECG, relative reduction in mean \|SMD\| | 10.3% (6.4%–14.5%), 7/7, P = .008 | **unchanged** |
+| % balanced, PS-Demo → + ECG | 41.2% → 51.6% | **unchanged** |
+| Permuted ECG (PS-Demo) | −2.5% | **unchanged** |
+| PS-Demo, excluding index-day ECGs | 14.5% (9.5%–19.8%) | **unchanged** |
+| Matched pairs, PS-Demo | 441 to 1,841 | **unchanged** |
+| **hdPS** + ECG | 7.5% (−0.4% to 16.2%) | **8.1% (−0.1% to 17.3%)** |
+| **PS-Clinical-lite** + ECG | 1.2% (−9.1% to 11.8%) | **3.0% (−8.6% to 15.2%)** |
+
+### Supplement eTable 6B, affected rows (old vs new)
+
+eTable 6B uses the v20 2,000-resample CI, so the table gives the CI under both conventions. Part A of eTable 6 is PS-Demo only, so it is unchanged.
+
+| PS | Population | Version | Rel. red. % (4,000-resample CI) | (v20 2,000-resample CI) | Trials lower | Permuted % | % bal base → +ECG | Mean \|Δ log HR\| base → +ECG | Closer | P | + permuted | r | Std-diff agreement |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| PS-Sparse | All | v20 | 10.2 (7.6 to 14.6) | (7.6 to 14.4) | 7/7 | −3.6 | 47.3 → 50.0 | 0.303 → 0.209 | 4/7 | .27 | 0.255 | 0.75 → 0.64 | 6/7 → 5/7 |
+| PS-Sparse | All | **fixed** | **10.9 (8.3 to 14.1)** | (8.3 to 13.9) | 7/7 | −2.3 | 46.2 → 48.9 | 0.322 → 0.200 | 5/7 | .12 | 0.280 | 0.71 → 0.67 | 5/7 → 5/7 |
+| PS-Sparse | No index-day ECG | v20 | 9.6 (2.7 to 15.2) | (3.2 to 15.0) | 6/7 | −4.3 | 46.7 → 53.8 | 0.229 → 0.208 | 2/7 | .42 | 0.258 | 0.65 → 0.41 | 6/7 → 6/7 |
+| PS-Sparse | No index-day ECG | **fixed** | **9.3 (2.6 to 14.5)** | (3.6 to 14.6) | 6/7 | −7.2 | 47.8 → 51.6 | 0.278 → 0.245 | 2/7 | .33 | 0.268 | 0.52 → 0.27 | 6/7 → 6/7 |
+| hdPS | All | v20 | 7.5 (−0.4 to 16.2) | (−0.5 to 15.9) | 4/7 | −0.3 | 65.9 → 68.1 | 0.220 → 0.179 | 4/7 | .22 | 0.165 | 0.68 → 0.54 | 5/7 → 5/7 |
+| hdPS | All | **fixed** | **8.1 (−0.1 to 17.3)** | (−0.5 to 17.3) | 4/7 | +0.4 | 65.9 → 68.1 | 0.215 → 0.179 | 5/7 | .26 | 0.173 | 0.70 → 0.53 | 6/7 → 5/7 |
+| hdPS | No index-day ECG | v20 | 3.4 (−5.5 to 12.7) | (−5.9 to 12.2) | 5/7 | −1.4 | 66.5 → 63.7 | 0.272 → 0.207 | 5/7 | .16 | 0.243 | 0.15 → 0.27 | 6/7 → 7/7 |
+| hdPS | No index-day ECG | **fixed** | **3.5 (−4.6 to 8.4)** | (−3.8 to 8.5) | 6/7 | +0.4 | 67.6 → 62.6 | 0.266 → 0.240 | 3/7 | .44 | 0.270 | 0.17 → 0.12 | 6/7 → 6/7 |
+| PS-Clinical-lite | All | v20 | 1.2 (−9.1 to 11.8) | (−9.6 to 10.8) | 3/7 | +0.5 | 68.4 → 69.4 | 0.297 → 0.175 | 5/7 | .078 | 0.231 | 0.74 → 0.82 | 4/7 → 6/7 |
+| PS-Clinical-lite | All | **fixed** | **3.0 (−8.6 to 15.2)** | (−9.1 to 14.5) | 3/7 | +1.9 | 69.4 → 71.4 | 0.284 → 0.172 | 4/7 | .11 | 0.244 | 0.77 → 0.81 | 5/7 → 6/7 |
+| PS-Clinical-lite | No index-day ECG | v20 | −1.5 (−13.5 to 5.9) | (−12.7 to 6.0) | 4/7 | +1.3 | 64.3 → 66.3 | 0.159 → 0.313 | 4/7 | .85 | 0.198 | 0.63 → −0.06 | 6/7 → 7/7 |
+| PS-Clinical-lite | No index-day ECG | **fixed** | **3.0 (−2.2 to 7.8)** | (−2.1 to 8.1) | 5/7 | +1.3 | 58.2 → 62.2 | 0.169 → 0.315 | 3/7 | .83 | 0.192 | 0.61 → −0.06 | 6/7 → 6/7 |
+
+**Notes:**
+- **RCT agreement is qualitatively unchanged.** The clinical-lite PS + ECG is still the closest, at 0.172, and the permuted ECG is close behind (0.244 vs v20 0.231). The P for the ECG being closer goes from .078 to .11.
+- **PEPTIC (negative control, RR 1.05):**
+  - The v20 `sparse` PS gave 1.16 (1.03–1.30). That was partly because index-admission (post-t0) discharge diagnoses were in the PS. With the fix it gives 1.51 (1.34–1.69), close to PS-Demo's 1.53.
+  - The clinical-lite PS still recovers the null: 1.03 (0.92–1.14), and 1.01 with the ECG (v20: 0.98 and 0.96).
+  - The v20 narrative is unchanged: measured physiology removes the PEPTIC confounding, and the ECG partly does.
+- **eTable 6B source.** The supplement's eTable 6B 2,000-resample CIs predate the paper's 4,000-resample CIs, as the paper's change log records. If eTable 6B is updated, use the 4,000-resample column for consistency with `paper.md`.
+- **Source files:** `windowfix/summary/balance.csv`, `agreement.csv` and `per_trial_new.csv` (aggregates); `windowfix/gate/gate.csv`.
