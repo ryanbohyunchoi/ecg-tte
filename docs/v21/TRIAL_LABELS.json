@@ -1,0 +1,660 @@
+{
+ "meta": {
+  "n_trials": 38,
+  "physiologic_yes": 11,
+  "kappa_physiologic": 1.0,
+  "percent_agreement": 1.0,
+  "rule": "domains = intersection of the two blind labellers (none_cardiac if empty); domains_union = sensitivity; confidence = lower of two",
+  "sources": [
+   "labels/labels_A.json",
+   "labels/labels_B.json",
+   "labels/picot_blind.md"
+  ]
+ },
+ "labels": [
+  {
+   "trial": "ARISTOTLE",
+   "area": "AF",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "none_cardiac"
+   ],
+   "confidence": "medium",
+   "confidence_A": "high",
+   "confidence_B": "medium",
+   "rationale_A": "DOAC vs warfarin channelled by renal function, bleeding risk, frailty, cost and era; valvular AF exclusion minor.",
+   "rationale_B": "DOAC vs warfarin channelled by renal function, bleeding risk, cost/insurance, era; valvular/mitral stenosis to warfarin is a minor structural channel."
+  },
+  {
+   "trial": "ROCKET-AF",
+   "area": "AF",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "none_cardiac"
+   ],
+   "confidence": "medium",
+   "confidence_A": "high",
+   "confidence_B": "medium",
+   "rationale_A": "Choice driven by renal function, dosing preference, bleeding history, insurance and prescriber habit rather than cardiac physiology.",
+   "rationale_B": "Same DOAC-vs-warfarin channelling: renal, bleeding, frailty, formulary, era; once-daily preference. Valvular AF minor cardiac channel."
+  },
+  {
+   "trial": "RE-LY",
+   "area": "AF",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "none_cardiac"
+   ],
+   "confidence": "high",
+   "confidence_A": "high",
+   "confidence_B": "high",
+   "rationale_A": "Dabigatran avoided in renal impairment, elderly, dyspepsia; cost and prescriber drive choice, not cardiac state.",
+   "rationale_B": "Dabigatran channelled strongly by renal function, dyspepsia, age/bleeding and formulary rather than cardiac physiology."
+  },
+  {
+   "trial": "EAST-AFNET 4",
+   "area": "AF",
+   "physiologic": "yes",
+   "domains": [
+    "LV_systolic_function",
+    "diastolic_LA",
+    "rhythm_conduction"
+   ],
+   "domains_union": [
+    "LV_structure",
+    "LV_systolic_function",
+    "diastolic_LA",
+    "rhythm_conduction"
+   ],
+   "confidence": "medium",
+   "confidence_A": "high",
+   "confidence_B": "medium",
+   "rationale_A": "Rhythm control chosen by AF burden, symptoms, LA size, LVH/CAD/HF (drug selection), baseline QT/conduction.",
+   "rationale_B": "Adding rhythm control driven by AF pattern/burden, symptoms, LA size, LV function and QT/conduction for drug selection."
+  },
+  {
+   "trial": "CABANA",
+   "area": "AF",
+   "physiologic": "yes",
+   "domains": [
+    "diastolic_LA",
+    "rhythm_conduction"
+   ],
+   "domains_union": [
+    "LV_systolic_function",
+    "diastolic_LA",
+    "rhythm_conduction"
+   ],
+   "confidence": "medium",
+   "confidence_A": "medium",
+   "confidence_B": "medium",
+   "rationale_A": "Ablation referral favours paroxysmal AF, smaller LA, younger, fit patients; drug-refractory rhythm; referral access also matters.",
+   "rationale_B": "Ablation referral favours paroxysmal AF, smaller LA, symptoms and prior AAD failure; also younger, fit, referral-centre access."
+  },
+  {
+   "trial": "AFFIRM",
+   "area": "AF",
+   "physiologic": "yes",
+   "domains": [
+    "LV_systolic_function",
+    "diastolic_LA",
+    "rhythm_conduction"
+   ],
+   "domains_union": [
+    "LV_systolic_function",
+    "diastolic_LA",
+    "rhythm_conduction"
+   ],
+   "confidence": "medium",
+   "confidence_A": "high",
+   "confidence_B": "medium",
+   "rationale_A": "Adding rhythm control depends on symptoms, AF persistence, LA size, structural disease, conduction and QT intervals.",
+   "rationale_B": "Rhythm vs rate control in elderly chosen by AF type/duration, symptoms, LA size, ventricular rate, LV function, conduction."
+  },
+  {
+   "trial": "AF-CHF",
+   "area": "AF",
+   "physiologic": "yes",
+   "domains": [
+    "LV_systolic_function",
+    "diastolic_LA",
+    "rhythm_conduction"
+   ],
+   "domains_union": [
+    "LV_systolic_function",
+    "diastolic_LA",
+    "RV_pulmonary_congestion",
+    "rhythm_conduction"
+   ],
+   "confidence": "medium",
+   "confidence_A": "medium",
+   "confidence_B": "medium",
+   "rationale_A": "In HF, rhythm control (amiodarone/dofetilide) chosen for tachycardia-mediated LV dysfunction, decompensation, QT/conduction status.",
+   "rationale_B": "In HF, rhythm control (amiodarone/dofetilide) driven by EF, AF-related decompensation, QT/conduction, LA size and congestion."
+  },
+  {
+   "trial": "FRAIL-AF",
+   "area": "AF",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "none_cardiac"
+   ],
+   "confidence": "high",
+   "confidence_A": "high",
+   "confidence_B": "high",
+   "rationale_A": "Switching warfarin to DOAC in elderly driven by INR control, renal function, frailty, cost, patient preference.",
+   "rationale_B": "Switching elderly warfarin users to DOAC driven by INR lability, renal function, frailty, falls, patient preference and cost."
+  },
+  {
+   "trial": "LAAOS III",
+   "area": "AF",
+   "physiologic": "no",
+   "domains": [
+    "diastolic_LA"
+   ],
+   "domains_union": [
+    "diastolic_LA",
+    "rhythm_conduction"
+   ],
+   "confidence": "low",
+   "confidence_A": "low",
+   "confidence_B": "low",
+   "rationale_A": "Mainly surgeon preference and operation type; concomitant mitral surgery/Maze and LA enlargement partially increase LAA occlusion.",
+   "rationale_B": "Mainly surgeon/centre preference and operation type; concomitant mitral/maze surgery and LA enlargement give some structural channelling."
+  },
+  {
+   "trial": "PROTECT AF",
+   "area": "AF",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "none_cardiac"
+   ],
+   "confidence": "high",
+   "confidence_A": "high",
+   "confidence_B": "high",
+   "rationale_A": "Percutaneous LAA closure chosen for bleeding history, falls, OAC contraindication; cardiac anatomy secondary.",
+   "rationale_B": "Percutaneous LAA closure chosen for bleeding history, OAC contraindication, falls, patient preference; not ECG-reflected physiology."
+  },
+  {
+   "trial": "RAFT-AF",
+   "area": "AF",
+   "physiologic": "yes",
+   "domains": [
+    "LV_systolic_function",
+    "diastolic_LA",
+    "rhythm_conduction"
+   ],
+   "domains_union": [
+    "LV_systolic_function",
+    "diastolic_LA",
+    "RV_pulmonary_congestion",
+    "rhythm_conduction"
+   ],
+   "confidence": "medium",
+   "confidence_A": "medium",
+   "confidence_B": "medium",
+   "rationale_A": "Ablation in HF selected by suspected tachycardiomyopathy, EF, LA size, AF persistence and electrophysiology referral.",
+   "rationale_B": "Ablation in HF chosen by suspected tachycardia-mediated LV dysfunction, AF type, LA size, symptoms; plus referral access."
+  },
+  {
+   "trial": "ACTIVE W",
+   "area": "AF",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "none_cardiac"
+   ],
+   "confidence": "medium",
+   "confidence_A": "medium",
+   "confidence_B": "medium",
+   "rationale_A": "Clopidogrel instead of warfarin reflects bleeding risk, frailty, warfarin unsuitability, recent stenting; not cardiac physiology.",
+   "rationale_B": "Clopidogrel instead of warfarin in AF reflects OAC unsuitability (bleeding, falls, frailty) or coronary stenting; little ECG-physiology channelling."
+  },
+  {
+   "trial": "COMET",
+   "area": "HF",
+   "physiologic": "yes",
+   "domains": [
+    "LV_systolic_function",
+    "rhythm_conduction"
+   ],
+   "domains_union": [
+    "LV_systolic_function",
+    "rhythm_conduction"
+   ],
+   "confidence": "medium",
+   "confidence_A": "medium",
+   "confidence_B": "medium",
+   "rationale_A": "Carvedilol favoured in HFrEF/hypertension; metoprolol for AF rate control, post-MI, low BP, bronchospasm; partly prescriber habit.",
+   "rationale_B": "Carvedilol favoured in HFrEF; metoprolol for AF rate control, HFpEF, post-MI, COPD/asthma; heart rate and EF drive choice."
+  },
+  {
+   "trial": "PARADIGM-HF",
+   "area": "HF",
+   "physiologic": "yes",
+   "domains": [
+    "LV_systolic_function",
+    "RV_pulmonary_congestion"
+   ],
+   "domains_union": [
+    "LV_systolic_function",
+    "RV_pulmonary_congestion"
+   ],
+   "confidence": "medium",
+   "confidence_A": "medium",
+   "confidence_B": "medium",
+   "rationale_A": "ARNI switch targets confirmed reduced EF, persistent symptoms, cardiology care; cost, BP and renal function also matter.",
+   "rationale_B": "ARNI switch channelled to reduced EF, symptomatic/congested HF under cardiology; cost/insurance, BP and renal also important."
+  },
+  {
+   "trial": "TRANSFORM-HF",
+   "area": "HF",
+   "physiologic": "yes",
+   "domains": [
+    "RV_pulmonary_congestion"
+   ],
+   "domains_union": [
+    "LV_systolic_function",
+    "RV_pulmonary_congestion"
+   ],
+   "confidence": "low",
+   "confidence_A": "low",
+   "confidence_B": "low",
+   "rationale_A": "Torsemide used for diuretic resistance and severe congestion, but institutional/prescriber preference and CKD strongly drive choice.",
+   "rationale_B": "Torsemide given for diuretic resistance, refractory oedema/gut congestion, advanced HF; but strong prescriber/institution and CKD effects."
+  },
+  {
+   "trial": "ELITE II",
+   "area": "HF",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "none_cardiac"
+   ],
+   "confidence": "high",
+   "confidence_A": "high",
+   "confidence_B": "high",
+   "rationale_A": "ARB over ACEi mostly reflects ACEi cough/angioedema intolerance and prescriber preference.",
+   "rationale_B": "ARB vs ACEi mainly reflects ACEi cough/angioedema intolerance, prescriber habit and formulary."
+  },
+  {
+   "trial": "EMPEROR-Preserved",
+   "area": "HF",
+   "physiologic": "yes",
+   "domains": [
+    "LV_systolic_function",
+    "RV_pulmonary_congestion"
+   ],
+   "domains_union": [
+    "LV_systolic_function",
+    "diastolic_LA",
+    "RV_pulmonary_congestion"
+   ],
+   "confidence": "low",
+   "confidence_A": "medium",
+   "confidence_B": "low",
+   "rationale_A": "In HF with T2D, SGLT2i chosen for HF benefit by cardiologists, tracking HF severity; eGFR and cost also important.",
+   "rationale_B": "Within T2D+HF, SGLT2i preferentially started by cardiology for HF severity/congestion; eGFR, age, frailty, cost also channel."
+  },
+  {
+   "trial": "LIFE",
+   "area": "Hypertension",
+   "physiologic": "yes",
+   "domains": [
+    "LV_structure",
+    "rhythm_conduction"
+   ],
+   "domains_union": [
+    "LV_structure",
+    "LV_systolic_function",
+    "rhythm_conduction"
+   ],
+   "confidence": "medium",
+   "confidence_A": "medium",
+   "confidence_B": "medium",
+   "rationale_A": "Beta-blocker chosen for AF, tachycardia, CAD; avoided in bradycardia/AV block; ARB favoured in diabetes/renal disease.",
+   "rationale_B": "Beta-blocker chosen for AF/tachycardia, CAD/prior MI, HF; avoided in bradycardia/AV block; ARB favoured for LVH, diabetes."
+  },
+  {
+   "trial": "ALLHAT",
+   "area": "Hypertension",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "none_cardiac"
+   ],
+   "confidence": "medium",
+   "confidence_A": "medium",
+   "confidence_B": "medium",
+   "rationale_A": "Amlodipine vs thiazide driven by gout, hyponatraemia, glucose, renal function, age and race; angina minor.",
+   "rationale_B": "Amlodipine vs thiazide driven by gout, hyponatraemia, diabetes, age, ethnicity, oedema; HF avoidance of amlodipine is minor."
+  },
+  {
+   "trial": "VALUE",
+   "area": "Hypertension",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "LV_systolic_function"
+   ],
+   "confidence": "low",
+   "confidence_A": "low",
+   "confidence_B": "medium",
+   "rationale_A": "ARB favoured in diabetes, CKD, proteinuria; HF/LV dysfunction partially channels to ARB; amlodipine for older, angina.",
+   "rationale_B": "ARB vs amlodipine driven by diabetes, CKD/proteinuria, ethnicity, age; HF/LVH preference for ARB secondary."
+  },
+  {
+   "trial": "ASCOT-BPLA",
+   "area": "Hypertension",
+   "physiologic": "yes",
+   "domains": [
+    "LV_systolic_function",
+    "rhythm_conduction"
+   ],
+   "domains_union": [
+    "LV_systolic_function",
+    "rhythm_conduction"
+   ],
+   "confidence": "medium",
+   "confidence_A": "medium",
+   "confidence_B": "medium",
+   "rationale_A": "Beta-blocker channelled to AF, tachycardia, angina/post-MI, HF; avoided in bradycardia, AV block, asthma.",
+   "rationale_B": "Beta-blocker use driven by heart rate, AF, angina/prior MI, HF; avoided with bradycardia/conduction disease; amlodipine otherwise."
+  },
+  {
+   "trial": "INSIGHT",
+   "area": "Hypertension",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "none_cardiac"
+   ],
+   "confidence": "medium",
+   "confidence_A": "medium",
+   "confidence_B": "medium",
+   "rationale_A": "Nifedipine vs thiazide driven by metabolic/electrolyte issues, renal function and prescriber habit; HF avoidance minor.",
+   "rationale_B": "Nifedipine vs thiazide driven by metabolic factors (gout, diabetes, electrolytes), age, ethnicity; angina minor channel."
+  },
+  {
+   "trial": "PLATO",
+   "area": "ACS / MI",
+   "physiologic": "no",
+   "domains": [
+    "rhythm_conduction"
+   ],
+   "domains_union": [
+    "rhythm_conduction"
+   ],
+   "confidence": "low",
+   "confidence_A": "medium",
+   "confidence_B": "low",
+   "rationale_A": "Mainly bleeding risk, age, OAC need, cost, PCI strategy; AF (needing OAC) and bradyarrhythmia partly favour clopidogrel.",
+   "rationale_B": "Mainly bleeding risk, age, invasive strategy, cost; concomitant OAC for AF favours clopidogrel, STEMI favours ticagrelor."
+  },
+  {
+   "trial": "VALIANT",
+   "area": "ACS / MI",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "none_cardiac"
+   ],
+   "confidence": "high",
+   "confidence_A": "high",
+   "confidence_B": "high",
+   "rationale_A": "Post-MI ARB vs ACEi choice reflects ACEi intolerance and prescriber preference.",
+   "rationale_B": "Post-MI ARB vs ACEi reflects ACEi intolerance and prescriber habit, not cardiac physiology."
+  },
+  {
+   "trial": "EMPA-REG OUTCOME",
+   "area": "Diabetes",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "LV_systolic_function"
+   ],
+   "confidence": "low",
+   "confidence_A": "low",
+   "confidence_B": "medium",
+   "rationale_A": "Driven by eGFR, glycaemia, cost, genital infection risk; prevalent HF partly channels toward SGLT2i in CVD patients.",
+   "rationale_B": "SGLT2i vs DPP-4i driven by eGFR, age/frailty, genital infection risk, cost; coexisting HF is a secondary cardiac channel."
+  },
+  {
+   "trial": "CAROLINA",
+   "area": "Diabetes",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "none_cardiac"
+   ],
+   "confidence": "high",
+   "confidence_A": "high",
+   "confidence_B": "high",
+   "rationale_A": "Linagliptin vs glimepiride driven by cost, hypoglycaemia risk, age and renal function.",
+   "rationale_B": "Linagliptin vs glimepiride driven by hypoglycaemia risk, age, renal function and cost."
+  },
+  {
+   "trial": "LEADER",
+   "area": "Diabetes",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "none_cardiac"
+   ],
+   "confidence": "high",
+   "confidence_A": "high",
+   "confidence_B": "high",
+   "rationale_A": "GLP-1RA chosen for obesity, glycaemic need, injection acceptance, insurance; DPP-4i for older frail patients.",
+   "rationale_B": "GLP-1RA vs DPP-4i driven by obesity, HbA1c, injection acceptance, GI tolerance, cost/insurance."
+  },
+  {
+   "trial": "SUSTAIN-6",
+   "area": "Diabetes",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "none_cardiac"
+   ],
+   "confidence": "high",
+   "confidence_A": "high",
+   "confidence_B": "high",
+   "rationale_A": "Semaglutide channelled by BMI, weight goals, insurance coverage, GI tolerability, not cardiac physiology.",
+   "rationale_B": "GLP-1RA vs DPP-4i driven by BMI, glycaemia, injection acceptance, cost/insurance."
+  },
+  {
+   "trial": "REWIND",
+   "area": "Diabetes",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "none_cardiac"
+   ],
+   "confidence": "high",
+   "confidence_A": "high",
+   "confidence_B": "high",
+   "rationale_A": "Dulaglutide vs DPP-4i driven by obesity, HbA1c, cost, injection acceptance and frailty.",
+   "rationale_B": "Dulaglutide vs DPP-4i channelled by obesity, glycaemic need, injection acceptance and insurance."
+  },
+  {
+   "trial": "DECLARE-TIMI 58",
+   "area": "Diabetes",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "LV_systolic_function"
+   ],
+   "confidence": "medium",
+   "confidence_A": "medium",
+   "confidence_B": "medium",
+   "rationale_A": "Mostly eGFR, glycaemia, cost and age; HF history partly channels to SGLT2i, relevant given HF outcome.",
+   "rationale_B": "Metabolic/renal/cost channelling dominates; prevalent HF favouring SGLT2i is a secondary cardiac channel."
+  },
+  {
+   "trial": "CANVAS Program",
+   "area": "Diabetes",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "none_cardiac"
+   ],
+   "confidence": "medium",
+   "confidence_A": "medium",
+   "confidence_B": "medium",
+   "rationale_A": "Canagliflozin chosen by eGFR, glycaemia, formulary; amputation/fracture concerns; cardiac physiology minor.",
+   "rationale_B": "SGLT2i vs DPP-4i driven by eGFR, amputation/PVD concerns, age, cost; HF minor channel."
+  },
+  {
+   "trial": "TECOS",
+   "area": "Diabetes",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "none_cardiac"
+   ],
+   "confidence": "high",
+   "confidence_A": "high",
+   "confidence_B": "high",
+   "rationale_A": "Sitagliptin vs sulfonylurea driven by cost, hypoglycaemia risk, age, renal function.",
+   "rationale_B": "Sitagliptin vs sulfonylurea driven by hypoglycaemia risk, age, renal function, cost."
+  },
+  {
+   "trial": "CARMELINA",
+   "area": "Diabetes",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "none_cardiac"
+   ],
+   "confidence": "high",
+   "confidence_A": "high",
+   "confidence_B": "high",
+   "rationale_A": "In CKD, linagliptin chosen for no renal dose adjustment and hypoglycaemia avoidance; renal, not cardiac.",
+   "rationale_B": "In CKD, linagliptin chosen for no renal dosing and hypoglycaemia avoidance vs cheap sulfonylurea."
+  },
+  {
+   "trial": "ONTARGET",
+   "area": "Other",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "none_cardiac"
+   ],
+   "confidence": "high",
+   "confidence_A": "high",
+   "confidence_B": "high",
+   "rationale_A": "ARB vs ACEi reflects ACEi intolerance, prescriber and formulary factors.",
+   "rationale_B": "ARB vs ACEi driven by cough/intolerance, prescriber preference and formulary."
+  },
+  {
+   "trial": "PRECISION",
+   "area": "Other",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "none_cardiac"
+   ],
+   "confidence": "high",
+   "confidence_A": "high",
+   "confidence_B": "high",
+   "rationale_A": "Celecoxib vs naproxen driven by GI bleeding risk, rheumatologist preference, cost; CV risk minor.",
+   "rationale_B": "Celecoxib vs naproxen driven by GI bleeding risk, CV-risk perception, cost and rheumatology preference."
+  },
+  {
+   "trial": "AMPLIFY",
+   "area": "Other",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "RV_pulmonary_congestion"
+   ],
+   "confidence": "medium",
+   "confidence_A": "medium",
+   "confidence_B": "medium",
+   "rationale_A": "Driven by cancer, renal function, cost, bleeding; massive PE with RV strain may get heparin-warfarin bridge.",
+   "rationale_B": "Apixaban vs warfarin in VTE driven by cancer, renal function, cost, era; massive PE/RV strain minor channel."
+  },
+  {
+   "trial": "LODESTAR",
+   "area": "Other",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "none_cardiac"
+   ],
+   "confidence": "high",
+   "confidence_A": "high",
+   "confidence_B": "high",
+   "rationale_A": "Rosuvastatin vs atorvastatin largely formulary, cost, prescriber habit and drug interactions.",
+   "rationale_B": "Rosuvastatin vs atorvastatin choice is largely formulary, prescriber habit and drug interactions."
+  },
+  {
+   "trial": "PROVE IT-TIMI 22",
+   "area": "Other",
+   "physiologic": "no",
+   "domains": [
+    "none_cardiac"
+   ],
+   "domains_union": [
+    "none_cardiac"
+   ],
+   "confidence": "high",
+   "confidence_A": "high",
+   "confidence_B": "high",
+   "rationale_A": "Statin choice reflects intensity preference, LDL, interactions, prescriber/era; not cardiac physiology.",
+   "rationale_B": "Pravastatin chosen for frailty, drug interactions, statin intolerance, elderly; high-intensity atorvastatin standard post-ACS."
+  }
+ ]
+}
