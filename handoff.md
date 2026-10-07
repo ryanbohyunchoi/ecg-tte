@@ -1,288 +1,145 @@
-# Handoff: adapted COMET cohort, adjustment, and representation benchmark
+# Handoff: TRACE-ECG (ECG embeddings for confounding control in target trial emulation)
 
-Last updated: **2026-09-23**. This current-state brief supersedes pending-state
-claims in the chronological history below. Cluster results here are from Ryan's
-supplied aggregate reports; the assistant did not access H100. No patient records
-or embeddings belong in this repository.
+Last updated **2026-10-07**. This brief is the current state and supersedes earlier handoffs; the previous brief (2026-09-25) is in [docs/HANDOFF_HISTORY.md](docs/HANDOFF_HISTORY.md). It covers the session of roughly 2026-09-27 to 2026-10-07. Everything is exploratory: analyses were added and the primary set was defined after results had been seen, and the paper discloses this.
 
-## Current result and next action (updated end of 2026-09-23 session)
+## 1. Rules that apply to every agent
 
-Read `docs/STRATEGY.md` first; it holds every result table. Everything below is
-**exploratory, COMET only**: designs were chosen during the session after earlier results.
-No outcomes have been used.
+- **Writing:** write only under `/mnt/raid0/rbc58`, plus code and docs in this repository, committed to `main`. Everything else is read-only: `/mnt/nfs_*`, other users' raid0 folders, and the S3 buckets (`ukb-s3`, `biobank-mri-1`). This rule is in `CLAUDE.md`.
+- **Outputs:** put them in `/mnt/raid0/rbc58/ecg-tte/audits/<name>` with umask 077.
+- **Patient data:** aggregates only. Suppress counts of 1–10, never print patient-level rows or identifiers, and never commit restricted CSV or parquet files.
+- **Long jobs:** run them detached (`setsid nohup`), and check `nvidia-smi` and CPU load first.
+- **Pushes:** pushes from agents have sometimes been blocked by the permission check ("Out-of-Place Publication"), especially for documents describing MIMIC or UKB assets. If that happens, commit locally and ask the PI to push. The PI has pushed manually before.
+- **Licensed data:** the PI authorised agents to read and check MIMIC-IV and UK Biobank data, aggregates only (2026-09-30).
+- **Scope:**
+  - The manuscript excludes **polygenic scores and genetics, UK Biobank, CLMBR-T, enrichment, split-half replication and the outpatient-initiator analysis.** Their results stay in the audit record only.
+  - Do not reintroduce any of these, and ask before adding any new comparator or proxy.
+- **How the PI works:** the PI edits the paper in Word and pastes it back, so the pasted text is authoritative. The PI also leaves `[bracketed requests]` in `docs/paper/paper.md`; search for them at the start of each session.
 
-### FINAL RESULTS (2026-09-25) — read `report.md` first
-Protocol v1 + amendments v1.1/v1.2 (all before outcomes). Phase 1 and phase 2 are complete. The ECG
-improves physiologic balance; RCT agreement of effect estimates is not improved (H5 not supported).
-Open questions are listed in report.md §7.
+## 2. Where things are
 
-### Protocol v1 FROZEN (2026-09-24) — read `docs/PROTOCOL_V1.md` and `report.md` first
-Frozen before any outcome extraction; Git tag `protocol-v1`. The next phase is outcome extraction
-and phase-2 estimation exactly as specified, with any change as a dated amendment.
-
-### Overnight 2026-09-24: 13-trial expansion — read `report.md` first
-12 adapted trials analysed (TRITON failed feasibility).
-- Headline: with a demographics + diagnoses PS, raw ECG PCs cut the residual measured-LVEF
-  imbalance by a median of 62% in the 5 trials that had any; all 5 are physiology trials.
-- hdPS stays the high-dimensional workhorse.
-- Open decisions (report §7): care setting at initiation, HR verification, overlap/weighting,
-  primary hdPS k, protocol freeze.
-
-### Replication update (later 2026-09-23; see `docs/STRATEGY.md` "Replication")
-- **PARADIGM-HF (adapted) is built** under the new multi-trial contract.
-  - Cohort: 2,885 ARNI / 2,746 ACEi; 4,203 have ECG + CLMBR.
-  - Pipeline: `docs/RUN_LONGTAIL_REPLICATION.md`. Decisions: `docs/DECISIONS.md`.
-- **Evaluator v2** is generic across trials.
-  - hdPS gets frequency levels at k = 100/200/500.
-  - New diagnostics: prognostic-score balance (external HF reference set), post-matching
-    C-statistic, and a chance floor.
-- **Correction to item 5 below.** The COMET v1 hdPS picked prior study-drug orders
-  (near-instruments). With them removed, hdPS100 ≈ CLMBR in COMET, and hdPS200 ≈ CLMBR in
-  PARADIGM. hdPS500 is better on long-tail balance, at lower retention.
-- **What replicates:** CLMBR's large gain and ECG's modest gain over the clinical PS. Stacking
-  hdPS + ECG + CLMBR is best in both trials.
-- **PLATO and ARISTOTLE done (same pipeline).** hdPS beats CLMBR clearly in both, and ECG adds nothing
-  to long-tail balance. CLMBR worsens prognostic-score balance in PARADIGM and ARISTOTLE.
-  Stacking hdPS + ECG + CLMBR is best in all four trials, at a 12–36% retention cost.
-  See the four-trial summary in STRATEGY.
-- Next decisions for Ryan:
-  - Is hdPS (plus embeddings) the primary high-dimensional arm?
-  - Should CABG/index-procedure features become PLATO core covariates? That would be a new
-    spec version, decided before any outcome.
-  - Negative-control outcomes.
-
-### What was established
-1. **The BCL ECG collapse was an input bug.** Checkpoints expect µV, but `all_ecgs` is mV,
-   and 250 Hz-flagged files were stretched. Fixed with `scripts/bcl_embed_uv.py` and
-   re-embedded (`audits/claude-bcl-uv-fix`). Earlier BCL comparison results are invalid;
-   they are preserved as history.
-2. **The fixed BCL is clinically informative.** Out-of-cohort linear heads on 40K ECG–echo
-   pairs (COMET excluded) give held-out LVEF≤40 AUC 0.90, AF 0.95. No retraining is needed
-   for now (`docs/ECG_MODEL.md`).
-3. **Cosine matching on any embedding does not balance confounders.** It has been dropped as
-   a primary method.
-4. **Native-numeric CLMBR is no better than code-only.**
-5. **Core result: long-tail balance.** Evaluated on 1,208 held-out pre-index OMOP features
-   (`scripts/build_preindex_panel.py`, `scripts/eval_longtail_balance.py`), with a noise
-   placebo and an exposure-only hdPS benchmark.
-   - The rich clinical PS leaves 18% of features at SMD > 0.1; the placebo also gives 18%.
-   - +ECG gives 14.7% (information orthogonal to codes).
-   - +CLMBR gives 4.2%; hdPS100 gives 9.1%.
-   - At every base (demo / claims / clinical), ECG+CLMBR beats hdPS on long-tail balance,
-     LVEF balance and retention.
-   - Embeddings do NOT replace the core clinical confounders: a demographics-only base
-     leaves LVEF/AF imbalanced.
-6. **Held-out LVEF:** under a claims-only PS, unstructured features reduce observed LVEF SMD
-   0.52 → 0.22.
-7. **Trial feasibility screen** (`docs/TRIAL_FEASIBILITY_2026_09_23.md`): PLATO, TRITON,
-   COMET and PARADIGM-HF lead.
-
-### Ryan's decisions (2026-09-23)
-- ECG window: 365 d before index. An index-day ECG counts as pre-treatment.
-- Container is the primary workspace (`master.md`); `main` is the trunk; push regularly.
-- Don't scale to 10 trials until the covariate-balance story is coherent. It must be more
-  than "an EF imputer".
-
-### Proposed story (not frozen)
-Structured PSM balances what it is given but leaves the rest of the record imbalanced.
-- EHR foundation-model embeddings are a better high-dimensional complement than hdPS.
-- ECG embeddings add physiologic information that no code set contains.
-- The question for the multi-trial study: does this better balance bring estimates closer to
-  the RCT?
-
-### Next actions
-1. **Replicate the long-tail analysis in 2–3 other trials** (PLATO, PARADIGM-HF, ARISTOTLE).
-   This needs:
-   - a cohort + clinical baseline for each, under the new contract;
-   - the fixed BCL embedding with a 365 d window;
-   - CLMBR code-only encoding (MEDS build per cohort, see `docs/RUN_COMET_MEDS_AND_CLMBR.md`);
-   - the pre-index panel.
-2. **Strengthen hdPS as a comparator:** add frequency levels (once/sporadic/frequent) and
-   k = 200/500. An outcome-ranked hdPS waits until outcome use is allowed by protocol.
-3. **Negative-control outcomes** (balance ≠ bias): pre-specify a set, then check whether
-   embedding-augmented PS moves NCO HRs toward 1.
-4. **Stronger balance diagnostics:** prognostic-score balance, and
-   C-statistic-of-treatment-after-matching.
-5. **Freeze the protocol** (base covariates, embedding k, hdPS spec, evaluation panel)
-   before any trial outcome.
-
-## Cohort and adjustment state
-
-- Adapted COMET exploratory baseline: **7,499** people, **4,539 carvedilol** and
-  **2,960 metoprolol tartrate**, after the adopted calendar/quality restrictions.
-  The medication anchor is an outpatient order proxy, not verified dispensing or
-  ingestion; this is not a strict replication of COMET trial eligibility.
-- Saved 32-variable baseline and five completed MICE datasets are reused.
-  Ordered-BP pilot: five imputations, 50 iterations; recorded invalid completed
-  BP pairs zero. Computational checks do not prove MAR or convergence sufficiency.
-- Original clinical PSM is the primary comparator; the previously refined PSM is
-  explicitly secondary and was developed after observing diagnostics. Preserve
-  original results. PSM uses 1:1 greedy matching without replacement and a
-  0.2 pooled within-arm SD caliper on propensity-score logits.
-- Representation comparisons subset existing imputations to their common input
-  population and rerun both PSM versions. They do not refit MICE or change the
-  evaluated clinical feature set. Balance includes missingness indicators;
-  undefined SMDs are not zero. Observed-only balance is also saved.
-- The earlier source snapshots and candidate event cache are complete. Do not
-  rescan huge raw files for each analysis. Damaged hospital lab file 3 was not
-  silently repaired or included; verified limited lab sources remain documented.
-
-## CLMBR findings to preserve
-
-Frozen CLMBR-T, 768 dimensions, code-only, last 4,096 retained tokens, latest
-retained-token representation. **7,498 encoded: C 4,538 / T 2,960**; one carvedilol
-patient had no clinical events. 102 histories truncated. Numeric values were
-omitted and explicit sex/race tokens were not included. Mapping/token acceptance
-is not a clinical validity test. These input limitations may matter but have not
-been shown to explain the balance results.
-
-The first greedy matching version consumed the entire smaller arm from a fixed
-majority-arm prefix: retained-set comparisons were embedding-independent. Preserve
-that flawed result as history, not evidence of encoder inferiority. Corrected
-smaller-arm greedy and global-optimal versions followed explicitly.
-
-| On the 7,498-person CLMBR population | Pairs | Mean absolute SMD across imputations |
-|---|---:|---:|
-| Original PSM | 2,382–2,426 | 0.03055–0.03476 |
-| Previously refined PSM | 2,368–2,400 | 0.01820–0.02322 |
-| Global optimal CLMBR cosine, no caliper | 2,960 | 0.09465–0.10076 |
-| CLMBR cosine caliper 0.20 | 1,430 | 0.07672–0.08151 |
-| CLMBR cosine caliper 0.30 | 2,352 | 0.08656–0.09256 |
-| CLMBR cosine caliper 0.40 | 2,874 | 0.09473–0.10040 |
-
-All three cutoffs were user-selected exploratory sensitivities and are retained;
-none is a validated optimal threshold. Global assignment reduced total cosine
-distance by about 6.4% versus greedy but did not improve average clinical balance.
-Observed-only EF/AF imbalance persisted; the gap was not confined to imputed
-values. This supports a conclusion about these method/input combinations, not
-general encoder quality or treatment-effect accuracy.
-
-## ECG BCL: completed (as-run vectors superseded by the µV fix above)
-
-Upstream: `CarDS-Yale/ECG-signal-pipeline`, pinned commit
-`d359c04d1f5e6c810f76751777535918870704b7`.
-Checkpoint SHA256:
-`3a5df9efa95bab0db99f419cfb85ad7a8d4b63f6bb765e10021d636ae8b64d4a`.
-Saved configuration: BCL, 12 leads, 10 seconds, 500 Hz, lead_time_transformer.
-**Output is the 256-dimensional backbone BEFORE the projection head**, not the
-legacy archived Net1D representation. No weights were trained or fine-tuned.
-
-Metadata is `/mnt/raid0/rbc58/mm_vhd/metadata/ecg_metadata.parquet`.
-Waveforms are under `/mnt/raid0/bb2238/signals/preprocessed/all_ecgs`.
-The lowercase `fileID` contains subdirectories and an optional `.npy` suffix.
-Initial flat-path/ID checks rejected these paths and misleadingly selected zero.
-Fixed v2 preserves relative paths, canonicalizes the suffix and sampling IDs,
-rejects traversal/symlinks, and retains global identity/timing collision checks.
-No basename guessing or older-date fallback was introduced.
-
-Selection: latest strictly prior calendar day 1–365 before the existing index;
-lexical canonical ID on that day; required unambiguous sampling label.
-
-| Selection status | Carvedilol | Metoprolol tartrate |
-|---|---:|---:|
-| Selected and subsequently encoded | 3,561 | 2,542 |
-| No prior-365-day ECG | 868 | 359 |
-| Sampling label unresolved | 110 | 59 |
-
-Selected **6,103 / 7,499 (81.4%)**; 583 have the catalog's 250 Hz flag. Private
-normalized catalogs reproduce the upstream `5_0` test; they do not independently
-validate sampling frequency or lead order. Smoke included 8 per arm/sampling
-stratum. All 32 passed in 16.299 seconds. Full run passed all 6,103 in
-660.588 seconds, with zero load errors, nonfinite rows or zero vectors.
-Inference used one H100, fp32, batch 8, workers 2, no augmentation/filtering;
-full shards contain up to 512 rows. Finite/nonzero checks do not establish useful
-representation geometry. Full-run v1 did not save vector-content checksums;
-the subsequent linkage adapter recorded current hashes and repeated output QC,
-which cannot retrospectively prove original vector byte identity.
-
-## ECG BCL comparison result (invalid: mV input bug)
-
-Report: `/mnt/raid0/rbc58/ecg-tte/audits/comet-bcl-comparison-FZIo043w/report`.
-Starting population: **6,103 (C 3,561 / T 2,542)** for all methods below.
-
-| Method | Pairs retained | Mean absolute SMD | Features with absolute SMD >= 0.1 |
-|---|---:|---:|---:|
-| Original PSM | 1,980–2,050 | 0.02735–0.03948 | 2–4 |
-| Previously refined PSM | 1,977–2,036 | 0.01852–0.02388 | 0–2 |
-| ECG BCL global optimal cosine | 2,542 | 0.10360–0.10856 | 19–24 |
-
-Ranges are across the five saved imputations. BCL pairs are fixed; clinical
-measurements differ across imputations. Cosine matches all 2,542 metoprolol
-patients to 2,542 distinct carvedilol patients (71.38% of carvedilol), without a
-cosine caliper. Clinical PSM retains its caliper. BCL had worse measured balance
-and higher retention. Do not claim isolated metric superiority or inferior
-causal accuracy from these results. BCL maximum SMD is 0.542–0.596.
-Matched cosine median 3.106e-7, p95 1.232e-6, maximum 0.000389883;
-these warrant the geometry investigation above.
-
-Original PDF: `comparison_love_plots.pdf` inside that report. Its old CLMBR
-legend refers to ECG BCL. Correct it with the representation-aware plotting
-script into a fresh directory, preserving the original report manifest.
-A combined CLMBR-versus-BCL analysis has **not** run; a verified shared population
-is needed before comparing them directly.
-
-## Exact reusable H100 artifacts
-
-All paths below are under `/mnt/raid0/rbc58/ecg-tte/` unless shown otherwise.
-
-| Artifact | Relative path |
+| Item | Path |
 |---|---|
-| Clean MICE input | `audits/comet-mice-prep-M9F28Lk2/report` |
-| Five ordered-BP imputations | `audits/comet-mice-pilot-v2-w5ZRCHzh/report` |
-| CLMBR MEDS | `shared/comet-meds-v1-3hgAkgoB/meds` |
-| CLMBR full embeddings | `audits/comet-clmbr-full-NAyb4G2x/report` |
-| CLMBR optimal no-caliper comparison | `audits/comet-cosine-comparison-v3-HKXiJR7g/report` |
-| CLMBR caliper grid | `audits/comet-cosine-caliper-grid-XhRUMLhu` |
-| CLMBR observed-only review | `audits/comet-observed-review-CLXuw3X7/report` |
-| BCL v2 selection | `audits/comet-bcl-input-v2-C9ftzPbQ/report` |
-| BCL smoke inputs | `audits/comet-bcl-smoke-prep-SWznZWZE/report` |
-| BCL smoke outputs | `audits/comet-bcl-smoke-Ik5VklyT/report` |
-| BCL full run | `audits/comet-bcl-full-lMQtaSyg` (input/ and report/) |
-| BCL linked vectors | `audits/comet-bcl-comparison-FZIo043w/linked` |
-| BCL comparison (invalid, mV input) | `audits/comet-bcl-comparison-FZIo043w/report` |
-| **BCL re-embedding, µV fix** | `audits/claude-bcl-uv-fix` |
-| Strategy diagnostic (as-run / fixed ECG) | `audits/claude-matching-diagnostic`, `audits/claude-matching-diagnostic-uvfix` |
-| BCL working environment | `software/bcl-smoke-runtime-zZ5FVVsd/env` |
-| Pinned BCL source checkout | `software/bcl-smoke-runtime-zZ5FVVsd/upstream` |
-| R environment | `software/mice-r-v2-tyXlJyw1/env` |
+| Manuscript (working draft, journal undecided) | `docs/paper/paper.md` |
+| Supplement (eMethods 1–12, eTables 1–9, eFigures 1–8, eReferences) | `docs/paper/supplement.md` |
+| Table 1 (PICOT and quality tier, 38 trials) | `docs/paper/table1_picot.md` (generated by `scripts/make_picot_table.py`). **The PI has uncommitted edits to this file; do not overwrite it** |
+| Figures (main and supplementary, PNG 300 dpi and PDF, plus individual panels) | `docs/paper/figures/{main,supplementary}/` and `…/panels/`; built by `scripts/v20/make_paper_figures.py` |
+| Figure legends | `docs/paper/figures/CAPTIONS.md` (concise for Figures 2–4 and the eFigures) |
+| eTables | generated into `supplement.md` by `scripts/v20/make_supplement_tables.py` |
+| Manuscript audit and closure | `docs/paper/AUDIT_MANUSCRIPT_2026-10-01.md`, `docs/paper/AUDIT_CLOSURE_2026-10-01.md` |
+| Lab deck (presented 2026-10-01) | `docs/presentation/ecg_tte_lab_2026_10_01.html`; built by `scripts/build_lab_deck.py` |
+| ACC 2027 abstract and figures | `docs/abstract/ACC_2027/` (`ACC_ABSTRACT.md` = v4) |
+| Map of all accessible data | [docs/DATA_ACCESS_MAP.md](docs/DATA_ACCESS_MAP.md), covering Yale, MIMIC-IV, UK Biobank and the NHLBI BioData Catalyst dbGaP accessions |
+| raid0 copies of the paper and deck | `/mnt/raid0/rbc58/ecg-tte/audits/claude-acc2027-abstract/{paper,presentation}/`; pre-edit backups in `…/paper/backup/` |
 
-Python for cohort/matching on core-hpcws2: `/home/rbc58/miniconda3/envs/mosaic/bin/python`.
-Inside the HIPAA Claude Code container that path does not exist. Use
-`/mnt/raid0/rbc58/ecg-tte/software/tte-analysis/bin/python` (pandas/pyarrow/sklearn/lifelines).
-Use existing launchers for its SciPy C++ runtime workaround and R isolation.
-BCL working versions: torch 2.5.0, numpy 2.4.6, scipy 1.17.1, pandas 3.0.6.
-No need to reinstall or repeat successful inference.
+**Build commands** (environment `/mnt/raid0/rbc58/ecg-tte/software/tte-analysis/bin/python`):
+- `python scripts/v20/make_paper_figures.py`: rebuilds all figures and panels.
+- `python scripts/v20/make_supplement_tables.py`: regenerates the eTables between `<!-- ETABLE:n -->` markers.
+- `python scripts/build_lab_deck.py --copy-to /mnt/raid0/rbc58/ecg-tte/audits/claude-acc2027-abstract/presentation`
+- **Screenshots:** headless Chrome via Playwright from the session scratchpad. Set `PLAYWRIGHT_BROWSERS_PATH`, `PYTHONPATH` and `LD_LIBRARY_PATH` to the scratchpad's `pw`, `pylib` and `syslib/usr/lib/x86_64-linux-gnu`.
 
-## Proposed research direction, not implemented
+## 3. Study design (as written in the paper)
 
-Ryan asked whether to develop a TTE-specific encoder. Discussed frozen embeddings
-in regularized propensity models, clinical-plus-embedding propensity models,
-small learned projections, and eventual encoder fine-tuning. No training objective,
-loss weights, training cohort, checkpoint, or evaluation split has been frozen.
-Do not present any as implemented. Preserve unsupervised/frozen results as baseline.
-Any new learned method needs separate development patients/trials, patient-overlap
-control across trials, and held-out evaluation. Keep evaluation outcomes and
-published RCT effects out of design tuning; keep post-index events out of inputs.
-Balance, overlap/retention and effect recovery are distinct evaluation dimensions.
-User specifically rejects gaming balance or selecting a method to recover the
-published effect. A constant representation would appear balanced in embedding
-space without preserving clinical confounding information.
+- **Data:** YNHHS EHR mapped to OMOP in-house, with echocardiography reports, raw 12-lead ECGs and state death records; index dates 2011–2024. External validation uses MIMIC-IV.
+- **Trials:** 99 candidate RCTs → **38 emulated** (feasibility criteria) → **32 analysed** after emulation-quality grading (3 excellent, 12 good, 17 moderate; 6 limited excluded: ALLHAT, ASCOT-BPLA, DECLARE-TIMI 58, ONTARGET, REWIND, VALUE).
+  - The quality scale is points-based: flags F1–F5 plus comparator and outcome fidelity (`docs/v19/quality_tiers.json`).
+  - It was finalised after the primary analyses, so the 32-trial set is post hoc.
+- **ECG representation:** an in-house BCL signal encoder producing 256-d embeddings, reduced to 32 PCs within each trial.
+- **PS specifications:**
+  - **PS-Demo** (primary): age, sex, index year;
+  - **PS-CVD5**: adds five cardiometabolic diagnoses;
+  - **hdPS**: adds 200 code features, ranked by exposure association only;
+  - **PS-Clinical**: adds vitals, labs, LVEF, medications and utilisation; median 32 covariates;
+  - each fitted with and without the ECG.
 
-## Validation and handoff boundaries
+  Matching is 1:1 greedy nearest-neighbour with a caliper of 0.2 SD of the logit, and HRs come from pair-clustered Cox models. In MIMIC-IV the specifications are PS-Sparse and PS-Clinical-lite.
+- **Outcomes:**
+  - balance on 58 held-out characteristics: % with \|SMD\| < 0.1 (prespecified for the confirmation stages), and the relative reduction in mean \|SMD\| (post hoc), with fixed-seed CIs from a 4,000-resample bootstrap over trials, using characteristics observed in both arms;
+  - RCT-DUPLICATE agreement metrics plus a benchmark-permutation test;
+  - plasmode simulation.
 
-Implemented code through `45bde0e` is on `psm-mice-imputation`. Local verification
-included 12 BCL tests, 11 cosine tests, R original/refined/external-pair and
-observed-balance integration, and synthetic corrected-PDF generation. These are
-synthetic checks; H100 results above came from user reports up to 2026-09-23. From
-2026-09-23, Claude Code runs in an approved HIPAA environment with direct read access
-and write access to `/mnt/raid0/rbc58` only (see AGENTS.md). The audit results in the
-top section were produced there as aggregate outputs. No endpoint estimation was
-performed.
+## 4. Key results (all in paper.md and the supplement)
 
-Next session should read this brief, `master.md`, `docs/DECISIONS.md`,
-`docs/COMET_BALANCE_EVALUATION_PLAN.md`, `docs/COMET_BCL_COMPARISON_PLAN.md`, and
-`docs/RUN_COMET_BCL_COMPARISON.md`. Continue from saved artifacts. Do not rerun old
-launchers blindly or overwrite old outputs. Outcomes/follow-up remain a separate
-track; verify its current branch/handoff rather than inferring completion here.
+- **Balance** (32 trials, PS-Demo):
+  - mean \|SMD\| 0.142 → 0.126, a relative reduction of **11.4% (95% CI, 6.3–16.0)**;
+  - % balanced 49.8 → 55.0, 22/32 trials improved, P = .002;
+  - robustness: cluster P = .033, leave-one-out max P = .004, q = .007;
+  - permuted ECG −0.7%.
+  - By domain, the gain is concentrated in LV structure (24.6%), diastolic/LA (17.7%), vitals/core labs (13.9%) and RV (13.0%). LV function is 14.6% with a CI that crosses 0. There is none for valves or other labs.
+  - The gain shrinks as the PS gets richer: PS-CVD5 9.0%, hdPS 7.6%, PS-Clinical −1.2%. Expanded panel 9.8%.
+- **RCT agreement:** \|Δ log HR\| 0.251 → 0.205 (20/32 closer, P = .008; cluster P = .026; q = .050). The benchmark-permutation P is .26, so this is largely generic attenuation. Agreement is better in excellent or good emulations; with PS-Demo + ECG, standardized-difference agreement rises from 67% to 93% (post hoc).
+- **Plasmode:**
+  - **ECG alone** removes 18.0% of the bias from a hidden confounder (LVEF 27.9%); the oracle removes 93.1%.
+  - **Added to an existing PS**, the ECG removes a further 14.9% (PS-Demo), 8.6% (hdPS) and 11.7% (PS-Clinical).
+  - Bias removed ≈ 100 × R².
+  - The result is the same at true HRs of 0.6, 0.8 and 1.0. LVEF and eGFR use the post hoc clinical orientation.
+  - Sources: `docs/v19/G2_SIMULATION.md`, `docs/v20/G2_EXTENSION.md`.
+- **Matching and weighting sensitivity:** 11.2–14.4% across caliper 0.1, 1:3 matching, IPTW and overlap weighting; gradient-boosted PS 6.6%; the component-count gain plateaus at 32 PCs. Source: `docs/v20/SENS_PRIMARY32.md`.
+- **On-treatment estimands:** switch-only 0.253 → 0.199 (P = .002); per-protocol 0.302 → 0.241 (P = .008); 90-day landmark shows no change. Source: eTable 8.
+- **MIMIC-IV** (7 cardiovascular trials plus PEPTIC as a negative control): balance improves by 10.3% (6.4–14.5), 7/7 trials. RCT agreement improves directionally but not significantly. PEPTIC's HR moves from 1.53 to 1.39 with the ECG. Source: `docs/v20/MIMIC_REPLICATION.md`.
+- **Echo subset** (eMethods 12, eFigure 8): the ECG closes about 60% of the LVEF imbalance; the HR-based measure is imprecise (0.27, −0.31 to 0.72). Source: `docs/v20/ECHO_SUBSET.md`.
+- **Prespecified confirmation:** 15 trials, balance P = .033; 5 AF trials did not replicate the agreement finding. Source: eTable 9.
 
-Chronological history before 2026-09-23 moved verbatim to `docs/HANDOFF_HISTORY.md`.
+## 5. What happened this session (chronological)
+
+1. **v1.7–v1.9 analyses** (before 2026-09-29):
+   - covariate-set sweeps; AF confirmation; CLMBR-T comparison;
+   - expanded panel for every PS and arm;
+   - outpatient and adherence sensitivity analyses;
+   - quality re-audit, which introduced the 4-tier scale;
+   - G1–G3 analyses.
+2. **ACC 2027 abstract** v4 and figures.
+3. **Paper drafting:** the Introduction from the PI's outline; Methods in prose; Table 1.
+4. **Lab deck for 2026-10-01:**
+   - 25 slides with interactive balance, emulation and plasmode explorers;
+   - two rounds of design feedback;
+   - an external-validation section (MIMIC and UKB).
+5. **New analyses (v2.0):**
+   - plasmode extension (ECG only; richer PS arms; true-HR check; Monte Carlo SEs);
+   - echo-subset real-data check;
+   - literature review of confounding methods (`docs/v20/LIT_CONFOUNDING_METHODS.md`).
+6. **External data:**
+   - MIMIC-IV and UK Biobank feasibility, then analyses.
+   - UK Biobank: the polygenic-score arms were dropped, then UKB was excluded from the paper entirely.
+   - NHLBI BioData Catalyst cohort ECG availability (`docs/v20/COHORT_ECG_AVAILABILITY.md`).
+7. **Manuscript audit** (130 claims): fixes applied.
+   - Sensitivity analyses were rerun on the 32/38 trials.
+   - Split halves were dropped, per the PI.
+   - The audit closure table maps every row to a fix or a PI item.
+8. **Paper made journal-neutral:**
+   - the PI's bracket comments were addressed over several rounds;
+   - the PS names were introduced;
+   - the Results were restructured in the RCT-DUPLICATE/LEGEND style;
+   - the PI's Word edit was imported (TRACE-ECG name), with CLMBR-T and the outpatient analysis removed;
+   - the PI's Discussion was added.
+9. **Figures:**
+   - Figure 2 rebuilt: love plot, domain means, PS ladder and per-trial waterfall, with unmatched shown and YNHHS only;
+   - Figure 3 C and D added;
+   - the oracle removed from Figure 4B;
+   - per-panel exports;
+   - concise legends.
+10. **Supplement:** `docs/paper/supplement.md`, with eTables generated from the outputs and eTables and eFigures renumbered in order of first citation.
+
+## 6. Open items
+
+**For the PI to supply or decide:**
+- Reference list from Word. Refs 6, 7, 9, the order of 9–12, and 18 are marked `[PI: …]` in `paper.md`. Main-list refs 20 and 21 duplicate eReferences e1 and e2.
+- IRB protocol number. It was removed from the Word text; confirm whether it should stay out.
+- The disclosure wording on the second rater and large-language-model assistance (eMethods 3).
+- ECG model training data and details (eMethods 4).
+- Exclusion counts by reason for eFigure 1, which need the screening log.
+- **Post hoc disclosure:** the main text no longer states that the 32-trial set was chosen after the primary analyses; eMethods 3 and 9 still do. Consider one sentence in the Methods and a clause in the limitations.
+- **A wording slip:** "Agreement metrics … including all 32 emulated trials" should say either "38 emulated" or "32 analysed".
+- Target journal.
+- Abstract and Key Points, still placeholders.
+- Whether to add a Discussion paragraph placing the findings against prior work: RCT-DUPLICATE, AI-ECG, hdPS.
+- Whether to remove CLMBR-T and UKB from the lab deck as well. The deck still contains them, and its balance explorer shows hdPS as 8.1% rather than 7.6% because it uses older masking.
+
+**Possible next analyses**, not started; ask first:
+- From the literature review's top 5: negative-control outcome calibration; omitted-variable-bias sensitivity benchmarked on measured physiology; prognostic-score balance with a bias-amplification check; proximal inference using two ECGs.
+- A pooled Yale + MIMIC consistency test, which should be prespecified.
+- **BioData Catalyst cohorts:** the PI holds dbGaP access to CHS, FHS, WHI, ACCORD, SPRINT and MESA, and ECG XML files are on BDC. CHS is the best fit. This would mean porting the pipeline into a Seven Bridges workspace; it is post-submission work.
+
+**Housekeeping:**
+- `docs/v13/*.err` and `docs/v14/*.err` are untracked logs.
+- The container has many zombie (`defunct`) processes, which are harmless and are cleared by a restart.
+- Memory notes for future sessions are in `/root/.claude/projects/-home-rbc58-github/memory/`.
