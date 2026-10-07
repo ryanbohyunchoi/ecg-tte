@@ -1,0 +1,1604 @@
+{
+ "fig1 S32 areas": {
+  "AF": 12,
+  "Diabetes": 7,
+  "HF": 5,
+  "Other": 4,
+  "ACS / MI": 2,
+  "Hypertension": 2
+ },
+ "fig1 physiologic": [
+  10,
+  32
+ ],
+ "fig1 flags range S32": [
+  426,
+  621
+ ],
+ "fig2A P1 ECG": [
+  11.3,
+  6.0,
+  16.1,
+  ".002"
+ ],
+ "fig2A P1 CLMBR": [
+  20.7,
+  13.3,
+  27.8,
+  "<.001"
+ ],
+ "fig2A P1 ECG+CLMBR": [
+  25.8,
+  19.0,
+  32.2,
+  "<.001"
+ ],
+ "fig2A P1 shufECG": [
+  -0.6,
+  -5.4,
+  4.4,
+  ".87"
+ ],
+ "fig2A P1 shufCLMBR": [
+  -1.5,
+  -5.1,
+  2.1,
+  ".57"
+ ],
+ "fig2A P5 ECG": [
+  8.8,
+  4.4,
+  13.3,
+  ".002"
+ ],
+ "fig2A P5 CLMBR": [
+  12.4,
+  7.1,
+  17.7,
+  "<.001"
+ ],
+ "fig2A P5 ECG+CLMBR": [
+  13.5,
+  6.6,
+  20.4,
+  ".003"
+ ],
+ "fig2A P5 shufECG": [
+  1.0,
+  -2.8,
+  4.8,
+  ".74"
+ ],
+ "fig2A P5 shufCLMBR": [
+  2.4,
+  -2.1,
+  6.8,
+  ".50"
+ ],
+ "fig2A Flags ECG": [
+  -3.0,
+  -7.3,
+  1.1,
+  ".92"
+ ],
+ "fig2A Flags CLMBR": [
+  -2.9,
+  -8.7,
+  3.0,
+  ".87"
+ ],
+ "fig2A Flags ECG+CLMBR": [
+  -6.3,
+  -17.1,
+  3.4,
+  ".89"
+ ],
+ "fig2A Flags shufECG": [
+  -1.8,
+  -5.8,
+  2.5,
+  ".57"
+ ],
+ "fig2A Flags shufCLMBR": [
+  -6.3,
+  -11.5,
+  -1.1,
+  ".081"
+ ],
+ "fig2A hdPS200 ECG": [
+  7.6,
+  1.7,
+  13.0,
+  ".033"
+ ],
+ "fig2A hdPS200 CLMBR": [
+  -3.5,
+  -14.0,
+  6.0,
+  ".80"
+ ],
+ "fig2A hdPS200 ECG+CLMBR": [
+  -1.4,
+  -22.5,
+  13.3,
+  ".65"
+ ],
+ "fig2A hdPS200 shufECG": [
+  3.0,
+  -1.4,
+  7.3,
+  ".36"
+ ],
+ "fig2A hdPS200 shufCLMBR": [
+  2.0,
+  -2.3,
+  6.2,
+  ".54"
+ ],
+ "fig2A clinical ECG": [
+  -1.3,
+  -6.8,
+  3.9,
+  ".78"
+ ],
+ "fig2A clinical CLMBR": [
+  0.8,
+  -3.9,
+  5.9,
+  ".54"
+ ],
+ "fig2A clinical ECG+CLMBR": [
+  -0.2,
+  -6.8,
+  6.1,
+  ".66"
+ ],
+ "fig2A clinical shufECG": [
+  -3.4,
+  -8.7,
+  1.3,
+  ".36"
+ ],
+ "fig2A clinical shufCLMBR": [
+  0.9,
+  -3.3,
+  4.7,
+  ".76"
+ ],
+ "fig2B P1": [
+  0.143,
+  0.127,
+  0.114,
+  0.106
+ ],
+ "fig2B P5": [
+  0.13,
+  0.118,
+  0.114,
+  0.112
+ ],
+ "fig2B Flags": [
+  0.113,
+  0.116,
+  0.115,
+  0.119
+ ],
+ "fig2B hdPS200": [
+  0.117,
+  0.109,
+  0.122,
+  0.119
+ ],
+ "fig2B clinical": [
+  0.111,
+  0.113,
+  0.11,
+  0.111
+ ],
+ "fig3A P5: ECG vs base": [
+  8.8,
+  8.7,
+  6.9,
+  14.9,
+  16.4,
+  16.1,
+  -1.8,
+  4.2
+ ],
+ "fig3A P5: CLMBR vs base": [
+  12.4,
+  22.7,
+  24.1,
+  14.7,
+  1.0,
+  0.7,
+  0.2,
+  15.9
+ ],
+ "fig3A P5: ECG+CLMBR vs base": [
+  13.5,
+  32.1,
+  21.7,
+  21.7,
+  7.6,
+  10.4,
+  -1.3,
+  3.1
+ ],
+ "fig3A P5: CLMBR vs ECG": [
+  3.9,
+  15.3,
+  18.4,
+  -0.2,
+  -18.4,
+  -18.4,
+  1.9,
+  12.2
+ ],
+ "fig3A P5: shufECG vs base": [
+  1.0,
+  2.2,
+  1.7,
+  -2.4,
+  9.2,
+  1.3,
+  -5.0,
+  0.6
+ ],
+ "fig3A P5: shufCLMBR vs base": [
+  2.4,
+  2.3,
+  1.5,
+  -2.0,
+  7.0,
+  1.4,
+  2.8,
+  3.7
+ ],
+ "fig3B main": [
+  3.9,
+  15.3,
+  18.4,
+  -0.2,
+  -18.4,
+  -18.4,
+  1.9,
+  12.2
+ ],
+ "fig3B cal01": [
+  2.5,
+  15.3,
+  16.8,
+  -0.9,
+  -23.6,
+  -14.7,
+  3.4,
+  7.4
+ ],
+ "fig3B m13": [
+  7.4,
+  19.1,
+  21.9,
+  -5.9,
+  -4.6,
+  -6.1,
+  0.4,
+  12.9
+ ],
+ "fig3B iptw": [
+  -7.2,
+  2.0,
+  3.2,
+  -16.0,
+  -10.9,
+  -29.7,
+  -8.1,
+  -0.8
+ ],
+ "fig3B overlap": [
+  6.7,
+  20.7,
+  19.1,
+  -5.8,
+  -4.6,
+  -4.6,
+  3.0,
+  8.3
+ ],
+ "fig3B gbm": [
+  8.1,
+  19.4,
+  12.1,
+  4.6,
+  -11.6,
+  10.1,
+  3.6,
+  9.2
+ ],
+ "fig3C PS-Demo + CLMBR-T vs PS-Flags, C = 1 (primary) [main]": [
+  31,
+  0.7,
+  -5.5,
+  6.8,
+  ".81",
+  0.186,
+  0.174,
+  ".97"
+ ],
+ "fig3C vs PS-Flags, C = 0.1 [main]": [
+  32,
+  7.7,
+  -0.1,
+  15.8,
+  ".085",
+  0.218,
+  0.17,
+  ".32"
+ ],
+ "fig3C vs PS-Flags, C = 0.01 [main]": [
+  32,
+  1.0,
+  -5.1,
+  6.8,
+  ".76",
+  0.202,
+  0.17,
+  ".14"
+ ],
+ "fig3C vs PS-Flags, CV-tuned C [main]": [
+  32,
+  -1.5,
+  -7.5,
+  4.4,
+  ".63",
+  0.216,
+  0.17,
+  ".001"
+ ],
+ "fig3C vs PS-Flags, CV-tuned C (1:3 matching) [m13]": [
+  32,
+  1.6,
+  -4.0,
+  6.7,
+  ".60",
+  0.223,
+  0.166,
+  "<.001"
+ ],
+ "fig3C vs PS-Flags, CV-tuned C (overlap weights) [overlap]": [
+  32,
+  1.9,
+  -1.4,
+  5.1,
+  ".27",
+  0.184,
+  0.176,
+  ".70"
+ ],
+ "fig3C vs PS-Flags C = 1, trials with Flags retention \u2265 0.5 [main]": [
+  27,
+  -1.1,
+  -7.2,
+  5.1,
+  ".74",
+  0.206,
+  0.182,
+  ".82"
+ ],
+ "fig3C vs PS-Flags C = 1, Flags retention \u2265 0.7 [main]": [
+  19,
+  -2.6,
+  -9.2,
+  4.6,
+  ".50",
+  0.222,
+  0.211,
+  ".89"
+ ],
+ "fig3C vs PS-Flags C = 1, Flags retention \u2265 0.9 [main]": [
+  11,
+  -5.1,
+  -13.1,
+  5.8,
+  ".37",
+  0.305,
+  0.28,
+  ".77"
+ ],
+ "fig3C PS-Demo + CLMBR-T (32 PCs) vs PS-Flags, C = 1 [main]": [
+  31,
+  -2.9,
+  -10.1,
+  4.4,
+  ".44",
+  0.186,
+  0.181,
+  "1.00"
+ ],
+ "fig3C PS-Demo + CLMBR-T vs hdPS200 [main]": [
+  32,
+  3.8,
+  -3.0,
+  10.0,
+  ".29",
+  0.181,
+  0.17,
+  ".095"
+ ],
+ "fig3C PS-CVD5 + CLMBR-T vs hdPS200 [main]": [
+  32,
+  3.8,
+  -2.7,
+  9.6,
+  ".26",
+  0.181,
+  0.166,
+  ".15"
+ ],
+ "fig3C PS-CVD5 + CLMBR-T vs PS-Clinical [main]": [
+  32,
+  -4.9,
+  -11.2,
+  0.9,
+  ".12",
+  0.158,
+  0.166,
+  ".19"
+ ],
+ "fig3C PS-CVD5 + ECG + CLMBR-T vs PS-Clinical [main]": [
+  32,
+  -5.4,
+  -11.9,
+  1.1,
+  ".13",
+  0.158,
+  0.158,
+  ".17"
+ ],
+ "fig4B ECG": [
+  16.3,
+  5.7,
+  ".048",
+  ".16"
+ ],
+ "fig4B CLMBR": [
+  22.6,
+  8.0,
+  ".025",
+  ".13"
+ ],
+ "fig4B ECG+CLMBR": [
+  29.6,
+  6.7,
+  ".004",
+  ".060"
+ ],
+ "fig4B shufECG": [
+  2.0,
+  0.5,
+  ".74",
+  ".98"
+ ],
+ "fig4B shufCLMBR": [
+  4.1,
+  1.7,
+  ".69",
+  ".98"
+ ],
+ "fig4C LV_systolic_function ECG": [
+  0.097,
+  0.011,
+  ".003",
+  ".021"
+ ],
+ "fig4C LV_systolic_function CLMBR": [
+  0.079,
+  -0.018,
+  ".002",
+  ".021"
+ ],
+ "fig4C LV_systolic_function ECG+CLMBR": [
+  0.122,
+  -0.011,
+  ".001",
+  ".021"
+ ],
+ "fig4C diastolic_LA ECG": [
+  0.035,
+  0.015,
+  ".23",
+  ".66"
+ ],
+ "fig4C diastolic_LA CLMBR": [
+  0.031,
+  -0.006,
+  ".045",
+  ".22"
+ ],
+ "fig4C diastolic_LA ECG+CLMBR": [
+  0.044,
+  0.005,
+  ".090",
+  ".36"
+ ],
+ "fig4C RV_pulmonary_congestion ECG": [
+  0.004,
+  -0.003,
+  ".71",
+  ".84"
+ ],
+ "fig4C RV_pulmonary_congestion CLMBR": [
+  0.0,
+  0.005,
+  ".84",
+  ".89"
+ ],
+ "fig4C RV_pulmonary_congestion ECG+CLMBR": [
+  0.019,
+  0.001,
+  ".46",
+  ".78"
+ ],
+ "fig4C rhythm_conduction ECG": [
+  0.028,
+  0.004,
+  ".28",
+  ".67"
+ ],
+ "fig4C rhythm_conduction CLMBR": [
+  0.003,
+  -0.016,
+  ".51",
+  ".78"
+ ],
+ "fig4C rhythm_conduction ECG+CLMBR": [
+  0.025,
+  0.011,
+  ".61",
+  ".80"
+ ],
+ "fig5 main ECG": [
+  8.8,
+  ".002",
+  0.226,
+  0.196,
+  "20/32",
+  ".049",
+  ".70",
+  ".58"
+ ],
+ "fig5 main CLMBR": [
+  12.4,
+  "<.001",
+  0.226,
+  0.166,
+  "18/32",
+  ".030",
+  ".93",
+  ".51"
+ ],
+ "fig5 main ECG+CLMBR": [
+  13.5,
+  ".003",
+  0.226,
+  0.158,
+  "18/32",
+  ".019",
+  ".94",
+  ".43"
+ ],
+ "fig5 main shufECG": [
+  1.0,
+  ".74",
+  0.226,
+  0.226,
+  "16/32",
+  "1.00",
+  ".16",
+  "1.00"
+ ],
+ "fig5 main shufCLMBR": [
+  2.4,
+  ".50",
+  0.226,
+  0.227,
+  "19/32",
+  ".97",
+  ".29",
+  "1.00"
+ ],
+ "fig5 cal01 ECG": [
+  7.8,
+  ".007",
+  0.227,
+  0.204,
+  "16/32",
+  ".11",
+  ".85",
+  ".70"
+ ],
+ "fig5 cal01 CLMBR": [
+  10.1,
+  ".010",
+  0.227,
+  0.186,
+  "16/32",
+  ".13",
+  ".99",
+  ".71"
+ ],
+ "fig5 cal01 ECG+CLMBR": [
+  15.8,
+  ".001",
+  0.227,
+  0.164,
+  "20/32",
+  ".037",
+  ".99",
+  ".51"
+ ],
+ "fig5 cal01 shufECG": [
+  0.9,
+  ".73",
+  0.227,
+  0.226,
+  "13/32",
+  ".96",
+  ".076",
+  "1.00"
+ ],
+ "fig5 cal01 shufCLMBR": [
+  2.3,
+  ".54",
+  0.227,
+  0.228,
+  "19/32",
+  ".95",
+  ".34",
+  "1.00"
+ ],
+ "fig5 m13 ECG": [
+  6.4,
+  ".003",
+  0.212,
+  0.187,
+  "21/32",
+  ".007",
+  ".037",
+  ".43"
+ ],
+ "fig5 m13 CLMBR": [
+  13.3,
+  "<.001",
+  0.212,
+  0.163,
+  "19/32",
+  ".036",
+  ".89",
+  ".51"
+ ],
+ "fig5 m13 ECG+CLMBR": [
+  13.6,
+  "<.001",
+  0.212,
+  0.153,
+  "20/32",
+  ".020",
+  ".78",
+  ".43"
+ ],
+ "fig5 m13 shufECG": [
+  -0.2,
+  ".89",
+  0.212,
+  0.209,
+  "16/32",
+  ".75",
+  ".040",
+  "1.00"
+ ],
+ "fig5 m13 shufCLMBR": [
+  1.4,
+  ".48",
+  0.212,
+  0.213,
+  "16/32",
+  ".91",
+  ".19",
+  "1.00"
+ ],
+ "fig5 iptw ECG": [
+  4.8,
+  ".013",
+  0.221,
+  0.227,
+  "15/32",
+  ".69",
+  ".96",
+  "1.00"
+ ],
+ "fig5 iptw CLMBR": [
+  -2.0,
+  ".73",
+  0.221,
+  0.206,
+  "17/32",
+  ".37",
+  ".94",
+  ".95"
+ ],
+ "fig5 iptw ECG+CLMBR": [
+  -0.9,
+  ".65",
+  0.221,
+  0.206,
+  "17/32",
+  ".38",
+  ".91",
+  ".95"
+ ],
+ "fig5 iptw shufECG": [
+  -0.4,
+  ".67",
+  0.221,
+  0.222,
+  "14/32",
+  ".88",
+  ".60",
+  "1.00"
+ ],
+ "fig5 iptw shufCLMBR": [
+  -1.7,
+  ".24",
+  0.221,
+  0.219,
+  "17/32",
+  ".87",
+  ".95",
+  "1.00"
+ ],
+ "fig5 overlap ECG": [
+  7.4,
+  "<.001",
+  0.208,
+  0.189,
+  "20/32",
+  ".011",
+  ".20",
+  ".43"
+ ],
+ "fig5 overlap CLMBR": [
+  13.6,
+  "<.001",
+  0.208,
+  0.171,
+  "16/32",
+  ".13",
+  ".98",
+  ".74"
+ ],
+ "fig5 overlap ECG+CLMBR": [
+  16.2,
+  "<.001",
+  0.208,
+  0.163,
+  "19/32",
+  ".087",
+  ".96",
+  ".69"
+ ],
+ "fig5 overlap shufECG": [
+  -0.7,
+  ".050",
+  0.208,
+  0.207,
+  "15/32",
+  ".91",
+  ".75",
+  "1.00"
+ ],
+ "fig5 overlap shufCLMBR": [
+  -0.5,
+  ".47",
+  0.208,
+  0.204,
+  "20/32",
+  ".12",
+  ".21",
+  ".70"
+ ],
+ "fig5 gbm ECG": [
+  -1.1,
+  ".74",
+  0.203,
+  0.196,
+  "17/32",
+  ".32",
+  ".005",
+  ".89"
+ ],
+ "fig5 gbm CLMBR": [
+  6.9,
+  ".058",
+  0.203,
+  0.182,
+  "17/32",
+  ".25",
+  ".99",
+  ".81"
+ ],
+ "fig5 gbm ECG+CLMBR": [
+  13.2,
+  "<.001",
+  0.203,
+  0.172,
+  "19/32",
+  ".15",
+  ".84",
+  ".75"
+ ],
+ "fig5 gbm shufECG": [
+  -4.2,
+  ".045",
+  0.203,
+  0.21,
+  "14/32",
+  ".58",
+  ".94",
+  "1.00"
+ ],
+ "fig5 gbm shufCLMBR": [
+  -5.0,
+  ".13",
+  0.203,
+  0.218,
+  "14/32",
+  ".27",
+  ".78",
+  ".83"
+ ],
+ "fig5C main": [
+  62,
+  18,
+  0,
+  0
+ ],
+ "fig5C cal01": [
+  55,
+  14,
+  0,
+  0
+ ],
+ "fig5C m13": [
+  55,
+  18,
+  0,
+  0
+ ],
+ "fig5C iptw": [
+  55,
+  7,
+  0,
+  0
+ ],
+ "fig5C overlap": [
+  55,
+  23,
+  0,
+  0
+ ],
+ "fig5C gbm": [
+  55,
+  18,
+  0,
+  0
+ ],
+ "fig5D Physio-logic ECG": [
+  10,
+  0.03
+ ],
+ "fig5D Physio-logic CLMBR": [
+  10,
+  0.052
+ ],
+ "fig5D Not ECG": [
+  22,
+  0.031
+ ],
+ "fig5D Not CLMBR": [
+  22,
+  0.063
+ ],
+ "fig5D Excellent/good ECG": [
+  15,
+  0.045
+ ],
+ "fig5D Excellent/good CLMBR": [
+  15,
+  0.072
+ ],
+ "fig5D Moderate ECG": [
+  17,
+  0.018
+ ],
+ "fig5D Moderate CLMBR": [
+  17,
+  0.049
+ ],
+ "efig1A lvef": {
+  "base": 1.3,
+  "P5": 24.0,
+  "P5ECG": 35.5,
+  "P5CLMBR": 30.4,
+  "P5ECGCLMBR": 37.1,
+  "CLMBRonly": 27.0,
+  "ECGonly": 27.6,
+  "P5shufCLMBR": 23.7
+ },
+ "efig1A ntprobnp": {
+  "base": 9.0,
+  "P5": 25.8,
+  "P5ECG": 37.0,
+  "P5CLMBR": 46.9,
+  "P5ECGCLMBR": 53.8,
+  "CLMBRonly": 38.6,
+  "ECGonly": 22.3,
+  "P5shufCLMBR": 27.7
+ },
+ "efig1A bmi": {
+  "base": -9.6,
+  "P5": 6.2,
+  "P5ECG": 24.2,
+  "P5CLMBR": 15.8,
+  "P5ECGCLMBR": 29.0,
+  "CLMBRonly": 15.6,
+  "ECGonly": 15.7,
+  "P5shufCLMBR": 7.2
+ },
+ "efig1A egfr": {
+  "base": 6.0,
+  "P5": 18.0,
+  "P5ECG": 20.0,
+  "P5CLMBR": 47.1,
+  "P5ECGCLMBR": 47.2,
+  "CLMBRonly": 45.2,
+  "ECGonly": 9.0,
+  "P5shufCLMBR": 18.7
+ },
+ "efig1A all": {
+  "base": 2.4,
+  "P5": 18.6,
+  "P5ECG": 27.8,
+  "P5CLMBR": 37.0,
+  "P5ECGCLMBR": 42.6,
+  "CLMBRonly": 33.8,
+  "ECGonly": 17.2,
+  "P5shufCLMBR": 19.4
+ },
+ "efig1B lvef": [
+  15.2,
+  8.4,
+  17.3,
+  9.7,
+  2.5,
+  -0.3
+ ],
+ "efig1B ntprobnp": [
+  15.1,
+  28.4,
+  37.8,
+  13.1,
+  26.7,
+  2.5
+ ],
+ "efig1B bmi": [
+  19.2,
+  10.2,
+  24.3,
+  15.7,
+  6.3,
+  1.0
+ ],
+ "efig1B egfr": [
+  2.5,
+  35.5,
+  35.7,
+  0.2,
+  34.0,
+  0.9
+ ],
+ "efig1B all": [
+  11.3,
+  22.6,
+  29.5,
+  8.9,
+  20.5,
+  1.0
+ ],
+ "efig1C coverage": {
+  "unmatched": 51.2,
+  "base": 57.7,
+  "ECG": 65.4,
+  "P5": 64.8,
+  "P5ECG": 69.2,
+  "P5CLMBR": 74.2,
+  "P5ECGCLMBR": 76.9,
+  "CLMBRonly": 72.4,
+  "P5shufCLMBR": 65.6,
+  "oracle": 94.4
+ },
+ "efig2A demo all": [
+  10.3,
+  6.4,
+  14.5,
+  "7/7",
+  -2.5
+ ],
+ "efig2A demo no_index_day_ecg": [
+  14.5,
+  9.7,
+  19.7,
+  "7/7",
+  -1.9
+ ],
+ "efig2A cvd5 all": [
+  6.6,
+  2.3,
+  12.8,
+  "6/7",
+  -3.1
+ ],
+ "efig2A cvd5 no_index_day_ecg": [
+  6.5,
+  -0.2,
+  13.6,
+  "5/7",
+  -6.1
+ ],
+ "efig2A cvd5_anydm all": [
+  11.8,
+  7.2,
+  16.7,
+  "7/7",
+  -0.6
+ ],
+ "efig2A cvd5_anydm no_index_day_ecg": [
+  10.5,
+  4.9,
+  15.9,
+  "6/7",
+  -5.6
+ ],
+ "efig2A cvd5_incl all": [
+  11.5,
+  7.1,
+  17.4,
+  "7/7",
+  2.0
+ ],
+ "efig2A cvd5_incl no_index_day_ecg": [
+  8.7,
+  2.2,
+  15.1,
+  "6/7",
+  1.0
+ ],
+ "efig2B sparse v20": [
+  10.2,
+  7.6,
+  14.6
+ ],
+ "efig2B sparse fixed": [
+  10.9,
+  8.3,
+  14.1
+ ],
+ "efig2B hdPS200 v20": [
+  7.5,
+  -0.4,
+  16.2
+ ],
+ "efig2B hdPS200 fixed": [
+  8.1,
+  -0.1,
+  17.3
+ ],
+ "efig2B clinical v20": [
+  1.2,
+  -9.1,
+  11.8
+ ],
+ "efig2B clinical fixed": [
+  3.0,
+  -8.6,
+  15.2
+ ],
+ "efig2C plato": [
+  0.756,
+  0.768,
+  0.747,
+  0.84
+ ],
+ "efig2C aristotle": [
+  0.454,
+  0.434,
+  0.485,
+  0.79
+ ],
+ "efig2C rocket_af": [
+  0.503,
+  0.487,
+  0.48,
+  0.88
+ ],
+ "efig2C transform_hf": [
+  1.316,
+  1.304,
+  1.296,
+  1.02
+ ],
+ "efig2C comet": [
+  1.373,
+  1.159,
+  1.317,
+  1.205
+ ],
+ "efig2C soap2": [
+  0.799,
+  0.759,
+  0.769,
+  1.17
+ ],
+ "efig2C elite2": [
+  0.739,
+  0.847,
+  0.835,
+  1.13
+ ],
+ "efig2C peptic": [
+  1.509,
+  1.387,
+  1.604,
+  1.05
+ ],
+ "efig3 rows": 62,
+ "efig3 n q<.05 balance / agreement": [
+  98,
+  0
+ ],
+ "efig4A P5 base": [
+  32,
+  0.886,
+  0.988
+ ],
+ "efig4A P5 ECG": [
+  32,
+  0.876,
+  0.974
+ ],
+ "efig4A P5 CLMBR": [
+  32,
+  0.791,
+  0.829
+ ],
+ "efig4A P5 ECG+CLMBR": [
+  32,
+  0.775,
+  0.807
+ ],
+ "efig4A P1 CLMBR": [
+  32,
+  0.796,
+  0.833
+ ],
+ "efig4A Flags base": [
+  31,
+  0.735,
+  0.734
+ ],
+ "efig4A hdPS200 base": [
+  32,
+  0.769,
+  0.803
+ ],
+ "efig4A clinical base": [
+  32,
+  0.85,
+  0.915
+ ],
+ "efig4B P1 base iptw": [
+  0.872,
+  0.103
+ ],
+ "efig4B P1 base overlap": [
+  0.916,
+  0.374
+ ],
+ "efig4B P1 CLMBR iptw": [
+  0.442,
+  0.042
+ ],
+ "efig4B P1 CLMBR overlap": [
+  0.584,
+  0.186
+ ],
+ "efig4B P5 base iptw": [
+  0.721,
+  0.098
+ ],
+ "efig4B P5 base overlap": [
+  0.795,
+  0.369
+ ],
+ "efig4B P5 ECG iptw": [
+  0.674,
+  0.069
+ ],
+ "efig4B P5 ECG overlap": [
+  0.739,
+  0.361
+ ],
+ "efig4B P5 CLMBR iptw": [
+  0.437,
+  0.021
+ ],
+ "efig4B P5 CLMBR overlap": [
+  0.572,
+  0.181
+ ],
+ "efig4B Flags base iptw": [
+  0.177,
+  0.002
+ ],
+ "efig4B Flags base overlap": [
+  0.477,
+  0.18
+ ],
+ "efig4B hdPS200 base iptw": [
+  0.335,
+  0.004
+ ],
+ "efig4B hdPS200 base overlap": [
+  0.548,
+  0.179
+ ],
+ "efig4B clinical base iptw": [
+  0.54,
+  0.037
+ ],
+ "efig4B clinical base overlap": [
+  0.627,
+  0.322
+ ],
+ "efig4C ECG all 32 trials (main)": [
+  8.8,
+  4.4,
+  13.3
+ ],
+ "efig4C ECG CLMBR-T retention drop \u2264 0.05 (15)": [
+  6.9,
+  1.2,
+  12.7
+ ],
+ "efig4C ECG drop > 0.05 (17)": [
+  10.7,
+  4.4,
+  17.2
+ ],
+ "efig4C ECG overlap weights, no trimming (32)": [
+  7.4,
+  4.3,
+  10.9
+ ],
+ "efig4C CLMBR all 32 trials (main)": [
+  12.4,
+  7.1,
+  17.7
+ ],
+ "efig4C CLMBR CLMBR-T retention drop \u2264 0.05 (15)": [
+  9.3,
+  2.0,
+  16.5
+ ],
+ "efig4C CLMBR drop > 0.05 (17)": [
+  15.3,
+  8.3,
+  22.6
+ ],
+ "efig4C CLMBR overlap weights, no trimming (32)": [
+  13.6,
+  8.8,
+  18.6
+ ],
+ "efig4C ECG+CLMBR all 32 trials (main)": [
+  13.5,
+  6.6,
+  20.4
+ ],
+ "efig4C ECG+CLMBR CLMBR-T retention drop \u2264 0.05 (15)": [
+  11.7,
+  1.5,
+  22.0
+ ],
+ "efig4C ECG+CLMBR drop > 0.05 (17)": [
+  15.3,
+  6.1,
+  23.7
+ ],
+ "efig4C ECG+CLMBR overlap weights, no trimming (32)": [
+  16.2,
+  10.6,
+  22.1
+ ],
+ "efig4D FlagsCV: CLMBR vs base main": [
+  -4.3,
+  -17.1,
+  5.4,
+  ".71",
+  ".16"
+ ],
+ "efig4D FlagsCV: CLMBR vs base m13": [
+  -2.4,
+  -14.9,
+  5.9,
+  ".55",
+  ".071"
+ ],
+ "efig4D FlagsCV: CLMBR vs base overlap": [
+  4.6,
+  2.7,
+  6.7,
+  "<.001",
+  ".39"
+ ],
+ "efig4D FlagsCV: ECG vs base main": [
+  0.7,
+  -3.6,
+  4.9,
+  ".38",
+  ".052"
+ ],
+ "efig4D FlagsCV: ECG vs base m13": [
+  3.6,
+  -0.7,
+  7.9,
+  ".059",
+  ".032"
+ ],
+ "efig4D FlagsCV: ECG vs base overlap": [
+  2.9,
+  1.7,
+  4.4,
+  "<.001",
+  ".037"
+ ],
+ "efig4D FlagsCV base vs Flags base (C=1) main": [
+  2.5,
+  -2.6,
+  7.4,
+  ".36",
+  ".008"
+ ],
+ "efig4D FlagsCV base vs Flags base (C=1) m13": [
+  4.4,
+  -0.4,
+  8.8,
+  ".077",
+  ".003"
+ ],
+ "efig4D FlagsCV base vs Flags base (C=1) overlap": [
+  -0.4,
+  -4.0,
+  3.1,
+  ".84",
+  ".46"
+ ],
+ "efig4D P1+CLMBR vs FlagsCV base main": [
+  -1.5,
+  -7.5,
+  4.4,
+  ".63",
+  ".001"
+ ],
+ "efig4D P1+CLMBR vs FlagsCV base m13": [
+  1.6,
+  -4.0,
+  6.7,
+  ".60",
+  "<.001"
+ ],
+ "efig4D P1+CLMBR vs FlagsCV base overlap": [
+  1.9,
+  -1.4,
+  5.1,
+  ".27",
+  ".70"
+ ],
+ "efig5A S32 P5: ECG vs base": [
+  8.8,
+  4.4,
+  13.3,
+  ".002",
+  0.196,
+  ".70"
+ ],
+ "efig5A S38 P5: ECG vs base": [
+  9.0,
+  5.0,
+  13.5,
+  "<.001",
+  0.195,
+  ".68"
+ ],
+ "efig5A S32 P5: CLMBR vs base": [
+  12.4,
+  7.1,
+  17.7,
+  "<.001",
+  0.166,
+  ".93"
+ ],
+ "efig5A S38 P5: CLMBR vs base": [
+  12.7,
+  8.0,
+  17.6,
+  "<.001",
+  0.162,
+  ".90"
+ ],
+ "efig5A S32 P5: ECG+CLMBR vs base": [
+  13.5,
+  6.6,
+  20.4,
+  ".003",
+  0.158,
+  ".94"
+ ],
+ "efig5A S38 P5: ECG+CLMBR vs base": [
+  14.5,
+  8.1,
+  20.6,
+  "<.001",
+  0.154,
+  ".91"
+ ],
+ "efig5A S32 P5: CLMBR vs ECG": [
+  3.9,
+  -1.8,
+  8.9,
+  ".36",
+  0.166,
+  ".33"
+ ],
+ "efig5A S38 P5: CLMBR vs ECG": [
+  4.1,
+  -1.4,
+  8.7,
+  ".25",
+  0.162,
+  ".41"
+ ],
+ "efig5A S32 P1+CLMBR vs Flags base": [
+  0.7,
+  -5.5,
+  6.8,
+  ".86",
+  0.174,
+  ".97"
+ ],
+ "efig5A S38 P1+CLMBR vs Flags base": [
+  0.2,
+  -5.4,
+  5.5,
+  ".97",
+  0.171,
+  ".82"
+ ],
+ "efig5A S32 P5+CLMBR vs hdPS200 base": [
+  3.8,
+  -2.7,
+  9.6,
+  ".43",
+  0.166,
+  ".15"
+ ],
+ "efig5A S38 P5+CLMBR vs hdPS200 base": [
+  3.5,
+  -2.1,
+  8.8,
+  ".39",
+  0.162,
+  ".089"
+ ],
+ "efig5A S32 P5+CLMBR vs clinical base": [
+  -4.9,
+  -11.2,
+  0.9,
+  ".25",
+  0.166,
+  ".19"
+ ],
+ "efig5A S38 P5+CLMBR vs clinical base": [
+  -5.7,
+  -11.7,
+  -0.4,
+  ".11",
+  0.162,
+  ".21"
+ ],
+ "efig5B P1: CLMBR vs base": [
+  20.7,
+  13.3,
+  27.8,
+  "<.001"
+ ],
+ "efig5B P1: CLMBR32 vs base": [
+  18.2,
+  10.8,
+  25.2,
+  "<.001"
+ ],
+ "efig5B P1: CLMBR vs CLMBR32": [
+  3.0,
+  -1.2,
+  7.2,
+  ".36"
+ ],
+ "efig5B P5: CLMBR vs base": [
+  12.4,
+  7.1,
+  17.7,
+  "<.001"
+ ],
+ "efig5B P5: CLMBR32 vs base": [
+  11.2,
+  6.5,
+  16.0,
+  "<.001"
+ ],
+ "efig5B P5: CLMBR vs CLMBR32": [
+  0.9,
+  -3.7,
+  5.0,
+  ".79"
+ ],
+ "efig5B P5: CLMBR32 vs ECG": [
+  3.0,
+  -1.6,
+  7.0,
+  ".36"
+ ],
+ "efig5B P1+CLMBR32 vs Flags base": [
+  -2.9,
+  -10.1,
+  4.4,
+  ".60"
+ ],
+ "efig5C P5: CLMBR vs base": [
+  22.7,
+  24.1,
+  14.7,
+  1.0,
+  0.7,
+  0.2,
+  15.9
+ ],
+ "efig5C P5: CLMBR32 vs base": [
+  26.1,
+  17.5,
+  11.9,
+  3.9,
+  5.1,
+  10.9,
+  3.4
+ ],
+ "efig5C P5: CLMBR32 vs ECG": [
+  19.0,
+  11.8,
+  -3.6,
+  -10.9,
+  -13.1,
+  12.5,
+  -0.8
+ ]
+}
