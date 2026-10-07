@@ -1,5 +1,7 @@
 # Handoff: TRACE-ECG (ECG embeddings for confounding control in target trial emulation)
 
+> **Active next step (2026-10-07):** paper2 (PS-CVD5 primary; ECG + CLMBR-T; PS-Flags; trial labels). Plan, decisions and ready-to-paste prompts are in [HANDOFF_PAPER2.md](HANDOFF_PAPER2.md).
+
 Last updated **2026-10-07**. This brief is the current state and supersedes earlier handoffs; the previous brief (2026-09-25) is in [docs/HANDOFF_HISTORY.md](docs/HANDOFF_HISTORY.md). It covers the session of roughly 2026-09-27 to 2026-10-07. Everything is exploratory: analyses were added and the primary set was defined after results had been seen, and the paper discloses this.
 
 ## 1. Rules that apply to every agent
