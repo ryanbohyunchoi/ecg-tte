@@ -234,7 +234,10 @@ def figure1():
     tiers = pd.Series([TIER[k] for k in s32]).value_counts()
     lab = LPT[(LPT.arm == "ECG") & LPT.in_S32]
     n_phys = int(lab.physiologic.sum())
-    nfl = [d["n_flags"] for d in FLAGLOG if d["trial"] in s32]
+    # log.json names trials by registry id (hyphens); S32KEYS are tier keys (underscores).
+    reg2key = {t["registry"]: t["key"] for t in QT}
+    nfl = [d["n_flags"] for d in FLAGLOG if reg2key.get(d["trial"]) in s32]
+    assert len(nfl) == 32, len(nfl)
     CHECK["fig1 S32 areas"] = areas.to_dict()
     CHECK["fig1 physiologic"] = (n_phys, len(lab))
     CHECK["fig1 flags range S32"] = (min(nfl), max(nfl))
