@@ -4,6 +4,8 @@ Written **2026-10-08**. This is the single reference for the design we settled o
 - **Changing a LOCKED item:** it becomes a logged deviation (§9).
 - **When everything is LOCKED:** commit this file as the methods lock. From then on, figures and the manuscript are generated only from it.
 
+**Working title (user decision 2026-10-08):** *Multimodal Representations for Confounding Control in Target Trial Emulation of Cardiovascular Randomized Clinical Trials*. "Multimodal" = representations from two modalities (ECG signal, coded EHR) added side by side to the PS, not a fused model; say so in the Methods.
+
 **Manuscript:** this design extends paper2 (PS-CVD5 primary, ECG + CLMBR-T, PS-Flags as the CLMBR-T check). Paper 1 (`docs/paper/paper.md`, PS-Demo primary, ECG only) is the earlier version.
 
 **Disclosure:** PS-CVD5 as primary was first proposed on 2026-10-07 (paper2), before the R2 and PS-10 results. The switch from paper 1's PS-Demo is still a post hoc change and must be stated in the Methods.
