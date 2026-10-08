@@ -1,0 +1,5413 @@
+{
+ "title": "TRACE-ECG emulation-quality framework v2.0: item list and per-trial scoring template",
+ "framework_doc": "docs/emulation_quality_v2/QUALITY_FRAMEWORK.md",
+ "version": "2.0-draft",
+ "date": "2026-10-08",
+ "status": "draft for user confirmation; no trial scored",
+ "scope": "Stage 2 of trial selection (38 emulated -> analysed set) for paper 1. Stage 1 (feasibility, 99 -> 38) unchanged.",
+ "principles": [
+  "Results (HRs, CIs, agreement, balance/SMD, matched-pair counts, plasmode, ECG/CLMBR-T effects, R2/LEGEND results) are never a scoring criterion; every score cites SPEC/CODE/PUB/DATA evidence.",
+  "Each deviation is scored once (allocation table, framework section 5).",
+  "Documented adaptations are scored in domain items; undocumented, correctable defects only in SI by share affected; placebo proxy always in CO.",
+  "Score the code path that built the analysed cohort, citing spec key and spec_version.",
+  "Known deviation of unknown magnitude -> middle level, provisional; arm-assignment/time-zero mechanism -> 2 provisional; resolve provisional scores before freezing.",
+  "Examples in anchors are illustrative, not scores."
+ ],
+ "evidence_types": {
+  "SPEC": "file:line @ git SHA, spec key, spec_version",
+  "CODE": "builder/extractor file:line @ SHA",
+  "PUB": "citation + table/figure/page",
+  "DATA": "data-check ID + band (no counts)",
+  "DOC": "repo document; pointer only, never sole support"
+ },
+ "items": [
+  {
+   "id": "EL",
+   "domain": "Population",
+   "name": "Eligibility fidelity",
+   "max_points": 2,
+   "assesses": [
+    "protocol_fidelity"
+   ],
+   "definition": "Match of the emulated population to the trial's population-defining criteria (disease/index event, severity or phenotype, risk enrichment, age bounds, required prior/background therapy). Safety exclusions are scored only if their omission plausibly changes the population materially.",
+   "levels": [
+    {
+     "points": 0,
+     "label": "faithful",
+     "anchor": "All population-defining criteria represented (exactly or by accepted proxy), or any omitted criterion would be met by >=90% of the emulated population anyway (DC-EL-met or stated clinical reasoning)."
+    },
+    {
+     "points": 1,
+     "label": "one criterion",
+     "anchor": "Exactly one population-defining criterion omitted or approximated in a way that changes who is included.",
+     "examples_illustrative": [
+      "risk enrichment not applied (CAROLINA high CV risk; REWIND CVD/risk factors; LEADER >=60 risk-factor stratum)",
+      "frailty instrument replaced by age >=75 (FRAIL-AF)",
+      "NYHA/NT-proBNP not available (RAFT-AF)",
+      "new-user restriction excludes a large experienced subgroup the trial enrolled (ARISTOTLE VKA-experienced), unless it is a switch at randomisation (TZ.c)"
+     ]
+    },
+    {
+     "points": 2,
+     "label": "different population",
+     "anchor": "Two or more population-defining criteria omitted/approximated, or the defining phenotype has no usable EHR proxy so the emulated population is a different clinical population."
+    }
+   ],
+   "evidence_required": [
+    "PUB: trial eligibility section/table",
+    "SPEC: gate, exclusions, min_age/max_age",
+    "DATA: DC-EL-met when the >=90% rule is invoked"
+   ],
+   "unknown_rule": "Impact of an omitted criterion unknown -> 1, provisional.",
+   "scored_elsewhere": {
+    "undocumented missing numeric bound or gate error": "SI",
+    "criterion specified but mostly unmeasured (unknown passes)": "DA.a",
+    "baseline therapy stopped at randomisation": "TZ.c"
+   },
+   "v19_source": null
+  },
+  {
+   "id": "TZ",
+   "domain": "Time zero and treatment strategies",
+   "name": "Time-zero alignment",
+   "max_points": 2,
+   "assesses": [
+    "protocol_fidelity"
+   ],
+   "definition": "Whether time zero is the same decision point as randomisation (eligibility met, strategy assigned). Scored from four present/absent features.",
+   "features": [
+    {
+     "id": "TZ.a",
+     "name": "In-hospital initiation not mirrored",
+     "present_when": "Trial started/randomised treatment during a hospital stay and emulated time zero cannot be placed at the equivalent in-hospital decision point (e.g. oral discharge strategy vs an inpatient IV order of the comparator drug: TRANSFORM-HF).",
+     "not_scored_when": "Inpatient orders visible and time zero is the in-hospital start in both arms (PLATO, VALIANT, PROVE IT-TIMI 22; LAAOS III surgery in both arms).",
+     "v19_source": "F1"
+    },
+    {
+     "id": "TZ.b",
+     "name": "Selective run-in",
+     "present_when": "An active run-in before randomisation removed patients for intolerance, non-adherence or non-response to a study drug (PARADIGM-HF, ONTARGET).",
+     "not_scored_when": "Placebo or washout run-in that did not select on response to a study drug (LIFE, INSIGHT).",
+     "v19_source": "F2"
+    },
+    {
+     "id": "TZ.c",
+     "name": "Baseline same-purpose therapy switched at randomisation, not reproduced",
+     "present_when": ">=30% of randomised patients were on a same-purpose drug stopped or replaced at randomisation and the emulation neither requires nor reproduces that switch.",
+     "not_scored_when": "Switch during a pre-randomisation washout/run-in; post-randomisation protocol transition window (INR-guided VKA-to-DOAC: ARISTOTLE, ROCKET-AF); switch/sequential design reproduces it (FRAIL-AF, PARADIGM-HF sequential, PROTECT AF); share <30%.",
+     "escalation": "Share >=50% -> TZ = 2 on its own (not applied when the share is unknown).",
+     "v19_source": "F3"
+    },
+    {
+     "id": "TZ.d",
+     "name": "Other misalignment incl. immortal time",
+     "present_when": "Eligibility uses post-time-zero information; unequal person-time at risk before assignment (immortal time); or the arms' time zeros are at non-equivalent points of the disease course (check procedure-vs-drug designs, e.g. CABANA).",
+     "not_scored_when": "A sequential prevalent new-user comparator sampled at the switch date without future information.",
+     "escalation": "Immortal time not removed by design -> TZ = 2.",
+     "v19_source": "F5"
+    }
+   ],
+   "levels": [
+    {
+     "points": 0,
+     "label": "aligned",
+     "anchor": "No feature present."
+    },
+    {
+     "points": 1,
+     "label": "one feature",
+     "anchor": "Exactly one feature present."
+    },
+    {
+     "points": 2,
+     "label": "misaligned",
+     "anchor": "Two or more features; or TZ.c with >=50% switched; or immortal time not removed by design."
+    }
+   ],
+   "evidence_required": [
+    "PUB: setting and timing of randomisation; run-in and share excluded; baseline medication table (TZ.c)",
+    "SPEC/CODE: design, gate, washout, dedupe"
+   ],
+   "unknown_rule": "TZ.c share unreported: use design paper/baseline table; if still unknown, present only when eligibility required/implied prior same-purpose therapy (provisional); no >=50% escalation on an unknown share.",
+   "scored_elsewhere": {
+    "undocumented code error in time zero or arm assignment": "SI (2 if confirmed)",
+    "horizon": "FU"
+   },
+   "v19_source": [
+    "F1",
+    "F2",
+    "F3",
+    "F5"
+   ]
+  },
+  {
+   "id": "TS",
+   "domain": "Time zero and treatment strategies",
+   "name": "Intervention-strategy identifiability",
+   "max_points": 2,
+   "assesses": [
+    "protocol_fidelity",
+    "question_appropriateness"
+   ],
+   "definition": "Whether the intervention strategy can be identified from orders/procedures. Comparator arm is scored in CO.",
+   "levels": [
+    {
+     "points": 0,
+     "label": "identified",
+     "anchor": "Trial agent/procedure identified (or trial allowed any class agent and the class is used, e.g. FRAIL-AF any DOAC); dose/formulation does not define the contrast or marketed dose = trial dose. Dose titration of a fixed agent is not scored."
+    },
+    {
+     "points": 1,
+     "label": "approximated",
+     "anchor": "Class adaptation; strategy approximated by its first identifiable component; trial formulation not identifiable but plausibly not hypothesis-changing; dose/intensity contrast largely preserved by routine practice with evidence.",
+     "examples_illustrative": [
+      "any ARB for losartan/valsartan/telmisartan",
+      "SGLT2i class for empagliflozin",
+      "rhythm control = antiarrhythmic initiation (AFFIRM, AF-CHF, EAST-AFNET 4)",
+      "nifedipine GITS not identifiable (INSIGHT)",
+      "PROVE IT-TIMI 22 intensity question"
+     ]
+    },
+    {
+     "points": 2,
+     "label": "not identifiable",
+     "anchor": "The hypothesis depends on an unidentifiable strategy feature: an arm-defining co-therapy (ACTIVE W clopidogrel plus aspirin) or a dose/intensity contrast with no evidence that practice preserves it."
+    }
+   ],
+   "evidence_required": [
+    "PUB: intervention definition and dosing",
+    "SPEC: arm tokens/procedure codes",
+    "practice-pattern source or DATA for the 'preserved by practice' clause"
+   ],
+   "unknown_rule": "Unclear whether practice preserves the contrast -> 1, provisional.",
+   "scored_elsewhere": {
+    "undocumented token error or combination-product leakage": "SI",
+    "missing class washout": "SI"
+   },
+   "v19_source": "comparator fidelity (intervention-arm part)"
+  },
+  {
+   "id": "CO",
+   "domain": "Comparator",
+   "name": "Comparator fidelity",
+   "max_points": 2,
+   "assesses": [
+    "protocol_fidelity",
+    "question_appropriateness"
+   ],
+   "definition": "Whether the comparator strategy reproduces the trial's comparator.",
+   "levels": [
+    {
+     "points": 0,
+     "label": "same comparator",
+     "anchor": "Trial comparator agent/procedure (or allowed set) observable and used; 'continue current therapy' comparators sampled as established users by a sequential design (FRAIL-AF, PROTECT AF)."
+    },
+    {
+     "points": 1,
+     "label": "adapted",
+     "anchor": "Comparator class adaptation; comparator strategy narrower/broader than the trial's; comparator defined by absence of an under-recorded code; documented inherent contamination not removable with available data.",
+     "examples_illustrative": [
+      "any ACEi for enalapril/captopril/ramipril",
+      "thiazide class for chlorthalidone/co-amilozide",
+      "cardioselective beta-blocker for atenolol",
+      "antiarrhythmic initiators vs rate-or-rhythm drugs (CABANA)",
+      "surgery without LAA code (LAAOS III)"
+     ]
+    },
+    {
+     "points": 2,
+     "label": "placebo proxy or changed hypothesis",
+     "anchor": "Placebo-controlled trial emulated with an active comparator assumed null (DPP-4i or sulfonylurea proxies); a substitution that changes the hypothesis; or a comparator with its own established, non-removable effect on the primary outcome."
+    }
+   ],
+   "sets_flag": "placebo_proxy = true when CO = 2 because of a placebo proxy",
+   "evidence_required": [
+    "PUB: comparator arm",
+    "SPEC: comparator tokens/codes, washout_arms"
+   ],
+   "unknown_rule": "n/a (comparator always documented).",
+   "scored_elsewhere": {
+    "removable, undocumented contamination (e.g. saxagliptin/alogliptin in a DPP-4i proxy for an HF endpoint)": "SI type 3"
+   },
+   "v19_source": "comparator fidelity (comparator-arm part; placebo proxy = poor)"
+  },
+  {
+   "id": "OU",
+   "domain": "Outcome and follow-up",
+   "name": "Outcome fidelity",
+   "max_points": 2,
+   "assesses": [
+    "protocol_fidelity",
+    "question_appropriateness"
+   ],
+   "definition": "Ascertainability and definition of the trial's primary endpoint in the emulation.",
+   "levels": [
+    {
+     "points": 0,
+     "label": "faithful",
+     "anchor": "All components ascertained as coded hospitalisations, coded procedures or all-cause death, index stay excluded, matching the trial definition."
+    },
+    {
+     "points": 1,
+     "label": "approximated",
+     "anchor": "Any of: cause-specific death required (CV/vascular/CHD death from listed causes; always 1); a non-dominant component (<33% of RCT primary events, not the most frequent) missing or approximated; inpatient-only ascertainment where the trial counted outpatient events in a minor share; index-stay/peri-procedural events excluded in a minor share (LAAOS III). Level-1 features do not add to 2."
+    },
+    {
+     "points": 2,
+     "label": "not validly ascertained",
+     "anchor": "The dominant component (most frequent or >=33% of RCT primary events) not ascertainable with available data (FRAIL-AF CRNM bleeding); inpatient-only ascertainment misses a large share (AMPLIFY outpatient DVT and VTE-related death); or a materially different construct."
+    }
+   ],
+   "dominance_threshold": "most frequent component, or >=33% of RCT primary events",
+   "evidence_required": [
+    "PUB: component table / first events by component",
+    "SPEC: OUTCOMES",
+    "CODE: extract_outcomes.py",
+    "eTable 1 / Table 1 notes checked against code (CABANA footnote)"
+   ],
+   "unknown_rule": "Component shares unpublished: use total component counts; else assume non-dominant unless the most frequent in comparable trials (provisional).",
+   "scored_elsewhere": {
+    "ascertainable component omitted without documentation": "SI type 6",
+    "persisting index-event codes counted as events": "SI type 6",
+    "code list contradicts documented definition": "SI type 6"
+   },
+   "v19_source": "outcome fidelity"
+  },
+  {
+   "id": "FU",
+   "domain": "Outcome and follow-up",
+   "name": "Follow-up horizon and delayed effect",
+   "max_points": 1,
+   "assesses": [
+    "protocol_fidelity"
+   ],
+   "definition": "Trial-matched horizon vs benchmark follow-up; long horizon under an ITT-like estimand.",
+   "features": [
+    {
+     "id": "FU.a",
+     "name": "Horizon >=48 months",
+     "present_when": "HORIZON_MONTHS >= 48 (mechanical).",
+     "v19_source": "F4"
+    },
+    {
+     "id": "FU.b",
+     "name": "Horizon mismatch",
+     "present_when": "HORIZON_MONTHS / benchmark median (or primary-analysis) follow-up outside 0.75-1.33 (e.g. TRANSFORM-HF)."
+    }
+   ],
+   "levels": [
+    {
+     "points": 0,
+     "label": "aligned",
+     "anchor": "<48 months and ratio within 0.75-1.33."
+    },
+    {
+     "points": 1,
+     "label": "misaligned",
+     "anchor": "FU.a or FU.b present."
+    }
+   ],
+   "evidence_required": [
+    "SPEC: HORIZON_MONTHS",
+    "PUB: median follow-up of the benchmark analysis"
+   ],
+   "unknown_rule": "Median follow-up unreported: use mean or planned follow-up and record which.",
+   "v19_source": "F4"
+  },
+  {
+   "id": "ES",
+   "domain": "Estimand and benchmark",
+   "name": "Estimand alignment",
+   "max_points": 1,
+   "assesses": [
+    "protocol_fidelity"
+   ],
+   "definition": "Whether the initiation (ITT-like) estimand matches the benchmark's, and whether routine-care crossover changes the contrast.",
+   "features": [
+    {
+     "id": "ES.a",
+     "name": "Per-protocol/on-treatment benchmark",
+     "present_when": "Registered benchmark is per-protocol or on-treatment (e.g. TECOS)."
+    },
+    {
+     "id": "ES.b",
+     "name": "Excess crossover",
+     "present_when": "Share of either arm starting the other arm's strategy within the horizon (DC-ES-cross) exceeds the trial's reported crossover by >=20 percentage points (assume <=10% in blinded drug trials if unreported)."
+    }
+   ],
+   "levels": [
+    {
+     "points": 0,
+     "label": "aligned",
+     "anchor": "ITT/mITT benchmark and no excess crossover."
+    },
+    {
+     "points": 1,
+     "label": "misaligned",
+     "anchor": "ES.a or ES.b present."
+    }
+   ],
+   "evidence_required": [
+    "SPEC: PUBLISHED measure",
+    "PUB: analysis population, crossover",
+    "DATA: DC-ES-cross"
+   ],
+   "unknown_rule": "DC-ES-cross unavailable: ES.b = 0 unless a specific documented mechanism (secular replacement of comparator by intervention) -> 1 provisional.",
+   "scored_elsewhere": {
+    "measure type (HR vs RR)": "BM"
+   },
+   "v19_source": null
+  },
+  {
+   "id": "BM",
+   "domain": "Estimand and benchmark",
+   "name": "Benchmark quality",
+   "max_points": 1,
+   "assesses": [
+    "question_appropriateness"
+   ],
+   "definition": "Whether the RCT benchmark is a usable, comparable target for an emulated Cox HR. Never triggers a cap.",
+   "features": [
+    {
+     "id": "BM.a",
+     "name": "Measure other than HR",
+     "present_when": "RR, rate ratio, subdistribution HR or OR."
+    },
+    {
+     "id": "BM.b",
+     "name": "Bayesian credible interval",
+     "present_when": "e.g. PROTECT AF."
+    },
+    {
+     "id": "BM.c",
+     "name": "Covariate-adjusted primary HR",
+     "present_when": "e.g. LIFE."
+    },
+    {
+     "id": "BM.d",
+     "name": "Imprecise benchmark",
+     "present_when": "Upper/lower CI-limit ratio > 3."
+    },
+    {
+     "id": "BM.e",
+     "name": "Non-isolable benchmark arm/dose/co-primary",
+     "present_when": "Benchmark refers to an arm, dose or co-primary endpoint the emulation cannot isolate (check RE-LY, DECLARE-TIMI 58)."
+    },
+    {
+     "id": "BM.f",
+     "name": "Transcription/orientation discrepancy",
+     "present_when": "PUBLISHED differs from the publication in value, CI or orientation (check COMET)."
+    }
+   ],
+   "levels": [
+    {
+     "points": 0,
+     "label": "usable",
+     "anchor": "ITT HR with frequentist CI for the emulated endpoint, transcribed and oriented correctly. CI level other than 95% is not scored."
+    },
+    {
+     "points": 1,
+     "label": "limited",
+     "anchor": "Any BM feature present."
+    }
+   ],
+   "evidence_required": [
+    "SPEC: PUBLISHED",
+    "PUB: abstract/results table"
+   ],
+   "unknown_rule": "n/a.",
+   "v19_source": null
+  },
+  {
+   "id": "DA",
+   "domain": "Data adequacy",
+   "name": "Data adequacy",
+   "max_points": 1,
+   "assesses": [
+    "question_appropriateness"
+   ],
+   "definition": "Measurability of population-defining variables in the EHR; size and events (pre-matching, pooled).",
+   "features": [
+    {
+     "id": "DA.a",
+     "name": "Population-defining measurement mostly unknown",
+     "present_when": "Population-defining criterion that depends on a measurement (LVEF, ECG-LVH text, population-defining eGFR) measured in <50% of the analysed cohort (DC-DA-meas)."
+    },
+    {
+     "id": "DA.b",
+     "name": "Small arm or few events",
+     "present_when": "Smaller arm <500 patients with ECG, or pooled primary-outcome events within the horizon <100 (DC-DA-size)."
+    }
+   ],
+   "levels": [
+    {
+     "points": 0,
+     "label": "adequate",
+     "anchor": "Neither feature."
+    },
+    {
+     "points": 1,
+     "label": "limited",
+     "anchor": "DA.a or DA.b present."
+    }
+   ],
+   "evidence_required": [
+    "DATA: DC-DA-meas, DC-DA-size (bands)",
+    "CODE: unknown-passes rule (build_trial_cohort.py L11)"
+   ],
+   "unknown_rule": "Data check not run: 1 provisional only when DA.a applies by design (EF-defined trial); otherwise 0.",
+   "v19_source": null
+  },
+  {
+   "id": "SI",
+   "domain": "Implementation",
+   "name": "Specification and implementation fidelity (undocumented defects)",
+   "max_points": 2,
+   "assesses": [
+    "protocol_fidelity"
+   ],
+   "definition": "Whether the code that built the analysed cohort implements the protocol and the documented adaptations, verified against data; scored by the share affected.",
+   "defect_types": [
+    {
+     "type": 1,
+     "name": "Arm tokens/codes",
+     "examples": [
+      "formulation brand token in an arm labelled otherwise (toprol in a metoprolol-tartrate arm)",
+      "ARNI orders tokenised as valsartan in an ARB arm (ELITE II, VALIANT)"
+     ],
+     "denominator": "analysed_patients"
+    },
+    {
+     "type": 2,
+     "name": "Washout lists incl. class washouts",
+     "examples": [
+      "other GLP-1RA (LEADER, SUSTAIN-6, REWIND)",
+      "other SGLT2i (DECLARE-TIMI 58, CANVAS)"
+     ],
+     "denominator": "analysed_patients"
+    },
+    {
+     "type": 3,
+     "name": "Removable comparator contamination",
+     "examples": [
+      "saxagliptin/alogliptin in a DPP-4i proxy for an HF endpoint"
+     ],
+     "denominator": "analysed_patients"
+    },
+    {
+     "type": 4,
+     "name": "Missing numeric bounds",
+     "examples": [
+      "protocol age range absent from spec (CAROLINA 40-85)"
+     ],
+     "denominator": "analysed_patients"
+    },
+    {
+     "type": 5,
+     "name": "Gate errors",
+     "examples": [
+      "hedged/negated ECG text matches (LIFE)",
+      "index-stay codes satisfy a pre-existing-condition gate (LAAOS III post-operative AF)",
+      "measurement window misses the relevant day"
+     ],
+     "denominator": "analysed_patients"
+    },
+    {
+     "type": 6,
+     "name": "Outcome code lists",
+     "examples": [
+      "ascertainable component omitted undocumented",
+      "persisting index-event codes counted as events (AMPLIFY)",
+      "definition contradicts table/footnote"
+     ],
+     "denominator": "primary_outcome_events"
+    },
+    {
+     "type": 7,
+     "name": "Arm assignment / time zero in code",
+     "examples": [
+      "dedupe/ordering rule assigning patients to the wrong arm or index date (R2 CABANA flag)"
+     ],
+     "denominator": "analysed_patients"
+    }
+   ],
+   "share_rule": "Share whose arm, eligibility, time zero, or event status/time would change if the defect were corrected. Several defects on one denominator: union share; if only per-defect shares are known, their sum (conservative).",
+   "levels": [
+    {
+     "points": 0,
+     "label": "none",
+     "anchor": "No undocumented defect, or affected share <5%."
+    },
+    {
+     "points": 1,
+     "label": "minor",
+     "anchor": "Affected share 5-20%."
+    },
+    {
+     "points": 2,
+     "label": "major",
+     "anchor": ">20% affected, or an arm-assignment/time-zero error that cannot be fixed by excluding the affected patients."
+    }
+   ],
+   "evidence_required": [
+    "CODE/SPEC: exact line and proposed edit",
+    "DATA: DC-SI-* band",
+    "PUB: protocol rule contradicted"
+   ],
+   "unknown_rule": "Share unchecked -> 1 provisional; arm-assignment/time-zero mechanism -> 2 provisional.",
+   "v19_source": null
+  }
+ ],
+ "tier_rules": {
+  "total_range": [
+   0,
+   16
+  ],
+  "definitions": {
+   "N2": "number of items scored 2",
+   "PP": "placebo_proxy flag (CO = 2 because of a placebo proxy)",
+   "other_points": "total - CO"
+  },
+  "order_applied": [
+   "Limited",
+   "Moderate",
+   "Good",
+   "Excellent"
+  ],
+  "rules": [
+   {
+    "tier": "Limited",
+    "any_of": [
+     "total >= 8",
+     "N2 >= 2",
+     "PP and other_points >= 3",
+     "SI == 2 and si_reason == 'arm_assignment_or_time_zero'"
+    ]
+   },
+   {
+    "tier": "Moderate",
+    "any_of": [
+     "5 <= total <= 7",
+     "N2 == 1"
+    ]
+   },
+   {
+    "tier": "Good",
+    "all_of": [
+     "3 <= total <= 4",
+     "N2 == 0"
+    ]
+   },
+   {
+    "tier": "Excellent",
+    "all_of": [
+     "0 <= total <= 2",
+     "N2 == 0"
+    ]
+   }
+  ],
+  "bm_never_caps": true,
+  "analysed_set": {
+   "primary": [
+    "Excellent",
+    "Good",
+    "Moderate"
+   ],
+   "excluded": [
+    "Limited"
+   ],
+   "sensitivity": [
+    [
+     "Excellent",
+     "Good"
+    ],
+    "all_38",
+    "no_tier_changing_provisional_score"
+   ]
+  },
+  "rebuild_rule": "A trial Limited only because of SI is re-scored after a rebuild fixing the defect; it enters the analysed set only by a dated amendment committed before any analysis of the new set."
+ },
+ "data_checks": [
+  {
+   "id": "DC-SI-*",
+   "used_by": "SI",
+   "quantity": "Share of analysed patients (or primary-outcome events for outcome defects) affected by each suspected undocumented defect",
+   "output": "band: <5% | 5-20% | >20%"
+  },
+  {
+   "id": "DC-DA-meas",
+   "used_by": "DA.a",
+   "quantity": "Share of analysed cohort with the population-defining measurement in its window",
+   "output": "band: <50% | >=50%"
+  },
+  {
+   "id": "DC-DA-size",
+   "used_by": "DA.b",
+   "quantity": "Smaller-arm size (patients with ECG); pooled primary events within horizon",
+   "output": "bands: <500 | >=500; <100 | >=100"
+  },
+  {
+   "id": "DC-ES-cross",
+   "used_by": "ES.b",
+   "quantity": "Share of each arm starting the other arm's strategy within horizon",
+   "output": "percentage-point excess over trial crossover: <20 | >=20"
+  },
+  {
+   "id": "DC-EL-met",
+   "used_by": "EL",
+   "quantity": "Share of analysed cohort meeting an omitted, code-approximable criterion anyway",
+   "output": "band: <90% | >=90%"
+  }
+ ],
+ "data_check_output_dir": "/mnt/raid0/rbc58/ecg-tte/audits/emulation_quality_v2/data_checks/ (umask 077; bands only in repo; counts 1-10 suppressed incl. derivable)",
+ "reliability_reporting": {
+  "binary_items_and_features": "percent agreement + Cohen's kappa",
+  "ordinal_items_0_2": "linear-weighted kappa",
+  "tier_4_level": "linear-weighted and unweighted kappa",
+  "analysed_set_membership": "Cohen's kappa",
+  "total_points": "ICC(2,1) absolute agreement",
+  "ci": "95% bootstrap over trials, 2000 resamples",
+  "also_report": "item prevalence; rater identity (LLM runs reported as such)",
+  "computed_on": "unadjudicated rater_A vs rater_B records"
+ },
+ "calibration_trials_not_in_38": [
+  "PARAGON-HF (paragon_hf)",
+  "DAPA-HF/EMPEROR-Reduced (dapa_hf)",
+  "PARTNER (partner)",
+  "PARADISE-MI (paradise_mi)"
+ ],
+ "v19_mapping": {
+  "F1": "TZ.a",
+  "F2": "TZ.b",
+  "F3": "TZ.c (>=30%; >=50% -> TZ=2)",
+  "F4": "FU.a (+ FU.b new)",
+  "F5": "TZ.d",
+  "comparator_fidelity": "CO (comparator arm) + TS (intervention arm); placebo proxy = CO 2",
+  "outcome_fidelity": "OU (documented/not ascertainable) + SI type 6 (undocumented/correctable)",
+  "new": [
+   "EL",
+   "ES",
+   "BM",
+   "DA",
+   "SI"
+  ]
+ },
+ "record_schema": {
+  "description": "One record per trial per record_type (rater_A, rater_B, adjudicated). item.score is an integer within the item's levels; features hold true/false; total and tier are computed mechanically from items by tier_rules.",
+  "evidence_entry": {
+   "type": "SPEC | CODE | PUB | DATA | DOC",
+   "ref": "",
+   "note": ""
+  },
+  "si_defect_entry": {
+   "id": "",
+   "description": "",
+   "type": "1-7",
+   "documented": false,
+   "denominator": "analysed_patients | primary_outcome_events",
+   "share_band": "<5% | 5-20% | >20% | unknown",
+   "arm_assignment_or_time_zero_unfixable_by_exclusion": null,
+   "data_check_id": "",
+   "evidence": [],
+   "proposed_spec_edit": ""
+  },
+  "adjudication_entry": {
+   "item": "",
+   "rater_A": null,
+   "rater_B": null,
+   "adjudicated": null,
+   "deciding_clause": "",
+   "more_severe_default_used": null
+  },
+  "clinician_review_entry": {
+   "item_or_rule": "",
+   "decision": "confirm | override",
+   "new_score": null,
+   "rubric_clause": "",
+   "reviewer": "",
+   "date": ""
+  },
+  "empty_record": {
+   "trial": "<trial>",
+   "area": "<area>",
+   "spec_key": "<spec_key>",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  }
+ },
+ "records": [
+  {
+   "trial": "ARISTOTLE",
+   "area": "AF",
+   "spec_key": "aristotle",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "ROCKET-AF",
+   "area": "AF",
+   "spec_key": "rocket_af",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "RE-LY",
+   "area": "AF",
+   "spec_key": "rely",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "EAST-AFNET 4",
+   "area": "AF",
+   "spec_key": "east_afnet4",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "CABANA",
+   "area": "AF",
+   "spec_key": "cabana",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "AFFIRM",
+   "area": "AF",
+   "spec_key": "affirm",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "AF-CHF",
+   "area": "AF",
+   "spec_key": "af_chf",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "FRAIL-AF",
+   "area": "AF",
+   "spec_key": "frail_af",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "LAAOS III",
+   "area": "AF",
+   "spec_key": "laaos3",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "PROTECT AF",
+   "area": "AF",
+   "spec_key": "protect_af",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "RAFT-AF",
+   "area": "AF",
+   "spec_key": "raft_af",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "ACTIVE W",
+   "area": "AF",
+   "spec_key": "active_w",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "COMET",
+   "area": "HF",
+   "spec_key": "comet",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "PARADIGM-HF",
+   "area": "HF",
+   "spec_key": "paradigm_hf_seq",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "TRANSFORM-HF",
+   "area": "HF",
+   "spec_key": "transform_hf",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "ELITE II",
+   "area": "HF",
+   "spec_key": "elite_ii",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "EMPEROR-Preserved",
+   "area": "HF",
+   "spec_key": "emperor_preserved",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "LIFE",
+   "area": "Hypertension",
+   "spec_key": "life",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "ALLHAT",
+   "area": "Hypertension",
+   "spec_key": "allhat",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "VALUE",
+   "area": "Hypertension",
+   "spec_key": "value",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "ASCOT-BPLA",
+   "area": "Hypertension",
+   "spec_key": "ascot",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "INSIGHT",
+   "area": "Hypertension",
+   "spec_key": "insight",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "PLATO",
+   "area": "ACS / MI",
+   "spec_key": "plato",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "VALIANT",
+   "area": "ACS / MI",
+   "spec_key": "valiant",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "EMPA-REG OUTCOME",
+   "area": "Diabetes",
+   "spec_key": "empa_reg",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "CAROLINA",
+   "area": "Diabetes",
+   "spec_key": "carolina",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "LEADER",
+   "area": "Diabetes",
+   "spec_key": "leader",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "SUSTAIN-6",
+   "area": "Diabetes",
+   "spec_key": "sustain6",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "REWIND",
+   "area": "Diabetes",
+   "spec_key": "rewind",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "DECLARE-TIMI 58",
+   "area": "Diabetes",
+   "spec_key": "declare",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "CANVAS Program",
+   "area": "Diabetes",
+   "spec_key": "canvas",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "TECOS",
+   "area": "Diabetes",
+   "spec_key": "tecos",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "CARMELINA",
+   "area": "Diabetes",
+   "spec_key": "carmelina",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "ONTARGET",
+   "area": "Other",
+   "spec_key": "ontarget",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "PRECISION",
+   "area": "Other",
+   "spec_key": "precision",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "AMPLIFY",
+   "area": "Other",
+   "spec_key": "amplify",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "LODESTAR",
+   "area": "Other",
+   "spec_key": "lodestar",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  },
+  {
+   "trial": "PROVE IT-TIMI 22",
+   "area": "Other",
+   "spec_key": "prove_it",
+   "spec_version": null,
+   "code_path": null,
+   "git_sha": null,
+   "rater": {
+    "id": null,
+    "kind": "human_clinician | human_methodologist | llm_agent",
+    "model_or_role": null
+   },
+   "record_type": "rater_A | rater_B | adjudicated",
+   "date": null,
+   "items": {
+    "EL": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "TZ": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "TZ.a": null,
+      "TZ.b": null,
+      "TZ.c": null,
+      "TZ.d": null
+     }
+    },
+    "TS": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "CO": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "OU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    },
+    "FU": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "FU.a": null,
+      "FU.b": null
+     }
+    },
+    "ES": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "ES.a": null,
+      "ES.b": null
+     }
+    },
+    "BM": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "BM.a": null,
+      "BM.b": null,
+      "BM.c": null,
+      "BM.d": null,
+      "BM.e": null,
+      "BM.f": null
+     }
+    },
+    "DA": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": "",
+     "features": {
+      "DA.a": null,
+      "DA.b": null
+     }
+    },
+    "SI": {
+     "score": null,
+     "status": "final | provisional",
+     "evidence": [],
+     "rationale": ""
+    }
+   },
+   "placebo_proxy": null,
+   "si_reason": "none | share | arm_assignment_or_time_zero",
+   "si_defects": [],
+   "total": null,
+   "n_items_at_2": null,
+   "tier": null,
+   "tier_rule_applied": null,
+   "provisional_affects_tier": null,
+   "analysed_set": null,
+   "adjudication": [],
+   "clinician_review": [],
+   "results_attestation": {
+    "results_viewed": null,
+    "no_result_used_as_evidence": null,
+    "signed_by": null
+   },
+   "notes": ""
+  }
+ ]
+}
