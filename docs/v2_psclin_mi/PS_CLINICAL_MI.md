@@ -108,6 +108,13 @@ Leakage-corrected masks; 45 items held out for this rung. Relative reduction = 1
 - vs hdPS: 2.1% (−7.9 to 10.8), P .70.
 - PS-CVD5 + ECG vs PS-Clinical (no LVEF, MI) alone: 1.0% (−2.5 to 5.0), P .61. The ECG on top of PS-CVD5 roughly matches the clinical PS.
 
+**Rescored sets** (added after step D, `docs/emulation_quality_v2/RESCORE_V2_COHORTS.md`; `summarize` re-run, sets `Snew` and `SEG`), main configuration:
+
+| Set | + ECG vs PS alone | ECG vs permuted ECG | draws 1–5 range |
+|---|---|---|---|
+| New analysed set (30) | 4.5% (1.2 to 7.9); 20/30; P = .006 | 5.9% (3.0 to 9.0); P < .001 | 2.4 to 5.7 |
+| Excellent + Good (12) | 4.1% (−1.5 to 9.7); 7/12; P = .09 | 4.7% (0.4 to 9.3); P = .03 | 0.7 to 8.6 |
+
 ## 4. All configurations (+ ECG vs PS alone; 54 items)
 
 | config | S29 | S32 | S38 |
