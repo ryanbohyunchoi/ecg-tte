@@ -14,6 +14,10 @@ Sources (read-only):
   audits/claude-v1-psclin-nolvef/cells/restricted_cells.parquet   rung clinical_nolvef = PS-Clinical without LVEF, re-imputed
                                                             (scripts/v1_psclin_nolvef/psclin_nolvef.py; user decision 2026-10-08)
   audits/claude-v1-psclin-nolvef/summary/{contrasts,ladder}.csv   Python summaries of that rung (validation targets)
+  audits/claude-v1-ps10/cells/restricted_cells.parquet      rung PS10 = PS-CVD10 (PS-Demo + 10 fixed diagnoses; scripts/v1_ps10/ps10.py;
+                                                            docs/v1_ps10/PS10.md; main-ladder comparison per pipeline.md section 4)
+  audits/claude-v1-ps10/summary/{contrasts,levels}.csv      Python summaries of that grid (validation targets)
+  docs/emulation_quality_v2/quality_v2_final.json           provisional v2 analysed set (29 trials; not frozen)
   audits/claude-v20-sens-primary32/restricted_cells.parquet paper 1 source (checked: identical where they overlap)
   audits/claude-v18-embed-compare/results.csv               unmatched |SMD| (rung 'none'); matched cells checked = grid
   audits/claude-v19-expanded-buckets/per_var_all_rungs.csv  expanded panel (main configuration only)
@@ -21,7 +25,11 @@ Sources (read-only):
   scripts/make_acc_figure.VARS (= v16_engine.VARS)          58 held-out items, labels and groups
   docs/v19/quality_tiers.json, docs/paper/paper.md Table 1, docs/v21/TRIAL_LABELS.json   trial metadata
 Rules: cells with fewer than 11 matched pairs (or failed fits) are treated as failed (all items missing; v1 audit F1).
-Leakage-corrected masks: docs/v1_audit/DEFECT_IMPACT.md section 1 ("clean"; scripts/v1_audit/defect_impact.py masks).
+Leakage-corrected masks: docs/v1_audit/DEFECT_IMPACT.md section 1 ("clean"; scripts/v1_audit/defect_impact.py masks); PS-CVD10 as
+PS-CVD5 (docs/v1_ps10/PS10.md section 3; pipeline.md section 6).
+Defaults (pipeline.md sections 4-6; user scope change 2026-10-08: the paper is ECG-only): PS-CVD5, 1:1 caliper 0.2, 54
+leakage-corrected items, PS alone / + ECG / + permuted ECG, provisional v2 set of 29 trials. CLMBR-T arms stay selectable, off by
+default and labelled exploratory (not in the paper). Cohorts are version 1.
 
 Usage (tte-analysis env):
   python scripts/build_balance_explorer.py            build the HTML (+ aggregate JSON copy in the audits folder)
@@ -45,6 +53,9 @@ A = Path("/mnt/raid0/rbc58/ecg-tte/audits")
 CELLS = A / "claude-v21-paper2/core/restricted_cells.parquet"
 NOLVEF = A / "claude-v1-psclin-nolvef/cells/restricted_cells.parquet"
 NLSUM = A / "claude-v1-psclin-nolvef/summary"
+PS10C = A / "claude-v1-ps10/cells/restricted_cells.parquet"
+PS10S = A / "claude-v1-ps10/summary"
+QV2 = ROOT / "docs/emulation_quality_v2/quality_v2_final.json"
 SP32 = A / "claude-v20-sens-primary32/restricted_cells.parquet"
 V18 = A / "claude-v18-embed-compare/results.csv"
 EXPV = A / "claude-v19-expanded-buckets/per_var_all_rungs.csv"
@@ -55,7 +66,7 @@ OUT = ROOT / "docs/presentation/ecg_tte_balance_explorer_2026_10_08.html"
 SCR = A / "claude-balance-explorer"
 
 CFGS = ["main", "cal01", "m13", "iptw", "overlap", "gbm"]
-RUNGS = ["P1", "P5", "Flags", "hdPS200", "clinical_nolvef", "clinical"]
+RUNGS = ["P1", "P5", "PS10", "Flags", "hdPS200", "clinical_nolvef", "clinical"]
 ARMS = ["base", "ECG", "shufECG", "CLMBR", "ECG+CLMBR", "shufCLMBR"]
 V18ARM = {"ECG+CLMBR": "CLMBR+ECG"}
 MIN_PAIRS = 11
@@ -71,7 +82,8 @@ OBS8 = [c for c in OBS9 if c != "smd_obs_lvef"]
 # leakage-clean map, DEFECT_IMPACT.md section 1 table (a cell's mask = rung mask | arm mask; placebos take the real arm's mask).
 # PS-Clinical without LVEF keeps the masks whose source covariates remain in the PS (CODED4, 8 observed vitals/labs, eGFR);
 # echo EF, LV systolic grade and observed LVEF are held out (docs/v1_psclin_nolvef/PS_CLINICAL_NO_LVEF.md).
-LEAK_RUNG = {"P1": [], "P5": ["B_mean", "smd_prog_full"], "Flags": ["B_mean", "smd_prog_full"], "hdPS200": CODED4,
+# PS-CVD10 = PS-CVD5's mask (B_mean, prognostic score); B_mean is also in its ex58 (R4 hit; docs/v1_ps10/PS10.md section 3).
+LEAK_RUNG = {"P1": [], "P5": ["B_mean", "smd_prog_full"], "PS10": ["B_mean", "smd_prog_full"], "Flags": ["B_mean", "smd_prog_full"], "hdPS200": CODED4,
              "clinical_nolvef": CODED4 + OBS8 + ["pp_LAB__egfr"], "clinical": CODED4 + OBS9 + CLIN_NEAR}
 LEAK_ARM = {"CLMBR": CODED4, "ECG+CLMBR": CODED4, "shufCLMBR": CODED4}
 T1NAME = {"aristotle": "ARISTOTLE", "rocket_af": "ROCKET-AF", "rely": "RE-LY", "east_afnet4": "EAST-AFNET 4", "cabana": "CABANA",
@@ -94,7 +106,9 @@ def load_grid():
     """full-precision |SMD| blocks (trial x 58) per (config, rung, arm) with ex58 masking and the F1 rule applied."""
     R = pd.read_parquet(CELLS)
     N = pd.read_parquet(NOLVEF)
-    R = pd.concat([R, N[N.rung == "clinical_nolvef"]], ignore_index=True)
+    P10 = pd.read_parquet(PS10C)
+    assert set(P10.rung) == {"PS10"} and list(P10.columns) == list(R.columns)
+    R = pd.concat([R, N[N.rung == "clinical_nolvef"], P10], ignore_index=True)
     R = R[R.arm.isin(ARMS)].copy()
     order = R[(R.rung == "P1") & (R.config == "main") & (R.arm == "base")].sort_values("idx")
     tids, keys = order.trial.tolist(), order.key.tolist()
@@ -173,14 +187,16 @@ def trials_meta(g):
     QT = {t["key"]: t for t in json.load(open(ROOT / "docs/v19/quality_tiers.json"))["trials"]}
     LB = {x["trial"]: x for x in json.load(open(ROOT / "docs/v21/TRIAL_LABELS.json"))["labels"]}
     paper = (ROOT / "docs/paper/paper.md").read_text()
+    v2 = set(json.load(open(QV2))["analysed_set"])
+    assert len(v2) == 29 and v2 <= set(T1NAME.values())
     out = []
     for tid, k in zip(g["tids"], g["keys"]):
         nm = T1NAME[k]
         assert nm in paper, nm
         tier = QT[k]["tier"].split(" - ")[0]
         out.append(dict(id=tid, name=SHORT.get(nm, nm), full=nm, area=QT[k]["area"], tier=tier, s32=tier != "Limited",
-                        phys=LB[nm]["physiologic"] == "yes"))
-    assert sum(t["s32"] for t in out) == 32 and sum(t["phys"] for t in out) == 11
+                        phys=LB[nm]["physiologic"] == "yes", v2=nm in v2))
+    assert sum(t["s32"] for t in out) == 32 and sum(t["phys"] for t in out) == 11 and sum(t["v2"] for t in out) == 29
     return out
 
 
@@ -306,6 +322,8 @@ def trial_set(trials, v):
     idx = list(range(len(trials)))
     if v == "s32":
         return [i for i in idx if trials[i]["s32"]]
+    if v == "v2":
+        return [i for i in idx if trials[i]["v2"]]
     if v == "all":
         return idx
     k, x = v.split(":", 1)
@@ -322,7 +340,7 @@ def trial_set(trials, v):
 
 
 # ================================================================ validation (Python, full precision vs published)
-RN = {"P1": "PS-Demo", "P5": "PS-CVD5", "Flags": "PS-Flags", "hdPS200": "hdPS", "clinical": "PS-Clinical",
+RN = {"P1": "PS-Demo", "P5": "PS-CVD5", "PS10": "PS-CVD10", "Flags": "PS-Flags", "hdPS200": "hdPS", "clinical": "PS-Clinical",
       "clinical_nolvef": "PS-Clinical (no LVEF)"}
 # expected values: docs/paper/supplement.md eTable 3A / 7A (paper 1); docs/v21/PAPER2_RESULTS.md and core/sensitivity.csv
 # (paper 2); docs/v1_audit/DEFECT_IMPACT.md (leakage-clean and F1)
@@ -367,6 +385,70 @@ EXPECT = [
     ("Paper 2 text (paper2.md l.109)", "s32", "overlap", "P5", "ECG+CLMBR", "54", False, dict(rr=16.2)),
     ("Paper 2 text (paper2.md l.109)", "s32", "cal01", "P5", "ECG+CLMBR", "54", False, dict(rr=15.8)),
 ]
+N_PAPER = len(EXPECT)  # 141 values from paper 1 / paper 2 / v1 audit
+# PS-CVD10 (docs/v1_ps10/PS10.md sections 5.1-5.4; "v1" variant = leak off, "clean" = leak on). arm "a|b" = a vs b.
+# lower = trials with lower mean |SMD|; p_m = one-sided sign-flip P on mean |SMD|; p_m2 = two-sided (placebos, head-to-heads).
+_P10 = "PS10.md"
+EXPECT += [
+    (_P10 + " 5.1", "s32", "main", "PS10", "ECG", "54", False, dict(rr=5.0, lo=-0.8, hi=10.3, lower="23/32", p_m=".051", m_ref=0.121, m_arm=0.115, pct_ref=56.6, pct_arm=58.9, p=".086")),
+    (_P10 + " 5.1", "s32", "main", "PS10", "ECG", "54", True, dict(rr=5.0, lo=-0.8, hi=10.3, lower="23/32", p_m=".051")),
+    (_P10 + " 5.1", "s32", "main", "PS10", "ECG", "58", False, dict(rr=4.9, lo=-0.6, hi=10.1, p_m=".048", m_ref=0.120, m_arm=0.114)),
+    (_P10 + " 5.1", "s32", "main", "PS10", "ECG", "58", True, dict(rr=5.0, lo=-0.6, hi=10.2, p_m=".046")),
+    (_P10 + " 5.1", "all", "main", "PS10", "ECG", "54", False, dict(rr=4.8, lo=-0.5, hi=9.8, lower="27/38", p_m=".042", m_ref=0.115, m_arm=0.109, pct_ref=58.8, pct_arm=60.7)),
+    (_P10 + " 5.1", "all", "main", "PS10", "ECG", "58", False, dict(rr=4.8, lo=-0.4, hi=9.6, p_m=".039")),
+    (_P10 + " 5.1", "s32", "main", "PS10", "shufECG", "54", False, dict(rr=-1.1, lo=-5.8, hi=3.4, lower="11/32", p_m2=".64")),
+    (_P10 + " 5.1", "s32", "main", "PS10", "ECG|shufECG", "54", False, dict(rr=6.1, lo=0.0, hi=11.0, lower="24/32", p_m=".020")),
+    (_P10 + " 5.2", "s32", "cal01", "PS10", "ECG", "54", False, dict(rr=5.8, lo=-0.0, hi=11.3, lower="24/32", p_m=".029")),
+    (_P10 + " 5.2", "s32", "m13", "PS10", "ECG", "54", False, dict(rr=5.2, lo=1.0, hi=9.5, lower="19/32", p_m=".012")),
+    (_P10 + " 5.2", "s32", "iptw", "PS10", "ECG", "54", False, dict(rr=3.6, lo=0.8, hi=7.0, lower="24/32", p_m=".008")),
+    (_P10 + " 5.2", "s32", "overlap", "PS10", "ECG", "54", False, dict(rr=6.9, lo=3.8, hi=10.6, lower="27/32", p_m="<.001")),
+    (_P10 + " 5.2", "s32", "gbm", "PS10", "ECG", "54", False, dict(rr=2.4, lo=-1.5, hi=6.2, lower="18/32", p_m=".12")),
+    (_P10 + " 5.2", "s32", "cal01", "PS10", "shufECG", "54", False, dict(rr=-0.1, p_m2=".97")),
+    (_P10 + " 5.2", "s32", "m13", "PS10", "shufECG", "54", False, dict(rr=-1.6, p_m2=".24")),
+    (_P10 + " 5.2", "s32", "iptw", "PS10", "shufECG", "54", False, dict(rr=-0.4, p_m2=".71")),
+    (_P10 + " 5.2", "s32", "overlap", "PS10", "shufECG", "54", False, dict(rr=-0.6, lo=-1.2, hi=-0.1, p_m2=".028")),
+    (_P10 + " 5.2", "s32", "gbm", "PS10", "shufECG", "54", False, dict(rr=-0.5, p_m2=".72")),
+    (_P10 + " 5.2", "s32", "main", "PS10", "CLMBR", "54", False, dict(rr=7.4, lo=1.8, hi=12.6, lower="21/32", p_m=".009")),
+    (_P10 + " 5.2", "s32", "cal01", "PS10", "CLMBR", "54", False, dict(rr=7.4, lo=1.8, hi=12.3, p_m=".008")),
+    (_P10 + " 5.2", "s32", "m13", "PS10", "CLMBR", "54", False, dict(rr=7.9, lo=2.8, hi=13.2, p_m=".003")),
+    (_P10 + " 5.2", "s32", "iptw", "PS10", "CLMBR", "54", False, dict(rr=-7.1, lo=-20.8, hi=4.9, p_m=".83")),
+    (_P10 + " 5.2", "s32", "overlap", "PS10", "CLMBR", "54", False, dict(rr=9.7, lo=5.4, hi=14.3, p_m="<.001")),
+    (_P10 + " 5.2", "s32", "gbm", "PS10", "CLMBR", "54", False, dict(rr=8.7, lo=4.3, hi=12.9, p_m=".001")),
+    (_P10 + " 5.2", "s32", "main", "PS10", "ECG+CLMBR", "54", False, dict(rr=7.0, lo=0.8, hi=13.2, lower="24/32", p_m=".018")),
+    (_P10 + " 5.2", "s32", "cal01", "PS10", "ECG+CLMBR", "54", False, dict(rr=7.4, lo=0.9, hi=13.8, p_m=".019")),
+    (_P10 + " 5.2", "s32", "m13", "PS10", "ECG+CLMBR", "54", False, dict(rr=9.9, lo=4.2, hi=15.7, p_m=".001")),
+    (_P10 + " 5.2", "s32", "iptw", "PS10", "ECG+CLMBR", "54", False, dict(rr=-6.0, lo=-25.1, hi=7.5, p_m=".65")),
+    (_P10 + " 5.2", "s32", "overlap", "PS10", "ECG+CLMBR", "54", False, dict(rr=12.3, lo=7.0, hi=17.9, p_m="<.001")),
+    (_P10 + " 5.2", "s32", "gbm", "PS10", "ECG+CLMBR", "54", False, dict(rr=8.3, lo=2.2, hi=14.1, p_m=".007")),
+    (_P10 + " 5.2", "s32", "main", "PS10", "shufCLMBR", "54", False, dict(rr=-2.7, lo=-7.2, hi=1.1, lower="13/32", p_m2=".21")),
+    (_P10 + " 5.2", "s32", "cal01", "PS10", "shufCLMBR", "54", False, dict(rr=-1.6, p_m2=".49")),
+    (_P10 + " 5.2", "s32", "m13", "PS10", "shufCLMBR", "54", False, dict(rr=-0.5, p_m2=".63")),
+    # PS10.md prints P .11 here, a double rounding of 0.1048; its summary/tables.md gives 0.105
+    (_P10 + " 5.2 / tables.md", "s32", "iptw", "PS10", "shufCLMBR", "54", False, dict(rr=-2.3, p_m2=".105")),
+    (_P10 + " 5.2", "s32", "overlap", "PS10", "shufCLMBR", "54", False, dict(rr=-0.5, p_m2=".33")),
+    (_P10 + " 5.2", "s32", "gbm", "PS10", "shufCLMBR", "54", False, dict(rr=-5.0, lo=-10.1, hi=-0.9, p_m2=".021")),
+    (_P10 + " 5.2 (S38)", "all", "cal01", "PS10", "ECG", "54", False, dict(rr=6.3)),
+    (_P10 + " 5.2 (S38)", "all", "m13", "PS10", "ECG", "54", False, dict(rr=5.4)),
+    (_P10 + " 5.2 (S38)", "all", "iptw", "PS10", "ECG", "54", False, dict(rr=4.0)),
+    (_P10 + " 5.2 (S38)", "all", "overlap", "PS10", "ECG", "54", False, dict(rr=7.5)),
+    (_P10 + " 5.2 (S38)", "all", "gbm", "PS10", "ECG", "54", False, dict(rr=2.4)),
+    (_P10 + " 5.2 (S38)", "all", "cal01", "PS10", "CLMBR", "54", False, dict(rr=7.9)),
+    (_P10 + " 5.2 (S38)", "all", "m13", "PS10", "CLMBR", "54", False, dict(rr=8.4)),
+    (_P10 + " 5.2 (S38)", "all", "iptw", "PS10", "CLMBR", "54", False, dict(rr=-5.7)),
+    (_P10 + " 5.2 (S38)", "all", "overlap", "PS10", "CLMBR", "54", False, dict(rr=10.0)),
+    (_P10 + " 5.2 (S38)", "all", "gbm", "PS10", "CLMBR", "54", False, dict(rr=9.0)),
+    (_P10 + " 5.4", "s32", "main", "PS10", "CLMBR", "58", False, dict(rr=8.4)),
+    (_P10 + " 5.4", "s32", "main", "PS10", "CLMBR", "58", True, dict(rr=7.4)),
+    (_P10 + " 5.4", "s32", "main", "PS10", "ECG+CLMBR", "58", False, dict(rr=8.3)),
+    (_P10 + " 5.4", "s32", "main", "PS10", "ECG+CLMBR", "58", True, dict(rr=7.0)),
+    (_P10 + " 5.4", "all", "main", "PS10", "CLMBR", "54", False, dict(rr=7.4, lo=2.1, hi=12.0, lower="26/38", p_m=".004")),
+    (_P10 + " 5.4", "all", "main", "PS10", "ECG+CLMBR", "54", False, dict(rr=8.2, lo=2.6, hi=14.0, lower="30/38", p_m=".004")),
+    (_P10 + " 5.4", "all", "main", "PS10", "shufCLMBR", "54", False, dict(rr=-3.0, p_m2=".13")),
+    (_P10 + " 5.4", "s32", "main", "PS10", "CLMBR|shufCLMBR", "54", False, dict(rr=9.9, lo=5.4, hi=14.4, lower="25/32", p_m="<.001")),
+    (_P10 + " 5.4", "s32", "main", "PS10", "ECG+CLMBR|CLMBR", "54", False, dict(rr=-0.2, lo=-6.3, hi=5.9, lower="18/32", p_m=".52")),
+    (_P10 + " 5.4", "s32", "main", "PS10", "ECG+CLMBR|ECG", "54", False, dict(rr=2.5, lo=-3.3, hi=8.1, p_m=".20")),
+    (_P10 + " 5.4", "s32", "main", "PS10", "CLMBR|ECG", "54", False, dict(rr=2.5, lo=-3.1, hi=7.5, p_m2=".38")),
+]
 
 
 def fmtp(p):
@@ -379,20 +461,28 @@ def check(g, D):
     trials = D["trials"]
     full, emb = Grid(g["G"], g["U"], g["ex"]), Grid.from_data(D)
     rows = []
-    for src, ts, cfg, rg, a, panel, leak, exp in EXPECT:
+    for n_row, (src, ts, cfg, rg, a, panel, leak, exp) in enumerate(EXPECT):
         T = trial_set(trials, ts)
-        r = pair_stats(full, cfg, rg, a, "base", T, panel, leak)
-        re_ = pair_stats(emb, cfg, rg, a, "base", T, panel, leak)
+        a, b = (a.split("|") + ["base"])[:2]
+        r = pair_stats(full, cfg, rg, a, b, T, panel, leak)
+        re_ = pair_stats(emb, cfg, rg, a, b, T, panel, leak)
         got = dict(rr=round(r["rr"], 1), lo=round(r["lo"], 1), hi=round(r["hi"], 1), pct_ref=round(r["pct_ref"], 1),
                    pct_arm=round(r["pct_arm"], 1), better=f"{r['better']}/{r['k']}", p=fmtp(r["p"]),
-                   m_ref=round(r["m_ref"], 3), m_arm=round(r["m_arm"], 3))
+                   m_ref=round(r["m_ref"], 3), m_arm=round(r["m_arm"], 3), lower=f"{r['lower']}/{r['k']}", p_m=fmtp(r["p_m"]),
+                   p_m2=fmtp(r["p_m_two"]))
+        emb_txt = dict(rr=f"{re_['rr']:.1f}", lo=f"{re_['lo']:.1f}", hi=f"{re_['hi']:.1f}", p_m=fmtp(re_["p_m"]), p_m2=fmtp(re_["p_m_two"]),
+                       p=fmtp(re_["p"]), lower=f"{re_['lower']}/{re_['k']}", better=f"{re_['better']}/{re_['k']}")
+        pex = dict(p=r["p"], p_m=r["p_m"], p_m2=r["p_m_two"])
         for key, ev in exp.items():
             gv = got[key]
+            if key in pex and not (ev.startswith("<") or len(ev) == 3):
+                # P given to 3 decimals (PS10.md): compare the exact P rounded to the stated precision
+                gv = f"{pex[key]:.3f}"[1:]
             ok = (gv == ev) if isinstance(ev, str) else abs(gv - ev) < 0.051 if key in ("rr", "lo", "hi", "pct_ref", "pct_arm") else abs(gv - ev) < 5e-4
-            rows.append(dict(source=src, trials=ts, method=cfg, base=RN[rg], arm=a, panel=panel, leak=leak, metric=key,
-                             expected=ev, reproduced=gv, match=bool(ok),
+            rows.append(dict(source=src, paper=n_row < N_PAPER, trials=ts, method=cfg, base=RN[rg], arm=a, ref=b, panel=panel, leak=leak,
+                             metric=key, expected=ev, reproduced=gv, match=bool(ok),
                              embedded_minus_full=float(re_[key] - r[key]) if key in re_ and not isinstance(ev, str) else 0.0,
-                             exact_rr=r["rr"], exact_p=r["p"] if key == "p" else np.nan))
+                             embedded_text=emb_txt.get(key, ""), exact_rr=r["rr"], exact_p=pex.get(key, np.nan)))
     V = pd.DataFrame(rows)
     V.to_csv(SCR / "validation_published.csv", index=False)
     # full cross-check against paper 2's own summary (within-rung contrasts vs base, all configs, S32/S38, 54 and 58 items)
@@ -466,9 +556,54 @@ def check(g, D):
                        dev=abs(lv - s.mean_smd), k_ok=int(ok.sum()) == s.k_trials))
     LX = pd.DataFrame(ld)
     LX.to_csv(SCR / "crosscheck_nolvef_ladder.csv", index=False)
+    # PS-CVD10: every same-rung contrast in scripts/v1_ps10/ps10.py's summary (PS-CVD10 within-rung, incl. head-to-heads and
+    # placebo references, and its PS-Demo / PS-CVD5 / hdPS / PS-Clinical ladder rows; v1 = leak off, clean = leak on; F1 applied)
+    PC = pd.read_csv(PS10S / "contrasts.csv")
+    PC = PC[PC.kind.isin(["within", "ladder"]) & (PC.rung_a == PC.rung_b)]
+    pr = []
+    for _, s in PC.iterrows():
+        T = trial_set(trials, "s32" if s.set == "S32" else "all")
+        for panel in ("54", "58"):
+            pre, mm, lt = ("relred54", "m54", "lt01_54") if panel == "54" else ("relred58", "m58", "lt01_58")
+            r1 = pair_stats(withf1, s.config, s.rung_a, s.arm_a, s.arm_b, T, panel, leak=s.variant == "clean")
+            two = s.sided != "one"
+            pr.append(dict(variant=s.variant, set=s.set, config=s.config, kind=s.kind, rung=s.rung_a, arm=s.arm_a, ref=s.arm_b, panel=panel,
+                           sided=s.sided, py_rr=s[pre], rr=r1["rr"], rr_dev=abs(r1["rr"] - s[pre]),
+                           ci_dev=max(abs(r1["lo"] - s[pre + "_lo"]), abs(r1["hi"] - s[pre + "_hi"])),
+                           m_dev=max(abs(r1["m_ref"] - s[f"{mm}_b"]), abs(r1["m_arm"] - s[f"{mm}_a"])),
+                           pct_dev=max(abs(r1["pct_ref"] - s[f"{lt}_b"]), abs(r1["pct_arm"] - s[f"{lt}_a"])),
+                           p_lt_dev=abs((r1["p_two"] if two else r1["p"]) - s[f"{lt}_p"]),
+                           p_m_dev=abs((r1["p_m_two"] if two else r1["p_m"]) - s[f"{mm}_p"]),
+                           better_ok=f"{r1['lower']}/{r1['k']}" == s[f"{mm}_better"]))
+    PX = pd.DataFrame(pr)
+    PX.to_csv(SCR / "crosscheck_ps10_contrasts.csv", index=False)
+    PL = pd.read_csv(PS10S / "levels.csv")
+    PL = PL[PL.rung.isin(RUNGS) & PL.panel.astype(str).isin(["54", "58"]) & PL.arm.isin(ARMS)]
+    pl = []
+    for _, s in PL.iterrows():
+        T = trial_set(trials, "s32" if s.set == "S32" else "all")
+        M = withf1.block(s.config, s.rung, s.arm, s.variant == "clean")[np.ix_(T, items(str(s.panel)))]
+        ok = np.isfinite(M).any(1)
+        lv = float(np.nanmean(M[ok], 1).mean())
+        pc = float((100 * (M[ok] < 0.1).sum(1) / np.isfinite(M[ok]).sum(1)).mean())
+        pl.append(dict(variant=s.variant, set=s.set, rung=s.rung, config=s.config, arm=s.arm, panel=s.panel, py=s.mean_smd, explorer=lv,
+                       dev=abs(lv - s.mean_smd), pct_dev=abs(pc - s.pct_lt01), k_ok=int(ok.sum()) == s.k_trials))
+    PLX = pd.DataFrame(pl)
+    PLX.to_csv(SCR / "crosscheck_ps10_levels.csv", index=False)
+    # PS-CVD10 targets for the JS (headless) check: Python summary values at full precision, PS-CVD10 vs base, all arms,
+    # main configuration, S32 / S38, 54 / 58 items, leakage off / on
+    tg = PC[(PC.kind == "within") & (PC.config == "main") & (PC.arm_b == "base")]
+    targets = []
+    for _, s in tg.iterrows():
+        for panel in ("54", "58"):
+            pre, mm = ("relred54", "m54") if panel == "54" else ("relred58", "m58")
+            targets.append(dict(cfg="main", rung="PS10", arm=s.arm_a, trials="s32" if s.set == "S32" else "all", panel=panel,
+                                leak=bool(s.variant == "clean"), thr=0.1, sided=s.sided, rr=s[pre], lo=s[pre + "_lo"], hi=s[pre + "_hi"],
+                                p_m=s[f"{mm}_p"], lower=s[f"{mm}_better"], m_ref=s[f"{mm}_b"], m_arm=s[f"{mm}_a"]))
+    json.dump(targets, open(SCR / "ps10_js_targets.json", "w"), indent=0)
     # combos for the JS identity check (Python on the embedded integers)
     rng = np.random.default_rng(7)
-    sets = ["s32", "all", "area:AF", "q:Good", "q:Excellent,Good", "phys:yes,all", "phys:no,s32", "area:Diabetes"]
+    sets = ["s32", "all", "v2", "area:AF", "q:Good", "q:Excellent,Good", "phys:yes,all", "phys:no,s32", "area:Diabetes"]
     combos = []
     for i, (cfg, rg) in enumerate([(c, r) for c in CFGS for r in RUNGS]):
         for k in range(2):
@@ -480,8 +615,17 @@ def check(g, D):
         r.pop("p_two")
         r.pop("p_m_two")
         c["py"] = {k: (None if isinstance(v, float) and not np.isfinite(v) else float(v)) for k, v in r.items()}
+    # the default view (pipeline.md primary) for the UI read-out check
+    for a in ("ECG", "shufECG"):
+        c = dict(cfg="main", rung="P5", arm=a, trials="v2", panel="54", leak=True, thr=0.1, default_view=True)
+        r = pair_stats(emb, "main", "P5", a, "base", trial_set(trials, "v2"), "54", True, 0.1)
+        r.pop("p_two")
+        r.pop("p_m_two")
+        c["py"] = {k: (None if isinstance(v, float) and not np.isfinite(v) else float(v)) for k, v in r.items()}
+        combos.append(c)
     json.dump(combos, open(SCR / "py_ref_combos.json", "w"), indent=0)
-    summ = dict(published_checks=len(V), published_match=int(V.match.sum()),
+    Vp, Vq = V[V.paper], V[~V.paper]
+    summ = dict(published_checks=len(Vp), published_match=int(Vp.match.sum()), ps10_doc_checks=len(Vq), ps10_doc_match=int(Vq.match.sum()),
                 paper2_rows=len(X), paper2_noF1_max_rr_dev=float(X.noF1_dev.max()), paper2_noF1_max_ci_dev=float(max(X.noF1_lo_dev.max(), X.noF1_hi_dev.max())),
                 paper2_noF1_max_p_dev=float(X.noF1_p_dev.max()), paper2_noF1_max_pct_dev=float(X.noF1_lt_dev.max()),
                 paper2_noF1_mbetter_all_ok=bool(X.noF1_mbetter_ok.all()), F1_changed_rows=int(X.F1_changes.sum()),
@@ -490,6 +634,11 @@ def check(g, D):
                 nolvef_max_m_dev=float(NX.m_dev.max()), nolvef_max_pct_dev=float(NX.pct_dev.max()),
                 nolvef_max_p_dev=float(max(NX.p_lt_dev.max(), NX.p_m_dev.max())), nolvef_better_all_ok=bool(NX.better_ok.all()),
                 ladder_rows=len(LX), ladder_max_dev=float(LX.dev.max()), ladder_k_all_ok=bool(LX.k_ok.all()),
+                ps10_rows=len(PX), ps10_max_rr_dev=float(PX.rr_dev.max()), ps10_max_ci_dev=float(PX.ci_dev.max()),
+                ps10_max_m_dev=float(PX.m_dev.max()), ps10_max_pct_dev=float(PX.pct_dev.max()),
+                ps10_max_p_dev=float(max(PX.p_lt_dev.max(), PX.p_m_dev.max())), ps10_better_all_ok=bool(PX.better_ok.all()),
+                ps10_level_rows=len(PLX), ps10_level_max_dev=float(PLX.dev.max()), ps10_level_max_pct_dev=float(PLX.pct_dev.max()),
+                ps10_level_k_all_ok=bool(PLX.k_ok.all()), ps10_js_targets=len(targets),
                 max_embedded_minus_full=float(V.embedded_minus_full.abs().max()), js_combos=len(combos))
     json.dump(summ, open(SCR / "validation_summary.json", "w"), indent=1)
     print(json.dumps(summ, indent=1))
@@ -575,12 +724,12 @@ svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
 </head>
 <body>
 <header>
-  <h1>TRACE-ECG: covariate balance explorer</h1><span class="sub">38 emulated trials, YNHHS; held-out characteristics not in any PS. Updated 2026-10-08 (PS-Clinical without LVEF added).</span>
+  <h1>TRACE-ECG: covariate balance explorer</h1><span class="sub">38 emulated trials, YNHHS; held-out characteristics not in any PS. Updated 2026-10-08 (PS-CVD10 in the main ladder; defaults set to the pipeline.md primary).</span>
   <div class="notes">
-    <b>Data:</b> per-trial |SMD| from the paper 2 grid (<code>audits/claude-v21-paper2/core</code>; 5 PS bases × 6 arms × 6 PS methods) and, for PS-Clinical (no LVEF), from <code>audits/claude-v1-psclin-nolvef</code> (same engine, arms and methods). Its PS-Demo, PS-CVD5, hdPS and PS-Clinical × PS alone / + ECG / + permuted ECG cells are identical to paper 1's source. Unmatched |SMD| come from the v1.8 embedding comparison (same cohorts).
-    <b>Paper 1 primary:</b> PS-Demo, 1:1 caliper 0.2, 58 items, 32 trials (the default view). <b>Paper 2 primary:</b> PS-CVD5, 54 non-coded items.
-    <b>PS-Clinical (no LVEF)</b> (user decision 2026-10-08) is PS-Clinical with LVEF removed and the covariates re-imputed without it, so no PS uses an echo measurement and all 35 echo items and observed LVEF are held out at every level; it replaces the version 1 PS-Clinical (kept as "PS-Clinical (with LVEF, v1)") at the top of the default information ladder.
-    <b>Leakage-corrected masking</b> (v1 audit, DEFECT_IMPACT §1) also removes held-out items that duplicate or are derived from a PS input: for PS-Clinical (with LVEF), echo EF, LV systolic grade and eGFR (plus the 4 coded-record items); for PS-Clinical (no LVEF), eGFR and the 4 coded-record items; for hdPS and for every CLMBR-T arm (real or permuted), the 4 coded-record items; for PS-CVD5 and PS-Flags, held-out codes and the prognostic score. Cells with fewer than 11 matched pairs are treated as failed (missing). Aggregates only.
+    <b>The paper is ECG-only.</b> <b>Primary (pipeline.md; the default view):</b> PS-CVD5 + ECG vs PS-CVD5, 1:1 caliper 0.2, fixed L2 penalty C = 1, 54 non-coded items with leakage-corrected masking (permuted ECG as the placebo); the provisional v2 analysed set of 29 trials (emulation quality v2.0, adjudicated but not frozen). The CLMBR-T arms are not in the paper; they stay selectable as exploratory, off by default. <b>Cohorts are version 1:</b> the spec-v2 fixed cohorts and the 5-draw multiple-imputation PS-Clinical (no LVEF) will replace them when ready. <b>Paper 1 primary</b> (still selectable): PS-Demo, 58 items, masking off, paper 1's 32 trials.
+    <b>Main information ladder:</b> PS-Demo → PS-CVD5 (primary) → PS-CVD10 (comparison) → hdPS → PS-Clinical (no LVEF). PS-Flags (supplement) and PS-Clinical (with LVEF, v1 reference) are selectable but off by default. <b>PS-CVD10</b> = PS-Demo + 10 fixed diagnoses (hypertension, T2D, CAD/MI, AF, HF, CKD, COPD/asthma, PAD, stroke/TIA, valve disease). <b>PS-Clinical (no LVEF)</b> removes LVEF and re-imputes without it (single imputation here), so no PS uses an echo measurement.
+    <b>Data:</b> per-trial |SMD| from the paper 2 grid (<code>audits/claude-v21-paper2/core</code>; 6 arms × 6 PS methods), PS-Clinical (no LVEF) from <code>audits/claude-v1-psclin-nolvef</code> and PS-CVD10 from <code>audits/claude-v1-ps10</code> (same engine, arms and methods; PS-CVD5 rebuilt through the PS-CVD10 code reproduces the grid exactly). Unmatched |SMD| come from the v1.8 embedding comparison (same cohorts).
+    <b>Leakage-corrected masking</b> (pipeline.md §6; v1 audit, DEFECT_IMPACT §1) also removes held-out items that duplicate or are derived from a PS input: for PS-Clinical (no LVEF), eGFR (plus the 4 coded-record items); for PS-Clinical (with LVEF), echo EF, LV systolic grade and eGFR (plus the 4 coded-record items); for hdPS and for every (exploratory) CLMBR-T arm, real or permuted, the 4 coded-record items; for PS-CVD5, PS-CVD10 and PS-Flags, held-out codes and the prognostic score (PS-CVD10 masks held-out codes even with masking off). Nothing on the 54-item panel is masked for PS-Demo, PS-CVD5, PS-CVD10, PS-Flags or hdPS. Cells with fewer than 11 matched pairs are treated as failed (missing). Aggregates only.
   </div>
 </header>
 <div class="panel">
@@ -597,7 +746,7 @@ svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
   <div class="side" id="sum"></div>
 </div>
 <footer>
-  <b>Definitions.</b> |SMD| = absolute standardized mean difference between initiators of the two drugs after matching or weighting. % balanced = share of a trial's items with |SMD| below the threshold, averaged over trials. Paired comparisons (vs PS alone) use, within each trial, only items observed in both arms, as in both papers. Relative reduction = 1 − (mean over trials of the arm's mean |SMD|) / (same for PS alone); 95% CI from 4,000 trial-level bootstrap resamples with numpy's generator and seed 20261001, reproduced here exactly. P = exact one-sided sign-flip test over trials (H1: the arm improves balance), on % balanced (paper 1's prespecified endpoint) and on mean |SMD| (paper 2's primary). The quality tiers and physiologic labels were assigned after the primary analyses (the labels by an LLM, blind to the results, with no clinician review). The expanded panel (~330 items) exists only for the primary method and four of the five bases, and is not leakage-masked.
+  <b>Definitions.</b> |SMD| = absolute standardized mean difference between initiators of the two drugs after matching or weighting. % balanced = share of a trial's items with |SMD| below the threshold, averaged over trials. Paired comparisons (vs PS alone) use, within each trial, only items observed in both arms, as in both papers. Relative reduction = 1 − (mean over trials of the arm's mean |SMD|) / (same for PS alone); 95% CI from 4,000 trial-level bootstrap resamples with numpy's generator and seed 20261001, reproduced here exactly. P = exact one-sided sign-flip test over trials (H1: the arm improves balance), on % balanced (paper 1's prespecified endpoint) and on mean |SMD| (paper 2's primary). The quality tiers and physiologic labels were assigned after the primary analyses (the labels by an LLM, blind to the results, with no clinician review). The expanded panel (~330 items) exists only for 1:1 caliper 0.2 and PS-Demo, PS-CVD5, hdPS and PS-Clinical (with LVEF), and is not leakage-masked.
 </footer>
 <div id="tip"></div>
 <script>
@@ -615,19 +764,25 @@ const ARM = {
 };
 const SL = {unmatched: "Unmatched", base: "PS alone", ECG: "+ ECG", shufECG: "+ perm. ECG", CLMBR: "+ CLMBR-T", "ECG+CLMBR": "+ CLMBR-T + ECG", shufCLMBR: "+ perm. CLMBR-T"};
 const ARMS_ALL = ["unmatched", "base", "ECG", "shufECG", "CLMBR", "ECG+CLMBR", "shufCLMBR"];
-const PAPER2 = new Set(["CLMBR", "ECG+CLMBR", "shufCLMBR"]);
+const PAPER2 = new Set(["CLMBR", "ECG+CLMBR", "shufCLMBR"]);  /* CLMBR-T arms: exploratory, not in the (ECG-only) paper */
 const CFG = {main: "1:1, caliper 0.2 (primary)", cal01: "1:1, caliper 0.1", m13: "1:3 matching, caliper 0.2",
   iptw: "Inverse probability weighting", overlap: "Overlap weighting", gbm: "Gradient-boosted PS (1:1, caliper 0.2)"};
 const CSHORT = {main: "1:1, cal. 0.2", cal01: "1:1, cal. 0.1", m13: "1:3", iptw: "IPTW", overlap: "Overlap", gbm: "GBM PS"};
 const RUNG = {P1: ["PS-Demo", "Age, sex and index year (paper 1 primary)."],
-  P5: ["PS-CVD5", "PS-Demo + hypertension, type 2 diabetes, CAD, AF and heart failure (paper 2 primary)."],
-  Flags: ["PS-Flags", "PS-Demo + ~530 yes/no ICD-10 3-character diagnosis flags (full history, ≥1% prevalence)."],
+  P5: ["PS-CVD5", "PS-Demo + hypertension, type 2 diabetes, CAD, AF and heart failure. Primary (pipeline.md)."],
+  PS10: ["PS-CVD10", "PS-Demo + 10 fixed diagnoses: hypertension, T2D, CAD/MI, AF, HF, CKD, COPD/asthma, PAD, stroke/TIA, valve disease (main-ladder comparison)."],
+  Flags: ["PS-Flags", "Supplement: PS-Demo + ~530 yes/no ICD-10 3-character diagnosis flags (full history, ≥1% prevalence)."],
   hdPS200: ["hdPS", "Demographics + 9–13 investigator-selected diagnoses + 200 empirically selected code features."],
   clinical_nolvef: ["PS-Clinical (no LVEF)", "Adds vital signs, labs, medications and healthcare use, but no LVEF or any other echo measurement, so all 35 echo items and observed LVEF stay held out. Covariates re-imputed without LVEF (their held-out copies are masked)."],
-  clinical: ["PS-Clinical (with LVEF, v1)", "Version 1 PS-Clinical: vital signs, labs, LVEF, medications and healthcare use (their held-out copies are masked). LVEF leaks into echo EF and LV systolic grade (leakage-corrected masking removes them)."]};
-const RUNGS = Object.keys(RUNG), CFGS = Object.keys(CFG);
-const RSUB = {P1: "demographics", P5: "+ 5 diagnoses", Flags: "+ ~530 dx flags", hdPS200: "+ 200 codes", clinical_nolvef: "+ vitals, labs; no echo", clinical: "+ vitals, labs, LVEF"};
-const DEF_LADDER = ["P1", "P5", "hdPS200", "clinical_nolvef"];
+  clinical: ["PS-Clinical (with LVEF, v1)", "Version 1 reference, replaced by PS-Clinical (no LVEF): vital signs, labs, LVEF, medications and healthcare use (their held-out copies are masked). LVEF leaks into echo EF and LV systolic grade (leakage-corrected masking removes them)."]};
+/* RUNGS: x order of the information ladder (main levels in pipeline.md order; the supplement / reference levels slot in
+   by information when ticked). MAIN / SUPP: grouping in the controls. */
+const RUNGS = ["P1", "P5", "PS10", "Flags", "hdPS200", "clinical_nolvef", "clinical"], CFGS = Object.keys(CFG);
+const MAIN = ["P1", "P5", "PS10", "hdPS200", "clinical_nolvef"], SUPP = ["Flags", "clinical"];
+const ROLE = {P5: "primary", PS10: "comparison", Flags: "supplement", clinical: "v1 reference"};
+const RSUB = {P1: "demographics", P5: "+ 5 diagnoses", PS10: "+ 10 diagnoses", Flags: "+ ~530 dx flags", hdPS200: "+ 200 codes", clinical_nolvef: "+ vitals, labs; no echo", clinical: "+ vitals, labs, LVEF"};
+const DEF_LADDER = MAIN, PRIMARY = "P5";
+const rungOpt = r => `${RUNG[r][0]}${ROLE[r] ? " (" + ROLE[r] + ")" : ""}`;
 const AREAS = ["AF", "HF", "Diabetes", "Hypertension", "ACS / MI", "Other"];
 const TIERS = [["Excellent"], ["Good"], ["Moderate"], ["Limited"], ["Excellent", "Good"], ["Excellent", "Good", "Moderate"], ["Moderate", "Limited"]];
 const NT = D.trials.length, NV = D.vars.length, SEED = D.seed, NB = D.nb;
@@ -768,7 +923,7 @@ function bindTips(svg) {
 /* ---------- trial filters ---------- */
 function trialOptions() {
   const n = f => D.trials.filter(f).length;
-  let h = `<option value="s32">Paper 1 primary set (${n(t => t.s32)} trials)</option><option value="all">All ${NT} emulated trials</option><optgroup label="Clinical area (all 38)">`;
+  let h = `<option value="v2">Provisional v2 set (${n(t => t.v2)}, not frozen)</option><option value="s32">Paper 1 primary set (${n(t => t.s32)} trials)</option><option value="all">All ${NT} emulated trials</option><optgroup label="Clinical area (all 38)">`;
   for (const a of AREAS) h += `<option value="area:${a}">${a} (${n(t => t.area === a)})</option>`;
   h += `</optgroup><optgroup label="Emulation quality tier">`;
   for (const q of TIERS) h += `<option value="q:${q.join(",")}">${q.join(" or ")} (${n(t => q.includes(t.tier))})</option>`;
@@ -782,6 +937,7 @@ function trialOptions() {
 function trialSet(v) {
   const idx = D.trials.map((_, i) => i);
   if (v === "s32") return idx.filter(i => D.trials[i].s32);
+  if (v === "v2") return idx.filter(i => D.trials[i].v2);
   if (v === "all") return idx;
   const [k, x] = v.split(":");
   if (k === "area") return idx.filter(i => D.trials[i].area === x);
@@ -806,21 +962,21 @@ function init() {
   $("#ctrl").innerHTML = `
   <label class="h">Trials</label><select id="c-trials">${trialOptions()}</select>
   <label class="h">PS method</label><select id="c-cfg">${CFGS.map(c => `<option value="${c}">${CFG[c]}</option>`).join("")}</select>
-  <label class="h">Information level (PS base)</label><select id="c-rung">${RUNGS.map(r => `<option value="${r}">${RUNG[r][0]}</option>`).join("")}</select>
+  <label class="h">Information level (PS base)</label><select id="c-rung"><optgroup label="Main ladder">${MAIN.map(r => `<option value="${r}" ${r === PRIMARY ? "selected" : ""}>${rungOpt(r)}</option>`).join("")}</optgroup><optgroup label="Supplement / reference">${SUPP.map(r => `<option value="${r}">${rungOpt(r)}</option>`).join("")}</optgroup></select>
   <div class="desc" id="c-rdesc"></div>
   <label class="h">Ladder levels (information ladder view)</label>
-  <div id="c-lad">${RUNGS.map(r => `<label class="cb"><input type="checkbox" name="c-lad" value="${r}" ${DEF_LADDER.includes(r) ? "checked" : ""}>${RUNG[r][0]}</label>`).join("")}</div>
+  <div id="c-lad">${[...MAIN, ...SUPP].map(r => `<label class="cb"><input type="checkbox" name="c-lad" value="${r}" ${DEF_LADDER.includes(r) ? "checked" : ""}><span>${r === PRIMARY ? "<b>" + RUNG[r][0] + "</b>" : RUNG[r][0]}${ROLE[r] ? ` <span class="p2">(${ROLE[r]})</span>` : ""}</span></label>`).join("")}</div>
   <label class="h">Comparison arms</label>
-  <div id="c-arms">${ARMS_ALL.map(a => `<label class="cb" data-arm="${a}"><input type="checkbox" name="c-arm" value="${a}" ${DEF_ARMS.includes(a) ? "checked" : ""}>${swatch(a)}${ARM[a].lab}${PAPER2.has(a) ? ' <span class="p2">(paper 2)</span>' : ""}</label>`).join("")}</div>
-  <label class="h">Held-out panel</label><select id="c-panel"><option value="58">58 items (paper 1 primary)</option><option value="54">54 non-coded (paper 2 primary)</option><option value="exp">Expanded, ~330 (1:1, cal. 0.2 only)</option></select>
-  <label class="cb" style="margin-top:5px" id="c-leakl"><input type="checkbox" id="c-leak">Leakage-corrected masking</label>
+  <div id="c-arms">${ARMS_ALL.map(a => `<label class="cb" data-arm="${a}"><input type="checkbox" name="c-arm" value="${a}" ${DEF_ARMS.includes(a) ? "checked" : ""}>${swatch(a)}<span>${ARM[a].lab}${PAPER2.has(a) ? ' <span class="p2">(not in paper; exploratory)</span>' : a === "shufECG" ? ' <span class="p2">(placebo)</span>' : ""}</span></label>`).join("")}</div>
+  <label class="h">Held-out panel</label><select id="c-panel"><option value="54" selected>54 non-coded (primary)</option><option value="58">58 items (paper 1 primary; supplement)</option><option value="exp">Expanded, ~330 (1:1, cal. 0.2 only; supplement)</option></select>
+  <label class="cb" style="margin-top:5px" id="c-leakl"><input type="checkbox" id="c-leak" checked>Leakage-corrected masking</label>
   <div class="desc" id="c-leakd"></div>
   <label class="h">Show</label><select id="c-group"><option value="v">By variable</option><option value="d">By domain</option></select>
   <label class="h">Quick view</label>
   <div id="c-qv" class="qv"><label><input type="radio" name="c-qv" value="all" checked>All</label><label><input type="radio" name="c-qv" value="phys">Physiology</label><label><input type="radio" name="c-qv" value="echo">Echo</label></div>
   <label class="h">Domain</label><select id="c-dom"></select>
   <label class="h">Rank variables by</label><select id="c-rank"><option value="u">Unmatched |SMD|</option><option value="gain">ECG gain over PS alone</option></select>
-  <label class="h">Show top <span id="c-nlab"></span></label><input type="range" id="c-n" min="5" max="58" value="58">
+  <label class="h">Show top <span id="c-nlab"></span></label><input type="range" id="c-n" min="5" max="54" value="54">
   <label class="h">Across trials (love plot)</label><select id="c-stat"><option value="median">Median</option><option value="mean">Mean</option></select>
   <label class="h">Balance threshold</label><select id="c-thr"><option value="0.1">|SMD| &lt; 0.10 (standard)</option><option value="0.15">|SMD| &lt; 0.15</option><option value="0.2">|SMD| &lt; 0.20</option></select>
   <label class="cb" style="margin-top:6px"><input type="checkbox" id="c-ref" checked>Threshold line</label>`;
@@ -960,8 +1116,12 @@ function drawLadder(M) {
   }
   let ymax = 0.02; for (const r of LR) { for (const a of shown) if (fin(L[r][a])) ymax = Math.max(ymax, L[r][a]); if (fin(Uu[r])) ymax = Math.max(ymax, Uu[r]); }
   ymax = Math.ceil(ymax * 1.1 * 50) / 50;
-  const xs = i => ml + (i + 0.5) * (W - ml - mr) / Math.max(LR.length, 1), ys = y => mt + (1 - y / ymax) * (H - mt - mb);
+  const cw = (W - ml - mr) / Math.max(LR.length, 1), xs = i => ml + (i + 0.5) * cw, ys = y => mt + (1 - y / ymax) * (H - mt - mb);
+  const fit = (txt, fs, w) => Math.max(6.5, Math.min(fs, 0.94 * cw / ((w || 0.6) * String(txt).length))).toFixed(1);
+  const crowded = cw < 120, LSHORT = {clinical_nolvef: "PS-Clin. (no LVEF)", clinical: "PS-Clin. v1 (LVEF)"};
   let s = `<text x="${ml}" y="18" font-size="13" font-weight="700" fill="${NAVY}">Mean |SMD| as the PS gets more information (mean across ${T.length} trial${T.length > 1 ? "s" : ""}) · ${CSHORT[cfg]}</text>`;
+  LR.forEach((r, i) => { if (r === PRIMARY) s += `<rect x="${ml + i * cw}" y="${mt - 50}" width="${cw}" height="${H - mb - mt + 50}" fill="#fbeceb"/>`;
+    else if (SUPP.includes(r)) s += `<rect x="${ml + i * cw}" y="${mt - 50}" width="${cw}" height="${H - mb - mt + 50}" fill="#f5f5f8"/>`; });
   s += `<text x="${ml}" y="36" font-size="11.5" fill="${NAVY}">Red labels: change in mean |SMD| with + ECG vs PS alone at that base, paired by trial (95% bootstrap CI)</text>`;
   const step = ymax > 0.2 ? 0.05 : ymax > 0.1 ? 0.02 : 0.01;
   for (let y = 0; y <= ymax + 1e-9; y += step) s += `<line x1="${ml}" x2="${W - mr}" y1="${ys(y)}" y2="${ys(y)}" stroke="#ececf2"/><text x="${ml - 6}" y="${ys(y) + 4}" font-size="11" text-anchor="end" fill="${NAVY}">${y.toFixed(2)}</text>`;
@@ -983,17 +1143,19 @@ function drawLadder(M) {
       s += marker(ARM[a].mk, xs(i), ys(L[r][a]), 5.5, ARM[a].col, ARM[a].hollow, `data-tip="${esc(t)}"`);
     }
     const e = RR[r], hasE = S[cfg] && S[cfg][r] && fin(e.rr);
+    const top = hasE ? (e.rr >= 0 ? f1(e.rr) + "% lower" : f1(-e.rr) + "% higher") : "–", ci = hasE && fin(e.lo) ? `reduction ${f1(e.lo)} to ${f1(e.hi)}` : "";
     s += `<text x="${xs(i)}" y="${mt - 40}" font-size="11" text-anchor="middle" fill="${RED}">+ ECG</text>`;
-    s += `<text x="${xs(i)}" y="${mt - 25}" font-size="12.5" font-weight="700" text-anchor="middle" fill="${RED}">${hasE ? (e.rr >= 0 ? f1(e.rr) + "% lower" : f1(-e.rr) + "% higher") : "–"}</text>`;
-    if (hasE && fin(e.lo)) s += `<text x="${xs(i)}" y="${mt - 11}" font-size="10.5" text-anchor="middle" fill="${RED}">reduction ${f1(e.lo)} to ${f1(e.hi)}</text>`;
-    s += `<text x="${xs(i)}" y="${H - mb + 20}" font-size="${RUNG[r][0].length > 14 ? 11 : 12.5}" font-weight="700" text-anchor="middle" fill="${NAVY}">${RUNG[r][0]}</text>`;
-    s += `<text x="${xs(i)}" y="${H - mb + 36}" font-size="10.5" text-anchor="middle" fill="${NAVY}">${RSUB[r]}</text>`;
+    s += `<text x="${xs(i)}" y="${mt - 25}" font-size="${fit(top, 12.5, 0.66)}" font-weight="700" text-anchor="middle" fill="${RED}">${top}</text>`;
+    if (ci) s += `<text x="${xs(i)}" y="${mt - 11}" font-size="${fit(ci, 10.5)}" text-anchor="middle" fill="${RED}">${ci}</text>`;
+    const nm = (crowded && LSHORT[r]) || RUNG[r][0], sub = RSUB[r] + (ROLE[r] && !crowded ? ` · ${ROLE[r]}` : "");
+    s += `<text x="${xs(i)}" y="${H - mb + 20}" font-size="${fit(nm, 12.5, 0.66)}" font-weight="700" text-anchor="middle" fill="${r === PRIMARY ? RED : NAVY}">${nm}</text>`;
+    s += `<text x="${xs(i)}" y="${H - mb + 36}" font-size="${fit(sub, 10.5)}" text-anchor="middle" fill="${r === PRIMARY ? RED : NAVY}">${sub}</text>`;
   });
   s += `<line x1="${ml}" x2="${W - mr}" y1="${H - mb}" y2="${H - mb}" stroke="${NAVY}"/>`;
   s += `<text x="${(ml + W - mr) / 2}" y="${H - 12}" font-size="12" text-anchor="middle" fill="${NAVY}">PS base, in order of information →</text>`;
   if (!shown.length || !LR.length) s += `<text x="${(ml + W - mr) / 2}" y="${(mt + H - mb) / 2}" font-size="20" font-weight="700" text-anchor="middle" fill="${NAVY}">${!LR.length ? "Select ladder levels" : "Select comparison arms"}</text>`;
   $("#svg").innerHTML = s;
-  $("#cap").innerHTML = `Points: mean over trials of each trial's mean |SMD| on its observed items (${js.length} item${js.length === 1 ? "" : "s"} selected${M.restricted ? ", as chosen in the love plot" : ""}); items in each base are masked from that base${M.leak ? ", plus the leakage-corrected items" : ""}, so the item set shrinks at PS-Clinical (less so without LVEF, where the echo items and observed LVEF stay in). Labels and tooltips are paired within trial. PS-Flags loses one trial with fewer than 11 matched pairs. Default levels: PS-Demo, PS-CVD5, hdPS, PS-Clinical (no LVEF); tick PS-Flags or the version 1 PS-Clinical (with LVEF) under "Ladder levels".${M.exp ? " Expanded panel: no PS-Flags data." : ""}`;
+  $("#cap").innerHTML = `Points: mean over trials of each trial's mean |SMD| on its observed items (${js.length} item${js.length === 1 ? "" : "s"} selected${M.restricted ? ", as chosen in the love plot" : ""}); items in each base are masked from that base${M.leak ? ", plus the leakage-corrected items" : ""}, so the item set shrinks at PS-Clinical (less so without LVEF, where the echo items and observed LVEF stay in). Labels and tooltips are paired within trial. Default levels = the main ladder: PS-Demo, PS-CVD5 (primary, shaded red), PS-CVD10 (comparison), hdPS, PS-Clinical (no LVEF); tick PS-Flags (supplement) or PS-Clinical (with LVEF, v1 reference) under "Ladder levels" (shaded grey). PS-Flags loses one trial with fewer than 11 matched pairs.${M.exp ? " Expanded panel: no PS-CVD10, PS-Flags or PS-Clinical (no LVEF) data." : ""}`;
 }
 
 /* =========================================================
@@ -1058,6 +1220,9 @@ function summary(M) {
   h += `<div class="note">"% items" and "% balanced": share of a trial's items with |SMD| &lt; ${thrL}, averaged over trials. "better" = % balanced higher; "lower" = mean |SMD| lower. P: exact one-sided sign-flip test over trials. Relative reduction: 1 − ratio of across-trial means, 95% CI from 4,000 trial resamples (seed 20261001).${M.restricted && !gain ? " Items restricted to the top of the unmatched-|SMD| ranking." : ""} Per-arm rows use each arm's observed items; paired rows use items observed in both arms.</div>`;
   if (panel === "exp" && arms.some(a => PAPER2.has(a) || a === "ECG") && (rung === "hdPS200" || arms.some(a => PAPER2.has(a))))
     h += `<div class="note" style="color:${RED}">Expanded panel: most items are coded-record characteristics (comorbidities, medications, use) that CLMBR-T and the hdPS codes also see, so gains with those are partly mechanical (not leakage-masked).</div>`;
+  if (rung === PRIMARY && cfg === "main" && M.leak && $("#c-trials").value === "v2" && panel === "54" && js.length === 54)
+    h += `<div class="note"><b>Primary analysis (pipeline.md; ECG-only paper):</b> PS-CVD5 + ECG vs PS-CVD5, 1:1 caliper 0.2, fixed L2 C = 1, 54 leakage-corrected items, provisional v2 set (29 trials, not frozen). Version 1 cohorts; values will change with the spec-v2 cohorts.</div>`;
+  if (arms.some(a => PAPER2.has(a))) h += `<div class="note">CLMBR-T arms are exploratory and not in the paper.</div>`;
   if (panel !== "exp" && rung === "P1" && cfg === "main" && !M.leak && $("#c-trials").value === "s32" && panel === "58" && js.length === 58)
     h += `<div class="note"><b>Paper 1 primary analysis</b> (PS-Demo + ECG): 11.4% (6.3 to 16.0); 49.8% → 55.0% balanced; 22/32 trials; P = .002.</div>`;
   $("#sum").innerHTML = h;
