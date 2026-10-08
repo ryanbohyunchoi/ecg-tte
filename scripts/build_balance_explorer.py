@@ -11,6 +11,9 @@ label. No patient-level rows, no identifiers and no counts (no n, n_t, n_c, n_pa
 
 Sources (read-only):
   audits/claude-v21-paper2/core/restricted_cells.parquet   38 trials x 5 rungs x 6 arms x 6 configurations (main grid)
+  audits/claude-v1-psclin-nolvef/cells/restricted_cells.parquet   rung clinical_nolvef = PS-Clinical without LVEF, re-imputed
+                                                            (scripts/v1_psclin_nolvef/psclin_nolvef.py; user decision 2026-10-08)
+  audits/claude-v1-psclin-nolvef/summary/{contrasts,ladder}.csv   Python summaries of that rung (validation targets)
   audits/claude-v20-sens-primary32/restricted_cells.parquet paper 1 source (checked: identical where they overlap)
   audits/claude-v18-embed-compare/results.csv               unmatched |SMD| (rung 'none'); matched cells checked = grid
   audits/claude-v19-expanded-buckets/per_var_all_rungs.csv  expanded panel (main configuration only)
@@ -40,6 +43,8 @@ from make_acc_figure import VARS  # noqa: E402
 
 A = Path("/mnt/raid0/rbc58/ecg-tte/audits")
 CELLS = A / "claude-v21-paper2/core/restricted_cells.parquet"
+NOLVEF = A / "claude-v1-psclin-nolvef/cells/restricted_cells.parquet"
+NLSUM = A / "claude-v1-psclin-nolvef/summary"
 SP32 = A / "claude-v20-sens-primary32/restricted_cells.parquet"
 V18 = A / "claude-v18-embed-compare/results.csv"
 EXPV = A / "claude-v19-expanded-buckets/per_var_all_rungs.csv"
@@ -50,7 +55,7 @@ OUT = ROOT / "docs/presentation/ecg_tte_balance_explorer_2026_10_08.html"
 SCR = A / "claude-balance-explorer"
 
 CFGS = ["main", "cal01", "m13", "iptw", "overlap", "gbm"]
-RUNGS = ["P1", "P5", "Flags", "hdPS200", "clinical"]
+RUNGS = ["P1", "P5", "Flags", "hdPS200", "clinical_nolvef", "clinical"]
 ARMS = ["base", "ECG", "shufECG", "CLMBR", "ECG+CLMBR", "shufCLMBR"]
 V18ARM = {"ECG+CLMBR": "CLMBR+ECG"}
 MIN_PAIRS = 11
@@ -62,9 +67,12 @@ GROUP = {c: g for c, _, g in VARS}
 CODED4 = ["mean_meds", "mean_util", "B_mean", "smd_prog_full"]
 OBS9 = [f"smd_obs_{c}" for c in ("lvef", "sbp", "dbp", "heart_rate", "bmi", "creatinine", "potassium", "sodium", "hemoglobin")]
 CLIN_NEAR = ["pp_LAB__egfr", "pp_LVFUNC__ef", "pp_LVFUNC__lv_sys_grade"]
-# leakage-clean map, DEFECT_IMPACT.md section 1 table (a cell's mask = rung mask | arm mask; placebos take the real arm's mask)
+OBS8 = [c for c in OBS9 if c != "smd_obs_lvef"]
+# leakage-clean map, DEFECT_IMPACT.md section 1 table (a cell's mask = rung mask | arm mask; placebos take the real arm's mask).
+# PS-Clinical without LVEF keeps the masks whose source covariates remain in the PS (CODED4, 8 observed vitals/labs, eGFR);
+# echo EF, LV systolic grade and observed LVEF are held out (docs/v1_psclin_nolvef/PS_CLINICAL_NO_LVEF.md).
 LEAK_RUNG = {"P1": [], "P5": ["B_mean", "smd_prog_full"], "Flags": ["B_mean", "smd_prog_full"], "hdPS200": CODED4,
-             "clinical": CODED4 + OBS9 + CLIN_NEAR}
+             "clinical_nolvef": CODED4 + OBS8 + ["pp_LAB__egfr"], "clinical": CODED4 + OBS9 + CLIN_NEAR}
 LEAK_ARM = {"CLMBR": CODED4, "ECG+CLMBR": CODED4, "shufCLMBR": CODED4}
 T1NAME = {"aristotle": "ARISTOTLE", "rocket_af": "ROCKET-AF", "rely": "RE-LY", "east_afnet4": "EAST-AFNET 4", "cabana": "CABANA",
           "affirm": "AFFIRM", "af_chf": "AF-CHF", "frail_af": "FRAIL-AF", "laaos3": "LAAOS III", "protect_af": "PROTECT AF",
@@ -85,6 +93,8 @@ BUCKETS = ["Comorbidities", "Medications", "Healthcare use & testing", "Addition
 def load_grid():
     """full-precision |SMD| blocks (trial x 58) per (config, rung, arm) with ex58 masking and the F1 rule applied."""
     R = pd.read_parquet(CELLS)
+    N = pd.read_parquet(NOLVEF)
+    R = pd.concat([R, N[N.rung == "clinical_nolvef"]], ignore_index=True)
     R = R[R.arm.isin(ARMS)].copy()
     order = R[(R.rung == "P1") & (R.config == "main") & (R.arm == "base")].sort_values("idx")
     tids, keys = order.trial.tolist(), order.key.tolist()
@@ -289,7 +299,7 @@ def pair_stats(grid, cfg, rg, a, b, T, panel="58", leak=False, thr=0.1):
     rr, lo, hi = relred_ci(mb, ma)
     return dict(k=int(ok.sum()), pct_ref=pb.mean(), pct_arm=pa.mean(), dpts=d.mean(), better=int((d > 0).sum()), p=signflip_1s(d),
                 m_ref=mb.mean(), m_arm=ma.mean(), lower=int((dm > 0).sum()), p_m=signflip_1s(dm), rr=rr, lo=lo, hi=hi,
-                p_two=min(1.0, 2 * min(signflip_1s(d), signflip_1s(-d))))
+                p_two=min(1.0, 2 * min(signflip_1s(d), signflip_1s(-d))), p_m_two=min(1.0, 2 * min(signflip_1s(dm), signflip_1s(-dm))))
 
 
 def trial_set(trials, v):
@@ -312,7 +322,8 @@ def trial_set(trials, v):
 
 
 # ================================================================ validation (Python, full precision vs published)
-RN = {"P1": "PS-Demo", "P5": "PS-CVD5", "Flags": "PS-Flags", "hdPS200": "hdPS", "clinical": "PS-Clinical"}
+RN = {"P1": "PS-Demo", "P5": "PS-CVD5", "Flags": "PS-Flags", "hdPS200": "hdPS", "clinical": "PS-Clinical",
+      "clinical_nolvef": "PS-Clinical (no LVEF)"}
 # expected values: docs/paper/supplement.md eTable 3A / 7A (paper 1); docs/v21/PAPER2_RESULTS.md and core/sensitivity.csv
 # (paper 2); docs/v1_audit/DEFECT_IMPACT.md (leakage-clean and F1)
 EXPECT = [
@@ -423,6 +434,38 @@ def check(g, D):
                            dev=abs(r0["rr"] - s[rc]), lo_dev=abs(r0["lo"] - s[rc + "_lo"]), hi_dev=abs(r0["hi"] - s[rc + "_hi"])))
     L = pd.DataFrame(lr)
     L.to_csv(SCR / "crosscheck_leakage_clean_sweep.csv", index=False)
+    # PS-Clinical (no LVEF): every within-rung contrast vs PS alone (6 configs x S32 / S38 x 54 / 58 items x leakage off / on)
+    # and every unpaired ladder level against the Python summaries of scripts/v1_psclin_nolvef/psclin_nolvef.py (F1 applied)
+    NC = pd.read_csv(NLSUM / "contrasts.csv")
+    NC = NC[(NC.rung_a == "clinical_nolvef") & (NC.kind == "within") & (NC.arm_b == "base")]
+    nr = []
+    for _, s in NC.iterrows():
+        T = trial_set(trials, "s32" if s.set == "S32" else "all")
+        for panel in ("54", "58"):
+            pre = "relred54" if panel == "54" else "relred58"
+            mm, lt = ("m54", "lt01_54") if panel == "54" else ("m58", "lt01_58")
+            r1 = pair_stats(withf1, s.config, "clinical_nolvef", s.arm_a, "base", T, panel, leak=s.variant == "clean")
+            nr.append(dict(variant=s.variant, set=s.set, config=s.config, arm=s.arm_a, panel=panel, py_rr=s[pre], rr=r1["rr"],
+                           rr_dev=abs(r1["rr"] - s[pre]), ci_dev=max(abs(r1["lo"] - s[pre + "_lo"]), abs(r1["hi"] - s[pre + "_hi"])),
+                           m_dev=max(abs(r1["m_ref"] - s[f"{mm}_b"]), abs(r1["m_arm"] - s[f"{mm}_a"])),
+                           pct_dev=max(abs(r1["pct_ref"] - s[f"{lt}_b"]), abs(r1["pct_arm"] - s[f"{lt}_a"])),
+                           p_lt_dev=abs((r1["p"] if s.sided == "one" else r1["p_two"]) - s[f"{lt}_p"]),
+                           p_m_dev=abs((r1["p_m"] if s.sided == "one" else r1["p_m_two"]) - s[f"{mm}_p"]),
+                           better_ok=f"{r1['lower']}/{r1['k']}" == s[f"{mm}_better"]))
+    NX = pd.DataFrame(nr)
+    NX.to_csv(SCR / "crosscheck_nolvef_contrasts.csv", index=False)
+    LD = pd.read_csv(NLSUM / "ladder.csv")
+    LD = LD[LD.rung.isin(RUNGS) & LD.panel.isin(["54", "58"]) & LD.arm.isin(ARMS)]
+    ld = []
+    for _, s in LD.iterrows():
+        T = trial_set(trials, "s32" if s.set == "S32" else "all")
+        M = withf1.block(s.config, s.rung, s.arm, s.variant == "clean")[np.ix_(T, items(str(s.panel)))]
+        ok = np.isfinite(M).any(1)
+        lv = float(np.nanmean(M[ok], 1).mean())
+        ld.append(dict(variant=s.variant, set=s.set, rung=s.rung, config=s.config, arm=s.arm, panel=s.panel, py=s.mean_smd, explorer=lv,
+                       dev=abs(lv - s.mean_smd), k_ok=int(ok.sum()) == s.k_trials))
+    LX = pd.DataFrame(ld)
+    LX.to_csv(SCR / "crosscheck_nolvef_ladder.csv", index=False)
     # combos for the JS identity check (Python on the embedded integers)
     rng = np.random.default_rng(7)
     sets = ["s32", "all", "area:AF", "q:Good", "q:Excellent,Good", "phys:yes,all", "phys:no,s32", "area:Diabetes"]
@@ -435,6 +478,7 @@ def check(g, D):
     for c in combos:
         r = pair_stats(emb, c["cfg"], c["rung"], c["arm"], "base", trial_set(trials, c["trials"]), c["panel"], c["leak"], c["thr"])
         r.pop("p_two")
+        r.pop("p_m_two")
         c["py"] = {k: (None if isinstance(v, float) and not np.isfinite(v) else float(v)) for k, v in r.items()}
     json.dump(combos, open(SCR / "py_ref_combos.json", "w"), indent=0)
     summ = dict(published_checks=len(V), published_match=int(V.match.sum()),
@@ -442,6 +486,10 @@ def check(g, D):
                 paper2_noF1_max_p_dev=float(X.noF1_p_dev.max()), paper2_noF1_max_pct_dev=float(X.noF1_lt_dev.max()),
                 paper2_noF1_mbetter_all_ok=bool(X.noF1_mbetter_ok.all()), F1_changed_rows=int(X.F1_changes.sum()),
                 leak_rows=len(L), leak_max_rr_dev=float(L.dev.max()), leak_max_ci_dev=float(max(L.lo_dev.max(), L.hi_dev.max())),
+                nolvef_rows=len(NX), nolvef_max_rr_dev=float(NX.rr_dev.max()), nolvef_max_ci_dev=float(NX.ci_dev.max()),
+                nolvef_max_m_dev=float(NX.m_dev.max()), nolvef_max_pct_dev=float(NX.pct_dev.max()),
+                nolvef_max_p_dev=float(max(NX.p_lt_dev.max(), NX.p_m_dev.max())), nolvef_better_all_ok=bool(NX.better_ok.all()),
+                ladder_rows=len(LX), ladder_max_dev=float(LX.dev.max()), ladder_k_all_ok=bool(LX.k_ok.all()),
                 max_embedded_minus_full=float(V.embedded_minus_full.abs().max()), js_combos=len(combos))
     json.dump(summ, open(SCR / "validation_summary.json", "w"), indent=1)
     print(json.dumps(summ, indent=1))
@@ -527,11 +575,12 @@ svg text{font-family:Montserrat,"Helvetica Neue",Helvetica,Arial,sans-serif}
 </head>
 <body>
 <header>
-  <h1>TRACE-ECG: covariate balance explorer</h1><span class="sub">38 emulated trials, YNHHS; held-out characteristics not in any PS. Updated 2026-10-08.</span>
+  <h1>TRACE-ECG: covariate balance explorer</h1><span class="sub">38 emulated trials, YNHHS; held-out characteristics not in any PS. Updated 2026-10-08 (PS-Clinical without LVEF added).</span>
   <div class="notes">
-    <b>Data:</b> per-trial |SMD| from the paper 2 grid (<code>audits/claude-v21-paper2/core</code>; 5 PS bases × 6 arms × 6 PS methods). Its PS-Demo, PS-CVD5, hdPS and PS-Clinical × PS alone / + ECG / + permuted ECG cells are identical to paper 1's source. Unmatched |SMD| come from the v1.8 embedding comparison (same cohorts).
+    <b>Data:</b> per-trial |SMD| from the paper 2 grid (<code>audits/claude-v21-paper2/core</code>; 5 PS bases × 6 arms × 6 PS methods) and, for PS-Clinical (no LVEF), from <code>audits/claude-v1-psclin-nolvef</code> (same engine, arms and methods). Its PS-Demo, PS-CVD5, hdPS and PS-Clinical × PS alone / + ECG / + permuted ECG cells are identical to paper 1's source. Unmatched |SMD| come from the v1.8 embedding comparison (same cohorts).
     <b>Paper 1 primary:</b> PS-Demo, 1:1 caliper 0.2, 58 items, 32 trials (the default view). <b>Paper 2 primary:</b> PS-CVD5, 54 non-coded items.
-    <b>Leakage-corrected masking</b> (v1 audit, DEFECT_IMPACT §1) also removes held-out items that duplicate or are derived from a PS input: for PS-Clinical, echo EF, LV systolic grade and eGFR (plus the 4 coded-record items); for hdPS and for every CLMBR-T arm (real or permuted), the 4 coded-record items; for PS-CVD5 and PS-Flags, held-out codes and the prognostic score. Cells with fewer than 11 matched pairs are treated as failed (missing). Aggregates only.
+    <b>PS-Clinical (no LVEF)</b> (user decision 2026-10-08) is PS-Clinical with LVEF removed and the covariates re-imputed without it, so no PS uses an echo measurement and all 35 echo items and observed LVEF are held out at every level; it replaces the version 1 PS-Clinical (kept as "PS-Clinical (with LVEF, v1)") at the top of the default information ladder.
+    <b>Leakage-corrected masking</b> (v1 audit, DEFECT_IMPACT §1) also removes held-out items that duplicate or are derived from a PS input: for PS-Clinical (with LVEF), echo EF, LV systolic grade and eGFR (plus the 4 coded-record items); for PS-Clinical (no LVEF), eGFR and the 4 coded-record items; for hdPS and for every CLMBR-T arm (real or permuted), the 4 coded-record items; for PS-CVD5 and PS-Flags, held-out codes and the prognostic score. Cells with fewer than 11 matched pairs are treated as failed (missing). Aggregates only.
   </div>
 </header>
 <div class="panel">
@@ -574,8 +623,11 @@ const RUNG = {P1: ["PS-Demo", "Age, sex and index year (paper 1 primary)."],
   P5: ["PS-CVD5", "PS-Demo + hypertension, type 2 diabetes, CAD, AF and heart failure (paper 2 primary)."],
   Flags: ["PS-Flags", "PS-Demo + ~530 yes/no ICD-10 3-character diagnosis flags (full history, ≥1% prevalence)."],
   hdPS200: ["hdPS", "Demographics + 9–13 investigator-selected diagnoses + 200 empirically selected code features."],
-  clinical: ["PS-Clinical", "Adds vital signs, labs, LVEF, medications and healthcare use (their held-out copies are masked)."]};
+  clinical_nolvef: ["PS-Clinical (no LVEF)", "Adds vital signs, labs, medications and healthcare use, but no LVEF or any other echo measurement, so all 35 echo items and observed LVEF stay held out. Covariates re-imputed without LVEF (their held-out copies are masked)."],
+  clinical: ["PS-Clinical (with LVEF, v1)", "Version 1 PS-Clinical: vital signs, labs, LVEF, medications and healthcare use (their held-out copies are masked). LVEF leaks into echo EF and LV systolic grade (leakage-corrected masking removes them)."]};
 const RUNGS = Object.keys(RUNG), CFGS = Object.keys(CFG);
+const RSUB = {P1: "demographics", P5: "+ 5 diagnoses", Flags: "+ ~530 dx flags", hdPS200: "+ 200 codes", clinical_nolvef: "+ vitals, labs; no echo", clinical: "+ vitals, labs, LVEF"};
+const DEF_LADDER = ["P1", "P5", "hdPS200", "clinical_nolvef"];
 const AREAS = ["AF", "HF", "Diabetes", "Hypertension", "ACS / MI", "Other"];
 const TIERS = [["Excellent"], ["Good"], ["Moderate"], ["Limited"], ["Excellent", "Good"], ["Excellent", "Good", "Moderate"], ["Moderate", "Limited"]];
 const NT = D.trials.length, NV = D.vars.length, SEED = D.seed, NB = D.nb;
@@ -756,6 +808,8 @@ function init() {
   <label class="h">PS method</label><select id="c-cfg">${CFGS.map(c => `<option value="${c}">${CFG[c]}</option>`).join("")}</select>
   <label class="h">Information level (PS base)</label><select id="c-rung">${RUNGS.map(r => `<option value="${r}">${RUNG[r][0]}</option>`).join("")}</select>
   <div class="desc" id="c-rdesc"></div>
+  <label class="h">Ladder levels (information ladder view)</label>
+  <div id="c-lad">${RUNGS.map(r => `<label class="cb"><input type="checkbox" name="c-lad" value="${r}" ${DEF_LADDER.includes(r) ? "checked" : ""}>${RUNG[r][0]}</label>`).join("")}</div>
   <label class="h">Comparison arms</label>
   <div id="c-arms">${ARMS_ALL.map(a => `<label class="cb" data-arm="${a}"><input type="checkbox" name="c-arm" value="${a}" ${DEF_ARMS.includes(a) ? "checked" : ""}>${swatch(a)}${ARM[a].lab}${PAPER2.has(a) ? ' <span class="p2">(paper 2)</span>' : ""}</label>`).join("")}</div>
   <label class="h">Held-out panel</label><select id="c-panel"><option value="58">58 items (paper 1 primary)</option><option value="54">54 non-coded (paper 2 primary)</option><option value="exp">Expanded, ~330 (1:1, cal. 0.2 only)</option></select>
@@ -788,6 +842,7 @@ function init() {
   for (const id of ["c-trials", "c-cfg", "c-rung", "c-leak", "c-group", "c-dom", "c-stat", "c-thr", "c-ref"]) $("#" + id).addEventListener("change", update);
   $("#c-n").oninput = update;
   $("#c-arms").onchange = update;
+  $("#c-lad").onchange = update;
   document.querySelectorAll('#views input').forEach(r => r.onchange = () => {
     document.querySelectorAll('#views label').forEach(l => l.classList.toggle("on", l.querySelector("input").checked)); update(); });
   bindTips($("#svg"));
@@ -881,7 +936,7 @@ function drawLove(M) {
   s += `<text x="${(ml + W - mr) / 2}" y="${y0 + 33}" font-size="12" text-anchor="middle" fill="${NAVY}">|standardized mean difference|</text>`;
   const thr = M.thr;
   if ($("#c-ref").checked && thr <= xmax) s += `<line x1="${xs(thr)}" x2="${xs(thr)}" y1="${mt}" y2="${y0}" stroke="${RED}" stroke-dasharray="4 3" stroke-width="1.2" pointer-events="none"/>`;
-  const msg = !arms.length ? "Select comparison arms" : !rows.length ? (M.exp ? "Expanded panel: 1:1 caliper 0.2 and PS-Demo, PS-CVD5, hdPS or PS-Clinical only" : "No data for this selection") : "";
+  const msg = !arms.length ? "Select comparison arms" : !rows.length ? (M.exp ? "Expanded panel: 1:1 caliper 0.2 and PS-Demo, PS-CVD5, hdPS or PS-Clinical (with LVEF) only" : "No data for this selection") : "";
   if (msg) s += `<text x="${(ml + W - mr) / 2}" y="${mt + ph / 2}" font-size="${msg.length > 40 ? 14 : 20}" font-weight="700" text-anchor="middle" fill="${NAVY}" pointer-events="none"><tspan style="paint-order:stroke" stroke="#fff" stroke-width="6">${esc(msg)}</tspan></text>`;
   $("#svg").innerHTML = s;
   $("#cap").innerHTML = `Each row is one held-out characteristic (or domain), summarised across the selected trials. Hover for values. Items in a PS base are masked from that base${M.leak ? ", plus the leakage-corrected items" : ""}.`;
@@ -892,19 +947,20 @@ function drawLove(M) {
    ========================================================= */
 function drawLadder(M) {
   const {cfg, arms, T, lvars, get, thr} = M, js = lvars.map(v => v.j);
+  const LR = RUNGS.filter(r => checked("c-lad").includes(r));
   const W = 760, H = 600, ml = 64, mr = 24, mt = 100, mb = 70;
   $("#svg").setAttribute("viewBox", `0 0 ${W} ${H}`);
   const shown = arms.filter(a => a !== "unmatched");
   const L = {}, Uu = {}, RR = {}, RRx = {};
-  for (const r of RUNGS) {
+  for (const r of LR) {
     L[r] = {}; for (const a of shown) L[r][a] = mean(levels(get, cfg, r, a, T, js, thr).m);
     Uu[r] = mean(levels(get, cfg, r, "unmatched", T, js, thr).m);
     RR[r] = paired(get, cfg, r, "ECG", "base", T, js, thr, {nop: true});
     RRx[r] = {}; for (const a of shown) if (a !== "base" && a !== "ECG") RRx[r][a] = paired(get, cfg, r, a, "base", T, js, thr, {nop: true, noci: true});
   }
-  let ymax = 0.02; for (const r of RUNGS) { for (const a of shown) if (fin(L[r][a])) ymax = Math.max(ymax, L[r][a]); if (fin(Uu[r])) ymax = Math.max(ymax, Uu[r]); }
+  let ymax = 0.02; for (const r of LR) { for (const a of shown) if (fin(L[r][a])) ymax = Math.max(ymax, L[r][a]); if (fin(Uu[r])) ymax = Math.max(ymax, Uu[r]); }
   ymax = Math.ceil(ymax * 1.1 * 50) / 50;
-  const xs = i => ml + (i + 0.5) * (W - ml - mr) / RUNGS.length, ys = y => mt + (1 - y / ymax) * (H - mt - mb);
+  const xs = i => ml + (i + 0.5) * (W - ml - mr) / Math.max(LR.length, 1), ys = y => mt + (1 - y / ymax) * (H - mt - mb);
   let s = `<text x="${ml}" y="18" font-size="13" font-weight="700" fill="${NAVY}">Mean |SMD| as the PS gets more information (mean across ${T.length} trial${T.length > 1 ? "s" : ""}) · ${CSHORT[cfg]}</text>`;
   s += `<text x="${ml}" y="36" font-size="11.5" fill="${NAVY}">Red labels: change in mean |SMD| with + ECG vs PS alone at that base, paired by trial (95% bootstrap CI)</text>`;
   const step = ymax > 0.2 ? 0.05 : ymax > 0.1 ? 0.02 : 0.01;
@@ -912,15 +968,15 @@ function drawLadder(M) {
   s += `<text transform="translate(16 ${(mt + H - mb) / 2}) rotate(-90)" font-size="12" text-anchor="middle" fill="${NAVY}">mean |SMD| over the selected items</text>`;
   if (thr <= ymax) s += `<line x1="${ml}" x2="${W - mr}" y1="${ys(thr)}" y2="${ys(thr)}" stroke="${RED}" stroke-dasharray="4 3" stroke-width="1"/><text x="${W - mr}" y="${ys(thr) - 4}" font-size="10" text-anchor="end" fill="${RED}">${thr.toFixed(2)}</text>`;
   /* unmatched reference */
-  const up = RUNGS.map((r, i) => fin(Uu[r]) ? `${xs(i)},${ys(Uu[r])}` : null).filter(Boolean);
+  const up = LR.map((r, i) => fin(Uu[r]) ? `${xs(i)},${ys(Uu[r])}` : null).filter(Boolean);
   if (up.length > 1) s += `<polyline points="${up.join(" ")}" fill="none" stroke="${ARM.unmatched.col}" stroke-width="1.6" stroke-dasharray="6 4"/>`;
-  RUNGS.forEach((r, i) => { if (fin(Uu[r])) s += marker("x", xs(i), ys(Uu[r]), 5, ARM.unmatched.col, false, `data-tip="${esc(`<b>Unmatched</b> (${RUNG[r][0]} item mask)<br>mean |SMD| ${f3(Uu[r])}`)}"`); });
-  if (up.length) { const r0 = RUNGS.findIndex(r => fin(Uu[r])); s += `<text x="${xs(r0) - 12}" y="${ys(Uu[RUNGS[r0]]) + 4}" font-size="11" fill="${ARM.unmatched.col}" text-anchor="end">Unmatched</text>`; }
+  LR.forEach((r, i) => { if (fin(Uu[r])) s += marker("x", xs(i), ys(Uu[r]), 5, ARM.unmatched.col, false, `data-tip="${esc(`<b>Unmatched</b> (${RUNG[r][0]} item mask)<br>mean |SMD| ${f3(Uu[r])}`)}"`); });
+  if (up.length) { const r0 = LR.findIndex(r => fin(Uu[r])); s += `<text x="${xs(r0) - 12}" y="${ys(Uu[LR[r0]]) + 4}" font-size="11" fill="${ARM.unmatched.col}" text-anchor="end">Unmatched</text>`; }
   for (const a of shown) {
-    const pts = RUNGS.map((r, i) => fin(L[r][a]) ? `${xs(i)},${ys(L[r][a])}` : null).filter(Boolean);
+    const pts = LR.map((r, i) => fin(L[r][a]) ? `${xs(i)},${ys(L[r][a])}` : null).filter(Boolean);
     if (pts.length > 1) s += `<polyline points="${pts.join(" ")}" fill="none" stroke="${ARM[a].col}" stroke-width="1.8" ${ARM[a].hollow ? 'stroke-dasharray="3 3"' : ""} pointer-events="none"/>`;
   }
-  RUNGS.forEach((r, i) => {
+  LR.forEach((r, i) => {
     for (const a of shown) if (fin(L[r][a])) {
       const ex = a === "ECG" ? RR[r] : RRx[r][a];
       const t = `<b>${RUNG[r][0]}, ${ARM[a].lab}</b><br>mean |SMD| ${f3(L[r][a])}` + (ex ? `<br>vs PS alone: ${f1(ex.rr)}% reduction${fin(ex.lo) ? ` (${f1(ex.lo)} to ${f1(ex.hi)})` : ""}; ${ex.k} trials paired` : "");
@@ -930,14 +986,14 @@ function drawLadder(M) {
     s += `<text x="${xs(i)}" y="${mt - 40}" font-size="11" text-anchor="middle" fill="${RED}">+ ECG</text>`;
     s += `<text x="${xs(i)}" y="${mt - 25}" font-size="12.5" font-weight="700" text-anchor="middle" fill="${RED}">${hasE ? (e.rr >= 0 ? f1(e.rr) + "% lower" : f1(-e.rr) + "% higher") : "–"}</text>`;
     if (hasE && fin(e.lo)) s += `<text x="${xs(i)}" y="${mt - 11}" font-size="10.5" text-anchor="middle" fill="${RED}">reduction ${f1(e.lo)} to ${f1(e.hi)}</text>`;
-    s += `<text x="${xs(i)}" y="${H - mb + 20}" font-size="12.5" font-weight="700" text-anchor="middle" fill="${NAVY}">${RUNG[r][0]}</text>`;
-    s += `<text x="${xs(i)}" y="${H - mb + 36}" font-size="10.5" text-anchor="middle" fill="${NAVY}">${["demographics", "+ 5 diagnoses", "+ ~530 dx flags", "+ 200 codes", "+ vitals, labs, LVEF"][i]}</text>`;
+    s += `<text x="${xs(i)}" y="${H - mb + 20}" font-size="${RUNG[r][0].length > 14 ? 11 : 12.5}" font-weight="700" text-anchor="middle" fill="${NAVY}">${RUNG[r][0]}</text>`;
+    s += `<text x="${xs(i)}" y="${H - mb + 36}" font-size="10.5" text-anchor="middle" fill="${NAVY}">${RSUB[r]}</text>`;
   });
   s += `<line x1="${ml}" x2="${W - mr}" y1="${H - mb}" y2="${H - mb}" stroke="${NAVY}"/>`;
   s += `<text x="${(ml + W - mr) / 2}" y="${H - 12}" font-size="12" text-anchor="middle" fill="${NAVY}">PS base, in order of information →</text>`;
-  if (!shown.length) s += `<text x="${(ml + W - mr) / 2}" y="${(mt + H - mb) / 2}" font-size="20" font-weight="700" text-anchor="middle" fill="${NAVY}">Select comparison arms</text>`;
+  if (!shown.length || !LR.length) s += `<text x="${(ml + W - mr) / 2}" y="${(mt + H - mb) / 2}" font-size="20" font-weight="700" text-anchor="middle" fill="${NAVY}">${!LR.length ? "Select ladder levels" : "Select comparison arms"}</text>`;
   $("#svg").innerHTML = s;
-  $("#cap").innerHTML = `Points: mean over trials of each trial's mean |SMD| on its observed items (${js.length} item${js.length === 1 ? "" : "s"} selected${M.restricted ? ", as chosen in the love plot" : ""}); items in each base are masked from that base${M.leak ? ", plus the leakage-corrected items" : ""}, so the item set shrinks at PS-Clinical. Labels and tooltips are paired within trial. PS-Flags loses one trial with fewer than 11 matched pairs.${M.exp ? " Expanded panel: no PS-Flags data." : ""}`;
+  $("#cap").innerHTML = `Points: mean over trials of each trial's mean |SMD| on its observed items (${js.length} item${js.length === 1 ? "" : "s"} selected${M.restricted ? ", as chosen in the love plot" : ""}); items in each base are masked from that base${M.leak ? ", plus the leakage-corrected items" : ""}, so the item set shrinks at PS-Clinical (less so without LVEF, where the echo items and observed LVEF stay in). Labels and tooltips are paired within trial. PS-Flags loses one trial with fewer than 11 matched pairs. Default levels: PS-Demo, PS-CVD5, hdPS, PS-Clinical (no LVEF); tick PS-Flags or the version 1 PS-Clinical (with LVEF) under "Ladder levels".${M.exp ? " Expanded panel: no PS-Flags data." : ""}`;
 }
 
 /* =========================================================
@@ -1009,7 +1065,9 @@ function summary(M) {
 
 /* headless-check API: point estimates on all items of a panel (no domain filter or ranking) */
 window.TRACE = {pair: s => { const get = getter(s.panel, s.leak && s.panel !== "exp"), js = itemsOf(s.panel).map(v => v.j);
-  return paired(get, s.cfg, s.rung, s.arm, s.ref || "base", trialSet(s.trials), js, s.thr || 0.1); }};
+  return paired(get, s.cfg, s.rung, s.arm, s.ref || "base", trialSet(s.trials), js, s.thr || 0.1); },
+  level: s => { const get = getter(s.panel, s.leak && s.panel !== "exp"), js = itemsOf(s.panel).map(v => v.j);
+  return mean(levels(get, s.cfg, s.rung, s.arm, trialSet(s.trials), js, s.thr || 0.1).m); }};
 init();
 </script>
 </body>
