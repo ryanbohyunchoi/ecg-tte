@@ -1,0 +1,5 @@
+# SHA-256 of the independent rater files and adjudicated output (recorded 2026-10-08, after adjudication; files live in /mnt/raid0/rbc58/ecg-tte/audits/claude-eq2/)
+# Note: hashes were recorded after adjudication, not before (audit B2); they fix the files from this point on.
+863a336530e5e8df8820b2ad71f554be8794c9cd05576a8936a347612732aec8  /mnt/raid0/rbc58/ecg-tte/audits/claude-eq2/scores_A.json
+afc36ee23ba786a1fcb477e1f0513d1b8e73410296e35b84b2f2093c6aba70c0  /mnt/raid0/rbc58/ecg-tte/audits/claude-eq2/scores_B.json
+17cec4d25c9d2f1989abadd8a7fd22f5a725c482ecd39bf711827e9d138e35d4  docs/emulation_quality_v2/quality_v2_final.json
