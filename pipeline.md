@@ -46,15 +46,14 @@ Written **2026-10-08**. This is the single reference for the design we settled o
 | PS-Demo | age, sex, index year | ladder | LOCKED |
 | **PS-CVD5** | PS-Demo + hypertension, T2D, CAD, AF, HF | **PRIMARY** | LOCKED |
 | hdPS | PS-Demo + 9–13 investigator diagnoses + top 200 hdPS code levels (treatment-only ranking, random half of code features, exposure drugs excluded) | ladder | LOCKED |
-| **PS-Clinical (no LVEF)** | the clinical PS **without LVEF**: vitals, core labs, diagnoses, medication orders, utilisation. **No PS contains any echo measurement** | ladder (richest) | LOCKED definition; **results PENDING** (re-run running). "Was measured" flags: **PENDING** (not added unless you decide) |
-| CVD10 (PS-10) | PS-Demo + 10 fixed diagnoses: HTN, T2D, CAD/MI, AF, HF, CKD, COPD/asthma, PAD, stroke/TIA, valve disease (no obesity) | **supplement** (not in the main ladder) | LOCKED |
+| **PS-Clinical (no LVEF)** | the clinical PS **without LVEF**: vitals, core labs, diagnoses, medication orders, utilisation. **No PS contains any echo measurement**. Missing values: **5-draw multiple imputation** (re-imputed without LVEF); per-item \|SMD\| averaged across draws, HRs combined by Rubin's rules | ladder (richest) | LOCKED (MI run pending on spec-v2 cohorts). "Was measured" flags: not added |
+| CVD10 (PS-10) | PS-Demo + 10 fixed diagnoses: HTN, T2D, CAD/MI, AF, HF, CKD, COPD/asthma, PAD, stroke/TIA, valve disease (no obesity) | **main ladder, as a comparison** (between PS-CVD5 and hdPS); not the main love plot | LOCKED |
 | PS-Flags | PS-Demo + yes/no ICD-10 3-character diagnosis flags, full pre-index history, ≥1% prevalence | **supplement** (the CLMBR-T vs diagnosis-flag test) | LOCKED |
 
 **Added to each level:** none (base), + ECG, + CLMBR-T, + ECG + CLMBR-T, + permuted ECG, + permuted CLMBR-T.
 
 **Supplement PS variants:**
 - cross-validated penalty (R2 result for PS-CVD5 + ECG: 4.7%);
-- C = 100 (near-unpenalised; **PENDING** your OK);
 - gradient-boosted PS;
 - LEGEND-style large-scale L1 PS (R2, branch `r2`).
 
@@ -106,9 +105,9 @@ Sources: `docs/v1_audit/DEFECT_IMPACT.md` §1; `docs/v1_ps10/PS10.md`; `docs/v2_
 - BH-FDR within families (balance and agreement), across contrasts × configurations.
 
 **Love plots:**
-- **Main figure:** the 54 leakage-corrected items, PS-CVD5 base vs + ECG vs + CLMBR-T vs + both (median across analysed trials), grouped by domain.
+- **Main figure:** the 54 leakage-corrected items, PS-CVD5 base vs + ECG vs + CLMBR-T vs + both (median across analysed trials), grouped by domain. The ladder figure includes CVD10 as a comparison.
 - **Supplement:** the 58-item love plot (with permuted placebos) and the expanded-panel figure.
-- CVD10 and PS-Flags appear only in supplement figures.
+- PS-Flags appears only in supplement figures; CVD10 appears in the ladder, not the main love plot.
 
 ## 7. Trial emulation (agreement with RCTs)
 
@@ -144,7 +143,8 @@ Sources: `docs/v1_audit/DEFECT_IMPACT.md` §1; `docs/v1_ps10/PS10.md`; `docs/v2_
 | 2026-10-08 | LVEF removed from PS-Clinical | Echo is the test domain; no PS uses echo (user decision) |
 | 2026-10-08 | Leakage-corrected masking primary | v1 audit found near-duplicate leaks (echo EF ≈ LVEF; eGFR from creatinine) |
 | 2026-10-08 | Emulation-quality framework v2.0 replaces the v19 tiers | Blind re-audit and data check found cohort-specification defects not covered by v19 |
-| 2026-10-08 | CVD10 and PS-Flags to the supplement | User decision |
+| 2026-10-08 | PS-Flags to the supplement; CVD10 in the main ladder as a comparison (not the main love plot) | User decision |
+| 2026-10-08 | PS-Clinical: 5-draw multiple imputation instead of a single draw | Single-draw noise of a few points found in the no-LVEF re-run (user decision) |
 | 2026-10-08 | Spec-v2 cohorts: apply exclusion-type fixes (numeric entry bounds, age bounds, class washouts, LAAOS III AF before admission, LIFE definite LVH, COMET EF ≤35%, VALIANT LV dysfunction/HF) and outcome fixes (AMPLIFY, LODESTAR, PROVE IT) instead of penalising them in the quality scores; PCs recomputed within fixed cohorts. Rebuild-only defects (CABANA, TRANSFORM-HF) stay scored | User decision after the quality audit (AUDIT_QUALITY_V2.md B1); run in progress (`docs/v2_cohorts/`) |
 
 ## 10. Open decisions (needed before the lock)
@@ -156,7 +156,7 @@ Sources: `docs/v1_audit/DEFECT_IMPACT.md` §1; `docs/v1_ps10/PS10.md`; `docs/v2_
    - the framework clarifications C1–C10.
 2. **Cohort fixes:** use exclusion-type fixes in the primary analysis, or only as a sensitivity.
 3. **PS-Clinical (no LVEF):** review the results; decide whether to add the "was measured" flags.
-4. **C = 100 sensitivity:** run or not.
+4. ~~C = 100 sensitivity~~: not run (user decision 2026-10-08).
 5. **Manuscript file:** update `paper2.md`, or start a new file.
 6. **Clinician review** of the quality adjudication and the trial labels.
 
