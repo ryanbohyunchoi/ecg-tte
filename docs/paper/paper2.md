@@ -1,4 +1,4 @@
-# Learned physiological and health-record representations vs hand-built propensity score covariates for confounding control in target trial emulation: TRACE-ECG, 32 cardiovascular trials
+# Multimodal Representations for Confounding Control in Target Trial Emulation of Cardiovascular Randomized Clinical Trials
 
 *Working draft (paper 2); first draft 2026-10-07. Target journal: to be decided. Reporting follows the TARGET guideline for target trial emulation and STROBE. Markers: [CHECK] = number or statement not yet verified against a docs/v21 or supplement source; [USER: confirm] = proposed default awaiting the user's decision. Draft notes are marked and must be removed before submission.*
 
