@@ -4,9 +4,9 @@ Written **2026-10-08**. This is the single reference for the design we settled o
 - **Changing a LOCKED item:** it becomes a logged deviation (§9).
 - **When everything is LOCKED:** commit this file as the methods lock. From then on, figures and the manuscript are generated only from it.
 
-**Working title (user decision 2026-10-08):** *Multimodal Representations for Confounding Control in Target Trial Emulation of Cardiovascular Randomized Clinical Trials*. "Multimodal" = representations from two modalities (ECG signal, coded EHR) added side by side to the PS, not a fused model; say so in the Methods.
+**Scope (user decision 2026-10-08, later): ECG only. CLMBR-T is removed from this paper** for clarity of the story; its results stay in the record (paper2 docs, `docs/v21/`, R2). The "Multimodal Representations…" working title no longer fits; **new title PENDING**.
 
-**Manuscript:** this design extends paper2 (PS-CVD5 primary, ECG + CLMBR-T, PS-Flags as the CLMBR-T check). Paper 1 (`docs/paper/paper.md`, PS-Demo primary, ECG only) is the earlier version.
+**Manuscript:** with CLMBR-T removed, this design is **paper 1 (ECG only), audited and hardened**: PS-CVD5 primary, framework-v2 trial set on fixed cohorts, leakage-corrected 54-item panel, PS-Clinical without LVEF (5-draw MI), CVD10 in the ladder. Base manuscript file (`paper.md` vs `paper2.md`): **PENDING**.
 
 **Disclosure:** PS-CVD5 as primary was first proposed on 2026-10-07 (paper2), before the R2 and PS-10 results. The switch from paper 1's PS-Demo is still a post hoc change and must be stated in the Methods.
 
@@ -36,8 +36,8 @@ Written **2026-10-08**. This is the single reference for the design we settled o
 | Representation | Definition | Status |
 |---|---|---|
 | **ECG** | BCL self-supervised signal encoder, 256-d → **32 PCs within each trial**. Latest 12-lead ECG in [index − 365 d, index], **index day included** (user decision 2026-10-08; share of index-day ECGs disclosed per trial) | LOCKED |
-| **CLMBR-T** | CLMBR-T-base (frozen), code-only coded EHR (diagnoses, drugs, procedures, measurement codes without values, visits), last 4,096 tokens, **index day excluded** → 768-d → **64 PCs within each trial**; 32 PCs as a sensitivity. **Never call it "unstructured."** | LOCKED |
-| **Placebos** | Permuted ECG and permuted CLMBR-T (embeddings shuffled between patients within each trial; same dimension) | LOCKED |
+| ~~CLMBR-T~~ (removed from this paper; exploratory record only) | CLMBR-T-base (frozen), code-only coded EHR (diagnoses, drugs, procedures, measurement codes without values, visits), last 4,096 tokens, **index day excluded** → 768-d → **64 PCs within each trial**; 32 PCs as a sensitivity. **Never call it "unstructured."** | LOCKED |
+| **Placebo** | Permuted ECG (embeddings shuffled between patients within each trial; same dimension) | LOCKED |
 
 ## 4. Propensity scores
 
@@ -50,9 +50,9 @@ Written **2026-10-08**. This is the single reference for the design we settled o
 | hdPS | PS-Demo + 9–13 investigator diagnoses + top 200 hdPS code levels (treatment-only ranking, random half of code features, exposure drugs excluded) | ladder | LOCKED |
 | **PS-Clinical (no LVEF)** | the clinical PS **without LVEF**: vitals, core labs, diagnoses, medication orders, utilisation. **No PS contains any echo measurement**. Missing values: **5-draw multiple imputation** (re-imputed without LVEF); per-item \|SMD\| averaged across draws, HRs combined by Rubin's rules | ladder (richest) | LOCKED (MI run pending on spec-v2 cohorts). "Was measured" flags: not added |
 | CVD10 (PS-10) | PS-Demo + 10 fixed diagnoses: HTN, T2D, CAD/MI, AF, HF, CKD, COPD/asthma, PAD, stroke/TIA, valve disease (no obesity) | **main ladder, as a comparison** (between PS-CVD5 and hdPS); not the main love plot | LOCKED |
-| PS-Flags | PS-Demo + yes/no ICD-10 3-character diagnosis flags, full pre-index history, ≥1% prevalence | **supplement** (the CLMBR-T vs diagnosis-flag test) | LOCKED |
+| PS-Flags | PS-Demo + yes/no ICD-10 3-character diagnosis flags, full pre-index history, ≥1% prevalence | **supplement** (full diagnosis-flag PS as a rich coded-record comparator) | LOCKED |
 
-**Added to each level:** none (base), + ECG, + CLMBR-T, + ECG + CLMBR-T, + permuted ECG, + permuted CLMBR-T.
+**Added to each level:** none (base), + ECG, + permuted ECG. (CLMBR-T arms exist in the grid but are not reported in this paper.)
 
 **Supplement PS variants:**
 - cross-validated penalty (R2 result for PS-CVD5 + ECG: 4.7%);
@@ -102,12 +102,12 @@ Sources: `docs/v1_audit/DEFECT_IMPACT.md` §1; `docs/v1_ps10/PS10.md`; `docs/v2_
 - Items are used only where observed in both compared cells.
 
 **Tests:**
-- exact sign-flip permutation across trials: one-sided for a representation vs its base or placebo; two-sided for head-to-heads (e.g. CLMBR-T vs ECG, PS-Demo + CLMBR-T vs PS-Flags) and for placebos vs base;
+- exact sign-flip permutation across trials: one-sided for a representation vs its base or placebo; two-sided for head-to-heads between PS specifications and for placebos vs base;
 - robustness: comparator-cluster sign-flip and leave-one-trial-out;
 - BH-FDR within families (balance and agreement), across contrasts × configurations.
 
 **Love plots:**
-- **Main figure:** the 54 leakage-corrected items, PS-CVD5 base vs + ECG vs + CLMBR-T vs + both (median across analysed trials), grouped by domain. The ladder figure includes CVD10 as a comparison.
+- **Main figure:** the 54 leakage-corrected items, PS-CVD5 base vs + ECG vs + permuted ECG (median across analysed trials), grouped by domain. The ladder figure includes CVD10 as a comparison.
 - **Supplement:** the 58-item love plot (with permuted placebos) and the expanded-panel figure.
 - PS-Flags appears only in supplement figures; CVD10 appears in the ladder, not the main love plot.
 
@@ -125,9 +125,9 @@ Sources: `docs/v1_audit/DEFECT_IMPACT.md` §1; `docs/v1_ps10/PS10.md`; `docs/v2_
 
 | Analysis | Design | Status |
 |---|---|---|
-| Plasmode | Withheld physiological confounder (LVEF, NT-proBNP, BMI, eGFR), clinically oriented, treatment driven by the confounder; arms PS-CVD5 ± ECG ± CLMBR-T, CLMBR-T alone, permuted CLMBR-T | exists (v21, `docs/v21/PLASMODE_PAPER2.md`); **re-check on the final trial set: PENDING** |
+| Plasmode | Withheld physiological confounder (LVEF, NT-proBNP, BMI, eGFR), clinically oriented, treatment driven by the confounder; arms PS-CVD5 ± ECG (CLMBR-T arms exist but are not reported) | exists (v21, `docs/v21/PLASMODE_PAPER2.md`); **re-check on the final trial set: PENDING** |
 | MIMIC-IV | PS-CVD5 analog (prior-admission diagnoses) ± ECG ± permuted ECG; 7 cardiovascular trials + PEPTIC negative control | exists (`docs/v21/MIMIC_PAPER2.md`); LOCKED |
-| Representation alone | CLMBR-T-only or ECG-only PS vs PS-CVD5 / hdPS / PS-Flags / PS-Clinical | exists (R2 X1, branch `r2`); supplement; LOCKED |
+| ECG alone | ECG-only PS vs PS-CVD5 / hdPS / PS-Clinical | exists (R2 X1, branch `r2`); optional supplement |
 | Domain / label / quality subsets | Descriptive | LOCKED |
 
 **Why a fixed penalty:**
@@ -146,6 +146,7 @@ Sources: `docs/v1_audit/DEFECT_IMPACT.md` §1; `docs/v1_ps10/PS10.md`; `docs/v2_
 | 2026-10-08 | Leakage-corrected masking primary | v1 audit found near-duplicate leaks (echo EF ≈ LVEF; eGFR from creatinine) |
 | 2026-10-08 | Emulation-quality framework v2.0 replaces the v19 tiers | Blind re-audit and data check found cohort-specification defects not covered by v19 |
 | 2026-10-08 | PS-Flags to the supplement; CVD10 in the main ladder as a comparison (not the main love plot) | User decision |
+| 2026-10-08 | CLMBR-T removed from this paper (ECG only); title to be re-chosen | User decision, for clarity: with equal-information inputs (PS-Flags, hdPS, LEGEND-style) CLMBR-T does not improve balance; PI had requested CLMBR-T, so to be confirmed with the PI |
 | 2026-10-08 | PS-Clinical: 5-draw multiple imputation instead of a single draw | Single-draw noise of a few points found in the no-LVEF re-run (user decision) |
 | 2026-10-08 | Spec-v2 cohorts: apply exclusion-type fixes (numeric entry bounds, age bounds, class washouts, LAAOS III AF before admission, LIFE definite LVH, COMET EF ≤35%, VALIANT LV dysfunction/HF) and outcome fixes (AMPLIFY, LODESTAR, PROVE IT) instead of penalising them in the quality scores; PCs recomputed within fixed cohorts. Rebuild-only defects (CABANA, TRANSFORM-HF) stay scored | User decision after the quality audit (AUDIT_QUALITY_V2.md B1); run in progress (`docs/v2_cohorts/`) |
 
