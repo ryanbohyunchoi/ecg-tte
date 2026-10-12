@@ -6,6 +6,8 @@ Written **2026-10-08**. This is the single reference for the design we settled o
 
 **Scope (user decision 2026-10-08, later): ECG only. CLMBR-T is removed from this paper** for clarity of the story; its results stay in the record (paper2 docs, `docs/v21/`, R2). The "Multimodal Representations…" working title no longer fits; **new title PENDING**.
 
+**Study name (user decision 2026-10-12, for now): LATENT-RCT** (replaces TRACE-ECG). Caveat noted: "RCT" may be read as a randomized-trial label by journals/indexers; LATENT-TTE was the alternative offered.
+
 **Manuscript:** with CLMBR-T removed, this design is **paper 1 (ECG only), audited and hardened**: PS-CVD5 primary, framework-v2 trial set on fixed cohorts, leakage-corrected 54-item panel, PS-Clinical without LVEF (5-draw MI), CVD10 in the ladder. Base manuscript file (`paper.md` vs `paper2.md`): **PENDING**.
 
 **Disclosure:** PS-CVD5 as primary was first proposed on 2026-10-07 (paper2), before the R2 and PS-10 results. The switch from paper 1's PS-Demo is still a post hoc change and must be stated in the Methods.
@@ -147,6 +149,7 @@ Sources: `docs/v1_audit/DEFECT_IMPACT.md` §1; `docs/v1_ps10/PS10.md`; `docs/v2_
 | 2026-10-08 | Emulation-quality framework v2.0 replaces the v19 tiers | Blind re-audit and data check found cohort-specification defects not covered by v19 |
 | 2026-10-08 | PS-Flags to the supplement; CVD10 in the main ladder as a comparison (not the main love plot) | User decision |
 | 2026-10-08 | CLMBR-T removed from this paper (ECG only); title to be re-chosen | User decision, for clarity: with equal-information inputs (PS-Flags, hdPS, LEGEND-style) CLMBR-T does not improve balance; PI had requested CLMBR-T, so to be confirmed with the PI |
+| 2026-10-12 | Study name LATENT-RCT (for now), replacing TRACE-ECG | User decision |
 | 2026-10-08 | PS-Clinical: 5-draw multiple imputation instead of a single draw | Single-draw noise of a few points found in the no-LVEF re-run (user decision) |
 | 2026-10-08 | Spec-v2 cohorts: apply exclusion-type fixes (numeric entry bounds, age bounds, class washouts, LAAOS III AF before admission, LIFE definite LVH, COMET EF ≤35%, VALIANT LV dysfunction/HF) and outcome fixes (AMPLIFY, LODESTAR, PROVE IT) instead of penalising them in the quality scores; PCs recomputed within fixed cohorts. Rebuild-only defects (CABANA, TRANSFORM-HF) stay scored | User decision after the quality audit (AUDIT_QUALITY_V2.md B1); run in progress (`docs/v2_cohorts/`) |
 
