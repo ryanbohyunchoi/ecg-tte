@@ -9,9 +9,15 @@ Revision of 2026-10-13 (user feedback; pipeline.md update 2026-10-13):
     averaged over draws, Rubin-combined HRs; docs/v1_psclin_mi/PS_CLINICAL_MI_V1.md). If that run is absent, the single-draw cells of
     audits/claude-v1-psclin-nolvef are used and labelled "single imputation; MI pending".
 
+Revision of 2026-10-13 afternoon (docs/queue/QUEUE_2026_10_13_DECK.md step 2): slide 5 body left empty (for the user's own content);
+slide 6 flow populates one step after another, numbered feasibility criteria, popups for both criteria boxes; slide 7 "PSM
+experiments" (PS levels one at a time, then + ECG, + CLMBR-T, + ECG + CLMBR-T, + permuted placebo; popups for hdPS, PS-Clinical and
+PS / matching; no PS-Flags, no ladder graphic); slide 10 = the updated Figure 2 (scripts/figures/make_figure2_latent.py) only.
+Popups: Esc or the close button closes them; while one is open no key reaches the deck.
+
 Main slides: 1 title; 2 Background (10-01); 3 Problem (10-01 schematic, click reveal of the unmeasured side + three points); 4 Aims
-(four aims, revealed one at a time); 5 study overview figure (docs/presentation/figures/latent_rct_overview.png, base64);
-6 LATENT-RCT pipeline; 7-8 methods; 9 balance explorer; 10 results; 11 emulation explorer; 12 robustness; 13 agreement by quality;
+(four aims, revealed one at a time); 5 study overview (empty body); 6 LATENT-RCT pipeline; 7 PSM experiments; 8 held-out panel;
+9 balance explorer; 10 results (Figure 2); 11 emulation explorer; 12 robustness; 13 agreement by quality;
 14 plasmode; 15 MIMIC-IV; 16 take-home; 17 open decisions. Appendix A1-A6 (hash-linked; "More:" links on main slides, "Back to
 slide N" on every appendix slide): A1 trial selection; A2 emulation-quality criteria + interactive quality viewer (v19; framework v2.0
 toggle); A3 all 38 trials (Table 1); A4 framework v2.0 (sensitivity); A5 spec-v2 cohort fixes (sensitivity); A6 design history.
@@ -57,7 +63,8 @@ OUT = ROOT / "docs/presentation/ecg_tte_lab_2026_10_15.html"
 DECK1001 = ROOT / "docs/presentation/ecg_tte_lab_2026_10_01.html"
 DECK1009 = V2.OUT
 SCR = A / "claude-lab-deck-1015-v2"
-FIG = ROOT / "docs/presentation/figures/latent_rct_overview.png"
+FIG2 = ROOT / "docs/paper/figures_latent/figure2_covariate_balance.png"  # scripts/figures/make_figure2_latent.py
+FIG2V = A / "claude-deckq-20261013/figure2_values.json"  # its aggregate values (validated there)
 MIDIR = A / "claude-v1-psclin-mi"
 MI_V1 = MIDIR / "cells/restricted_cells_v1_mi_v1layout.parquet"
 MI_V1SUM = MIDIR / "summary"
@@ -398,6 +405,64 @@ ICON = {
 }
 
 
+# feasibility criteria (stage 1), numbered: (short label for the pipeline box, criterion, example); shared by slide 6 (box and popup)
+# and appendix A1
+FEAS = [
+    ("comparator: active, or an accepted proxy", "Active comparator, or an accepted proxy",
+     "Placebo-controlled CVOTs emulated with RCT-DUPLICATE proxies: DPP-4i (EMPA-REG OUTCOME, LEADER) or sulfonylurea (TECOS)"),
+    ("primary endpoint ascertainable in the EHR", "Primary endpoint ascertainable in the EHR", "DIONYSOS excluded: AF recurrence needs rhythm monitoring"),
+    ("intervention and comparator identifiable", "Intervention and comparator identifiable",
+     "From medication orders or procedure codes; a strategy never used in 2011–2024 fails"),
+    ("≥300 with ECG in the smaller arm, ≥50 events", "Size: ≥300 with an ECG in the smaller arm; ≥50 pooled events",
+     "PARAGON-HF, DAPA-HF/EMPEROR-Reduced and PARTNER were built in development but had fewer than 400 PS-Clinical pairs "
+     "(development data-sufficiency rule) and are not among the 38"),
+    ("not a near-duplicate cohort", "Not a near-duplicate (≥80% shared patient–index-date records)",
+     "ACCOMPLISH excluded (96% of ALLHAT's records); 50–80% kept, e.g. ACTIVE W vs RE-LY 69%"),
+]
+QRULE = ("<b>Points</b> (design information only, blind to results): design flags F1 in-hospital start not mirrored · F2 selective run-in · "
+         "F3 baseline-therapy switch at randomization not reproduced · F4 horizon ≥48 months · F5 other time-zero misalignment, <b>1 point each</b>; "
+         "comparator and outcome fidelity good / moderate / poor = <b>0 / 1 / 2</b> (poor = placebo proxy or hypothesis-changing substitution; "
+         "endpoint not validly ascertainable). <b>Tiers:</b> Excellent 0 · Good 1–2 (no poor item, ≤1 flag) · Moderate 3, or 1–2 with a poor item "
+         "or 2 flags · <b class=\"red\">Limited ≥4: excluded</b>. Two raters (LLM-assisted), 82% agreement on the 3-class result (κ 0.71), then adjudication.")
+
+
+DESIGNS = ("<b>New-user, active-comparator</b> designs (time zero = first order of either drug, no comparator order in the prior 365 days); "
+           "<b>sequential add-on or switch</b> designs where the trial tested adding or switching therapy against continuing it (e.g. rhythm "
+           "control added to rate control; switching from warfarin). Outcome = the trial's primary endpoint. Index dates <b>2011–2024</b> "
+           "(pipeline.md; paper). Note: the version 1 audit found COMET index dates extending into 2025.")
+
+
+def feas_rows():
+    return "".join(f"<tr><td><b>{k}.</b> {esc(c)}</td><td>{esc(e)}</td></tr>" for k, (_, c, e) in enumerate(FEAS, 1))
+
+
+def q_examples(sid=None):
+    """worked v19 points examples (ARISTOTLE, COMET, EMPA-REG OUTCOME, ALLHAT); claims registered when sid is given."""
+    tr = CTX["trials"]
+    QJ = {t["trial"]: t for t in json.load(open(QT19))["trials"]}
+    ex = []
+    for nm in ("ARISTOTLE", "COMET", "EMPA-REG OUTCOME", "ALLHAT"):
+        t = next(x for x in tr if x["full"] == nm)
+        parts = [f"F{i + 1}" for i, v in enumerate(t["fl"]) if v] + [f"comparator {dict(G='good', M='moderate', P='poor')[t['co']]} ({FID[QJ[nm]['comparator']]})",
+                                                                      f"outcome {dict(G='good', M='moderate', P='poor')[t['ou']]} ({FID[QJ[nm]['outcome']]})"]
+        ex.append(f"<b>{esc(t['name'])}</b>: {', '.join(parts)} = {t['tot']} point{'' if t['tot'] == 1 else 's'} → {t['tier']}")
+        if sid:
+            claim(SN[sid], f"example {nm}", f"{t['tot']} points, {t['tier']}", QT19, ref=f"{QJ[nm]['points']} points, {QJ[nm]['tier'].split(' - ')[0]}",
+                  ref_how="quality_tiers.json points/tier")
+    return ex
+
+
+def popup(pid, title, body, links=""):
+    """a modal popup inside its slide (opened by an element with data-pop="pid"; closed by its button, a click outside it, or Esc)."""
+    return (f'<div class="modal" id="{pid}" role="dialog" aria-modal="true" aria-label="{esc(title)}" hidden><div class="mbox">'
+            f'<button class="mclose" type="button" aria-label="Close">✕ Close</button><h3 class="mh">{esc(title)}</h3>{body}'
+            + (f'<div class="mlinks">{links}</div>' if links else "") + "</div></div>")
+
+
+def applink(lab):
+    return f'<a class="xref" href="#{lab}" data-goto="{lab}">{lab} · {esc(APPT[lab])}</a>'
+
+
 def s_aims():
     sid = "s-aims"
     claim(SN[sid], "MIMIC-IV external validation done", "done", ROOT / "docs/v21/MIMIC_PAPER2.md", probe="7 cardiovascular trials", ref_src=ROOT / "docs/v21/MIMIC_PAPER2.md")
@@ -420,23 +485,8 @@ def s_aims():
 
 
 def s_overview():
-    sid = "s-over"
-    if FIG.exists():
-        from PIL import Image
-        im = Image.open(FIG).convert("RGB")
-        w, h = im.size
-        assert abs(w / h - 16 / 9) < 0.01, (w, h)
-        im = im.resize((2560, 1440), Image.LANCZOS)
-        b = io.BytesIO()
-        im.save(b, "PNG", optimize=True)
-        uri = "data:image/png;base64," + base64.b64encode(b.getvalue()).decode()
-        CTX["fig"] = dict(present=True, src_size=[w, h], embedded_size=[2560, 1440], bytes=len(b.getvalue()))
-        inner = f'<img class="fullfig" alt="LATENT-RCT study overview" src="{uri}">'
-    else:
-        CTX["fig"] = dict(present=False)
-        inner = ('<div class="figph"><div><b>PLACEHOLDER: study overview figure</b><br>docs/presentation/figures/latent_rct_overview.png '
-                 'was not available at build time</div></div>')
-    return f'<section class="slide full" id="{sid}" data-title="Study overview">\n{inner}\n</section>\n'
+    """slide 5: kept (number, title bar, footer) with an empty body for the user's own content (user feedback 2026-10-13)."""
+    return sec("s-over", "Study overview", "")
 
 
 def s_pipe():
@@ -457,7 +507,7 @@ def s_pipe():
     claim(SN[sid], "near-duplicate threshold", ">=80% shared records", SUPP, probe="Cohorts sharing 80% or more of patient–index date records", ref_src=SUPP)
     claim(SN[sid], "points rule", "F1-F5 1 point each; comparator/outcome 0/1/2; Limited >=4", QT19, probe="Each flag scored 1 point, and comparator and outcome fidelity scored 0, 1 or 2 points", ref_src=SUPP)
     W, H = 1192, 470
-    s = [f'<svg viewBox="0 0 {W} {H}" style="width:100%;height:auto">']
+    s = [f'<svg viewBox="-3 0 {W + 6} {H}" style="width:100%;height:auto">']  # 3-unit pad: the edge boxes keep their borders
 
     def box(x, y, w, h, lines, fill="#fff", col=NAVY, fs=17, stroke=NAVY, bold0=True, anchor="middle", sw=2):
         o = f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="{fill}" stroke="{stroke}" stroke-width="{sw}" rx="6"/>'
@@ -472,27 +522,30 @@ def s_pipe():
         return (f'<line x1="{x1}" y1="{y1}" x2="{x2 - 3 * math.cos(a):.1f}" y2="{y2 - 3 * math.sin(a):.1f}" stroke="{NAVY}" stroke-width="2.5"/>'
                 f'<path d="M{x2} {y2}L{x2 - 12 * math.cos(a - .4):.1f} {y2 - 12 * math.sin(a - .4):.1f}L{x2 - 12 * math.cos(a + .4):.1f} {y2 - 12 * math.sin(a + .4):.1f}Z" fill="{NAVY}"/>')
     yc = 130
+    hint = lambda x, y: (f'<circle cx="{x + 7}" cy="{y - 4.5}" r="7.5" fill="{RED}"/><text x="{x + 7}" y="{y}" font-size="12" font-weight="700" '
+                         f'text-anchor="middle" fill="#fff">i</text><text x="{x + 20}" y="{y}" font-size="12.5" font-style="italic" fill="{RED}">'
+                         'click for the full criteria and examples</text>')
+    # the flow populates one step after another: 99 -> feasibility -> 38 -> emulation quality -> 32 analysed -> clinical areas
     s.append(box(0, yc - 50, 128, 100, ["99", "candidate", "RCTs"], fs=18))
-    s.append(arr(130, yc, 160, yc))
-    feas = ["Feasibility criteria", "• comparator: active, or an accepted proxy", "• primary endpoint ascertainable in the EHR",
-            "• intervention and comparator identifiable", "• ≥300 with an ECG in the smaller arm; ≥50 events", "• not a near-duplicate cohort"]
-    s.append(f'<rect x="162" y="{yc - 108}" width="408" height="216" fill="#f5f5f8" stroke="{NAVY}" stroke-width="2" rx="6"/>')
-    for i, l in enumerate(feas):
-        s.append(f'<text x="176" y="{yc - 74 + i * 34}" font-size="{18 if i == 0 else 15}" font-weight="{700 if i == 0 else 400}" fill="{NAVY}">{esc(l)}</text>')
-    s.append(arr(572, yc, 602, yc))
-    s.append(box(604, yc - 50, 112, 100, ["38", "feasible", "trials"], fs=18))
-    s.append(arr(718, yc, 748, yc))
-    qual = ["Emulation-quality criteria", "basic, rule-based points:", "• design flags F1–F5: 1 point each", "• comparator, outcome fidelity: 0 / 1 / 2",
+    s.append('<g class="build" data-step="1">' + arr(130, yc, 160, yc))
+    s.append(f'<g class="ptrig" data-pop="pop-feas" aria-label="Feasibility criteria: details"><rect x="162" y="{yc - 108}" width="408" height="216" fill="#f5f5f8" stroke="{NAVY}" stroke-width="2" rx="6"/>')
+    s.append(f'<text x="176" y="{yc - 78}" font-size="18" font-weight="700" fill="{NAVY}">Feasibility criteria</text>')
+    for i, (lab, _, _) in enumerate(FEAS):
+        s.append(f'<text x="176" y="{yc - 47 + i * 29}" font-size="14.5" fill="{NAVY}"><tspan font-weight="700">{i + 1}.</tspan> {esc(lab)}</text>')
+    s.append(hint(176, yc + 98) + "</g></g>")
+    s.append('<g class="build" data-step="2">' + arr(572, yc, 602, yc) + box(604, yc - 50, 112, 100, ["38", "feasible", "trials"], fs=18) + "</g>")
+    qual = ["basic, rule-based points:", "• design flags F1–F5: 1 point each", "• comparator, outcome fidelity: 0 / 1 / 2",
             "Excellent 0 · Good 1–2 · Moderate 3", "Limited (≥4 points) excluded"]
-    s.append(f'<rect x="750" y="{yc - 108}" width="324" height="216" fill="#f5f5f8" stroke="{NAVY}" stroke-width="2" rx="6"/>')
+    s.append('<g class="build" data-step="3">' + arr(718, yc, 748, yc))
+    s.append(f'<g class="ptrig" data-pop="pop-qual" aria-label="Emulation-quality criteria: details"><rect x="750" y="{yc - 108}" width="324" height="216" fill="#f5f5f8" stroke="{NAVY}" stroke-width="2" rx="6"/>')
+    s.append(f'<text x="764" y="{yc - 78}" font-size="18" font-weight="700" fill="{NAVY}">Emulation-quality criteria</text>')
     for i, l in enumerate(qual):
-        s.append(f'<text x="764" y="{yc - 74 + i * 34}" font-size="{18 if i == 0 else 15}" font-weight="{700 if i == 0 else 400}" '
-                 f'fill="{RED if i == 5 else NAVY}">{esc(l)}</text>')
-    s.append(arr(1076, yc, 1100, yc))
-    s.append(box(1102, yc - 50, 90, 100, ["32", "analysed"], fs=18, fill=NAVY, col="#fff"))
-    # bottom: the 32 by clinical area and by tier
+        s.append(f'<text x="764" y="{yc - 47 + i * 29}" font-size="15" fill="{RED if i == 4 else NAVY}">{esc(l)}</text>')
+    s.append(hint(764, yc + 98).replace("the full criteria", "the rule") + "</g></g>")
+    s.append('<g class="build" data-step="4">' + arr(1076, yc, 1100, yc) + box(1102, yc - 50, 90, 100, ["32", "analysed"], fs=18, fill=NAVY, col="#fff") + "</g>")
+    # bottom right (with the 32): emulation quality of the 38; bottom left (last step): the 32 by clinical area
     y0 = 290
-    s.append(f'<text x="0" y="{y0}" font-size="17" font-weight="700" fill="{NAVY}">The 32 analysed trials by clinical area</text>')
+    s.append(f'<g class="build" data-step="5"><text x="0" y="{y0}" font-size="17" font-weight="700" fill="{NAVY}">The 32 analysed trials by clinical area</text>')
     lab = {"AF": "Atrial fibrillation", "HF": "Heart failure", "Diabetes": "Diabetes", "Hypertension": "Hypertension", "ACS / MI": "ACS / MI", "Other": "Other"}
     order = sorted(AREAS, key=lambda a: -ac[a])
     for i, a in enumerate(order):
@@ -500,8 +553,9 @@ def s_pipe():
         s.append(f'<text x="170" y="{y + 15}" font-size="15" text-anchor="end" fill="{NAVY}">{lab[a]}</text>'
                  f'<rect x="180" y="{y + 2}" width="{ac[a] * 30}" height="19" fill="{RED if a == "AF" else NAVY}"/>'
                  f'<text x="{186 + ac[a] * 30}" y="{y + 17}" font-size="15" font-weight="700" fill="{NAVY}">{ac[a]}</text>')
+    s.append("</g>")
     x1 = 700
-    s.append(f'<text x="{x1}" y="{y0}" font-size="17" font-weight="700" fill="{NAVY}">Emulation quality of the 38 feasible trials</text>')
+    s.append(f'<g class="build" data-step="4"><text x="{x1}" y="{y0}" font-size="17" font-weight="700" fill="{NAVY}">Emulation quality of the 38 feasible trials</text>')
     cols = {"Excellent": NAVY, "Good": "#5b5d86", "Moderate": "#c9cbd8", "Limited": "#fbe3e2"}
     xx, wsc = x1, 490 / 38
     for t in TIERS:
@@ -513,25 +567,89 @@ def s_pipe():
     s.append(f'<line x1="{x1}" x2="{x1 + 32 * wsc:.1f}" y1="{y0 + 92}" y2="{y0 + 92}" stroke="{NAVY}" stroke-width="2"/>'
              f'<text x="{x1 + 16 * wsc:.1f}" y="{y0 + 112}" font-size="15" text-anchor="middle" fill="{NAVY}">analysed (32)</text>'
              f'<text x="{x1 + 35 * wsc:.1f}" y="{y0 + 112}" font-size="15" text-anchor="middle" fill="#a8322e">excluded</text>')
-    s.append(f'<text x="{x1}" y="{y0 + 150}" font-size="14" fill="#55576f">Ratings from design information only, blind to all emulation results.</text>')
+    s.append(f'<text x="{x1}" y="{y0 + 150}" font-size="14" fill="#55576f">Ratings from design information only, blind to all emulation results.</text></g>')
     s.append("</svg>")
-    return sec(sid, "LATENT-RCT pipeline", "".join(s), links=more("A1", "A2", "A3"))
+    pops = popup("pop-feas", "Feasibility criteria (stage 1: 99 candidates → 38 emulated)",
+                 f'<table class="t tq mt"><tr><th style="width:36%">Criterion</th><th>Example</th></tr>{feas_rows()}</table>'
+                 f'<p class="small" style="margin-top:8px"><b>Designs and dates.</b> {DESIGNS}</p>', links="More: " + applink("A1") + " · " + applink("A3"))
+    pops += popup("pop-qual", "Emulation-quality criteria (stage 2: v19 points rule; 38 → 32)",
+                  f'<p class="mp">{QRULE}</p><h4 class="mh4">Examples</h4><p class="mp">{"<br>".join(q_examples())}</p>'
+                  f'<p class="small" style="margin-top:8px">Tier counts of the 38: Excellent {tc["Excellent"]}, Good {tc["Good"]}, Moderate {tc["Moderate"]}, '
+                  f'Limited {tc["Limited"]} (excluded). Framework v2.0 tiers are a sensitivity analysis (A4).</p>', links="More: " + applink("A2") + " (interactive quality viewer) · " + applink("A4"))
+    return sec(sid, "LATENT-RCT pipeline", "".join(s), links=more("A1", "A2", "A3") + pops)  # popups outside .body: they cover the slide
+
+
+ICON["shuf"] = ('<svg viewBox="0 0 48 44" width="46" height="42"><path d="M4 12 H14 C24 12 24 32 34 32 H40" fill="none" stroke="#0E103C" stroke-width="2.6"/>'
+                '<path d="M4 32 H14 C24 32 24 12 34 12 H40" fill="none" stroke="#DC5A55" stroke-width="2.6"/>'
+                '<path d="M38 6 L45 12 L38 18 Z" fill="#DC5A55"/><path d="M38 26 L45 32 L38 38 Z" fill="#0E103C"/></svg>')
 
 
 def s_methods_design():
+    """slide 7, "PSM experiments" (user feedback 2026-10-13): the PS levels one at a time, then the four comparison arms one at a
+    time; details (hdPS, PS-Clinical, PS and matching) in popups. No PS-Flags; no ladder graphic."""
     sid = "s-meth1"
-    n0 = len(V2.CL)
-    h = V2.s_methods_design()
-    cl_slide(n0, sid)
-    h = one(h, "<b>256-d → 32 PCs</b> computed within each (fixed) cohort", "<b>256-d → 32 PCs</b> computed within each trial cohort")
-    h = one(h, "+ vitals, core labs, diagnoses, medication orders, utilisation; 5-draw MI",
-            "+ vitals, core labs, diagnoses, medication orders, utilisation; " + ("5-draw MI" if CTX["mi"] else "single imputation (MI pending)"))
-    if not CTX["mi"]:
-        h = one(h, "PS-Clinical without LVEF was re-imputed without LVEF, with 5 draws: per-item |SMD| is averaged across draws and HRs are combined by Rubin's rules.",
-                "PS-Clinical without LVEF was re-imputed without LVEF (version 1 cohorts: single imputation; MI pending).")
-    else:
-        claim(SN[sid], "PS-Clinical (no LVEF) 5-draw MI on version 1 cohorts", "5 draws", MI_V1DOC, probe="re-imputed with 5 independent draws", ref_src=MI_V1DOC)
-    return retitle(h, sid, "Methods: PS ladder, ECG representation and matching", links=more("A6"))
+    sl = SN[sid]
+    mi = "5-draw MI" if CTX["mi"] else "single imputation (MI pending)"
+    claim(sl, "fixed penalty", "C = 1", PIPE, probe="fixed C = 1 for every specification", ref_src=PIPE)
+    claim(sl, "caliper", "caliper 0.2 SD", PIPE, probe="caliper 0.2 SD", ref_src=PIPE)
+    claim(sl, "failed-cell rule", "<11 matched pairs", PIPE, probe="Cells with <11 matched pairs", ref_src=PIPE)
+    claim(sl, "ECG embedding dimension -> PCs", "256-d -> 32 PCs", PIPE, probe="256-d → 32 PCs within each trial", ref_src=PIPE)
+    claim(sl, "CLMBR-T dimension -> PCs", "768-d -> 64 PCs", PIPE, probe="768-d → **64 PCs within each trial**", ref_src=PIPE)
+    claim(sl, "CLMBR-T context", "last 4,096 tokens, index day excluded", PIPE, probe="last 4,096 tokens, **index day excluded**", ref_src=PIPE)
+    claim(sl, "index-day ECG share (version 1)", "37%", HAND, probe="37% of ECGs are on the index day", ref_src=HAND)
+    claim(sl, "ECG window", "[index - 365 d, index]", PIPE, probe="[index − 365 d, index]", ref_src=PIPE)
+    claim(sl, "hdPS: top 200 indicators", "200", SUPP, probe="the top 200 indicators were added to the base covariates", ref_src=SUPP)
+    claim(sl, "hdPS: candidate prevalence", ">=2%", SUPP, probe="with a prevalence of at least 2% were converted into indicators", ref_src=SUPP)
+    claim(sl, "hdPS: base diagnoses", "9 to 13", SUPP, probe="demographics and 9 to 13 investigator-selected diagnoses", ref_src=SUPP)
+    claim(sl, "hdPS: treatment-only ranking, random half, exposure drugs", "as stated", SUPP,
+          probe="candidates were drawn from a random half of the code features, the other half being reserved for balance assessment, and the trial's exposure drugs were excluded",
+          ref_src=SUPP)
+    claim(sl, "hdPS: offset 0.001", "0.001", SUPP, probe="(with an offset of 0.001)", ref_src=SUPP)
+    claim(sl, "PS-Clinical medication orders 3-10", "3 to 10", SUPP, probe="3 to 10 medication orders relevant to the clinical area", ref_src=SUPP)
+    if CTX["mi"]:
+        claim(sl, "PS-Clinical (no LVEF) 5-draw MI on version 1 cohorts", "5 draws", MI_V1DOC, probe="re-imputed with 5 independent draws", ref_src=MI_V1DOC)
+    pl = lambda pid, txt: f'<a class="plink" href="#" data-pop="{pid}"><span class="ib">i</span>{txt}</a>'
+    L = [("PS-Demo", "age, sex, index year", ""), ("PS-CVD5", "+ hypertension, T2D, CAD, AF, HF", "primary"),
+         ("PS-CVD10", "+ CKD, COPD/asthma, PAD, stroke/TIA, valve disease", ""),
+         ("hdPS", "PS-Demo + 9–13 diagnoses + <b>200 yes/no code flags</b> (no values, no dates) " + pl("pop-hdps", "what are the flags?"), ""),
+         ("PS-Clinical (no LVEF)", f"+ measured vitals and labs, medication orders, visits; no echo; {mi} " + pl("pop-clin", "inputs"), "")]
+    lv = "".join(f'<div class="lvl build{" prim" if tag else ""}" data-step="{k}"><div class="ln">{esc(n)}{f"<span class=tg>{tag}</span>" if tag else ""}</div>'
+                 f'<div class="ld">{d}</div></div>' for k, (n, d, tag) in enumerate(L, 1))
+    C = [(ICON["ecg"], "+ ECG representation", "ECG encoder → 32 PCs"), (ICON["ehr"], "+ CLMBR-T", "EHR foundation model → 64 PCs"),
+         (ICON["ecg"] + ICON["ehr"], "+ ECG + CLMBR-T", "both"), (ICON["shuf"], "+ permuted placebo", "ECG shuffled between patients")]
+    cm = "".join(f'<div class="cmp build" data-step="{len(L) + k}"><div class="cn">{k}</div><div class="ci">{ic}</div><div><div class="ct">{esc(t)}</div>'
+                 f'<div class="cs">{esc(s)}</div></div></div>' for k, (ic, t, s) in enumerate(C, 1))
+    body = f"""<div class="psm">
+<div><h3 class="h3">PS levels (thin → rich)</h3>{lv}</div>
+<div><h3 class="h3 build" data-step="{len(L) + 1}">Compared at every level</h3>{cm}</div>
+</div>
+<div class="pmstrip"><b>PS and matching:</b> logistic PS, C = 1 · 1:1 nearest neighbour, caliper 0.2 · {pl("pop-match", "details")}</div>"""
+    pops = popup("pop-hdps", "hdPS: the 200 yes/no code flags", """<ul class="mul">
+<li><b>Base:</b> PS-Demo + 9–13 investigator-selected diagnoses (prior 365 days).</li>
+<li><b>Candidate flags:</b> pre-index diagnosis, medication and procedure codes with ≥2% prevalence, each turned into yes/no flags for <i>any</i>, <i>sporadic</i> (≥ median count among patients with the code) and <i>frequent</i> (≥ 75th percentile) occurrence; laboratory tests as <i>was measured</i> yes/no.</li>
+<li><b>No values, no dates:</b> a flag records only whether (and how often) a code occurs before index.</li>
+<li><b>How the 200 are chosen:</b> ranked by |log prevalence ratio| between the two treatment groups (offset 0.001); the top 200 enter the PS.</li>
+<li><b>Treatment-only ranking:</b> the outcome is never used (unlike the original algorithm).</li>
+<li><b>Random half held out:</b> candidates come from a random half of the code features; the other half is reserved for balance assessment.</li>
+<li><b>Exposure drugs excluded</b> from the candidates.</li>
+</ul><p class="small">Schneeweiss S, et al. <i>Epidemiology</i> 2009;20:512–522 (adapted; supplement eMethods).</p>""")
+    pops += popup("pop-clin", "PS-Clinical (no LVEF): inputs", f"""<ul class="mul">
+<li><b>Demographics and diagnoses:</b> age, sex, index year; AF, hypertension, diabetes, ischaemic heart disease/MI, CKD, COPD/asthma, PAD, stroke, valve disease; trial-specific diagnoses (e.g. heart failure, TIA, liver disease, prior bleeding). Prior 365 days.</li>
+<li><b>Measured values</b> (latest in the prior 90 days; BMI 365 days): systolic and diastolic BP, heart rate, BMI, creatinine, potassium, sodium, haemoglobin.</li>
+<li><b>Medication orders</b> (3–10 relevant to the clinical area, prior 90 days) and <b>utilisation</b> (outpatient, ED, inpatient encounters).</li>
+<li><b>No LVEF and no echo measurement</b> in any PS: echo is the held-out test domain.</li>
+<li><b>Missing values: {mi}</b> by chained equations (covariates and treatment as predictors, no outcome; LVEF neither imputed nor used). Per-item |SMD| averaged across the draws; HRs combined by Rubin's rules.</li>
+<li><b>Leakage-corrected masks:</b> the 8 measured vitals/labs that are PS inputs, and eGFR (derived from creatinine), are not scored as held-out items at this level.</li>
+</ul>""")
+    pops += popup("pop-match", "PS and matching", """<ul class="mul">
+<li><b>PS model:</b> L2-penalised logistic regression on standardised covariates, <b>fixed C = 1</b> for every level and arm (no tuning; a cross-validated penalty is a sensitivity analysis).</li>
+<li><b>Representations</b> enter the PS as principal components computed within each trial: ECG (BCL self-supervised encoder, 256-d → 32 PCs; latest 12-lead ECG in [index − 365 d, index], index day included, 37% of ECGs) and CLMBR-T (frozen CLMBR-T-base on the coded record: diagnoses, drugs, procedures, measurement codes without values, visits; last 4,096 tokens, index day excluded; 768-d → 64 PCs).</li>
+<li><b>Placebo:</b> permuted ECG, the embeddings shuffled between patients within each trial (same dimension, no information).</li>
+<li><b>Matching:</b> 1:1 greedy nearest neighbour on the PS logit, <b>caliper 0.2 SD of the logit</b>, without replacement.</li>
+<li><b>Failed cell:</b> fewer than 11 matched pairs.</li>
+<li><b>Sensitivities:</b> caliper 0.1, 1:3 matching, IPTW, overlap weights, gradient-boosted PS.</li>
+</ul>""")
+    return sec(sid, "PSM experiments", body, links=more("A6") + pops)
 
 
 def s_methods_panel():
@@ -539,86 +657,55 @@ def s_methods_panel():
     n0 = len(V2.CL)
     h = V2.s_methods_panel()
     cl_slide(n0, sid)
+    h = one(h, "<tr><td>PS-Flags</td><td>none</td><td>held-out codes, prognostic score</td></tr>", "")  # PS-Flags: appendix note only (A6)
     return retitle(h, sid, "Methods: held-out panel, leakage map and endpoints")
 
 
-def ladder_rows(sid, ts, extra_ts):
-    LAD = [("P1", "PS-Demo", "demographics"), ("P5", "PS-CVD5", "+ 5 diagnoses"), ("PS10", "PS-CVD10", "+ 10 diagnoses"),
-           ("hdPS200", "hdPS", "+ 200 codes"), ("clinical_nolvef", "PS-Clinical", "no LVEF; " + ("5-draw MI" if CTX["mi"] else "single imp."))]
-    bars = []
-    for rg, lab, sub in LAD:
-        x, _ = stat_v1(sid, f"ladder {lab} + ECG (32)", ts, rg, "ECG")
-        y, _ = stat_v1(sid, f"ladder {lab} + ECG (38)", extra_ts, rg, "ECG")
-        bars.append((lab, sub, x["rr"], x["lo"], x["hi"], RED if rg == "P5" else NAVY, (pv(x["p"]), f"[all 38: {fx(y['rr'])}%]")))
-    return bars
-
-
 def s_results2():
+    """the balance results slide ("Results 2"; the user's "slide 13": love plot, domains, ladder): just the updated Figure 2
+    (scripts/figures/make_figure2_latent.py), a minimal title and a one-line source note. Every number in the figure is registered
+    as a claim and recomputed here from the version 1 cells with build_balance_explorer.pair_stats."""
     sid = "s-res2"
-    rows = ""
-    sets = [("s32", "Paper 1's 32 (primary; v19 tiers)"), ("q:Excellent,Good", "Excellent + Good (v19)"), ("all", "All 38 emulated"),
-            ("v2", "Framework v2.0, provisional 29 (sens.)"), ("v2c", "Framework v2.0, rescored 30 (sens.)")]
-    I = pd.read_csv(V2.IMPACT).set_index("set")
-    IMK = {"s32": "paper 1's 32", "all": "all 38", "v2": "provisional 29 (v2.0 adjudication)", "v2c": "new set (rescored, spec-v2)"}
-    G2 = BE.Grid(CTX["g2"]["G"], CTX["g2"]["U"], CTX["g2"]["ex"])
-    E2 = BE.Grid.from_data(CTX["D"], "v2")
-    for ts, lab in sets:
-        k = len(T_(ts))
-        x, _ = stat_v1(sid, f"PS-CVD5 + ECG, {lab}", ts, "P5", "ECG")
-        e, _ = stat_v1(sid, f"ECG vs permuted, {lab}", ts, "P5", "ECG", "shufECG")
-        r2 = ps(G2, "main", "P5", "ECG", "base", ts)
-        if ts in IMK:
-            z = I.loc[IMK[ts]]
-            sv2 = claim(SN[sid], f"spec-v2 cohorts (sensitivity), {lab}", f"{fx(z.relred54)}%", V2.IMPACT, ref=f"{fx(r2['rr'])}%",
-                        ref_how="recomputed from the spec-v2 cells (pair_stats)")
-        else:
-            sv2 = claim(SN[sid], f"spec-v2 cohorts (sensitivity), {lab}", f"{fx(r2['rr'])}%", "spec-v2 cells (pair_stats)",
-                        ref=f"{fx(ps(E2, 'main', 'P5', 'ECG', 'base', ts)['rr'])}%", ref_how="embedded integers")
-        ad, bp = agree_v1(sid, f"PS-CVD5 + ECG, {lab}", ts, "P5")
-        rows += (f'<tr class="{"hl" if ts == "s32" else ""}"><td>{esc(lab)} ({k})</td><td><b>{ci(x["rr"], x["lo"], x["hi"])}</b></td><td>{x["lower"]}</td>'
-                 f'<td>{fp(x["p"])}</td><td>{fx(e["rr"])}%</td><td>{sv2}</td><td>{ad}</td><td>{bp:.2f}</td></tr>')
-    bars = ladder_rows(sid, "s32", "all")
-    ladder = V2.svg_bar_ci(bars, W=600, H=318, lo=-10, hi=20, title="+ ECG vs PS alone at each base (paper 1's 32; 95% CI)")
-    # domains (version 1, 32 trials)
-    DV = pd.read_csv(V2SUM / "domains.csv")
-    D5 = DV[(DV.cohort == "v1") & (DV.set == "S32") & (DV.config == "main") & (DV.contrast == "P5: ECG vs base")].set_index("domain")
-    if CTX["mi"]:
-        DMI = pd.read_csv(MI_V1SUM / "domains.csv")
-        DC = DMI[(DMI.set == "S32") & (DMI.config == "main") & (DMI.contrast == "clinical_nolvef_mi: ECG vs base")].set_index("domain")
-        dsrc = MI_V1SUM / "domains.csv"
-    else:
-        DC = DV[(DV.cohort == "v1") & (DV.set == "S32") & (DV.config == "main") & (DV.contrast == "clinical_nolvef: ECG vs base")].set_index("domain")
-        dsrc = V2SUM / "domains.csv"
-    G1 = CTX["G1"]
+    sl = SN[sid]
+    from PIL import Image
+    assert FIG2.exists() and FIG2V.exists(), "run scripts/figures/make_figure2_latent.py first"
+    im = Image.open(FIG2).convert("RGB")
+    w, h = im.size
+    H = 1160  # 2x the displayed height (580 px)
+    im = im.resize((round(w * H / h), H), Image.LANCZOS)
+    b = io.BytesIO()
+    im.save(b, "PNG", optimize=True)
+    uri = "data:image/png;base64," + base64.b64encode(b.getvalue()).decode()
+    CTX["fig2"] = dict(src_size=[w, h], embedded_size=list(im.size), bytes=len(b.getvalue()))
+    V = json.load(open(FIG2V))
     T = T_("s32")
-    drows = ""
-    for dname in ["Vitals & core labs", "Other labs", "Echo: LV structure", "Echo: LV function", "Echo: diastolic / LA", "Echo: RV / pulmonary",
-                  "Echo: valves / aorta", "Echo, all 35 items"]:
-        js = V2.dom_items(dname)
-        out = []
-        for rg, DD, src in (("P5", D5, V2SUM / "domains.csv"), ("clinical_nolvef", DC, dsrc)):
-            a = DD.loc[dname]
-            Ma, Mb = G1.block("main", rg, "ECG", True)[np.ix_(T, js)], G1.block("main", rg, "base", True)[np.ix_(T, js)]
-            m = np.isnan(Ma) | np.isnan(Mb)
-            Ma, Mb = np.where(m, np.nan, Ma), np.where(m, np.nan, Mb)
-            ok = (~m).sum(1) > 0
-            if int(a.n_items) and ok.any():
-                rc = BE.relred_ci(np.nanmean(Mb[ok], 1), np.nanmean(Ma[ok], 1))
-                claim(SN[sid], f"domain {rg} {dname}", ci(a.relred, a.relred_lo, a.relred_hi), src, ref=ci(*rc[:3]), ref_how="recomputed from the version 1 cells")
-                out.append(ci(a.relred, a.relred_lo, a.relred_hi))
-            else:
-                out.append("masked")
-        drows += f'<tr><td>{esc(dname)} ({len(js)})</td><td class="nw">{out[0]}</td><td class="nw">{out[1]}{"*" if dname == "Vitals & core labs" else ""}</td></tr>'
-    hd2 = V2.vrow(CTX["VC"], "v2", "S32", "hdPS200", "ECG")
-    claim(SN[sid], "hdPS + ECG on spec-v2 cohorts (32)", f"{fx(hd2.relred54)}%", V2SUM / "contrasts.csv", probe="| hdPS | −0.9% (−5.3 to 4.3) | −0.3% |", ref_src=V2.MID)
-    clin = "5-draw MI" if CTX["mi"] else "single imputation; MI pending"
-    return sec(sid, "Results 2: the primary contrast, the ladder and the domains", f"""
-<table class="t tsm"><tr><th>PS-CVD5 + ECG vs PS-CVD5 (54 items; version 1 cohorts)</th><th>Rel. reduction in mean |SMD| (95% CI)</th><th>Lower</th><th>P</th><th>ECG vs permuted ECG</th><th>Spec-v2 cohorts (sens.)</th><th>|Δ log HR|: PS alone → + ECG</th><th>Benchmark-perm. P</th></tr>{rows}</table>
-<div style="display:grid;grid-template-columns:600px 1fr;gap:24px;margin-top:10px">
-  <div>{ladder}</div>
-  <div><table class="t tq"><tr><th>Domain (items); paper 1's 32</th><th>+ ECG on PS-CVD5</th><th>+ ECG on PS-Clinical (no LVEF; {clin})</th></tr>{drows}</table>
-  <p class="small" style="margin-top:6px">* On PS-Clinical, observed LVEF is the only vitals/labs item that is not masked. Sensitivity: on the spec-v2 fixed cohorts hdPS + ECG falls to {fx(hd2.relred54)}% (32 trials), flagged as a likely small-cohort artefact (A5).</p></div>
-</div>""", links=more("A4", "A5"))
+    G1 = CTX["G1"]
+    for rg, lab in (("P1", "PS-Demo"), ("P5", "PS-CVD5"), ("PS10", "PS-CVD10"), ("hdPS200", "hdPS"), ("clinical_nolvef", "PS-Clinical (no LVEF, MI)")):
+        c = V["C"][rg]
+        for a in ("ECG", "CLMBR", "ECG+CLMBR"):
+            r = ps(G1, "main", rg, a, "base", "s32")
+            claim(sl, f"Fig 2C {lab} + {a} relative change", f"{c['rr_' + a][0]:.1f}%", FIG2V, ref=f"{r['rr']:.1f}%",
+                  ref_how="recomputed from the version 1 cells (build_balance_explorer.pair_stats)")
+        for a in ("unmatched", "base", "ECG", "CLMBR", "ECG+CLMBR"):
+            M = G1.block("main", rg, a, True)[np.ix_(T, BE.items("54"))]
+            ok = np.isfinite(M).any(1)
+            claim(sl, f"Fig 2C {lab} {a} mean |SMD|", f"{c[a]:.3f}", FIG2V, ref=f"{np.nanmean(M[ok], 1).mean():.3f}", ref_how="explorer ladder level on the cells")
+    d = V["D"]
+    r = ps(G1, "main", "P5", "ECG", "base", "s32")
+    claim(sl, "Fig 2D trials improved", f"{int(d['improved'])} of {int(d['k'])}", FIG2V, ref=f"{r['better']} of {r['k']}", ref_how="pair_stats on the cells")
+    claim(sl, "Fig 2D mean change (points)", f"{d['mean']:+.1f}", FIG2V, ref=f"{r['dpts']:+.1f}", ref_how="pair_stats on the cells")
+    claim(sl, "Fig 2D P", fp(d["p"]), FIG2V, ref=fp(r["p"]), ref_how="exact one-sided sign-flip on the cells")
+    for g, x in V["B"].items():
+        js = BE.items("54") if g == "All 54" else V2.dom_items(g)
+        for a in ("unmatched", "base", "ECG"):
+            M = G1.block("main", "P5", a, True)[np.ix_(T, js)]
+            ok = np.isfinite(M).any(1)
+            claim(sl, f"Fig 2B {g} {a}", f"{x[a]:.3f}", FIG2V, ref=f"{np.nanmean(M[ok], 1).mean():.3f}", ref_how="explorer domain view (mean) on the cells")
+    note = ("Version 1 cohorts · paper 1's 32 trials · 1:1 matching, caliper 0.2, C = 1 · 54 held-out items, leakage-corrected masks · "
+            "PS-Clinical: 5-draw MI · scripts/figures/make_figure2_latent.py")
+    body = (f'<img class="fig2" alt="Figure 2: covariate balance on the 54 held-out items" src="{uri}">'
+            f'<div class="fig2src">{esc(note)}</div>')
+    return sec(sid, "Results 2: covariate balance (Figure 2)", body, links=more("A4", "A5"))
 
 
 def s_robust():
@@ -711,7 +798,7 @@ def s_decisions():
   <li><b>Plasmode re-check</b> on the final trial set (pipeline.md §8, pending).</li>
 </ol>
 <ol class="dec" start="6">
-  <li><b>CLMBR-T</b>: back on the aims slide; how and where its results return (main text vs supplement), to be confirmed with the PI.</li>
+  <li><b>CLMBR-T</b>: back on the aims slide and as a comparison arm (slide 7, Figure 2C); how and where its results return (main text vs supplement), to be confirmed with the PI.</li>
   <li><b>External validation scope</b>: UK Biobank and dbGaP trial cohorts (ACCORD, WHI, CHS) are planned, not started.</li>
   <li><b>Study name</b> LATENT-RCT (for now): "RCT" may be read as a randomized-trial label by journals and indexers (alternative: LATENT-TTE).</li>
   <li><b>Manuscript file</b> (paper.md vs paper2.md) and the methods lock (pipeline.md §10–11).</li>
@@ -751,33 +838,20 @@ def s_a1():
 <div>
   <h3 class="h3">Feasibility criteria, with examples</h3>
   <table class="t tq"><tr><th>Criterion</th><th>Example</th></tr>
-  <tr><td>Active comparator, or an accepted proxy</td><td>Placebo-controlled CVOTs emulated with RCT-DUPLICATE proxies: DPP-4i (EMPA-REG OUTCOME, LEADER) or sulfonylurea (TECOS)</td></tr>
-  <tr><td>Primary endpoint ascertainable in the EHR</td><td>DIONYSOS excluded: AF recurrence needs rhythm monitoring</td></tr>
-  <tr><td>Intervention and comparator identifiable</td><td>From medication orders or procedure codes; a strategy never used in 2011–2024 fails</td></tr>
-  <tr><td>Size: ≥300 with an ECG in the smaller arm; ≥50 pooled events</td><td>PARAGON-HF, DAPA-HF/EMPEROR-Reduced and PARTNER were built in development but had fewer than 400 PS-Clinical pairs (development data-sufficiency rule) and are not among the 38</td></tr>
-  <tr><td>Not a near-duplicate (≥80% shared patient–index-date records)</td><td>ACCOMPLISH excluded (96% of ALLHAT's records); 50–80% kept, e.g. ACTIVE W vs RE-LY 69%</td></tr></table>
+  {FEAS_ROWS}</table>
   <h3 class="h3" style="margin-top:8px">Designs and dates</h3>
-  <p class="small"><b>New-user, active-comparator</b> designs (time zero = first order of either drug, no comparator order in the prior 365 days); <b>sequential add-on or switch</b> designs where the trial tested adding or switching therapy against continuing it (e.g. rhythm control added to rate control; switching from warfarin). Outcome = the trial's primary endpoint. Index dates <b>2011–2024</b> (pipeline.md; paper). Note: the version 1 audit found COMET index dates extending into 2025.</p>
+  <p class="small">{DESIGNS}</p>
 </div>
-</div>""")
+</div>""".replace("{FEAS_ROWS}", feas_rows()).replace("{DESIGNS}", DESIGNS))
 
 
 def s_a2():
     sid = "a-qual"
-    tr = CTX["trials"]
-    QJ = {t["trial"]: t for t in json.load(open(QT19))["trials"]}
-    ex = []
-    for nm in ("ARISTOTLE", "COMET", "EMPA-REG OUTCOME", "ALLHAT"):
-        t = next(x for x in tr if x["full"] == nm)
-        parts = [f"F{i + 1}" for i, v in enumerate(t["fl"]) if v] + [f"comparator {dict(G='good', M='moderate', P='poor')[t['co']]} ({FID[QJ[nm]['comparator']]})",
-                                                                      f"outcome {dict(G='good', M='moderate', P='poor')[t['ou']]} ({FID[QJ[nm]['outcome']]})"]
-        txt = f"<b>{esc(t['name'])}</b>: {', '.join(parts)} = {t['tot']} point{'' if t['tot'] == 1 else 's'} → {t['tier']}"
-        claim(SN[sid], f"example {nm}", f"{t['tot']} points, {t['tier']}", QT19, ref=f"{QJ[nm]['points']} points, {QJ[nm]['tier'].split(' - ')[0]}", ref_how="quality_tiers.json points/tier")
-        ex.append(txt)
+    ex = q_examples(sid)
     claim(SN[sid], "re-rating agreement 82% / kappa 0.71", "82%; κ 0.71", SUPP, probe="Agreement on the three-class result was 82% (Cohen κ, 0.71)", ref_src=SUPP)
     return sec(sid, "Emulation-quality criteria (v19 points rule) and quality viewer", f"""
 <div class="qrule">
-  <div><b>Points</b> (design information only, blind to results): design flags F1 in-hospital start not mirrored · F2 selective run-in · F3 baseline-therapy switch at randomization not reproduced · F4 horizon ≥48 months · F5 other time-zero misalignment, <b>1 point each</b>; comparator and outcome fidelity good / moderate / poor = <b>0 / 1 / 2</b> (poor = placebo proxy or hypothesis-changing substitution; endpoint not validly ascertainable). <b>Tiers:</b> Excellent 0 · Good 1–2 (no poor item, ≤1 flag) · Moderate 3, or 1–2 with a poor item or 2 flags · <b class="red">Limited ≥4: excluded</b>. Two raters (LLM-assisted), 82% agreement on the 3-class result (κ 0.71), then adjudication.</div>
+  <div>{QRULE}</div>
   <div class="qex">{'<br>'.join(ex)}</div>
 </div>
 <div class="qview">
@@ -864,7 +938,8 @@ def s_a6():
   <li><b>Primary back to version 1 cohorts and paper 1's 32 trials</b> (v19 tiers). Decided after the fixed-cohort results were known (6.6% vs 8.8%): both are reported.</li>
   <li><b>Spec-v2 cohort fixes</b> (A5) and <b>framework v2.0 tiers</b> (A4; 29 / 30 trials) become sensitivity analyses.</li>
   <li><b>PS-Clinical (no LVEF)</b>: 5-draw MI re-run on the version 1 cohorts.</li>
-  <li><b>Study name LATENT-RCT</b> (replaces TRACE-ECG); <b>CLMBR-T</b> back on the aims (results to follow).</li>
+  <li><b>Study name LATENT-RCT</b> (replaces TRACE-ECG); <b>CLMBR-T</b> back on the aims, and as a comparison arm in the PSM experiments (slide 7) and Figure 2C.</li>
+  <li><b>Note: PS-Flags</b> (PS-Demo + yes/no ICD-10 3-character diagnosis flags, ≥1% prevalence) is a supplement comparator only; it is not on the main slides and is selectable, off by default, in the balance explorer.</li>
 </ul></div>
 </div>""")
 
@@ -924,6 +999,60 @@ table.t1 td.n{font-weight:700;white-space:nowrap}
 table.t1 td.nw{white-space:nowrap}
 table.t1 tr.an td{background:#fff}
 table.t1 tr.ex td{color:#8a8d99;background:#f6f6f8}
+/* popups (slides 6 and 7) */
+.modal{position:absolute;inset:0;background:rgba(14,16,60,.38);display:flex;align-items:center;justify-content:center;z-index:60}
+.modal[hidden]{display:none}
+.mbox{position:relative;background:#fff;border:2px solid var(--navy);width:1060px;max-height:610px;overflow-y:auto;padding:16px 26px 14px;box-sizing:border-box;box-shadow:0 10px 32px rgba(0,0,0,.28)}
+.mclose{position:absolute;top:10px;right:12px;border:2px solid var(--navy);background:#fff;color:var(--navy);font-weight:700;font-size:14px;font-family:inherit;padding:3px 10px;cursor:pointer}
+.mclose:hover,.mclose:focus{background:var(--navy);color:#fff}
+.mbox h3.mh{font-size:21px;margin:0 90px 10px 0;color:var(--navy)}
+.mbox h4.mh4{font-size:15px;margin:10px 0 4px;color:var(--navy);text-transform:uppercase;letter-spacing:.3px}
+.mbox .mp{font-size:15px;line-height:1.4;margin:0;color:var(--navy)}
+.mbox table.mt td,.mbox table.mt th{font-size:14px;padding:5px 8px}
+.mbox ul.mul{margin:0 0 6px;padding-left:22px}
+.mbox ul.mul li{font-size:16px;line-height:1.38;margin:0 0 7px;color:var(--navy)}
+.mbox .mlinks{font-size:13px;color:var(--muted);margin-top:8px}
+.mbox .mlinks a{color:var(--navy);text-decoration:underline}
+g.ptrig{cursor:pointer}
+g.ptrig:hover rect,g.ptrig:focus rect{stroke:var(--red);stroke-width:3}
+g.ptrig:focus{outline:none}
+a.plink{color:var(--red);font-weight:700;font-size:.9em;text-decoration:none;border-bottom:1px dotted var(--red);white-space:nowrap;cursor:pointer}
+a.plink .ib{display:inline-block;width:1.15em;height:1.15em;line-height:1.15em;border-radius:50%;background:var(--red);color:#fff;text-align:center;font-size:.8em;margin-right:4px;vertical-align:.08em}
+/* slide 7: PSM experiments */
+.psm{display:grid;grid-template-columns:640px 1fr;gap:34px}
+.lvl{display:grid;grid-template-columns:230px 1fr;align-items:center;gap:10px;border-left:7px solid var(--navy);background:#f3f3f7;padding:8px 14px;margin:0 0 9px;min-height:58px;box-sizing:border-box}
+.lvl.prim{border-left-color:var(--red);background:#fbeceb}
+.lvl .ln{font-size:21px;font-weight:700;color:var(--navy)}
+.lvl .ln .tg{display:block;font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.4px}
+.lvl .ld{font-size:16px;line-height:1.3;color:var(--navy)}
+.cmp{display:grid;grid-template-columns:34px 128px 1fr;align-items:center;gap:8px;border:2px solid var(--navy);padding:6px 12px;margin:0 0 10px;min-height:64px;box-sizing:border-box}
+.cmp .cn{font-size:26px;font-weight:700;color:var(--red);text-align:center}
+.cmp .ci{display:flex;gap:6px;align-items:center;justify-content:center}
+.cmp .ct{font-size:21px;font-weight:700;color:var(--navy)}
+.cmp .cs{font-size:14.5px;color:var(--muted)}
+.pmstrip{position:absolute;left:0;right:0;bottom:6px;font-size:17px;color:var(--navy);border-top:1px solid var(--line);padding-top:8px}
+/* the balance results slide: Figure 2 */
+img.fig2{display:block;margin:-6px auto 0;height:556px;width:auto;max-width:100%}
+.fig2src{text-align:center;font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+"""
+POP_JS = r"""
+/* ===== popups (slides 6 and 7): open on click / Enter; close with the button, a click outside the box, or Esc. While a popup is
+   open, no key reaches the deck (arrows do not navigate); navigating away closes it. ===== */
+let POP = null;
+function popClose() { if (POP) { POP.hidden = true; const t = POP._trig; POP = null; if (t && t.focus) t.focus({preventScroll: true}); } }
+function popOpen(id, trig) { const m = document.getElementById(id); if (!m) return; if (POP) popClose(); m.hidden = false; m._trig = trig; POP = m; const b = m.querySelector(".mclose"); if (b) b.focus({preventScroll: true}); }
+function popInit() {
+  document.querySelectorAll("[data-pop]").forEach(el => {
+    el.setAttribute("tabindex", "0"); el.setAttribute("role", "button");
+    el.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); popOpen(el.dataset.pop, el); });
+    el.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); popOpen(el.dataset.pop, el); } });
+  });
+  document.querySelectorAll(".modal").forEach(m => m.addEventListener("click", e => {
+    e.stopPropagation();
+    if (e.target === m || e.target.closest(".mclose")) { e.preventDefault(); popClose(); }
+  }));
+  addEventListener("keydown", e => { if (!POP) return; e.stopImmediatePropagation(); if (e.key === "Escape") { e.preventDefault(); popClose(); } else if (e.key === " ") e.preventDefault(); }, true);
+}
 """
 
 QV_JS = r"""
@@ -985,8 +1114,8 @@ function applyBuild() {
   sl.querySelectorAll(".build").forEach(e => e.classList.toggle("hid", (+e.dataset.step || 0) > step));
   sl.querySelectorAll(".fstep").forEach(e => { const k = +e.dataset.step || 0; e.classList.toggle("hid", k > step); e.classList.toggle("dim", k < step && step <= last); });
 }
-function next() { if (step < nSteps(slides[cur])) { step++; applyBuild(); } else if (cur < slides.length - 1) show(cur + 1); }
-function prev() { if (step > 0) { step--; applyBuild(); } else if (cur > 0) show(cur - 1, true); }
+function next() { if (POP) { popClose(); return; } if (step < nSteps(slides[cur])) { step++; applyBuild(); } else if (cur < slides.length - 1) show(cur + 1); }
+function prev() { if (POP) { popClose(); return; } if (step > 0) { step--; applyBuild(); } else if (cur > 0) show(cur - 1, true); }
 function indexOf(key) {
   if (key === null || key === undefined || key === "") return -1;
   let i = slides.findIndex(s => s.dataset.app === key || s.id === key);
@@ -995,7 +1124,8 @@ function indexOf(key) {
 }
 const fromHash = () => Math.max(0, indexOf(decodeURIComponent(location.hash.slice(1))));
 function show(i, built) {
-  cur = Math.max(0, Math.min(slides.length - 1, i));
+  popClose();
+  cur =Math.max(0, Math.min(slides.length - 1, i));
   step = built ? nSteps(slides[cur]) : 0; applyBuild();
   slides.forEach((s, k) => s.classList.toggle("active", k === cur));
   $("#nav-count").textContent = `${slides[cur].dataset.app ? slides[cur].dataset.app + " · " : ""}${cur + 1} / ${slides.length}`;
@@ -1062,12 +1192,12 @@ def build_template(T1001, deck1001, D):
     # deck mechanics: replace from the chrome block to the fit() function
     i = h.index("/* ===== deck mechanics (2026-10-01 deck) ===== */")
     j = h.index('addEventListener("resize", fit);', i)
-    h = h[:i] + intro_js(T1001, deck1001) + QV_JS + NAV_JS + h[j:]
+    h = h[:i] + intro_js(T1001, deck1001) + QV_JS + POP_JS + NAV_JS + h[j:]
     h = one(h, '$("#nav-next").onclick = next;\n',
-            '$("#nav-next").onclick = next;\n/* a click on a slide with builds (outside any control or link) reveals the next step (2026-10-01 deck) */\n'
-            '$("#stage").addEventListener("click", e => { if (nSteps(slides[cur]) && !e.target.closest("select,input,label,button,a,.ctrl,.side")) next(); });\n')
+            '$("#nav-next").onclick = next;\n/* a click on a slide with builds (outside any control, link or popup) reveals the next step (2026-10-01 deck) */\n'
+            '$("#stage").addEventListener("click", e => { if (!POP && nSteps(slides[cur]) && !e.target.closest("select,input,label,button,a,.ctrl,.side,.modal,[data-pop]")) next(); });\n')
     h = one(h, "init(); emuInit(); agqInit(); fit();\nshow((parseInt(location.hash.slice(1), 10) || 1) - 1);",
-            "drawIntro(); qvInit(); init(); emuInit(); agqInit(); linkInit(); fit();\nshow(fromHash());")
+            "drawIntro(); qvInit(); init(); emuInit(); agqInit(); linkInit(); popInit(); fit();\nshow(fromHash());")
     return h
 
 
@@ -1220,7 +1350,7 @@ def main():
           f"mismatched {int((C.match == False).sum())}")  # noqa: E712
     if (C.match == False).any():  # noqa: E712
         print(C[C.match == False].to_string())  # noqa: E712
-    meta = dict(mi=mi, fig=CTX.get("fig"), table1_diffs=CTX.get("table1_diffs"), slides=[(SN[s], t) for s, t in titles])
+    meta = dict(mi=mi, fig2=CTX.get("fig2"), table1_diffs=CTX.get("table1_diffs"), slides=[(SN[s], t) for s, t in titles])
     json.dump(meta, open(SCR / "build_meta.json", "w"), indent=1, default=str)
     combos = balance_combos(D, g1, g2)
     json.dump(combos, open(SCR / "balance_combos.json", "w"), indent=0)

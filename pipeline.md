@@ -160,6 +160,7 @@ Sources: `docs/v1_audit/DEFECT_IMPACT.md` §1; `docs/v1_ps10/PS10.md`; `docs/v2_
 | 2026-10-13 | Primary reverts to version 1 cohorts + paper 1's 32 trials (v19 tiers); spec-v2 fixed cohorts and framework v2.0 tiers become sensitivities; CLMBR-T back (aims only for now) | User decision, made after the fixed-cohort results were known; must be disclosed |
 | 2026-10-08 | PS-Clinical: 5-draw multiple imputation instead of a single draw | Single-draw noise of a few points found in the no-LVEF re-run (user decision) |
 | 2026-10-08 | Spec-v2 cohorts: apply exclusion-type fixes (numeric entry bounds, age bounds, class washouts, LAAOS III AF before admission, LIFE definite LVH, COMET EF ≤35%, VALIANT LV dysfunction/HF) and outcome fixes (AMPLIFY, LODESTAR, PROVE IT) instead of penalising them in the quality scores; PCs recomputed within fixed cohorts. Rebuild-only defects (CABANA, TRANSFORM-HF) stay scored | User decision after the quality audit (AUDIT_QUALITY_V2.md B1); run in progress (`docs/v2_cohorts/`) |
+| 2026-10-13 | CLMBR-T is shown again as a comparison arm in the lab deck's PSM-experiments slide and in Figure 2C (`docs/paper/figures_latent/`); it stays out of the take-home claims | User feedback on the deck (queue 2026-10-13) |
 
 ## 10. Open decisions (needed before the lock)
 
