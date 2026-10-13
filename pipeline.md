@@ -8,6 +8,13 @@ Written **2026-10-08**. This is the single reference for the design we settled o
 
 **Study name (user decision 2026-10-12, for now): LATENT-RCT** (replaces TRACE-ECG). Caveat noted: "RCT" may be read as a randomized-trial label by journals/indexers; LATENT-TTE was the alternative offered.
 
+**Update 2026-10-13 (user decisions):**
+- **Primary cohorts revert to version 1** (original patient/participant selection criteria). The spec-v2 cohort fixes (`docs/v2_cohorts/`) become a **sensitivity analysis**, disclosed (fixed cohorts: PS-CVD5 + ECG 6.6% vs 8.8% on version 1; random-removal check attributes the drop to smaller cohorts).
+- **Primary trial set = paper 1's 32** (v19 tiers; Limited excluded: ALLHAT, ASCOT-BPLA, DECLARE-TIMI 58, ONTARGET, REWIND, VALUE). Framework v2.0 tiers (provisional 29 / rescored 30) become a **sensitivity**.
+- **CLMBR-T is coming back** (aims slide only for now; results stay ECG-only until the user reviews later slides).
+- Study name **LATENT-RCT**.
+- Note for the Methods: the revert to version 1 cohorts was decided after the fixed-cohort results were known; report both.
+
 **Manuscript:** with CLMBR-T removed, this design is **paper 1 (ECG only), audited and hardened**: PS-CVD5 primary, framework-v2 trial set on fixed cohorts, leakage-corrected 54-item panel, PS-Clinical without LVEF (5-draw MI), CVD10 in the ladder. Base manuscript file (`paper.md` vs `paper2.md`): **PENDING**.
 
 **Disclosure:** PS-CVD5 as primary was first proposed on 2026-10-07 (paper2), before the R2 and PS-10 results. The switch from paper 1's PS-Demo is still a post hoc change and must be stated in the Methods.
@@ -150,6 +157,7 @@ Sources: `docs/v1_audit/DEFECT_IMPACT.md` §1; `docs/v1_ps10/PS10.md`; `docs/v2_
 | 2026-10-08 | PS-Flags to the supplement; CVD10 in the main ladder as a comparison (not the main love plot) | User decision |
 | 2026-10-08 | CLMBR-T removed from this paper (ECG only); title to be re-chosen | User decision, for clarity: with equal-information inputs (PS-Flags, hdPS, LEGEND-style) CLMBR-T does not improve balance; PI had requested CLMBR-T, so to be confirmed with the PI |
 | 2026-10-12 | Study name LATENT-RCT (for now), replacing TRACE-ECG | User decision |
+| 2026-10-13 | Primary reverts to version 1 cohorts + paper 1's 32 trials (v19 tiers); spec-v2 fixed cohorts and framework v2.0 tiers become sensitivities; CLMBR-T back (aims only for now) | User decision, made after the fixed-cohort results were known; must be disclosed |
 | 2026-10-08 | PS-Clinical: 5-draw multiple imputation instead of a single draw | Single-draw noise of a few points found in the no-LVEF re-run (user decision) |
 | 2026-10-08 | Spec-v2 cohorts: apply exclusion-type fixes (numeric entry bounds, age bounds, class washouts, LAAOS III AF before admission, LIFE definite LVH, COMET EF ≤35%, VALIANT LV dysfunction/HF) and outcome fixes (AMPLIFY, LODESTAR, PROVE IT) instead of penalising them in the quality scores; PCs recomputed within fixed cohorts. Rebuild-only defects (CABANA, TRANSFORM-HF) stay scored | User decision after the quality audit (AUDIT_QUALITY_V2.md B1); run in progress (`docs/v2_cohorts/`) |
 
