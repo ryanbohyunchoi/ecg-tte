@@ -1,0 +1,3644 @@
+{
+ "title": "LATENT-RCT exploratory trial-search candidates (literature only)",
+ "generated": "2026-10-13",
+ "protocol": "docs/trial_search/SEARCH_PROTOCOL.md",
+ "log": "docs/trial_search/SEARCH_LOG.md",
+ "status": "EXPLORATORY: not part of the analysed set; no specification registered; no data screen run",
+ "effect_source": "PubMed abstracts retrieved 2026-10-13 via E-utilities efetch (no API key or e-mail); full text not read unless stated",
+ "stats": {
+  "pool_eligible": 70,
+  "pool_eligible_retrieved": 68,
+  "new_A": 11,
+  "new_B": 13,
+  "new_C": 14,
+  "new_ABC": 38,
+  "legacy_in_ABC": 4,
+  "D_entries": 126,
+  "D_trials": 210,
+  "D_trials_eligible": 55,
+  "new_eligible": 93,
+  "coverage_current_pool": 0.422,
+  "coverage_including_legacy_archive": 0.447,
+  "coverage_vs_feasible_new_only": 0.642
+ },
+ "group_definitions": {
+  "A": "likely feasible as is",
+  "B": "feasible with an accepted proxy or a stated adaptation",
+  "C": "positive (non-null) benchmark for directional tests; tag A or B gives the feasibility class",
+  "D": "considered but likely infeasible (or ineligible), kept for transparency"
+ },
+ "candidates": [
+  {
+   "id": "cibis3",
+   "name": "CIBIS III",
+   "year": 2005,
+   "group": "A",
+   "tags": [],
+   "area": "HF",
+   "citation": "Willenheimer R, et al. Circulation 2005;112:2426-35",
+   "pmid": "16143696",
+   "doi": "10.1161/CIRCULATIONAHA.105.582320",
+   "population": "Mild-to-moderate HF (NYHA II-III), LVEF <=35%, age >=65, not on ACEi/ARB/beta-blocker",
+   "intervention": "Bisoprolol first (6 months), then bisoprolol + enalapril",
+   "comparator": "Enalapril first (6 months), then combination",
+   "outcome": "All-cause death or all-cause hospitalisation",
+   "follow_up": "6-24 months (combination phase)",
+   "n": 1010,
+   "effect": {
+    "measure": "HR (ITT; noninferiority)",
+    "estimate": 0.94,
+    "ci": [
+     0.77,
+     1.16
+    ],
+    "text": "HR 0.94 (95% CI 0.77-1.16); noninferior"
+   },
+   "design": "New-user, initial-strategy contrast: first neurohormonal agent in HF patients naive to both classes; no order of the other class in a 30-day grace window (added later in both arms, as in the trial). Time zero = first order of bisoprolol (or cardioselective beta-blocker class) or ACEi.",
+   "ehr": "I50.x; echo LVEF <=35%; drug tokens bisoprolol (class: cardioselective beta-blocker) and enalapril (class: ACEi); outcomes all-cause death + any inpatient admission.",
+   "quality": "TS 1 (beta-blocker or ACEi class adaptation; a sequence strategy approximated by first-agent choice); CO 1 (ACEi class for enalapril); EL 1 (LVEF from echo, DA if under 50% measured); OU 0 (all-cause death/hospitalisation); FU 0; BM 0.",
+   "why": "HF active-comparator trial with all-cause endpoints, complementary to COMET/ELITE II; first-agent choice is plausibly ECG-driven (heart rate, conduction).",
+   "risk": "US practice often co-initiates both classes, so the single-agent-first arms may be small."
+  },
+  {
+   "id": "nordil",
+   "name": "NORDIL",
+   "year": 2000,
+   "group": "A",
+   "tags": [],
+   "area": "Hypertension",
+   "citation": "Hansson L, et al. Lancet 2000;356:359-65",
+   "pmid": "10972367",
+   "doi": "10.1016/S0140-6736(00)02526-5",
+   "population": "Hypertension (DBP >=100 mm Hg), age 50-74",
+   "intervention": "Diltiazem",
+   "comparator": "Diuretics, beta-blockers or both",
+   "outcome": "Fatal/non-fatal stroke, MI, or other CV death",
+   "follow_up": "not stated in the abstract (about 4.5 years per secondary sources; unverified)",
+   "n": 10881,
+   "effect": {
+    "measure": "RR",
+    "estimate": 1.0,
+    "ci": [
+     0.87,
+     1.15
+    ],
+    "text": "RR 1.00 (95% CI 0.87-1.15)"
+   },
+   "design": "New-user: diltiazem vs thiazide or beta-blocker as the first antihypertensive. Exclude AF/flutter/SVT (diltiazem is used for rate control). Time zero = first order.",
+   "ehr": "I10; diltiazem token; thiazide and beta-blocker class tokens; exclude I47-I48; outcomes stroke/MI hospitalisation + CV death.",
+   "quality": "CO 1 (mixed comparator); OU 1 (CV death); BM 1 (RR); FU 1 if horizon >=48 mo (set 47); TZ.c possible (previously treated patients).",
+   "why": "Non-dihydropyridine CCB vs conventional therapy; large null benchmark, and diltiazem initiators are common.",
+   "risk": "Confounding by indication for diltiazem (arrhythmia, angina); ECG may help."
+  },
+  {
+   "id": "anbp2",
+   "name": "ANBP2",
+   "year": 2003,
+   "group": "A",
+   "tags": [],
+   "area": "Hypertension",
+   "citation": "Wing LMH, et al. N Engl J Med 2003;348:583-92",
+   "pmid": "12584366",
+   "doi": "10.1056/NEJMoa021716",
+   "population": "Hypertension, age 65-84, Australian family practice",
+   "intervention": "ACE inhibitor (enalapril recommended)",
+   "comparator": "Thiazide diuretic (HCTZ recommended)",
+   "outcome": "First cardiovascular event or death from any cause",
+   "follow_up": "median 4.1 years",
+   "n": 6083,
+   "effect": {
+    "measure": "HR",
+    "estimate": 0.89,
+    "ci": [
+     0.79,
+     1.0
+    ],
+    "text": "HR 0.89 (95% CI 0.79-1.00)"
+   },
+   "design": "New-user active comparator: first antihypertensive order (ACEi vs thiazide), none in the prior 365 days. Time zero = first order.",
+   "ehr": "I10-I15; ACEi class and thiazide-class tokens; outcomes all-cause death + first CV-coded inpatient stay (I20-I25, I50, I60-I66, I70-I74).",
+   "quality": "TS 1, CO 1 (class adaptations); OU 1 (the broad 'any CV event' composite is approximated by CV hospitalisations; outpatient events are missed); FU 0 if horizon <48 mo (use 47); TZ.c to be checked (proportion previously treated); BM 0.",
+   "why": "Pragmatic primary-care trial of first-line class with a tight near-null CI; ACEi vs thiazide is not in the analysed set (ALLHAT's lisinopril arm was never built).",
+   "risk": "The thiazide arm overlaps the ALLHAT and INSIGHT cohorts; run the record-overlap check."
+  },
+  {
+   "id": "surpass_cvot",
+   "name": "SURPASS-CVOT",
+   "year": 2025,
+   "group": "A",
+   "tags": [
+    "recent"
+   ],
+   "area": "Diabetes/cardiometabolic",
+   "citation": "Nicholls SJ, et al. N Engl J Med 2025;393:2409-20",
+   "pmid": "41406444",
+   "doi": "10.1056/NEJMoa2505928",
+   "population": "T2D with established ASCVD, BMI >=25",
+   "intervention": "Tirzepatide (up to 15 mg weekly)",
+   "comparator": "Dulaglutide 1.5 mg weekly",
+   "outcome": "CV death, MI or stroke",
+   "follow_up": "event-driven (median not stated in abstract)",
+   "n": 13299,
+   "effect": {
+    "measure": "HR (95.3% CI; noninferiority)",
+    "estimate": 0.92,
+    "ci": [
+     0.83,
+     1.01
+    ],
+    "text": "HR 0.92 (95.3% CI 0.83-1.01); P=0.003 noninferiority, P=0.09 superiority"
+   },
+   "design": "New-user active comparator in T2D + ASCVD: tirzepatide (approved May 2022) vs dulaglutide initiators, with no GLP-1RA in the prior 365 days. Index window 2022-06 to 2024. Time zero = first order.",
+   "ehr": "E11 + ASCVD codes; tokens tirzepatide (exclude obesity-only Zepbound without T2D), dulaglutide; 3-point MACE.",
+   "quality": "FU 1 (FU.b: the available horizon of at most ~2.5 y is much shorter than the trial's); OU 1 (CV death); BM 0 (noninferiority HR, 95.3% CI); DA risk (event count in a short window).",
+   "why": "The only large incretin head-to-head CVOT with a hard endpoint; true active comparator; very high use late in the window.",
+   "risk": "Short follow-up; calendar-time confounding (supply shortages 2022-2024)."
+  },
+  {
+   "id": "profess",
+   "name": "PRoFESS",
+   "year": 2008,
+   "group": "A",
+   "tags": [],
+   "area": "ACS/CAD/antiplatelet",
+   "citation": "Sacco RL, et al. N Engl J Med 2008;359:1238-51",
+   "pmid": "18753638",
+   "doi": "10.1056/NEJMoa0805002",
+   "population": "Recent non-cardioembolic ischaemic stroke (<90 days)",
+   "intervention": "Aspirin + extended-release dipyridamole",
+   "comparator": "Clopidogrel",
+   "outcome": "Recurrent stroke",
+   "follow_up": "mean 2.5 years",
+   "n": 20332,
+   "effect": {
+    "measure": "HR",
+    "estimate": 1.01,
+    "ci": [
+     0.92,
+     1.11
+    ],
+    "text": "HR 1.01 (95% CI 0.92-1.11)"
+   },
+   "design": "New-user active comparator after ischaemic stroke: first order of the aspirin/dipyridamole combination product vs clopidogrel within 90 days of the index stroke. Exclude AF and anticoagulant users. Time zero = first order (inpatient or discharge).",
+   "ehr": "I63; combination token aspirin-dipyridamole (Aggrenox), clopidogrel; exclude I48 and OAC; outcome stroke hospitalisation (I60-I64) after the index stay.",
+   "quality": "TS 0, CO 0; TZ 0 (both arms start at the same point; inpatient orders are visible); OU 0-1 (recurrent vs index stroke separated by excluding the index stay); ES risk (higher discontinuation of ASA-ERDP); DA risk (ASA-ERDP use declined).",
+   "why": "Large active-comparator secondary-stroke trial; adds the cerebrovascular domain, which the pool lacks."
+  },
+  {
+   "id": "taste",
+   "name": "TASTE",
+   "year": 2013,
+   "group": "A",
+   "tags": [
+    "registry-RCT"
+   ],
+   "area": "ACS/CAD/antiplatelet",
+   "citation": "Frobert O, et al. N Engl J Med 2013;369:1587-97",
+   "pmid": "23991656",
+   "doi": "10.1056/NEJMoa1308789",
+   "population": "STEMI undergoing primary PCI (registry-based, Scandinavia)",
+   "intervention": "Manual thrombus aspiration + PCI",
+   "comparator": "PCI alone",
+   "outcome": "All-cause death at 30 days",
+   "follow_up": "30 days (1-year follow-up published)",
+   "n": 7244,
+   "effect": {
+    "measure": "HR",
+    "estimate": 0.94,
+    "ci": [
+     0.72,
+     1.22
+    ],
+    "text": "HR 0.94 (95% CI 0.72-1.22)"
+   },
+   "design": "Procedure add-on within a common procedure (as LAAOS III): primary PCI for STEMI with vs without a same-session aspiration thrombectomy code. Time zero = PCI date.",
+   "ehr": "I21.0-I21.3; PCI CPT 92941 / ICD-10-PCS 027-; thrombectomy CPT 92973 / ICD-10-PCS 02C-; outcome all-cause death (death records, including in-hospital deaths).",
+   "quality": "TZ 0 (common time zero); TS 0; CO 0; OU 0 (all-cause death); FU 0; DA risk (thrombectomy use fell after 2015).",
+   "why": "Registry-embedded RCT (the closest RCT design to EHR emulation) with an all-cause-death endpoint; STEMI ECG physiology is central to both thrombus burden and prognosis.",
+   "risk": "Strong confounding by thrombus burden (angiographic, not coded). TOTAL is an alternative benchmark (Group D, near-duplicate)."
+  },
+  {
+   "id": "ctopp",
+   "name": "CTOPP",
+   "year": 2000,
+   "group": "A",
+   "tags": [
+    "device"
+   ],
+   "area": "Other: devices/arrhythmia",
+   "citation": "Connolly SJ, et al. N Engl J Med 2000;342:1385-91",
+   "pmid": "10805823",
+   "doi": "10.1056/NEJM200005113421902",
+   "population": "First pacemaker for symptomatic bradycardia, no chronic AF",
+   "intervention": "Physiologic pacing (dual-chamber or atrial)",
+   "comparator": "Ventricular (single-chamber) pacing",
+   "outcome": "Stroke or CV death",
+   "follow_up": "mean 3 years",
+   "n": 2568,
+   "effect": {
+    "measure": "relative-risk reduction",
+    "estimate": 0.906,
+    "ci": [
+     0.743,
+     1.105
+    ],
+    "text": "RRR 9.4% (95% CI -10.5 to 25.7), i.e. RR ~0.91 (0.74-1.11)"
+   },
+   "design": "Device vs device at first implant: dual-chamber vs single-chamber ventricular pacemaker (leadless VVI included) in patients without AF. Time zero = implant date.",
+   "ehr": "Bradycardia/AV block/SND codes (I44.1-I44.2, I49.5, R00.1); CPT 33208 vs 33207 (and leadless 33274); exclude I48; outcome stroke hospitalisation + CV death.",
+   "quality": "EL 1 (exclude AF); TS 0; CO 0; OU 1 (CV death); BM 1 (RRR, not HR); confounding by frailty (single-chamber devices go to frail patients), where ECG conduction features are directly relevant.",
+   "why": "Device-vs-device contrast in which the ECG is the indication; UKPACE and MOST are alternative benchmarks (Group D)."
+  },
+  {
+   "id": "evar1",
+   "name": "EVAR trial 1",
+   "year": 2010,
+   "group": "A",
+   "tags": [],
+   "area": "Other: aortic",
+   "citation": "EVAR trial investigators (Greenhalgh RM, et al.). N Engl J Med 2010;362:1863-71; 4-year report Lancet 2005;365:2179-86",
+   "pmid": "20382983",
+   "doi": "10.1056/NEJMoa0909305",
+   "population": "AAA >=5.5 cm, age >=60, fit for open repair",
+   "intervention": "Endovascular repair (EVAR)",
+   "comparator": "Open repair",
+   "outcome": "All-cause death (long term); aneurysm-related death",
+   "follow_up": "1999-2009 (mean ~6 years)",
+   "n": 1252,
+   "effect": {
+    "measure": "adjusted HR (all-cause death)",
+    "estimate": 1.03,
+    "ci": [
+     0.86,
+     1.23
+    ],
+    "text": "All-cause death adjusted HR 1.03 (0.86-1.23); 30-day operative mortality adjusted OR 0.39 (0.18-0.87); 4-year all-cause death HR 0.90 (0.69-1.18) (Lancet 2005, PMID 15978925)"
+   },
+   "design": "Procedure vs procedure: first elective repair of non-ruptured AAA, EVAR vs open. Time zero = repair date. A 4-year all-cause-death horizon matches the 2005 report.",
+   "ehr": "I71.4; EVAR CPT 34701-34708 / ICD-10-PCS 04V03DZ etc.; open CPT 35081/35102 / 04R0-, 04V00-; outcome all-cause death.",
+   "quality": "EL 1-2 ('fit for open repair' cannot be identified, so EVAR includes unfit patients); TS 0, CO 0, OU 0; BM 1 for the 2010 adjusted HR (use the 2005 4-year HR); FU 0 with a 48-month horizon.",
+   "why": "Procedure-vs-procedure trial with an all-cause-death endpoint and strong confounding by frailty, a demanding test of ECG-augmented balance."
+  },
+  {
+   "id": "scot",
+   "name": "SCOT",
+   "year": 2017,
+   "group": "A",
+   "tags": [
+    "switch-design"
+   ],
+   "area": "Other: CV safety",
+   "citation": "MacDonald TM, et al. Eur Heart J 2017;38:1843-50",
+   "pmid": "27705888",
+   "doi": "10.1093/eurheartj/ehw387",
+   "population": "Age >=60, OA/RA on chronic prescribed non-selective NSAID, no CVD",
+   "intervention": "Switch to celecoxib",
+   "comparator": "Continue prescribed nsNSAID",
+   "outcome": "Hospitalisation for non-fatal MI/ACS, non-fatal stroke, or CV death",
+   "follow_up": "median 3 years",
+   "n": 7297,
+   "effect": {
+    "measure": "HR (ITT)",
+    "estimate": 1.04,
+    "ci": [
+     0.81,
+     1.33
+    ],
+    "text": "ITT HR 1.04 (0.81-1.33); on-treatment HR 1.12 (0.81-1.55)"
+   },
+   "design": "Sequential switch (switch_seq, as FRAIL-AF): established prescribed-nsNSAID users who switch to celecoxib vs continuers sampled within +/-30 days. Time zero = switch date.",
+   "ehr": "M05-M06, M15-M19; tokens diclofenac, ibuprofen, naproxen, meloxicam, etc. (prescribed); celecoxib; exclude CVD; outcome MI/stroke hospitalisation + CV death.",
+   "quality": "CO 0 (continuation); TS 0; OU 1 (CV death); ES 0 using the ITT benchmark (the trial's primary was on-treatment); DA risk (low event rate, ~1.1/100 PY).",
+   "why": "Tests the switch design in a second drug class; complements PRECISION (new users) without reusing its cohort."
+  },
+  {
+   "id": "invested",
+   "name": "INVESTED",
+   "year": 2021,
+   "group": "A",
+   "tags": [
+    "pragmatic",
+    "vaccine"
+   ],
+   "area": "Other: vaccine/HF",
+   "citation": "Vardeny O, et al. JAMA 2021;325:39-49",
+   "pmid": "33275134",
+   "doi": null,
+   "population": "Recent MI or HF hospitalisation plus >=1 risk factor",
+   "intervention": "High-dose trivalent inactivated influenza vaccine",
+   "comparator": "Standard-dose quadrivalent vaccine",
+   "outcome": "All-cause death or cardiopulmonary hospitalisation (per season)",
+   "follow_up": "up to 3 seasons (2016-2019)",
+   "n": 5260,
+   "effect": {
+    "measure": "HR",
+    "estimate": 1.06,
+    "ci": [
+     0.97,
+     1.17
+    ],
+    "text": "HR 1.06 (95% CI 0.97-1.17)"
+   },
+   "design": "Season-specific new-user: patients with an MI or HF hospitalisation in the prior 12 months vaccinated Sep-Jan; arm by vaccine formulation. Time zero = vaccination date; follow-up to the season end. First season only.",
+   "ehr": "CVX/CPT vaccine codes (high-dose CVX 135/197, CPT 90662; standard-dose quadrivalent CVX 150/158/161/171); I21/I50 hospitalisation; outcome death or principal-diagnosis cardiopulmonary admission.",
+   "quality": "TS 0 (formulation coded); EL 1 (risk-factor enrichment; high-dose licensed >=65, so restrict to >=65); OU 1 (cardiopulmonary definition); vaccination capture outside the system (pharmacies) is incomplete.",
+   "why": "EHR-native exposure with an active comparator, all-cause outcomes and a high-risk CV population; a very common exposure."
+  },
+  {
+   "id": "swedepad1",
+   "name": "SWEDEPAD 1",
+   "year": 2025,
+   "group": "A",
+   "tags": [
+    "registry-RCT",
+    "recent"
+   ],
+   "area": "Other: PAD",
+   "citation": "Falkenberg M, et al. Lancet 2025;406:1103-14",
+   "pmid": "40902617",
+   "doi": "10.1016/S0140-6736(25)01585-5",
+   "population": "Chronic limb-threatening ischaemia (Rutherford 4-6) undergoing infrainguinal endovascular treatment",
+   "intervention": "Paclitaxel-coated balloons/stents",
+   "comparator": "Uncoated devices",
+   "outcome": "Ipsilateral major (above-ankle) amputation",
+   "follow_up": "multi-year (enrolment 2014-2023)",
+   "n": 2400,
+   "effect": {
+    "measure": "HR",
+    "estimate": 1.05,
+    "ci": [
+     0.87,
+     1.27
+    ],
+    "text": "HR 1.05 (95% CI 0.87-1.27); all-cause death HR 1.04 (0.92-1.17)"
+   },
+   "design": "Device contrast within a common procedure: CLTI endovascular revascularisation with vs without a drug-coated device. Time zero = procedure date.",
+   "ehr": "I70.22-I70.26 / I70.23x-I70.26x; endovascular CPT 37224-37235; drug-coated device from ICD-10-PCS device qualifiers (drug-coated balloon / drug-eluting intraluminal device) or HCPCS C2623; outcome amputation CPT 27590-27598, 27880-27889 / ICD-10-PCS 0Y6-.",
+   "quality": "TS 1 (device identification depends on PCS qualifiers or HCPCS; laterality is needed for 'ipsilateral'); OU 1 (laterality); CO 0; EL 0; calendar confounding (paclitaxel mortality signal 2018-2019).",
+   "why": "Registry-based RCT with a procedure-coded endpoint; a device-safety question that matters in the current window.",
+   "risk": "Index dates are shared with BEST-CLI and VOYAGER PAD cohorts; check overlap."
+  },
+  {
+   "id": "stich",
+   "name": "STICH (hypothesis 1)",
+   "year": 2011,
+   "group": "B",
+   "tags": [
+    "procedure",
+    "strategy"
+   ],
+   "area": "HF",
+   "citation": "Velazquez EJ, et al. N Engl J Med 2011;364:1607-16; extended (STICHES) N Engl J Med 2016;374:1511-20 (PMID 27040723)",
+   "pmid": "21463150",
+   "doi": "10.1056/NEJMoa1100356",
+   "population": "CAD amenable to CABG with LVEF <=35%",
+   "intervention": "CABG + medical therapy",
+   "comparator": "Medical therapy alone",
+   "outcome": "All-cause death",
+   "follow_up": "median 56 months (STICHES 9.8 years)",
+   "n": 1212,
+   "effect": {
+    "measure": "HR",
+    "estimate": 0.86,
+    "ci": [
+     0.72,
+     1.04
+    ],
+    "text": "HR 0.86 (0.72-1.04); 10-year STICHES HR 0.84 (0.73-0.97)"
+   },
+   "design": "Strategy at a common decision point: diagnostic angiography in ischaemic cardiomyopathy (LVEF <=35%), CABG within a 30-60 day grace period vs no CABG. Needs clone-censor-weighting, which is not yet in the pipeline.",
+   "ehr": "Cath CPT 93454-93461; CABG CPT 33510-33536; echo LVEF; outcome all-cause death.",
+   "quality": "TZ.d (grace period/immortal time must be handled); EL 1 ('amenable to CABG'); CO 1 (non-surgical arm includes surgical non-candidates); FU 1 (>=48 mo); ES (crossover).",
+   "why": "Landmark HFrEF revascularisation trial with an all-cause-death endpoint; LV physiology is central."
+  },
+  {
+   "id": "ironman",
+   "name": "IRONMAN",
+   "year": 2022,
+   "group": "B",
+   "tags": [
+    "lab-defined"
+   ],
+   "area": "HF",
+   "citation": "Kalra PR, et al. Lancet 2022;400:2199-209",
+   "pmid": "36347265",
+   "doi": "10.1016/S0140-6736(22)02083-9",
+   "population": "HF with LVEF <=45% and iron deficiency (TSAT <20% or ferritin <100)",
+   "intervention": "IV ferric derisomaltose",
+   "comparator": "Usual care (open-label)",
+   "outcome": "Recurrent HF hospitalisation and CV death",
+   "follow_up": "median 2.7 years",
+   "n": 1137,
+   "effect": {
+    "measure": "rate ratio (recurrent events)",
+    "estimate": 0.82,
+    "ci": [
+     0.66,
+     1.02
+    ],
+    "text": "RR 0.82 (95% CI 0.66-1.02)"
+   },
+   "design": "Initiation vs non-initiation after a qualifying iron panel: HF patient with qualifying labs; IV iron within a 30-day grace period vs none. Time zero = lab date; clone-censor-weight.",
+   "ehr": "I50; ferritin/TSAT labs; IV iron HCPCS J1437/J1439/J1756/J2916 or infusion orders; outcome HF hospitalisation + CV death.",
+   "quality": "CO 1 (usual-care comparator, matching the open-label trial); TZ.d (grace period); OU 1 (first-event analysis changes the estimand from recurrent events); BM 1 (rate ratio); EL 0 (lab-defined).",
+   "why": "Eligibility is defined by labs, which is an EHR strength; AFFIRM-AHF and HEART-FID are placebo-controlled alternative benchmarks."
+  },
+  {
+   "id": "exscel",
+   "name": "EXSCEL",
+   "year": 2017,
+   "group": "B",
+   "tags": [
+    "placebo-proxy"
+   ],
+   "area": "Diabetes/cardiometabolic",
+   "citation": "Holman RR, et al. N Engl J Med 2017;377:1228-39",
+   "pmid": "28910237",
+   "doi": "10.1056/NEJMoa1612917",
+   "population": "T2D with or without CVD (73% with CVD)",
+   "intervention": "Exenatide extended-release weekly",
+   "comparator": "Placebo",
+   "outcome": "CV death, non-fatal MI or non-fatal stroke",
+   "follow_up": "median 3.2 years",
+   "n": 14752,
+   "effect": {
+    "measure": "HR",
+    "estimate": 0.91,
+    "ci": [
+     0.83,
+     1.0
+    ],
+    "text": "HR 0.91 (95% CI 0.83-1.00)"
+   },
+   "design": "RCT-DUPLICATE placebo proxy: exenatide ER vs DPP-4i new users (as LEADER). Time zero = first order.",
+   "ehr": "E11; tokens exenatide (weekly formulation) vs DPP-4i; 3-point MACE.",
+   "quality": "CO 2 (proxy); OU 1 (CV death); FU 0 (38 mo); DA risk (exenatide ER use is modest; the LEADER liraglutide arm had 453 with an ECG).",
+   "why": "Completes the GLP-1RA CVOT family under the accepted proxy; benchmark at the null boundary."
+  },
+  {
+   "id": "courage",
+   "name": "COURAGE",
+   "year": 2007,
+   "group": "B",
+   "tags": [
+    "procedure",
+    "strategy"
+   ],
+   "area": "ACS/CAD/antiplatelet",
+   "citation": "Boden WE, et al. N Engl J Med 2007;356:1503-16",
+   "pmid": "17387127",
+   "doi": "10.1056/NEJMoa070829",
+   "population": "Stable CAD with objective ischaemia and >=70% stenosis",
+   "intervention": "PCI + optimal medical therapy",
+   "comparator": "Optimal medical therapy",
+   "outcome": "All-cause death or non-fatal MI",
+   "follow_up": "median 4.6 years",
+   "n": 2287,
+   "effect": {
+    "measure": "HR",
+    "estimate": 1.05,
+    "ci": [
+     0.87,
+     1.27
+    ],
+    "text": "HR 1.05 (95% CI 0.87-1.27)"
+   },
+   "design": "Decision point = elective diagnostic angiography with obstructive CAD in stable patients (no ACS in 30 days). PCI within a 30-day grace period vs no revascularisation (CABG excluded). Clone-censor-weight.",
+   "ehr": "Cath CPT 93454-93461; I25.x without I20.0/I21-I24 in 30 days; PCI CPT 92928-92944; outcome death + MI hospitalisation.",
+   "quality": "TZ.d (grace period); EL 1 (ischaemia and anatomy not coded); CO 1; ES (33% crossover to PCI in the trial); FU 1 if horizon >=48 (use a 36-mo landmark).",
+   "why": "Landmark stable-CAD strategy trial with a null benchmark; ISCHEMIA is the alternative (Group D)."
+  },
+  {
+   "id": "validate",
+   "name": "VALIDATE-SWEDEHEART",
+   "year": 2017,
+   "group": "B",
+   "tags": [
+    "registry-RCT",
+    "in-hospital"
+   ],
+   "area": "ACS/CAD/antiplatelet",
+   "citation": "Erlinge D, et al. N Engl J Med 2017;377:1132-42",
+   "pmid": "28844201",
+   "doi": "10.1056/NEJMoa1706443",
+   "population": "STEMI or NSTEMI undergoing PCI on a potent P2Y12 inhibitor, no planned GPI",
+   "intervention": "Bivalirudin",
+   "comparator": "Heparin monotherapy",
+   "outcome": "Death, MI or major bleeding at 180 days",
+   "follow_up": "180 days",
+   "n": 6006,
+   "effect": {
+    "measure": "HR",
+    "estimate": 0.96,
+    "ci": [
+     0.83,
+     1.1
+    ],
+    "text": "HR 0.96 (95% CI 0.83-1.10)"
+   },
+   "design": "In-hospital procedural anticoagulant contrast at PCI for MI: bivalirudin vs UFH-only. Time zero = PCI date.",
+   "ehr": "I21; PCI codes; bivalirudin/heparin administrations (cath-lab MAR); outcome all-cause death + post-discharge MI/major-bleeding hospitalisation.",
+   "quality": "OU 1-2 (index-stay MI/bleeding excluded by the current rule); TS/SI risk (cath-lab drugs may be documented outside order tables); CO 0.",
+   "why": "Registry-based RCT with a null benchmark; tests in-hospital drug exposure. BRIGHT-4, HEAT-PPCI, EUROMAX, HORIZONS-AMI and MATRIX are alternatives (Group D)."
+  },
+  {
+   "id": "empact_mi",
+   "name": "EMPACT-MI",
+   "year": 2024,
+   "group": "B",
+   "tags": [
+    "placebo-proxy",
+    "in-hospital"
+   ],
+   "area": "ACS/CAD/antiplatelet",
+   "citation": "Butler J, et al. N Engl J Med 2024;390:1455-66",
+   "pmid": "38587237",
+   "doi": "10.1056/NEJMoa2314051",
+   "population": "Acute MI with new LVEF <45% and/or congestion, within 14 days",
+   "intervention": "Empagliflozin",
+   "comparator": "Placebo",
+   "outcome": "First HF hospitalisation or all-cause death",
+   "follow_up": "median 17.9 months",
+   "n": 6522,
+   "effect": {
+    "measure": "HR",
+    "estimate": 0.9,
+    "ci": [
+     0.76,
+     1.06
+    ],
+    "text": "HR 0.90 (95% CI 0.76-1.06)"
+   },
+   "design": "Placebo proxy restricted to T2D: SGLT2i vs DPP-4i initiation within 14 days of the MI admission (inpatient orders visible). Time zero = first order.",
+   "ehr": "I21; LVEF from echo; E11; SGLT2i/DPP-4i tokens; outcome HF hospitalisation + all-cause death.",
+   "quality": "CO 2 (DPP-4i proxy); EL 2 (T2D restriction; only a minority of trial patients had diabetes); TZ 0 (in-hospital orders visible, as for the PLATO exemption); OU 0.",
+   "why": "Post-MI SGLT2i null benchmark; complements PARADISE-MI."
+  },
+  {
+   "id": "tacsi",
+   "name": "TACSI",
+   "year": 2025,
+   "group": "B",
+   "tags": [
+    "registry-RCT",
+    "recent"
+   ],
+   "area": "ACS/CAD/antiplatelet",
+   "citation": "Jeppsson A, et al. N Engl J Med 2025;393:2313-23",
+   "pmid": "40888737",
+   "doi": "10.1056/NEJMoa2508026",
+   "population": "ACS treated with isolated CABG",
+   "intervention": "Ticagrelor + aspirin for 12 months",
+   "comparator": "Aspirin alone",
+   "outcome": "Death, MI, stroke or repeat revascularisation at 1 year",
+   "follow_up": "12 months",
+   "n": 2201,
+   "effect": {
+    "measure": "HR",
+    "estimate": 1.06,
+    "ci": [
+     0.72,
+     1.56
+    ],
+    "text": "HR 1.06 (95% CI 0.72-1.56); net adverse clinical events HR 1.45"
+   },
+   "design": "Common decision point = CABG for ACS: ticagrelor initiation within 14 days of surgery (discharge) vs no P2Y12 inhibitor (aspirin background assumed). Time zero = CABG date + grace period.",
+   "ehr": "I21-I24 index; CABG CPT 33510-33536; ticagrelor token; outcomes death, MI/stroke hospitalisation, repeat revascularisation procedures.",
+   "quality": "CO 1 (non-initiator comparator, matching the open-label trial; aspirin not identifiable); TZ.d (grace period); OU 1 (needs repeat-revascularisation procedure outcome); FU 0.",
+   "why": "Recent registry-based pragmatic RCT anchored at a common decision point."
+  },
+  {
+   "id": "einstein_dvt",
+   "name": "EINSTEIN-DVT",
+   "year": 2010,
+   "group": "B",
+   "tags": [
+    "legacy-archive",
+    "RCT-DUPLICATE"
+   ],
+   "area": "VTE",
+   "citation": "EINSTEIN Investigators (Bauersachs R, et al.). N Engl J Med 2010;363:2499-510",
+   "pmid": "21128814",
+   "doi": "10.1056/NEJMoa1007903",
+   "population": "Acute symptomatic proximal DVT without PE",
+   "intervention": "Rivaroxaban",
+   "comparator": "Enoxaparin then VKA",
+   "outcome": "Recurrent VTE",
+   "follow_up": "3, 6 or 12 months",
+   "n": 3449,
+   "effect": {
+    "measure": "HR",
+    "estimate": 0.68,
+    "ci": [
+     0.44,
+     1.04
+    ],
+    "text": "HR 0.68 (95% CI 0.44-1.04)"
+   },
+   "design": "New-user active comparator after acute DVT (as AMPLIFY): rivaroxaban vs warfarin (with parenteral lead-in). Exclude PE. Time zero = first anticoagulant order.",
+   "ehr": "I82.4x acute (no I26); rivaroxaban, warfarin, enoxaparin; outcome recurrent VTE as a new inpatient stay with a VTE code.",
+   "quality": "OU 2 (inpatient-only recurrent VTE, as AMPLIFY); TS 0, CO 0 (VKA); FU 0; BM 0.",
+   "why": "RCT-DUPLICATE trial (legacy v1 config exists) that is missing from the current pool; uses a common DOAC.",
+   "risk": "Warfarin arm overlaps AMPLIFY's comparator; check the record share."
+  },
+  {
+   "id": "einstein_pe",
+   "name": "EINSTEIN-PE",
+   "year": 2012,
+   "group": "B",
+   "tags": [
+    "legacy-archive",
+    "RCT-DUPLICATE"
+   ],
+   "area": "VTE",
+   "citation": "EINSTEIN-PE Investigators (Buller HR, et al.). N Engl J Med 2012;366:1287-97",
+   "pmid": "22449293",
+   "doi": "10.1056/NEJMoa1113572",
+   "population": "Acute symptomatic PE with or without DVT",
+   "intervention": "Rivaroxaban",
+   "comparator": "Enoxaparin then VKA",
+   "outcome": "Recurrent VTE",
+   "follow_up": "3, 6 or 12 months",
+   "n": 4832,
+   "effect": {
+    "measure": "HR",
+    "estimate": 1.12,
+    "ci": [
+     0.75,
+     1.68
+    ],
+    "text": "HR 1.12 (95% CI 0.75-1.68)"
+   },
+   "design": "As EINSTEIN-DVT, in PE (I26), which gives a cohort disjoint from EINSTEIN-DVT.",
+   "ehr": "I26.x; rivaroxaban, warfarin, enoxaparin; recurrent VTE hospitalisation.",
+   "quality": "OU 2 (as AMPLIFY); TS 0; CO 0; FU 0.",
+   "why": "RCT-DUPLICATE trial missing from the current pool; together with EINSTEIN-DVT it gives a DVT/PE pair."
+  },
+  {
+   "id": "remedy",
+   "name": "RE-MEDY (active-control study)",
+   "year": 2013,
+   "group": "B",
+   "tags": [
+    "switch-design"
+   ],
+   "area": "VTE",
+   "citation": "Schulman S, et al. N Engl J Med 2013;368:709-18",
+   "pmid": "23425163",
+   "doi": "10.1056/NEJMoa1113697",
+   "population": "VTE treated for 3-12 months, at elevated recurrence risk",
+   "intervention": "Dabigatran (extended)",
+   "comparator": "Warfarin (extended)",
+   "outcome": "Recurrent or fatal VTE",
+   "follow_up": "6-36 months",
+   "n": 2856,
+   "effect": {
+    "measure": "HR",
+    "estimate": 1.44,
+    "ci": [
+     0.78,
+     2.64
+    ],
+    "text": "HR 1.44 (95% CI 0.78-2.64); major bleeding HR 0.52"
+   },
+   "design": "Sequential switch (switch_seq): established warfarin users >=3 months after VTE who switch to dabigatran vs continuers sampled within +/-30 days.",
+   "ehr": "VTE codes; warfarin then dabigatran orders; recurrent VTE hospitalisation.",
+   "quality": "OU 2; EL 1; DA risk; CO 0.",
+   "why": "Switch design in VTE, parallel to FRAIL-AF in AF."
+  },
+  {
+   "id": "recover2",
+   "name": "RE-COVER II",
+   "year": 2014,
+   "group": "B",
+   "tags": [
+    "legacy-archive",
+    "RCT-DUPLICATE"
+   ],
+   "area": "VTE",
+   "citation": "Schulman S, et al. Circulation 2014;129:764-72",
+   "pmid": "24344086",
+   "doi": "10.1161/CIRCULATIONAHA.113.004450",
+   "population": "Acute VTE after 5-11 days of parenteral anticoagulation",
+   "intervention": "Dabigatran 150 mg bid",
+   "comparator": "Warfarin",
+   "outcome": "Recurrent symptomatic VTE or related death at 6 months",
+   "follow_up": "6 months",
+   "n": 2589,
+   "effect": {
+    "measure": "HR",
+    "estimate": 1.08,
+    "ci": [
+     0.64,
+     1.8
+    ],
+    "text": "HR 1.08 (95% CI 0.64-1.80)"
+   },
+   "design": "Sequential: first oral anticoagulant after >=5 days of parenteral heparin/LMWH, dabigatran vs warfarin. Time zero = first oral order.",
+   "ehr": "I26/I82; heparin/enoxaparin; dabigatran, warfarin; recurrent VTE hospitalisation.",
+   "quality": "OU 2; DA risk (low dabigatran use for VTE); CO 0.",
+   "why": "RCT-DUPLICATE trial missing from the current pool; RE-COVER is its twin (Group D, near-duplicate)."
+  },
+  {
+   "id": "caravaggio",
+   "name": "CARAVAGGIO",
+   "year": 2020,
+   "group": "B",
+   "tags": [
+    "class-adaptation"
+   ],
+   "area": "VTE",
+   "citation": "Agnelli G, et al. N Engl J Med 2020;382:1599-607",
+   "pmid": "32223112",
+   "doi": "10.1056/NEJMoa1915103",
+   "population": "Cancer-associated acute VTE",
+   "intervention": "Apixaban",
+   "comparator": "Dalteparin",
+   "outcome": "Recurrent VTE at 6 months",
+   "follow_up": "6 months",
+   "n": 1170,
+   "effect": {
+    "measure": "HR",
+    "estimate": 0.63,
+    "ci": [
+     0.37,
+     1.07
+    ],
+    "text": "HR 0.63 (95% CI 0.37-1.07); major bleeding HR 0.82"
+   },
+   "design": "New-user: apixaban vs LMWH (enoxaparin/dalteparin class adaptation) in active cancer with acute VTE. Time zero = first order.",
+   "ehr": "C00-C96 with recent oncology treatment; I26/I82; apixaban; enoxaparin/dalteparin; recurrent VTE hospitalisation.",
+   "quality": "CO 1 (LMWH class); OU 2; EL 1 (active cancer from codes and chemotherapy orders); FU 0.",
+   "why": "Guideline-defining cancer-VTE trial, DOAC vs LMWH."
+  },
+  {
+   "id": "crest",
+   "name": "CREST",
+   "year": 2010,
+   "group": "B",
+   "tags": [
+    "procedure"
+   ],
+   "area": "Other: carotid",
+   "citation": "Brott TG, et al. N Engl J Med 2010;363:11-23",
+   "pmid": "20505173",
+   "doi": "10.1056/NEJMoa0912321",
+   "population": "Symptomatic or asymptomatic carotid stenosis",
+   "intervention": "Carotid stenting",
+   "comparator": "Carotid endarterectomy",
+   "outcome": "Periprocedural stroke, MI or death, or ipsilateral stroke within 4 years",
+   "follow_up": "median 2.5 years",
+   "n": 2502,
+   "effect": {
+    "measure": "HR",
+    "estimate": 1.11,
+    "ci": [
+     0.81,
+     1.51
+    ],
+    "text": "HR 1.11 (95% CI 0.81-1.51)"
+   },
+   "design": "Procedure vs procedure: first carotid revascularisation, CAS (including TCAR) vs CEA. Time zero = procedure date.",
+   "ehr": "I65.2x (+ I63/G45 history for 'symptomatic'); CAS CPT 37215/37216 / ICD-10-PCS 037K3-/037L3-; CEA CPT 35301 / 03CK0ZZ, 03CL0ZZ.",
+   "quality": "Adaptation needed: OU 2 under the current rule, because periprocedural events happen in the index stay; count in-stay post-procedure events (POA = N) or accept OU 2. EL 1 (stenosis degree not coded); TS 0, CO 0.",
+   "why": "High-impact US carotid trial (procedure vs procedure); ICSS, ACST-2, ACT-1 and SPACE give stratum-specific alternative benchmarks."
+  },
+  {
+   "id": "raft",
+   "name": "RAFT",
+   "year": 2010,
+   "group": "C",
+   "tags": [
+    "A",
+    "device",
+    "ECG-defined eligibility"
+   ],
+   "area": "HF",
+   "citation": "Tang ASL, et al. N Engl J Med 2010;363:2385-95",
+   "pmid": "21073365",
+   "doi": "10.1056/NEJMoa1009540",
+   "population": "NYHA II-III HF, LVEF <=30%, QRS >=120 ms (or paced >=200 ms)",
+   "intervention": "ICD + CRT (CRT-D)",
+   "comparator": "ICD alone",
+   "outcome": "All-cause death or HF hospitalisation",
+   "follow_up": "mean 40 months",
+   "n": 1798,
+   "effect": {
+    "measure": "HR",
+    "estimate": 0.75,
+    "ci": [
+     0.64,
+     0.87
+    ],
+    "text": "HR 0.75 (95% CI 0.64-0.87); death HR 0.75"
+   },
+   "design": "Device vs device at first implant: CRT-D vs ICD-only in HFrEF with a wide QRS. Time zero = implant date. QRS duration/morphology from the raw pre-implant ECG.",
+   "ehr": "I50; LVEF <=30%; ECG QRS >=120 ms; CPT 33249 with vs without 33225 (LV lead) / ICD-10-PCS generator device values; outcome death + HF hospitalisation.",
+   "quality": "EL 0-1 (QRS and LVEF measured); TS 0, CO 0; OU 0-1 (HF hospitalisation coding position); FU 0; DA (count of CRT-D vs ICD-only implants to be checked).",
+   "why": "Positive device benchmark in which the ECG defines eligibility and modifies the effect (QRS/LBBB), a direct test of whether ECG embeddings carry treatment-relevant physiology. MADIT-CRT is an alternative benchmark (Group D, near-duplicate)."
+  },
+  {
+   "id": "dapa_ckd",
+   "name": "DAPA-CKD",
+   "year": 2020,
+   "group": "C",
+   "tags": [
+    "B",
+    "placebo-proxy",
+    "lab-defined",
+    "legacy-archive",
+    "RCT-DUPLICATE"
+   ],
+   "area": "Diabetes/cardiometabolic",
+   "citation": "Heerspink HJL, et al. N Engl J Med 2020;383:1436-46",
+   "pmid": "32970396",
+   "doi": "10.1056/NEJMoa2024816",
+   "population": "CKD (eGFR 25-75, UACR 200-5000), with or without T2D (two-thirds with T2D)",
+   "intervention": "Dapagliflozin",
+   "comparator": "Placebo",
+   "outcome": "Sustained eGFR decline >=50%, ESKD, or renal or CV death",
+   "follow_up": "median 2.4 years",
+   "n": 4304,
+   "effect": {
+    "measure": "HR",
+    "estimate": 0.61,
+    "ci": [
+     0.51,
+     0.72
+    ],
+    "text": "HR 0.61 (95% CI 0.51-0.72)"
+   },
+   "design": "Placebo proxy in the T2D stratum: SGLT2i vs DPP-4i new users with qualifying eGFR/UACR labs. Lab-based endpoint: confirmed (>=28 d) eGFR decline >=50%, dialysis/transplant codes, renal or CV death.",
+   "ehr": "eGFR/UACR labs; E11; SGLT2i/DPP-4i tokens; N18.6, Z99.2, dialysis CPT 90935-90999; outcome per above.",
+   "quality": "CO 2 (proxy); EL 1 (T2D restriction; UACR measured in a subset, so DA); OU 1 (lab-based composite, renal death by cause); FU 0.",
+   "why": "Very strong positive benchmark with lab-defined population and endpoint (an EHR strength); emulated in RCT-DUPLICATE; legacy v1 config exists."
+  },
+  {
+   "id": "soul",
+   "name": "SOUL",
+   "year": 2025,
+   "group": "C",
+   "tags": [
+    "B",
+    "placebo-proxy",
+    "recent"
+   ],
+   "area": "Diabetes/cardiometabolic",
+   "citation": "McGuire DK, et al. N Engl J Med 2025;392:2001-12",
+   "pmid": "40162642",
+   "doi": "10.1056/NEJMoa2501006",
+   "population": "T2D, age >=50, with ASCVD and/or CKD",
+   "intervention": "Oral semaglutide 14 mg",
+   "comparator": "Placebo",
+   "outcome": "CV death, MI or stroke",
+   "follow_up": "median 49.5 months",
+   "n": 9650,
+   "effect": {
+    "measure": "HR",
+    "estimate": 0.86,
+    "ci": [
+     0.77,
+     0.96
+    ],
+    "text": "HR 0.86 (95% CI 0.77-0.96)"
+   },
+   "design": "Placebo proxy: oral semaglutide (tablet formulation; marketed Sep 2019+) vs DPP-4i new users. Time zero = first order.",
+   "ehr": "E11 + ASCVD/CKD; semaglutide TABLET formulation token (must be separable from injectable); DPP-4i; 3-point MACE.",
+   "quality": "CO 2 (proxy); TS 1 (formulation must be distinguishable, or the cohort merges with SUSTAIN-6); FU 1 (horizon >=48 mo unless truncated); DA risk.",
+   "why": "Recent positive proxy CVOT; PIONEER 6 is an alternative benchmark (Group D, near-duplicate)."
+  },
+  {
+   "id": "tactics",
+   "name": "TACTICS-TIMI 18",
+   "year": 2001,
+   "group": "C",
+   "tags": [
+    "B",
+    "strategy",
+    "ECG-defined eligibility"
+   ],
+   "area": "ACS/CAD/antiplatelet",
+   "citation": "Cannon CP, et al. N Engl J Med 2001;344:1879-87",
+   "pmid": "11419424",
+   "doi": "10.1056/NEJM200106213442501",
+   "population": "UA/NSTEMI with ST/T changes, raised markers or CAD history",
+   "intervention": "Early invasive strategy (angiography 4-48 h)",
+   "comparator": "Conservative (selectively invasive)",
+   "outcome": "Death, non-fatal MI or ACS rehospitalisation at 6 months",
+   "follow_up": "6 months",
+   "n": 2220,
+   "effect": {
+    "measure": "OR",
+    "estimate": 0.78,
+    "ci": [
+     0.62,
+     0.97
+    ],
+    "text": "OR 0.78 (95% CI 0.62-0.97)"
+   },
+   "design": "Decision point = NSTE-ACS admission: coronary angiography within 48 h vs not within 48 h (clone-censor). ST/T changes can be read from the admission ECG.",
+   "ehr": "I21.4/I24.9/I20.0; angiography CPT 93454-93461 timing; outcome death, MI and ACS readmissions.",
+   "quality": "TZ.d (grace period); CO 1; ES (about half of conservative-arm patients had angiography in hospital); BM 1 (OR); era differs (1997-2000 tirofiban use); FU 0.",
+   "why": "Positive strategy benchmark with ECG-defined eligibility. FRISC II, RITA-3, ICTUS and SENIOR-RITA are alternatives (Group D)."
+  },
+  {
+   "id": "freedom",
+   "name": "FREEDOM",
+   "year": 2012,
+   "group": "C",
+   "tags": [
+    "B",
+    "procedure"
+   ],
+   "area": "ACS/CAD/antiplatelet",
+   "citation": "Farkouh ME, et al. N Engl J Med 2012;367:2375-84",
+   "pmid": "23121323",
+   "doi": "10.1056/NEJMoa1211585",
+   "population": "Diabetes with multivessel CAD (83% three-vessel), no left main",
+   "intervention": "PCI with drug-eluting stents",
+   "comparator": "CABG",
+   "outcome": "All-cause death, non-fatal MI or non-fatal stroke",
+   "follow_up": "median 3.8 years (5-year rates)",
+   "n": 1900,
+   "effect": {
+    "measure": "5-year event rates (no HR in abstract)",
+    "estimate": null,
+    "ci": null,
+    "text": "5-year rate 26.6% PCI vs 18.7% CABG, P=0.005 (CABG better); no HR reported in the abstract"
+   },
+   "design": "Procedure vs procedure in diabetes: multivessel PCI (>=2 vessels by CPT add-on codes) vs CABG with >=2 grafts. Time zero = revascularisation date.",
+   "ehr": "E10/E11; PCI CPT 92928 + 92929/92934/92938/92944 (or C9600-C9608); CABG CPT 33510-33536 (graft counts); outcome death + MI/stroke hospitalisation.",
+   "quality": "EL 1-2 (anatomy approximated by vessel/graft counts; left main not excluded); OU 1 (periprocedural index-stay MI excluded); BM 1 (rates/P only in the abstract; extract an HR from the full text); FU 1 if horizon >=48.",
+   "why": "Landmark positive procedural benchmark (CABG superior) with heavy confounding by anatomy and frailty. SYNTAX, EXCEL, NOBLE and FAME 3 are alternatives (Group D)."
+  },
+  {
+   "id": "compass",
+   "name": "COMPASS",
+   "year": 2017,
+   "group": "C",
+   "tags": [
+    "B",
+    "add-on",
+    "dose-identification"
+   ],
+   "area": "ACS/CAD/antiplatelet",
+   "citation": "Eikelboom JW, et al. N Engl J Med 2017;377:1319-30",
+   "pmid": "28844192",
+   "doi": "10.1056/NEJMoa1709118",
+   "population": "Stable CAD or PAD",
+   "intervention": "Rivaroxaban 2.5 mg bid + aspirin",
+   "comparator": "Aspirin alone",
+   "outcome": "CV death, stroke or MI",
+   "follow_up": "mean 23 months",
+   "n": 27395,
+   "effect": {
+    "measure": "HR",
+    "estimate": 0.76,
+    "ci": [
+     0.66,
+     0.86
+    ],
+    "text": "HR 0.76 (95% CI 0.66-0.86); major bleeding HR 1.70"
+   },
+   "design": "Sequential add-on vs continuation in CAD/PAD without an anticoagulation indication: rivaroxaban 2.5 mg initiation vs established antiplatelet-only users sampled within +/-30 days.",
+   "ehr": "I25/I70.2; rivaroxaban 2.5 mg STRENGTH (needs dose-level tokens); exclude I48, I26, I82; 3-point MACE.",
+   "quality": "TS 1-2 (strength identification); CO 2 (placebo-controlled; non-initiator comparator); OU 1 (CV death); DA risk (vascular-dose uptake); FU 0.",
+   "why": "Very large positive benchmark. VOYAGER PAD gives the same drug a cleaner time zero."
+  },
+  {
+   "id": "point",
+   "name": "POINT",
+   "year": 2018,
+   "group": "C",
+   "tags": [
+    "B",
+    "in-hospital"
+   ],
+   "area": "ACS/CAD/antiplatelet",
+   "citation": "Johnston SC, et al. N Engl J Med 2018;379:215-25",
+   "pmid": "29766750",
+   "doi": "10.1056/NEJMoa1800410",
+   "population": "Minor ischaemic stroke (NIHSS <=3) or high-risk TIA, within 12 h",
+   "intervention": "Clopidogrel + aspirin for 90 days",
+   "comparator": "Aspirin + placebo",
+   "outcome": "Ischaemic stroke, MI or ischaemic vascular death at 90 days",
+   "follow_up": "90 days",
+   "n": 4881,
+   "effect": {
+    "measure": "HR",
+    "estimate": 0.75,
+    "ci": [
+     0.59,
+     0.95
+    ],
+    "text": "HR 0.75 (95% CI 0.59-0.95); major haemorrhage HR 2.32"
+   },
+   "design": "ED/admission decision point: clopidogrel order within 24 h vs none (aspirin ordered in both; inpatient orders visible). Time zero = presentation.",
+   "ehr": "I63/G45 with an NIHSS flowsheet value if available; clopidogrel/aspirin inpatient orders; outcome ischaemic stroke/MI hospitalisation + vascular death.",
+   "quality": "OU 2 risk (most recurrences fall in the first days, inside the index stay; adaptation: count in-stay events after day 1 with POA = N); EL 1 (NIHSS/ABCD2); CO 2 (placebo add-on; non-initiator); FU 0.",
+   "why": "Positive, guideline-defining stroke trial; CHANCE is an alternative (Group D)."
+  },
+  {
+   "id": "talos_ami",
+   "name": "TALOS-AMI",
+   "year": 2021,
+   "group": "C",
+   "tags": [
+    "B",
+    "switch-design"
+   ],
+   "area": "ACS/CAD/antiplatelet",
+   "citation": "Kim CJ, et al. Lancet 2021;398:1305-16",
+   "pmid": "34627490",
+   "doi": "10.1016/S0140-6736(21)01445-8",
+   "population": "AMI after PCI, event-free on ticagrelor + aspirin for 1 month (Korea)",
+   "intervention": "Switch to clopidogrel + aspirin",
+   "comparator": "Continue ticagrelor + aspirin",
+   "outcome": "CV death, MI, stroke or BARC 2/3/5 bleeding at 12 months",
+   "follow_up": "12 months",
+   "n": 2697,
+   "effect": {
+    "measure": "HR",
+    "estimate": 0.55,
+    "ci": [
+     0.4,
+     0.76
+    ],
+    "text": "HR 0.55 (95% CI 0.40-0.76), superiority P=0.0001"
+   },
+   "design": "Sequential switch (switch_seq): about 1 month after MI-PCI, ticagrelor users who switch to clopidogrel vs continuers sampled within +/-30 days.",
+   "ehr": "I21 + PCI; ticagrelor, then clopidogrel orders; outcomes CV death, MI/stroke hospitalisation, bleeding hospitalisation.",
+   "quality": "OU 2 (BARC 2 bleeding, the dominant component, is not ascertainable, as for FRAIL-AF); EL 1 (East Asian population; event-free at 1 month); CO 0; FU 0.",
+   "why": "Positive switch-design benchmark in ACS, parallel to FRAIL-AF in AF."
+  },
+  {
+   "id": "betami",
+   "name": "BETAMI-DANBLOCK",
+   "year": 2025,
+   "group": "C",
+   "tags": [
+    "B",
+    "in-hospital",
+    "recent"
+   ],
+   "area": "ACS/CAD/antiplatelet",
+   "citation": "Munkhaugen J, et al. N Engl J Med 2025;393:1901-11",
+   "pmid": "40888716",
+   "doi": "10.1056/NEJMoa2505985",
+   "population": "MI within 14 days with LVEF >=40% (Norway/Denmark)",
+   "intervention": "Beta-blocker",
+   "comparator": "No beta-blocker (open-label)",
+   "outcome": "All-cause death, MI, unplanned revascularisation, ischaemic stroke, HF or malignant ventricular arrhythmia",
+   "follow_up": "median 3.5 years",
+   "n": 5574,
+   "effect": {
+    "measure": "HR",
+    "estimate": 0.85,
+    "ci": [
+     0.75,
+     0.98
+    ],
+    "text": "HR 0.85 (95% CI 0.75-0.98)"
+   },
+   "design": "MI admission with LVEF >=40%: beta-blocker initiated in hospital or within 14 days vs not (grace period; prior beta-blocker users excluded). Time zero = MI admission.",
+   "ehr": "I21; echo LVEF >=40%; beta-blocker tokens (inpatient + discharge); outcomes death, MI/stroke/HF hospitalisations, revascularisation procedures, I47.2/I49.0 events.",
+   "quality": "CO 1 (no-treatment comparator, matching the open-label trial); TZ 0 (in-hospital orders visible); TZ.d (grace period); OU 1 (composite with revascularisation and arrhythmia); FU 0 (42 mo); strong confounding (non-use is selective).",
+   "why": "Contemporary, guideline-changing, ECG-relevant (heart rate, arrhythmia). REDUCE-AMI (0.96) and REBOOT (1.04) are same-question benchmarks on an overlapping cohort (Group D), a natural test of benchmark heterogeneity."
+  },
+  {
+   "id": "improve_it",
+   "name": "IMPROVE-IT",
+   "year": 2015,
+   "group": "C",
+   "tags": [
+    "B",
+    "add-on"
+   ],
+   "area": "Lipids",
+   "citation": "Cannon CP, et al. N Engl J Med 2015;372:2387-97",
+   "pmid": "26039521",
+   "doi": "10.1056/NEJMoa1410489",
+   "population": "ACS within 10 days, LDL 50-125 mg/dL",
+   "intervention": "Ezetimibe + simvastatin 40 mg",
+   "comparator": "Simvastatin 40 mg",
+   "outcome": "CV death, MI, UA hospitalisation, coronary revascularisation >=30 days, or stroke",
+   "follow_up": "median 6 years (7-year KM)",
+   "n": 18144,
+   "effect": {
+    "measure": "HR",
+    "estimate": 0.936,
+    "ci": [
+     0.89,
+     0.99
+    ],
+    "text": "HR 0.936 (95% CI 0.89-0.99); 7-year KM 32.7% vs 34.7%"
+   },
+   "design": "Decision point = ACS admission: statin + ezetimibe initiation within 10 days vs statin alone (non-initiator of ezetimibe).",
+   "ehr": "I21-I24 + LDL lab; statin and ezetimibe tokens; outcome needs coronary revascularisation procedures >=30 days plus UA hospitalisation.",
+   "quality": "CO 2 (placebo add-on; non-initiator comparator); OU 1-2 (revascularisation component needs a procedure-based outcome; LODESTAR lacked it); FU 1 (>=48 mo unless truncated); small effect, so low directional power.",
+   "why": "Canonical lipid add-on benchmark; its small positive effect tests the resolution of the agreement metrics."
+  },
+  {
+   "id": "reduce_it",
+   "name": "REDUCE-IT",
+   "year": 2019,
+   "group": "C",
+   "tags": [
+    "B",
+    "stated-proxy",
+    "lab-defined"
+   ],
+   "area": "Lipids",
+   "citation": "Bhatt DL, et al. N Engl J Med 2019;380:11-22",
+   "pmid": "30415628",
+   "doi": "10.1056/NEJMoa1812792",
+   "population": "Established CVD or diabetes + risk factors, on statin, triglycerides 135-499 mg/dL",
+   "intervention": "Icosapent ethyl 2 g bid",
+   "comparator": "Mineral-oil placebo",
+   "outcome": "CV death, MI, stroke, coronary revascularisation or UA",
+   "follow_up": "median 4.9 years",
+   "n": 8179,
+   "effect": {
+    "measure": "HR",
+    "estimate": 0.75,
+    "ci": [
+     0.68,
+     0.83
+    ],
+    "text": "HR 0.75 (95% CI 0.68-0.83)"
+   },
+   "design": "Stated active-comparator proxy (not an RCT-DUPLICATE convention): icosapent ethyl vs omega-3-acid ethyl esters (EPA+DHA) new users among statin users with a qualifying TG lab. The proxy rests on null hard-outcome trials of EPA+DHA products (STRENGTH, VITAL, ASCEND).",
+   "ehr": "TG lab; statin tokens; icosapent ethyl vs omega-3-acid ethyl esters (prescription); outcome MACE + revascularisation procedures + UA hospitalisation.",
+   "quality": "CO 2 (proxy; mineral-oil placebo may have inflated the benchmark); OU 1 (revascularisation and UA components); FU 1 if horizon >=48; EL 0.",
+   "why": "Strong positive benchmark with lab-defined eligibility; it would explicitly test a new, prespecified proxy. JELIS and RESPECT-EPA are alternatives (Group D)."
+  },
+  {
+   "id": "dapatavi",
+   "name": "DapaTAVI",
+   "year": 2025,
+   "group": "C",
+   "tags": [
+    "B",
+    "decision-point",
+    "recent"
+   ],
+   "area": "Valve/structural",
+   "citation": "Raposeiras-Roubin S, et al. N Engl J Med 2025;392:1396-405",
+   "pmid": "40162639",
+   "doi": "10.1056/NEJMoa2500366",
+   "population": "Severe AS undergoing TAVI with HF history, LVEF <=40%, diabetes or CKD; not on SGLT2i",
+   "intervention": "Dapagliflozin + standard care",
+   "comparator": "Standard care (open-label)",
+   "outcome": "All-cause death or worsening HF (hospitalisation or urgent visit) at 1 year",
+   "follow_up": "1 year",
+   "n": 1257,
+   "effect": {
+    "measure": "HR",
+    "estimate": 0.72,
+    "ci": [
+     0.55,
+     0.95
+    ],
+    "text": "HR 0.72 (95% CI 0.55-0.95); death HR 0.87"
+   },
+   "design": "Common decision point = TAVR: SGLT2i initiation within 14-30 days of TAVR vs none (grace period, clone-censor). Excludes prior SGLT2i users.",
+   "ehr": "TAVR CPT 33361-33366 / ICD-10-PCS 02RF3-; SGLT2i tokens; I50/LVEF/E11/N18; outcome death + HF hospitalisation.",
+   "quality": "CO 1 (no-treatment comparator, matching the open-label trial); TZ.d (grace period); OU 1 (urgent outpatient HF visits missed); FU 0.",
+   "why": "Recent positive trial anchored at a procedure.",
+   "risk": "TAVR index dates overlap the previously analysed PARTNER cohort; the 80% rule may need an interpretation (different contrast, same records)."
+  },
+  {
+   "id": "voyager",
+   "name": "VOYAGER PAD",
+   "year": 2020,
+   "group": "C",
+   "tags": [
+    "B",
+    "decision-point",
+    "dose-identification"
+   ],
+   "area": "Other: PAD",
+   "citation": "Bonaca MP, et al. N Engl J Med 2020;382:1994-2004",
+   "pmid": "32222135",
+   "doi": "10.1056/NEJMoa2000052",
+   "population": "Symptomatic PAD after lower-extremity revascularisation (within 10 days)",
+   "intervention": "Rivaroxaban 2.5 mg bid + aspirin",
+   "comparator": "Aspirin + placebo",
+   "outcome": "Acute limb ischaemia, major vascular amputation, MI, ischaemic stroke or CV death",
+   "follow_up": "median 28 months (3-year KM)",
+   "n": 6564,
+   "effect": {
+    "measure": "HR",
+    "estimate": 0.85,
+    "ci": [
+     0.76,
+     0.96
+    ],
+    "text": "HR 0.85 (95% CI 0.76-0.96)"
+   },
+   "design": "Common decision point = lower-extremity revascularisation: rivaroxaban 2.5 mg initiation within 10 days vs none. Time zero = procedure date + grace period.",
+   "ehr": "I70.2x; revascularisation CPT 37224-37235/35556-35671; rivaroxaban 2.5 mg strength; outcomes ALI (I74.3/I74.4), amputation procedures, MI/stroke, CV death.",
+   "quality": "TS 1-2 (strength); CO 2 (placebo; non-initiator comparator); TZ.d (10-day grace period); OU 1 (CV death; ALI coding); FU 0.",
+   "why": "Positive benchmark anchored at a procedure; complements BEST-CLI/SWEDEPAD 1 in a vascular area that is new to the project."
+  },
+  {
+   "id": "best_cli",
+   "name": "BEST-CLI (cohort 1)",
+   "year": 2022,
+   "group": "C",
+   "tags": [
+    "A",
+    "procedure"
+   ],
+   "area": "Other: PAD",
+   "citation": "Farber A, et al. N Engl J Med 2022;387:2305-16",
+   "pmid": "36342173",
+   "doi": "10.1056/NEJMoa2207899",
+   "population": "CLTI eligible for either revascularisation with an adequate great saphenous vein",
+   "intervention": "Surgical bypass",
+   "comparator": "Endovascular therapy",
+   "outcome": "Major adverse limb event (above-ankle amputation or major reintervention) or death",
+   "follow_up": "median 2.7 years",
+   "n": 1830,
+   "effect": {
+    "measure": "HR",
+    "estimate": 0.68,
+    "ci": [
+     0.59,
+     0.79
+    ],
+    "text": "Cohort 1 HR 0.68 (95% CI 0.59-0.79); cohort 2 HR 0.79 (0.58-1.06)"
+   },
+   "design": "Procedure vs procedure: first revascularisation for CLTI, open bypass vs endovascular. Time zero = procedure date.",
+   "ehr": "I70.22-I70.26; bypass CPT 35556-35671 / ICD-10-PCS 041-; endovascular CPT 37224-37235; outcome amputation and reintervention procedures + all-cause death.",
+   "quality": "EL 1 (vein adequacy not identifiable, so cohorts 1 and 2 mix); TS 0; CO 0; OU 0-1 (reintervention definition); FU 0.",
+   "why": "Strongly positive procedure-vs-procedure benchmark with procedure-coded endpoints; heavy confounding by frailty.",
+   "risk": "Shares endovascular index dates with SWEDEPAD 1 and VOYAGER PAD; select or check overlap."
+  }
+ ],
+ "considered_infeasible": [
+  {
+   "name": "ACTIVE A",
+   "year": 2009,
+   "group": "D",
+   "area": "AF/anticoagulation",
+   "eligible": false,
+   "reason_code": "P",
+   "reason": "clopidogrel added to aspirin vs placebo; aspirin background not identifiable",
+   "pmid": "19336502",
+   "n": 7554,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "AMADEUS",
+   "year": 2008,
+   "group": "D",
+   "area": "AF/anticoagulation",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "idraparinux never marketed",
+   "pmid": "18294998",
+   "n": 4576,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "Amulet IDE",
+   "year": 2021,
+   "group": "D",
+   "area": "AF/anticoagulation",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "device brand not identifiable (Amulet vs Watchman share the LAAO code)",
+   "pmid": "34459659",
+   "n": 1878,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "EPIC-CAD",
+   "year": 2024,
+   "group": "D",
+   "area": "AF/anticoagulation",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "edoxaban de-escalation (Korea); edoxaban ~150 users at the site",
+   "pmid": "39225258",
+   "n": 1040,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "NAVIGATE ESUS",
+   "year": 2018,
+   "group": "D",
+   "area": "AF/anticoagulation",
+   "eligible": false,
+   "reason_code": "N",
+   "reason": "ESUS not identifiable; aspirin comparator",
+   "pmid": "29766772",
+   "n": 7213,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "OCEAN (post-ablation rivaroxaban vs aspirin)",
+   "year": 2026,
+   "group": "D",
+   "area": "AF/anticoagulation",
+   "eligible": false,
+   "reason_code": "date",
+   "reason": "published after the window; aspirin comparator; covert MRI infarcts",
+   "pmid": "41211931",
+   "n": 1284,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "OCEANIC-AF / AZALEA-TIMI 71",
+   "year": 2025,
+   "group": "D",
+   "area": "AF/anticoagulation",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "asundexian/abelacimab not marketed",
+   "pmid": "39225267",
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 2
+  },
+  {
+   "name": "RE-SPECT ESUS",
+   "year": 2019,
+   "group": "D",
+   "area": "AF/anticoagulation",
+   "eligible": false,
+   "reason_code": "N",
+   "reason": "ESUS not identifiable; aspirin comparator",
+   "pmid": "31091372",
+   "n": 5390,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "SPORTIF V",
+   "year": 2005,
+   "group": "D",
+   "area": "AF/anticoagulation",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "ximelagatran never marketed",
+   "pmid": "15701910",
+   "n": 3922,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "WARSS",
+   "year": 2001,
+   "group": "D",
+   "area": "AF/anticoagulation",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "aspirin comparator",
+   "pmid": "11794192",
+   "n": 2206,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "X-VeRT",
+   "year": 2014,
+   "group": "D",
+   "area": "AF/anticoagulation",
+   "eligible": true,
+   "reason_code": "rare",
+   "reason": "too rare: very few events within 30-42 days of cardioversion",
+   "pmid": "25182247",
+   "n": 1504,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "AFFIRM-AHF",
+   "year": 2020,
+   "group": "D",
+   "area": "HF",
+   "eligible": false,
+   "reason_code": "P",
+   "reason": "placebo-controlled; same cohort as IRONMAN (alternative benchmark)",
+   "pmid": "33197395",
+   "n": 1132,
+   "effect": "RR 0.79 (0.62-1.01)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "ATMOSPHERE",
+   "year": 2016,
+   "group": "D",
+   "area": "HF",
+   "eligible": true,
+   "reason_code": "rare",
+   "reason": "aliskiren rarely used",
+   "pmid": "27043774",
+   "n": 7064,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "AVID",
+   "year": 1997,
+   "group": "D",
+   "area": "HF",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "ICD vs antiarrhythmic in arrest survivors; the antiarrhythmic-only arm is now a contraindication-selected group",
+   "pmid": "9411221",
+   "n": 1016,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "COMPANION",
+   "year": 2004,
+   "group": "D",
+   "area": "HF",
+   "eligible": false,
+   "reason_code": "D",
+   "reason": "comparator is optimal medical therapy (no device)",
+   "pmid": "15152059",
+   "n": 1520,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "DANISH",
+   "year": 2016,
+   "group": "D",
+   "area": "HF",
+   "eligible": false,
+   "reason_code": "D",
+   "reason": "ICD vs no ICD (no-device comparator)",
+   "pmid": "27571011",
+   "n": 1116,
+   "effect": "HR 0.87 (0.68-1.12)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "DIGIT-HF",
+   "year": 2025,
+   "group": "D",
+   "area": "HF",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "digitoxin not marketed in the US",
+   "pmid": "40879434",
+   "n": 1240,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "HEART-FID",
+   "year": 2023,
+   "group": "D",
+   "area": "HF",
+   "eligible": false,
+   "reason_code": "P",
+   "reason": "placebo-controlled; hierarchical primary endpoint",
+   "pmid": "37632463",
+   "n": 3065,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "MADIT-CRT",
+   "year": 2009,
+   "group": "D",
+   "area": "HF",
+   "eligible": true,
+   "reason_code": "near-dup",
+   "reason": "near-duplicate of the RAFT cohort (CRT-D vs ICD); keep as an alternative benchmark",
+   "pmid": "19723701",
+   "n": 1820,
+   "effect": "HR 0.66 (0.52-0.84)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "MADIT-II",
+   "year": 2002,
+   "group": "D",
+   "area": "HF",
+   "eligible": false,
+   "reason_code": "D",
+   "reason": "ICD vs conventional therapy (no-device comparator; no common decision point)",
+   "pmid": "11907286",
+   "n": 1232,
+   "effect": "HR 0.69 (0.51-0.93)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "Placebo-only HF trials without a proxy (DIG, RALES, EMPHASIS-HF, CHARM, Val-HeFT, SHIFT, VICTORIA, GALACTIC-HF, FINEARTS-HF, MERIT-HF, COPERNICUS)",
+   "year": null,
+   "group": "D",
+   "area": "HF",
+   "eligible": false,
+   "reason_code": "P",
+   "reason": "placebo-only; no accepted active-comparator proxy (11 trials)",
+   "pmid": null,
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 11
+  },
+  {
+   "name": "SCD-HeFT",
+   "year": 2005,
+   "group": "D",
+   "area": "HF",
+   "eligible": false,
+   "reason_code": "P",
+   "reason": "amiodarone vs placebo; ICD vs no device has no common decision point",
+   "pmid": "15659722",
+   "n": 2521,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "WARCEF",
+   "year": 2012,
+   "group": "D",
+   "area": "HF",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "aspirin comparator (OTC)",
+   "pmid": "22551105",
+   "n": 2305,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "WATCH",
+   "year": 2009,
+   "group": "D",
+   "area": "HF",
+   "eligible": true,
+   "reason_code": "rare",
+   "reason": "warfarin in sinus-rhythm HF not used after 2012; aspirin arm",
+   "pmid": "19289640",
+   "n": 1587,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "BP-target trials (SPRINT, ACCORD-BP, STEP, BPROAD, HOT)",
+   "year": null,
+   "group": "D",
+   "area": "Hypertension",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "treat-to-target strategies not identifiable (5 trials)",
+   "pmid": null,
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 5
+  },
+  {
+   "name": "BedMed",
+   "year": 2025,
+   "group": "D",
+   "area": "Hypertension",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "dosing time not identifiable",
+   "pmid": "40354045",
+   "n": 3357,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "CAMELOT",
+   "year": 2004,
+   "group": "D",
+   "area": "Hypertension",
+   "eligible": false,
+   "reason_code": "P",
+   "reason": "primary contrast vs placebo",
+   "pmid": "15536108",
+   "n": 1991,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "CAPPP",
+   "year": 1999,
+   "group": "D",
+   "area": "Hypertension",
+   "eligible": true,
+   "reason_code": "near-dup",
+   "reason": "ACEi arm near-duplicates ANBP2 and the comparator NORDIL; prior-therapy switch (TZ.c) and >=48-month horizon make it likely Limited",
+   "pmid": "10030325",
+   "n": 10985,
+   "effect": "RR 1.05 (0.90-1.22)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "CASE-J",
+   "year": 2008,
+   "group": "D",
+   "area": "Hypertension",
+   "eligible": true,
+   "reason_code": "near-dup",
+   "reason": "near-duplicate of VALUE (ARB vs amlodipine); primary paper not retrieved (Hypertension journal, outside the journal filter)",
+   "pmid": null,
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "CONVINCE",
+   "year": 2003,
+   "group": "D",
+   "area": "Hypertension",
+   "eligible": true,
+   "reason_code": "rare",
+   "reason": "too rare: verapamil (INVEST verapamil arm had 316 initiators in total)",
+   "pmid": "12709465",
+   "n": 16602,
+   "effect": "HR 1.02 (0.88-1.18)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "HYVET",
+   "year": 2008,
+   "group": "D",
+   "area": "Hypertension",
+   "eligible": false,
+   "reason_code": "P",
+   "reason": "placebo-controlled",
+   "pmid": "18378519",
+   "n": 3845,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "JMIC-B",
+   "year": 2004,
+   "group": "D",
+   "area": "Hypertension",
+   "eligible": true,
+   "reason_code": "rare",
+   "reason": "primary paper not retrieved (Hypertens Res); the nifedipine-in-CAD arm is likely too small",
+   "pmid": null,
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "Jikei Heart / KYOTO HEART",
+   "year": 2007,
+   "group": "D",
+   "area": "Hypertension",
+   "eligible": false,
+   "reason_code": "R",
+   "reason": "retracted",
+   "pmid": "17467513",
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 2
+  },
+  {
+   "name": "STOP-Hypertension-2",
+   "year": 1999,
+   "group": "D",
+   "area": "Hypertension",
+   "eligible": true,
+   "reason_code": "near-dup",
+   "reason": "three-arm old-vs-new drugs in age 70-84; near-duplicate of ANBP2/NORDIL",
+   "pmid": "10577635",
+   "n": 6614,
+   "effect": "RR 0.99 (0.84-1.16)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "TIME",
+   "year": 2022,
+   "group": "D",
+   "area": "Hypertension",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "evening vs morning dosing not identifiable",
+   "pmid": "36240838",
+   "n": 21104,
+   "effect": "HR 0.95 (0.83-1.10)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "AMPLITUDE-O",
+   "year": 2021,
+   "group": "D",
+   "area": "Diabetes/cardiometabolic",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "efpeglenatide not marketed",
+   "pmid": "34215025",
+   "n": 4076,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "ELIXA",
+   "year": 2015,
+   "group": "D",
+   "area": "Diabetes/cardiometabolic",
+   "eligible": true,
+   "reason_code": "rare",
+   "reason": "lixisenatide rarely used",
+   "pmid": "26630143",
+   "n": 6068,
+   "effect": "HR 1.02 (0.89-1.17)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "EMPA-KIDNEY",
+   "year": 2023,
+   "group": "D",
+   "area": "Diabetes/cardiometabolic",
+   "eligible": true,
+   "reason_code": "near-dup",
+   "reason": "near-duplicate class cohort of DAPA-CKD (SGLT2i in CKD)",
+   "pmid": "36331190",
+   "n": 6609,
+   "effect": "HR 0.72 (0.64-0.82)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "EXAMINE",
+   "year": 2013,
+   "group": "D",
+   "area": "Diabetes/cardiometabolic",
+   "eligible": true,
+   "reason_code": "rare",
+   "reason": "alogliptin rarely used (sulfonylurea proxy)",
+   "pmid": "23992602",
+   "n": 5380,
+   "effect": "HR 0.96",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "FIDELIO-DKD / FIGARO-DKD",
+   "year": 2020,
+   "group": "D",
+   "area": "Diabetes/cardiometabolic",
+   "eligible": false,
+   "reason_code": "P",
+   "reason": "finerenone (2021+) vs placebo; no proxy",
+   "pmid": "33264825",
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 2
+  },
+  {
+   "name": "FLOW",
+   "year": 2024,
+   "group": "D",
+   "area": "Diabetes/cardiometabolic",
+   "eligible": false,
+   "reason_code": "near-dup",
+   "reason": "kidney primary endpoint; near-duplicate of the SUSTAIN-6 cohort",
+   "pmid": "38785209",
+   "n": 3533,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "GRADE",
+   "year": 2022,
+   "group": "D",
+   "area": "Diabetes/cardiometabolic",
+   "eligible": false,
+   "reason_code": "O",
+   "reason": "glycaemic primary outcome",
+   "pmid": "36129997",
+   "n": 5047,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "Glycaemic-strategy trials (ACCORD, ADVANCE, VADT, UKPDS 33/34, Look AHEAD, BARI 2D)",
+   "year": null,
+   "group": "D",
+   "area": "Diabetes/cardiometabolic",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "intensity/lifestyle/strategy targets not identifiable (6 trials)",
+   "pmid": null,
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 6
+  },
+  {
+   "name": "HARMONY Outcomes",
+   "year": 2018,
+   "group": "D",
+   "area": "Diabetes/cardiometabolic",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "albiglutide withdrawn 2018",
+   "pmid": "30291013",
+   "n": 9463,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "IRIS",
+   "year": 2016,
+   "group": "D",
+   "area": "Diabetes/cardiometabolic",
+   "eligible": false,
+   "reason_code": "N",
+   "reason": "insulin resistance without diabetes not identifiable; pioglitazone rare",
+   "pmid": "26886418",
+   "n": 3876,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "ORIGIN",
+   "year": 2012,
+   "group": "D",
+   "area": "Diabetes/cardiometabolic",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "glargine not identifiable (generic 'insulin' token; DEVOTE precedent)",
+   "pmid": null,
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "PIONEER 6",
+   "year": 2019,
+   "group": "D",
+   "area": "Diabetes/cardiometabolic",
+   "eligible": true,
+   "reason_code": "near-dup",
+   "reason": "near-duplicate of the SOUL cohort (oral semaglutide vs DPP-4i); alternative benchmark",
+   "pmid": "31185157",
+   "n": 3183,
+   "effect": "HR 0.79 (0.57-1.11)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "PROactive",
+   "year": 2005,
+   "group": "D",
+   "area": "Diabetes/cardiometabolic",
+   "eligible": true,
+   "reason_code": "rare",
+   "reason": "too rare: pioglitazone (TOSCA.IT pioglitazone arm had 96 with an ECG)",
+   "pmid": "16214598",
+   "n": 5238,
+   "effect": "HR 0.90 (0.80-1.02)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "RECORD",
+   "year": 2009,
+   "group": "D",
+   "area": "Diabetes/cardiometabolic",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "rosiglitazone restricted 2010-2013, rarely used in the window",
+   "pmid": "19501900",
+   "n": 4447,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "SCORED / SOLOIST",
+   "year": 2021,
+   "group": "D",
+   "area": "Diabetes/cardiometabolic",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "sotagliflozin rarely used",
+   "pmid": "33200891",
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 2
+  },
+  {
+   "name": "SELECT",
+   "year": 2023,
+   "group": "D",
+   "area": "Diabetes/cardiometabolic",
+   "eligible": false,
+   "reason_code": "P",
+   "reason": "placebo-controlled in obesity without diabetes; no accepted proxy (would be high priority if a proxy were accepted)",
+   "pmid": "37952131",
+   "n": 17604,
+   "effect": "HR 0.80 (0.72-0.90)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "VERTIS CV",
+   "year": 2020,
+   "group": "D",
+   "area": "Diabetes/cardiometabolic",
+   "eligible": true,
+   "reason_code": "rare",
+   "reason": "ertugliflozin rarely used",
+   "pmid": "32966714",
+   "n": 8246,
+   "effect": "HR 0.97",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "ABYSS",
+   "year": 2024,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "beta-blocker interruption not reliably identifiable",
+   "pmid": "39213187",
+   "n": 3698,
+   "effect": "HR 1.16 (1.01-1.33)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "ALL-HEART",
+   "year": 2022,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": false,
+   "reason_code": "N",
+   "reason": "allopurinol initiation in IHD without gout is not a routine-care decision",
+   "pmid": "36216006",
+   "n": 5938,
+   "effect": "HR 1.04 (0.89-1.21)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "Aspirin-comparator trials (CAPRIE, SOCRATES, HOST-EXAM, SMART-CHOICE 3, TiCAB)",
+   "year": null,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "aspirin arm not identifiable (OTC); HOST-EXAM HR 0.73 (0.59-0.90) (5 trials)",
+   "pmid": "34010616",
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 5
+  },
+  {
+   "name": "Aspirin-withdrawal/short-DAPT trials (TWILIGHT, TICO, STOPDAPT-2, GLOBAL LEADERS, MASTER DAPT)",
+   "year": null,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "aspirin discontinuation not identifiable (5 trials)",
+   "pmid": "31556978",
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 5
+  },
+  {
+   "name": "Bivalirudin trials (BRIGHT-4, HEAT-PPCI, EUROMAX, MATRIX-antithrombin, HORIZONS-AMI)",
+   "year": null,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": true,
+   "reason_code": "near-dup",
+   "reason": "near-duplicates of VALIDATE-SWEDEHEART; 30-day endpoints dominated by index-stay events; HEAT-PPCI RR 1.52 (1.09-2.13) is a harm benchmark (5 trials)",
+   "pmid": "25002178",
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 5
+  },
+  {
+   "name": "CHAMPION PHOENIX",
+   "year": 2013,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": false,
+   "reason_code": "O",
+   "reason": "48-hour periprocedural endpoint",
+   "pmid": "23473369",
+   "n": 11145,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "CHANCE",
+   "year": 2013,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": true,
+   "reason_code": "near-dup",
+   "reason": "near-duplicate of POINT (China)",
+   "pmid": "23803136",
+   "n": 5170,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "COMPLETE",
+   "year": 2019,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": false,
+   "reason_code": "N",
+   "reason": "multivessel disease is angiographic (not coded); staged-PCI timing",
+   "pmid": "31475795",
+   "n": 4041,
+   "effect": "HR 0.74 (0.60-0.91)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "CORONARY / ROOBY / GOPCABE",
+   "year": 2012,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": false,
+   "reason_code": "O",
+   "reason": "30-day index-stay composites; pump status coding uncertain (3 trials)",
+   "pmid": "22449296",
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 3
+  },
+  {
+   "name": "CURE",
+   "year": 2001,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": false,
+   "reason_code": "P",
+   "reason": "placebo add-on; P2Y12 non-use in ACS is now selective",
+   "pmid": "11519503",
+   "n": 12562,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "Colchicine trials (COLCOT, LoDoCo2, CLEAR SYNERGY, CONVINCE-stroke)",
+   "year": null,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": false,
+   "reason_code": "P",
+   "reason": "placebo-controlled; no proxy (4 trials)",
+   "pmid": null,
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 4
+  },
+  {
+   "name": "DETO2X-AMI",
+   "year": 2017,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "oxygen therapy not identifiable",
+   "pmid": "28844200",
+   "n": 6629,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "EXCEL",
+   "year": 2016,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": false,
+   "reason_code": "N",
+   "reason": "left main not reliably identifiable",
+   "pmid": "27797291",
+   "n": 1905,
+   "effect": "HR 1.00 (0.79-1.26)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "FAME 3",
+   "year": 2022,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": true,
+   "reason_code": "near-dup",
+   "reason": "near-duplicate of the FREEDOM/SYNTAX cohort; repeat revascularisation in the endpoint",
+   "pmid": "34735046",
+   "n": 1500,
+   "effect": "HR 1.5 (1.1-2.2)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "FIRE",
+   "year": 2023,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": false,
+   "reason_code": "N",
+   "reason": "as COMPLETE",
+   "pmid": "37634150",
+   "n": 1445,
+   "effect": "HR 0.73 (0.57-0.93)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "FRISC II / RITA-3 / ICTUS / SENIOR-RITA",
+   "year": null,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": true,
+   "reason_code": "near-dup",
+   "reason": "near-duplicates of the TACTICS-TIMI 18 cohort; alternative benchmarks (FRISC II RR 0.78 (0.62-0.98); RITA-3 RR 0.66 (0.51-0.85); SENIOR-RITA HR 0.94 (0.77-1.14)) (4 trials)",
+   "pmid": "10475181",
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 4
+  },
+  {
+   "name": "FULL REVASC",
+   "year": 2024,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": false,
+   "reason_code": "N",
+   "reason": "as COMPLETE",
+   "pmid": "38587995",
+   "n": 1542,
+   "effect": "HR 0.93 (0.74-1.17)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "ISCHEMIA",
+   "year": 2020,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": true,
+   "reason_code": "near-dup",
+   "reason": "near-duplicate of COURAGE; time zero before angiography; risk-difference benchmark",
+   "pmid": "32227755",
+   "n": 5179,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "MINT",
+   "year": 2023,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "transfusion threshold strategy",
+   "pmid": "37952133",
+   "n": 3504,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "NOBLE",
+   "year": 2016,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": false,
+   "reason_code": "N",
+   "reason": "left main not reliably identifiable; MACCE with repeat revascularisation",
+   "pmid": "27810312",
+   "n": 1201,
+   "effect": "HR 1.48 (1.11-1.96)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "NORSTENT",
+   "year": 2016,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "BMS rare after 2015; stent type",
+   "pmid": "27572953",
+   "n": 9013,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "OASIS-5 / ExTRACT / SYNERGY",
+   "year": 2006,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": false,
+   "reason_code": "O",
+   "reason": "index-stay endpoints; fondaparinux rare (3 trials)",
+   "pmid": "16537663",
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 3
+  },
+  {
+   "name": "OPTIMAAL",
+   "year": 2002,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": true,
+   "reason_code": "near-dup",
+   "reason": "near-duplicate of VALIANT (ARB vs ACEi after MI)",
+   "pmid": "12241832",
+   "n": 5477,
+   "effect": "RR 1.13 (0.99-1.28)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "POPular AGE",
+   "year": 2020,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": true,
+   "reason_code": "near-dup",
+   "reason": "subset (age >=70) of the PLATO cohort",
+   "pmid": "32334703",
+   "n": 1002,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "PRAGUE-18",
+   "year": 2016,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": true,
+   "reason_code": "near-dup",
+   "reason": "near-duplicate of ISAR-REACT 5 (which failed the size gate)",
+   "pmid": "27576777",
+   "n": 1230,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "REBOOT",
+   "year": 2025,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": true,
+   "reason_code": "near-dup",
+   "reason": "near-duplicate of the BETAMI-DANBLOCK cohort (EF >40%); alternative benchmark",
+   "pmid": "40888702",
+   "n": 8505,
+   "effect": "HR 1.04 (0.89-1.22)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "REDUCE-AMI",
+   "year": 2024,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": true,
+   "reason_code": "near-dup",
+   "reason": "subset (EF >=50%) of the BETAMI-DANBLOCK cohort; alternative benchmark",
+   "pmid": "38587241",
+   "n": 5020,
+   "effect": "HR 0.96 (0.79-1.16)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "RIVAL / MATRIX (access)",
+   "year": 2011,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "radial vs femoral access not coded (2 trials)",
+   "pmid": "21470671",
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 2
+  },
+  {
+   "name": "SYNTAX",
+   "year": 2009,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": true,
+   "reason_code": "near-dup",
+   "reason": "superset of the FREEDOM PCI-vs-CABG cohort; repeat revascularisation dominant",
+   "pmid": "19228612",
+   "n": 1800,
+   "effect": "12-mo MACCE 17.8% vs 12.4%, P=0.002",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "THALES",
+   "year": 2020,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": false,
+   "reason_code": "P",
+   "reason": "placebo add-on of ticagrelor in stroke (not a US use before 2020)",
+   "pmid": "32668111",
+   "n": 11016,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "TOTAL",
+   "year": 2015,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": true,
+   "reason_code": "near-dup",
+   "reason": "near-duplicate of the TASTE cohort; composite includes index-stay shock; alternative benchmark",
+   "pmid": "25853743",
+   "n": 10732,
+   "effect": "HR 0.99 (0.85-1.15)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "TRILOGY ACS",
+   "year": 2012,
+   "group": "D",
+   "area": "ACS/CAD/antiplatelet",
+   "eligible": true,
+   "reason_code": "rare",
+   "reason": "prasugrel without PCI rare (TRITON failed size)",
+   "pmid": "22920930",
+   "n": 9326,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "ALLHAT-LLT",
+   "year": 2002,
+   "group": "D",
+   "area": "Lipids",
+   "eligible": false,
+   "reason_code": "D",
+   "reason": "usual-care comparator; pre-window",
+   "pmid": "12479764",
+   "n": 10355,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "CLEAR Outcomes",
+   "year": 2023,
+   "group": "D",
+   "area": "Lipids",
+   "eligible": false,
+   "reason_code": "P",
+   "reason": "placebo; bempedoic acid approved 2020 (low uptake)",
+   "pmid": "36876740",
+   "n": 13970,
+   "effect": "HR 0.87 (0.79-0.96)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "EWTOPIA 75",
+   "year": 2019,
+   "group": "D",
+   "area": "Lipids",
+   "eligible": false,
+   "reason_code": "D",
+   "reason": "ezetimibe vs diet in Japanese primary prevention; no decision point",
+   "pmid": "31434507",
+   "n": 3796,
+   "effect": "HR 0.66 (0.50-0.86)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "FOURIER / ODYSSEY OUTCOMES",
+   "year": 2017,
+   "group": "D",
+   "area": "Lipids",
+   "eligible": false,
+   "reason_code": "P",
+   "reason": "placebo; no accepted proxy (2 trials)",
+   "pmid": "28304224",
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 2
+  },
+  {
+   "name": "JELIS / RESPECT-EPA",
+   "year": 2007,
+   "group": "D",
+   "area": "Lipids",
+   "eligible": true,
+   "reason_code": "near-dup",
+   "reason": "near-duplicates of REDUCE-IT (EPA; Japan) (2 trials)",
+   "pmid": "17398308",
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 2
+  },
+  {
+   "name": "Niacin/fibrate add-on trials (AIM-HIGH, HPS2-THRIVE, ACCORD-Lipid, FIELD, PROMINENT)",
+   "year": null,
+   "group": "D",
+   "area": "Lipids",
+   "eligible": false,
+   "reason_code": "P",
+   "reason": "placebo-controlled (5 trials)",
+   "pmid": null,
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 5
+  },
+  {
+   "name": "RACING",
+   "year": 2022,
+   "group": "D",
+   "area": "Lipids",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "intensity contrast (dose); risk-difference benchmark",
+   "pmid": "35863366",
+   "n": 3780,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "STRENGTH",
+   "year": 2020,
+   "group": "D",
+   "area": "Lipids",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "omega-3 carboxylic acids never marketed",
+   "pmid": "33190147",
+   "n": 13078,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "Statin-dose trials (TNT, SEARCH, A to Z)",
+   "year": null,
+   "group": "D",
+   "area": "Lipids",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "dose not encoded (3 trials)",
+   "pmid": "15755765",
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 3
+  },
+  {
+   "name": "API-CAT / RENOVE",
+   "year": 2025,
+   "group": "D",
+   "area": "VTE",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "DOAC dose contrast (2 trials)",
+   "pmid": "40023651",
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 2
+  },
+  {
+   "name": "COBRRA",
+   "year": 2026,
+   "group": "D",
+   "area": "VTE",
+   "eligible": false,
+   "reason_code": "date",
+   "reason": "WATCH LIST: apixaban vs rivaroxaban bleeding in acute VTE, but published 2026 (outside 1995-2025). Would be Group A/C",
+   "pmid": "42269161",
+   "n": 2760,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "CRISTAL",
+   "year": 2022,
+   "group": "D",
+   "area": "VTE",
+   "eligible": false,
+   "reason_code": "D",
+   "reason": "cluster-crossover",
+   "pmid": "35997730",
+   "n": 9711,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "EINSTEIN-CHOICE",
+   "year": 2017,
+   "group": "D",
+   "area": "VTE",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "aspirin comparator",
+   "pmid": "28316279",
+   "n": 3396,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "EPCAT II",
+   "year": 2018,
+   "group": "D",
+   "area": "VTE",
+   "eligible": true,
+   "reason_code": "rare",
+   "reason": "too few events (<1% VTE)",
+   "pmid": "29466159",
+   "n": 3424,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "Hokusai-VTE / Hokusai VTE Cancer",
+   "year": 2013,
+   "group": "D",
+   "area": "VTE",
+   "eligible": true,
+   "reason_code": "rare",
+   "reason": "edoxaban rarely used at the site (2 trials)",
+   "pmid": "23991658",
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 2
+  },
+  {
+   "name": "PEITHO",
+   "year": 2014,
+   "group": "D",
+   "area": "VTE",
+   "eligible": false,
+   "reason_code": "O",
+   "reason": "haemodynamic decompensation endpoint",
+   "pmid": "24716681",
+   "n": 1006,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "PEPPER (NCT02810704) / EPCAT III",
+   "year": null,
+   "group": "D",
+   "area": "VTE",
+   "eligible": false,
+   "reason_code": "date",
+   "reason": "unpublished in the window (PEPPER) or published 2026 (EPCAT III)",
+   "pmid": null,
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 2
+  },
+  {
+   "name": "PREVENT CLOT",
+   "year": 2023,
+   "group": "D",
+   "area": "VTE",
+   "eligible": true,
+   "reason_code": "rare",
+   "reason": "too rare (0.75% 90-day death); risk-difference benchmark",
+   "pmid": "36652352",
+   "n": 12211,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "RE-COVER",
+   "year": 2009,
+   "group": "D",
+   "area": "VTE",
+   "eligible": true,
+   "reason_code": "near-dup",
+   "reason": "twin of RE-COVER II (near-duplicate)",
+   "pmid": "19966341",
+   "n": 2539,
+   "effect": "HR 1.10 (0.65-1.84)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "Thromboprophylaxis trials with venography/placebo (MARINER, MAGELLAN, APEX, ADOPT, RECORD1-4, ADVANCE-1-3, RE-NOVATE)",
+   "year": null,
+   "group": "D",
+   "area": "VTE",
+   "eligible": false,
+   "reason_code": "O",
+   "reason": "asymptomatic/venographic endpoints or placebo (13 trials)",
+   "pmid": null,
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 13
+  },
+  {
+   "name": "ATLANTIS",
+   "year": 2022,
+   "group": "D",
+   "area": "Valve/structural",
+   "eligible": true,
+   "reason_code": "rare",
+   "reason": "apixaban after TAVI mixes AF and non-AF strata; rare",
+   "pmid": "35583186",
+   "n": 1500,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "COAPT / EARLY TAVR / POPular TAVI",
+   "year": null,
+   "group": "D",
+   "area": "Valve/structural",
+   "eligible": false,
+   "reason_code": "S",
+   "reason": "size <1,000 or no-procedure comparator (3 trials)",
+   "pmid": null,
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 3
+  },
+  {
+   "name": "GALILEO",
+   "year": 2020,
+   "group": "D",
+   "area": "Valve/structural",
+   "eligible": true,
+   "reason_code": "rare",
+   "reason": "rivaroxaban after TAVR without AF rare in US practice",
+   "pmid": "31733180",
+   "n": 1644,
+   "effect": "HR 1.35 (1.01-1.81)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "PFO closure trials (RESPECT, CLOSE, REDUCE)",
+   "year": null,
+   "group": "D",
+   "area": "Valve/structural",
+   "eligible": false,
+   "reason_code": "S",
+   "reason": "size <1,000; PFO-attributable stroke not identifiable (3 trials)",
+   "pmid": null,
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 3
+  },
+  {
+   "name": "PROTECTED TAVR / BHF PROTECT-TAVI",
+   "year": 2022,
+   "group": "D",
+   "area": "Valve/structural",
+   "eligible": false,
+   "reason_code": "O",
+   "reason": "stroke within 72 h / index stay (2 trials)",
+   "pmid": "36121045",
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 2
+  },
+  {
+   "name": "TAVI vs SAVR trials (DEDICATE, SURTAVI, Evolut Low Risk, UK TAVI)",
+   "year": null,
+   "group": "D",
+   "area": "Valve/structural",
+   "eligible": true,
+   "reason_code": "near-dup",
+   "reason": "near-duplicates of the previously analysed PARTNER cohort (results seen); DEDICATE HR 0.53 (0.35-0.79) (4 trials)",
+   "pmid": "38588025",
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 4
+  },
+  {
+   "name": "ACST-1",
+   "year": 2004,
+   "group": "D",
+   "area": "Other: carotid",
+   "eligible": false,
+   "reason_code": "D",
+   "reason": "deferral comparator; pre-window medical therapy",
+   "pmid": "15135594",
+   "n": 3120,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "ADAPTABLE",
+   "year": 2021,
+   "group": "D",
+   "area": "Other: CV safety",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "aspirin dose (OTC) not identifiable",
+   "pmid": "33999548",
+   "n": 15076,
+   "effect": "HR 1.02 (0.91-1.14)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "CAMELLIA-TIMI 61",
+   "year": 2018,
+   "group": "D",
+   "area": "Other",
+   "eligible": false,
+   "reason_code": "P",
+   "reason": "placebo; lorcaserin withdrawn 2020",
+   "pmid": "30145941",
+   "n": 12000,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "CREST-2",
+   "year": 2025,
+   "group": "D",
+   "area": "Other: carotid",
+   "eligible": false,
+   "reason_code": "N",
+   "reason": "stenosis severity not coded; medical-therapy (no-procedure) comparator; risk-difference benchmark",
+   "pmid": "41269206",
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "DANFLU-2",
+   "year": 2025,
+   "group": "D",
+   "area": "Other: vaccine",
+   "eligible": false,
+   "reason_code": "E2",
+   "reason": "non-CV primary endpoint",
+   "pmid": "40888694",
+   "n": 332438,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "DANPACE",
+   "year": 2011,
+   "group": "D",
+   "area": "Other: devices/arrhythmia",
+   "eligible": true,
+   "reason_code": "rare",
+   "reason": "AAIR single-lead atrial pacemakers rare in US practice",
+   "pmid": "21300730",
+   "n": 1415,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "ENTRACTE",
+   "year": 2020,
+   "group": "D",
+   "area": "Other: CV safety",
+   "eligible": true,
+   "reason_code": "rare",
+   "reason": "too rare: biologic arm (ORAL Surveillance precedent: 87 with ECG)",
+   "pmid": "31469238",
+   "n": 3080,
+   "effect": "HR 1.05 (0.77-1.43)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "IAMI",
+   "year": 2021,
+   "group": "D",
+   "area": "Other: vaccine",
+   "eligible": false,
+   "reason_code": "P",
+   "reason": "placebo-controlled",
+   "pmid": "34459211",
+   "n": 2571,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "ICSS / ACST-2 / ACT-1 / SPACE",
+   "year": null,
+   "group": "D",
+   "area": "Other: carotid",
+   "eligible": true,
+   "reason_code": "near-dup",
+   "reason": "stratum-specific near-duplicates of the CREST cohort; alternative benchmarks (ICSS 120-day stroke/death/procedural MI HR 1.69 (1.16-2.45); ACST-2 RR 1.16 (0.86-1.57)) (4 trials)",
+   "pmid": "20189239",
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 4
+  },
+  {
+   "name": "MOST",
+   "year": 2002,
+   "group": "D",
+   "area": "Other: devices/arrhythmia",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "same dual-chamber device programmed DDDR vs VVIR; mode not identifiable",
+   "pmid": "12063369",
+   "n": 2010,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "OVER / CORAL / ASTRAL",
+   "year": null,
+   "group": "D",
+   "area": "Other: aortic/renal",
+   "eligible": false,
+   "reason_code": "S",
+   "reason": "size <1,000 or no-procedure comparator (3 trials)",
+   "pmid": "19826022",
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 3
+  },
+  {
+   "name": "POISE / POISE-2 / POISE-3",
+   "year": 2008,
+   "group": "D",
+   "area": "Other",
+   "eligible": false,
+   "reason_code": "O",
+   "reason": "perioperative index-stay endpoints; placebo (3 trials)",
+   "pmid": null,
+   "n": null,
+   "effect": null,
+   "citation": null,
+   "note": "PMID removed: not retrieved in this search",
+   "n_trials": 3
+  },
+  {
+   "name": "SAVE",
+   "year": 2016,
+   "group": "D",
+   "area": "Other",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "CPAP vs usual care; adherence/no decision point",
+   "pmid": "27571048",
+   "n": 2717,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "TRAVERSE",
+   "year": 2023,
+   "group": "D",
+   "area": "Other: CV safety",
+   "eligible": false,
+   "reason_code": "P",
+   "reason": "placebo-controlled testosterone",
+   "pmid": "37326322",
+   "n": 5246,
+   "effect": null,
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "UKPACE",
+   "year": 2005,
+   "group": "D",
+   "area": "Other: devices/arrhythmia",
+   "eligible": true,
+   "reason_code": "near-dup",
+   "reason": "near-duplicate of the CTOPP cohort; alternative benchmark",
+   "pmid": "16014884",
+   "n": 2021,
+   "effect": "HR 0.96 (death)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  },
+  {
+   "name": "WRAP-IT",
+   "year": 2019,
+   "group": "D",
+   "area": "Other: devices/arrhythmia",
+   "eligible": false,
+   "reason_code": "X",
+   "reason": "antibacterial envelope not coded",
+   "pmid": "30883056",
+   "n": 6983,
+   "effect": "HR 0.60 (0.36-0.98)",
+   "citation": null,
+   "note": null,
+   "n_trials": 1
+  }
+ ],
+ "pool_eligible_coverage": [
+  {
+   "name": "ACCOMPLISH",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  },
+  {
+   "name": "ACTIVE W",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  },
+  {
+   "name": "AF-CHF",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "AFFIRM",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "ALLHAT",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "AMPLIFY",
+   "retrieved_by": [
+    "PubMed",
+    "RCT-DUPLICATE"
+   ]
+  },
+  {
+   "name": "ARISTOTLE",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov",
+    "RCT-DUPLICATE"
+   ]
+  },
+  {
+   "name": "ASCOT-BPLA",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "AUGUSTUS",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "CABANA",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "CANVAS",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov",
+    "RCT-DUPLICATE"
+   ]
+  },
+  {
+   "name": "CARES",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  },
+  {
+   "name": "CARMELINA",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov",
+    "RCT-DUPLICATE"
+   ]
+  },
+  {
+   "name": "CAROLINA",
+   "retrieved_by": [
+    "CT.gov",
+    "RCT-DUPLICATE"
+   ]
+  },
+  {
+   "name": "CASTLE-AF",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "COMET",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "CREDENCE",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  },
+  {
+   "name": "DAPA-HF",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  },
+  {
+   "name": "DCP",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  },
+  {
+   "name": "DECLARE",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov",
+    "RCT-DUPLICATE"
+   ]
+  },
+  {
+   "name": "DELIVER",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  },
+  {
+   "name": "DEVOTE",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  },
+  {
+   "name": "EAST-AFNET 4",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "ELAN",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "ELITE II",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "EMPA-REG",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov",
+    "RCT-DUPLICATE"
+   ]
+  },
+  {
+   "name": "EMPEROR-Preserved",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  },
+  {
+   "name": "EMPEROR-Reduced",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  },
+  {
+   "name": "ENGAGE AF",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "ENTRUST-AF PCI",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  },
+  {
+   "name": "ENVISAGE-TAVI AF",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  },
+  {
+   "name": "EUCLID",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  },
+  {
+   "name": "FAST",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "FRAIL-AF",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "IDEAL",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  },
+  {
+   "name": "INSIGHT",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "INVEST",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  },
+  {
+   "name": "INVICTUS",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  },
+  {
+   "name": "ISAR-REACT 5",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov",
+    "RCT-DUPLICATE"
+   ]
+  },
+  {
+   "name": "LAAOS III",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "LEADER",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov",
+    "RCT-DUPLICATE"
+   ]
+  },
+  {
+   "name": "LIFE",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  },
+  {
+   "name": "LODESTAR",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "ONTARGET",
+   "retrieved_by": [
+    "PubMed",
+    "RCT-DUPLICATE"
+   ]
+  },
+  {
+   "name": "OPTIMAS",
+   "retrieved_by": []
+  },
+  {
+   "name": "OPTION",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "ORAL Surveillance",
+   "retrieved_by": []
+  },
+  {
+   "name": "PARADIGM-HF",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov",
+    "RCT-DUPLICATE"
+   ]
+  },
+  {
+   "name": "PARADISE-MI",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  },
+  {
+   "name": "PARAGON-HF",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  },
+  {
+   "name": "PARTNER",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "PIONEER AF-PCI",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  },
+  {
+   "name": "PLATO",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov",
+    "RCT-DUPLICATE"
+   ]
+  },
+  {
+   "name": "PRECISION",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  },
+  {
+   "name": "PRONOUNCE",
+   "retrieved_by": [
+    "PubMed",
+    "RCT-DUPLICATE"
+   ]
+  },
+  {
+   "name": "PROTECT AF",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "PROVE IT",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "RE-DUAL PCI",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "RE-LY",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov",
+    "RCT-DUPLICATE"
+   ]
+  },
+  {
+   "name": "REWIND",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  },
+  {
+   "name": "RIVER",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "ROCKET",
+   "retrieved_by": [
+    "PubMed",
+    "RCT-DUPLICATE"
+   ]
+  },
+  {
+   "name": "SAVOR",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov",
+    "RCT-DUPLICATE"
+   ]
+  },
+  {
+   "name": "SUSTAIN-6",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  },
+  {
+   "name": "TECOS",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov",
+    "RCT-DUPLICATE"
+   ]
+  },
+  {
+   "name": "TOSCA.IT",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "TRANSFORM-HF",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  },
+  {
+   "name": "TRITON",
+   "retrieved_by": [
+    "PubMed",
+    "RCT-DUPLICATE"
+   ]
+  },
+  {
+   "name": "VALIANT",
+   "retrieved_by": [
+    "PubMed"
+   ]
+  },
+  {
+   "name": "VALUE",
+   "retrieved_by": [
+    "PubMed",
+    "CT.gov"
+   ]
+  }
+ ]
+}
