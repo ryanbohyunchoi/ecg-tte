@@ -1,0 +1,65 @@
+{
+ "when": "2026-10-14 16:13",
+ "studies": {
+  "SPRINT": {
+   "imaging_objects_latest": 24278,
+   "xml": 24269,
+   "xml_by_file_year": {
+    "2010": 65,
+    "2011": 3419,
+    "2012": 4909,
+    "2013": 3699,
+    "2014": 4211,
+    "2015": 3523,
+    "2016": 4443
+   },
+   "imaging_other": 9,
+   "clinical_objects_latest": 402,
+   "clinical_gb": 2.24,
+   "m0_rows": 299,
+   "m1_rows": 50,
+   "m2_rows": 12092,
+   "m2_gb": 2.23
+  },
+  "ACCORD": {
+   "imaging_objects_latest": 41062,
+   "xml": 41054,
+   "xml_by_file_year": {
+    "2001": 962,
+    "2003": 3752,
+    "2004": 2910,
+    "2005": 6016,
+    "2006": 2771,
+    "2007": 5780,
+    "2008": 2608,
+    "2009": 8692,
+    "2010": "1-10",
+    "2011": 2126,
+    "2012": 2113,
+    "2013": 448,
+    "2014": 2875
+   },
+   "imaging_other": 8,
+   "clinical_objects_latest": 367,
+   "clinical_gb": 1.45,
+   "m0_rows": 300,
+   "m1_rows": 50,
+   "m2_rows": 13640,
+   "m2_gb": 2.47
+  },
+  "WHI": {
+   "imaging_objects_latest": 184385,
+   "xml": 184361,
+   "xml_by_file_year": {
+    "1900": 184361
+   },
+   "imaging_other": 24,
+   "clinical_objects_latest": 1045,
+   "clinical_gb": 2.79,
+   "m0_rows": 1061,
+   "m1_rows": 50,
+   "m2_rows": 2,
+   "m2_gb": 1.52
+  }
+ }
+}
