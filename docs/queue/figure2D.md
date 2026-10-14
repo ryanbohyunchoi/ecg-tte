@@ -103,7 +103,7 @@ The verifier checks:
 - the other deck numbers are unchanged from the deck2 build;
 - a privacy scan.
 
-Fix BLOCKING issues and re-verify, up to 3 rounds. Report: `docs/presentation/VERIFY_FIGURE2D.md`.
+Run the verifier subagent in the **foreground** (Agent tool with `run_in_background: false`), and wait for it: the headless session ends if background tasks run longer than 600 s, which is what stopped the s31 job. Fix BLOCKING issues and re-verify, up to 3 rounds. Report: `docs/presentation/VERIFY_FIGURE2D.md`.
 
 ## Commit and summary
 

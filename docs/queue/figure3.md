@@ -88,7 +88,7 @@ The verifier checks:
 - **The other slides' numbers** are unchanged from the Figure 2D build.
 - **A privacy scan.**
 
-Fix BLOCKING issues and re-verify, up to 3 rounds. Report: `docs/presentation/VERIFY_FIGURE3.md`.
+Run the verifier subagent in the **foreground** (Agent tool with `run_in_background: false`), and wait for it: the headless session ends if background tasks run longer than 600 s, which is what stopped the s31 job. Fix BLOCKING issues and re-verify, up to 3 rounds. Report: `docs/presentation/VERIFY_FIGURE3.md`.
 
 ## Commit and summary
 
