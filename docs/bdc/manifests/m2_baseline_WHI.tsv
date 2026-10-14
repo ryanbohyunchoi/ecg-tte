@@ -1,3 +1,3 @@
-drs_uri	name	folder	object_id	compact_drs_uri	size	md5	consent
-drs://gen3.biodatacatalyst.nhlbi.nih.gov/dg.4503/1268570a-5140-420d-81c4-dde70bd4eca0	visit1.zip	WHI/Data/Visit1	dg.4503/1268570a-5140-420d-81c4-dde70bd4eca0	drs://dg.4503:1268570a-5140-420d-81c4-dde70bd4eca0	1429506390	ef96771b6aa71522cf249cf975290c84	phs003824.c1
-drs://gen3.biodatacatalyst.nhlbi.nih.gov/dg.4503/98be61ef-14f6-4b5e-827f-fb0f631810af	Visit1.zip	WHI/Data/Visit1	dg.4503/98be61ef-14f6-4b5e-827f-fb0f631810af	drs://dg.4503:98be61ef-14f6-4b5e-827f-fb0f631810af	204532880	04b3d3c9648ce5b9ab1e8e1cf4c1b9bc	phs003824.c2
+drs_uri	name	folder	object_id	host_drs_uri	size	md5	consent
+drs://dg.4503:1268570a-5140-420d-81c4-dde70bd4eca0	visit1.zip	WHI/Data/Visit1	dg.4503/1268570a-5140-420d-81c4-dde70bd4eca0	drs://gen3.biodatacatalyst.nhlbi.nih.gov/dg.4503/1268570a-5140-420d-81c4-dde70bd4eca0	1429506390	ef96771b6aa71522cf249cf975290c84	phs003824.c1
+drs://dg.4503:98be61ef-14f6-4b5e-827f-fb0f631810af	Visit1.zip	WHI/Data/Visit1	dg.4503/98be61ef-14f6-4b5e-827f-fb0f631810af	drs://gen3.biodatacatalyst.nhlbi.nih.gov/dg.4503/98be61ef-14f6-4b5e-827f-fb0f631810af	204532880	04b3d3c9648ce5b9ab1e8e1cf4c1b9bc	phs003824.c2
