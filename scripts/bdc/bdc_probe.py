@@ -238,11 +238,21 @@ def summarise_frame(D: pd.DataFrame) -> dict:
     return dict(n_rows=BC.round_count(len(D), 10), n_cols=int(D.shape[1]), id_columns=id_cols, columns=cols)
 
 
+# BDC/BioLINCC cloning artifacts (Ledger copies of the SAS tables, ETL bookkeeping), not study tables
+ARTIFACT = re.compile(r"^(sprint_a_\d|accord_a_\d|clones_|filter_|inflight_|join_|ensemble_)", re.I)
+
+
 def _iter_tabular(roots, max_mb):
-    """(display name, reader callable) for every tabular file, including archive members."""
+    """(display name, reader callable) for every tabular file, including archive members. Skips BDC cloning
+    artifacts and any .sas7bdat whose same-stem .csv sits in the same folder (BioLINCC ships both)."""
     for r, p, size in walk(roots):
         s = p.name.lower()
         rel = str(p.relative_to(r))
+        if ARTIFACT.match(p.name):
+            continue
+        if s.endswith(".sas7bdat") and (any(p.parent.glob(p.stem + ".csv")) or any(
+                (p.parent / "CSV").glob(p.stem + ".csv"))):
+            continue
         if size is not None and size > max_mb * 2 ** 20:
             yield rel, None, f"skipped: {round(size / 2 ** 20)} MB > --max-table-mb"
             continue

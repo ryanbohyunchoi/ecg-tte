@@ -55,6 +55,8 @@ class ProbeTest(unittest.TestCase):
                           "EGFR": rng.normal(70, 20, 200), "SEX": rng.choice(["F", "M"], 200)})
         D.loc[:5, "EGFR"] = np.nan
         D.to_csv(ph / "baseline.csv", index=False)
+        (ph / "baseline.sas7bdat").write_bytes(b"not really SAS")  # twin of baseline.csv: must be skipped
+        (ph / "sprint_a_20230622145936p959_14.sas7bdat").write_bytes(b"x")  # cloning artifact: skipped
         txt = "# dbGaP header line\n# another\n" + D.to_csv(sep="\t", index=False)
         (ph / "phs000200.v12.pht000998.v6.p3.c1.WHI_test.HMB-IRB.txt.gz").write_bytes(gzip.compress(txt.encode()))
         with zipfile.ZipFile(ph / "bundle.zip", "w") as z:
@@ -82,6 +84,7 @@ class ProbeTest(unittest.TestCase):
         self.assertEqual(yrs["2010"], "1-10")  # 9 files -> suppressed
         T = {t["table"]: t for t in R["tables"]["tables"]}
         self.assertIn("sprint_pheno/bundle.zip::outcomes.csv", T)
+        self.assertFalse(any(k.endswith(".sas7bdat") for k in T))
         whi = [k for k in T if "pht000998" in k][0]
         self.assertEqual(T[whi]["sheets"][""]["n_cols"], 4)  # comment lines skipped
         cols = {c["column"]: c for c in T["sprint_pheno/baseline.csv"]["sheets"][""]["columns"]}
