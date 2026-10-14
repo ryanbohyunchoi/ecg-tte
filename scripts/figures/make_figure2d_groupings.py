@@ -55,7 +55,7 @@ TABS = [("tab1_cardiac_physiology.png", "Cardiac-physiology"), ("tab2_clinical_a
         ("tab3_treatment_decision.png", "Type of treatment decision"), ("tab4_physiologic_label.png", "Physiologic label")]
 FIGSIZE = (6.6, 3.05)
 YLAB = "Change in % of items\nwith |SMD| < 0.1"
-TITLE = "PS-CVD5 + ECG vs PS-CVD5, per trial"
+TITLE = "PS-CVD5 + AI-ECG vs PS-CVD5, per trial"
 GAP = 2.0  # space between groups (in bar widths)
 
 
@@ -173,8 +173,7 @@ def tab1(V, fn):
     fig, ax = plt.subplots(figsize=FIGSIZE)
     F.panel_d(ax, V, legend_fs=6.0, tick_fs=5.4, note=False, wrap=False)
     ax.set_title(TITLE, fontsize=7, loc="left")
-    fig.tight_layout()
-    F.panel_d_note(ax)
+    fig.tight_layout()  # deck3 (2026-10-14): no footnote under the trial names
     fig.savefig(OUT / fn, dpi=300, bbox_inches="tight", pad_inches=0.06)
     plt.close(fig)
 

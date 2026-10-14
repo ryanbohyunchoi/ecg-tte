@@ -12,6 +12,8 @@ the 54 non-coded held-out items with the leakage-corrected masks of pipeline.md 
      2026-10-14 (docs/queue/figure2D.md): bars coloured by type of treatment decision, a descriptive grouping (CARDIAC_PHYSIOLOGY:
      rhythm control, HF / RAAS drug choice vs the other 20); trial names on the x-axis; group counts and means in the legend (gated
      against EXPECT_D); no test of the group difference. The popup's other groupings: scripts/figures/make_figure2d_groupings.py.
+Deck3 (docs/queue/QUEUE_2026_10_14_DECK3.md): display labels AI-ECG (the ECG embedding) and AI-EHR (CLMBR-T); no highlight band in
+C; panel D legend "Physiology trials" / "Other" without drug lists and no footnote. Numbers unchanged.
 
 Style and plotting code follow scripts/v20/make_paper_figures.py (figure2; copied, not imported: importing it rebuilds paper 1's
 deck data). Statistics come from scripts/build_balance_explorer.py (Grid.block, pair_stats, the explorer's love-plot / domain /
@@ -61,8 +63,9 @@ NAVY, RED, GOLD, GREY, LGREY = "#0d1040", "#d9534f", "#c9a227", "#7a7c8c", "#d9d
 GREEN, PURPLE = "#2a7f62", "#7b4fa0"
 RUNGS = [("P1", "PS-Demo"), ("P5", "PS-CVD5"), ("PS10", "PS-CVD10"), ("clinical_nolvef", "PS-Clinical\n(no LVEF, MI)"), ("hdPS200", "hdPS")]  # ordered by number of inputs (3, 8, 13, ~30, ~210); user decision 2026-10-14
 # arm: (legend label, colour, marker, face); unmatched drawn as a cross
-ARMS = {"unmatched": ("Unmatched", GREY, "x", None), "base": ("PS alone", NAVY, "o", "white"), "ECG": ("PS + ECG", RED, "o", RED),
-        "CLMBR": ("PS + CLMBR-T", GREEN, "s", "white"), "ECG+CLMBR": ("PS + CLMBR-T + ECG", PURPLE, "D", PURPLE)}
+# display labels (deck3 queue, 2026-10-14): AI-ECG = the BCL ECG embedding (32 PCs), AI-EHR = CLMBR-T (64 PCs); analysis unchanged
+ARMS = {"unmatched": ("Unmatched", GREY, "x", None), "base": ("PS alone", NAVY, "o", "white"), "ECG": ("PS + AI-ECG", RED, "o", RED),
+        "CLMBR": ("PS + AI-EHR", GREEN, "s", "white"), "ECG+CLMBR": ("PS + AI-ECG + AI-EHR", PURPLE, "D", PURPLE)}
 EXPECT_ECG = {"P1": 10.6, "P5": 8.7, "PS10": 3.8, "hdPS200": 7.1, "clinical_nolvef": 3.3}  # s31 summaries (docs/s31/S31_RESULTS.md)
 # panel D grouping (docs/queue/figure2D.md, 2026-10-14): descriptive, by type of treatment decision; trials_meta "full" names.
 # Cardiac-physiology = rhythm control + HF / RAAS drug choice; "Other" = the remaining 20 of s31 (anticoagulant / antithrombotic
@@ -72,8 +75,9 @@ CARDIAC_PHYSIOLOGY = {"rhythm control": ["AF-CHF", "AFFIRM", "EAST-AFNET 4", "CA
 CARDIAC = [t for v in CARDIAC_PHYSIOLOGY.values() for t in v]
 EXPECT_D = {"cardiac": (10, 11, 9.9), "other": (9, 20, -0.3), "all": (19, 31, 3.3)}  # (improved, trials, mean points); queue file item 9
 CARD, OTHER = "#2f6db5", "#c9cbd6"  # bars; "other" tick labels use GREY (as the mock-up), the light bar grey is too faint for text
-D_LEG = {"cardiac": "Cardiac-physiology (rhythm control, HF / RAAS drugs)", "other": "Other (anticoagulant, glucose-, BP-, lipid-lowering, NSAID)"}
-D_NOTE = "Trials grouped descriptively by type of treatment decision."
+# deck3 (2026-10-14): short legend labels (bold, via mathtext), no drug lists, no footnote under the trial names
+D_LEG = {"cardiac": r"$\bf{Physiology\ trials}$", "other": r"$\bf{Other}$"}
+D_NOTE = "Trials grouped descriptively by type of treatment decision."  # no longer drawn (panel_d note=False by default)
 FIG_H, ROW2_H, D_NAMES_H, HSPACE = 5.85, 1.12, 0.55, 0.5  # figure height (in), bottom-row height ratio, share of the D cell kept
 # for trial names, row spacing (5.3 in, 0.82, -, 0.62 before the Figure 2D job)
 GSHORT = {"Vitals & core labs": "Vitals, core labs", "Other labs": "Other labs", "Echo: LV structure": "LV structure",
@@ -82,7 +86,8 @@ GSHORT = {"Vitals & core labs": "Vitals, core labs", "Other labs": "Other labs",
 plt.rcParams.update({"font.family": "Nimbus Sans", "font.size": 8, "axes.labelsize": 8, "axes.titlesize": 8,
                      "xtick.labelsize": 7.5, "ytick.labelsize": 7.5, "legend.fontsize": 7.5, "axes.spines.top": False,
                      "axes.spines.right": False, "axes.edgecolor": NAVY, "axes.labelcolor": NAVY, "xtick.color": NAVY,
-                     "ytick.color": NAVY, "text.color": NAVY, "pdf.fonttype": 42, "savefig.dpi": 300})
+                     "ytick.color": NAVY, "text.color": NAVY, "pdf.fonttype": 42, "savefig.dpi": 300,
+                     "mathtext.fontset": "custom", "mathtext.rm": "Nimbus Sans", "mathtext.bf": "Nimbus Sans:bold"})
 
 # ---------------------------------------------------------------- helpers (scripts/v20/make_paper_figures.py)
 PANEL_LETTER = {}  # id(axes) -> panel letter, filled by letter()
@@ -251,7 +256,7 @@ def mfmt(x):
     return f"{x:+.1f}".replace("-", "−")
 
 
-def panel_d(ax, V, legend_fs=6.0, tick_fs=5.4, note=True, wrap=True):
+def panel_d(ax, V, legend_fs=6.0, tick_fs=5.4, note=False, wrap=False):
     """panel D: per trial, PS-CVD5 + ECG vs PS-CVD5, change in % of items with |SMD| < 0.1; bars coloured by cardiac-physiology
     decision (CARDIAC_PHYSIOLOGY; descriptive). Shared by Figure 2 and the popup's first tab (make_figure2d_groupings.py)."""
     from matplotlib.patches import Patch
@@ -278,7 +283,7 @@ def panel_d(ax, V, legend_fs=6.0, tick_fs=5.4, note=True, wrap=True):
     ax.annotate(f"All {n} trials: {a} of {n} improved; mean {mfmt(m)} points; {fmt_p(D['p'])}", xy=(1, 0), xycoords=lg, xytext=(-2, -2),
                 textcoords="offset points", ha="right", va="top", fontsize=legend_fs - 0.3, color=NAVY)
     ax.set_ylabel("Change in % of items\nwith |SMD| < 0.1", fontsize=6.6)
-    ax.set_title("PS-CVD5 + ECG vs PS-CVD5, per trial", fontsize=7, loc="left", x=-0.12)
+    ax.set_title("PS-CVD5 + AI-ECG vs PS-CVD5, per trial", fontsize=7, loc="left", x=-0.12)
     if note:
         panel_d_note(ax)
     return lab
@@ -408,7 +413,7 @@ def figure2(V):
     ax.set_xlim(0, max(0.3, xmax))
     ax.set_ylim(-0.8, len(names) - 0.2)
     ax.set_xlabel(f"|SMD| (median across {V['k_set']} trials)", fontsize=7)
-    ax.set_title("PS-CVD5 ± ECG, 54 held-out items", fontsize=7, loc="left", x=-0.55)
+    ax.set_title("PS-CVD5 ± AI-ECG, 54 held-out items", fontsize=7, loc="left", x=-0.55)
     letter(ax, "A", x=-0.75, y=1.01)
     # B: mean |SMD| by domain
     ax = fig.add_subplot(gs[0, 1])
@@ -425,12 +430,12 @@ def figure2(V):
     ax.axvline(0.1, color=RED, ls="--", lw=0.6)
     ax.set_xlim(0.05, None)
     ax.set_xlabel(f"Mean |SMD| (mean across {V['k_set']} trials)", fontsize=7)
-    ax.set_title("PS-CVD5 ± ECG, by domain", fontsize=7, loc="left", x=-0.86)
+    ax.set_title("PS-CVD5 ± AI-ECG, by domain", fontsize=7, loc="left", x=-0.86)
     letter(ax, "B", x=-1.04)
     # C: PS ladder
     ax = fig.add_subplot(gs[0, 2])
     xs = np.arange(len(RUNGS))
-    ax.axvspan(0.62, 1.38, color="#fbeceb", zorder=0, lw=0)
+    # deck3 (2026-10-14): no highlight band behind PS-CVD5
     U = [V["C"][rg]["unmatched"] for rg, _ in RUNGS]
     ax.plot(xs, U, "--", color=GREY, lw=0.8, zorder=1)
     scatter(ax, xs, U, "unmatched", s=12, zorder=2)
@@ -452,7 +457,7 @@ def figure2(V):
              if a != "unmatched" and V["C"][rg]["k_" + a] < V["k_set"]]  # footnote whenever an arm rests on fewer trials than the set
     ax.set_ylabel(f"Mean |SMD| ({V['k_set']} trials" + ("*)" if fewer else ")"), fontsize=7)
     ax.set_title("PS ladder (fewer → more covariates)", fontsize=7, loc="left", x=-0.3)
-    ax.text(0.99, 0.985, "red: relative change in mean\n|SMD| with + ECG vs PS alone", transform=ax.transAxes, ha="right", va="top", fontsize=5.2,
+    ax.text(0.99, 0.985, "red: relative change in mean\n|SMD| with + AI-ECG vs PS alone", transform=ax.transAxes, ha="right", va="top", fontsize=5.2,
             color=RED, linespacing=1.1)
     notes = (["* " + "; ".join(fewer)] if fewer else [])
     if notes:

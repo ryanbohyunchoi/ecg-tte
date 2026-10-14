@@ -17,6 +17,9 @@ recomputed_f4.json (the independent recomputation; 1e-9) and Figure 3 panel B (m
 + CLMBR-T points and the PS-alone points of PS-CVD5, hdPS, PS-Clinical; 1e-9). The script also checks that no two text labels
 overlap and that nothing is clipped.
 
+Deck3 (docs/queue/QUEUE_2026_10_14_DECK3.md): display labels AI-ECG / AI-EHR; no grey group headings, footnote or dagger. Numbers
+unchanged.
+
 Outputs: docs/paper/figures_latent/panels/deck/slide11_panelC_agreement.{png,pdf} (300 dpi, 2215 x 830 px: the full width of
 Figure 3, under panels A and B); aggregate values: audits/claude-slide11c-20261014/panelC_values.json. Aggregates only (no patient
 counts, n_pairs, retention or ESS).
@@ -53,9 +56,10 @@ CLMBR = F.ARMS["CLMBR"][1]  # the colour of "PS + CLMBR-T" in Figure 2
 # (label, (rung, arm), colour, group, tick label); left to right
 BARS = [("Unmatched", ("P5", "unmatched"), F.GREY, "ref", "Unmatched"),
         ("PS-CVD5", ("P5", "base"), F.NAVY, "conv", "PS-CVD5"), ("hdPS", ("hdPS200", "base"), HDPS, "conv", "hdPS"),
-        ("PS-Clinical", ("clinical_nolvef", "base"), F.GOLD, "conv", "PS-Clinical†"),
-        ("Demo + ECG", ("P1", "ECG"), F.RED, "rep", "Demo\n+ ECG"), ("Demo + CLMBR-T", ("P1", "CLMBR"), CLMBR, "rep", "Demo\n+ CLMBR-T"),
-        ("Demo + ECG + CLMBR-T", ("P1", "ECG+CLMBR"), F.PURPLE, "rep", "Demo + ECG\n+ CLMBR-T")]
+        ("PS-Clinical", ("clinical_nolvef", "base"), F.GOLD, "conv", "PS-Clinical"),
+        ("Demo + ECG", ("P1", "ECG"), F.RED, "rep", "Demo\n+ AI-ECG"), ("Demo + CLMBR-T", ("P1", "CLMBR"), CLMBR, "rep", "Demo\n+ AI-EHR"),
+        ("Demo + ECG + CLMBR-T", ("P1", "ECG+CLMBR"), F.PURPLE, "rep", "Demo + AI-ECG\n+ AI-EHR")]  # tick labels: display labels AI-ECG / AI-EHR
+# (deck3 queue 2026-10-14); no dagger (its footnote is removed)
 XP = np.array([0, 1, 2, 3, 4.6, 6.0, 7.4])  # bar positions (the mock-up's); dotted divider between the groups
 DIV = 3.8
 REFS = ("PS-CVD5", "hdPS")
@@ -200,7 +204,7 @@ def no_overlap(fig, texts, pad_px=2):
 # ---------------------------------------------------------------- figure
 def draw(V):
     fig = plt.figure(figsize=(W_PX / 300, H_PX / 300))
-    ax = fig.add_axes([0.086, 0.235, 0.906, 0.655])
+    ax = fig.add_axes([0.086, 0.15, 0.906, 0.74])  # deck3: no footnote, so the axes use its space
     v = [V["levels"][lab] for lab, *_ in BARS]
     ax.bar(XP, v, color=[c for _, _, c, _, _ in BARS], width=0.66, edgecolor="white", lw=0.8, zorder=2)
     texts = []
@@ -216,15 +220,14 @@ def draw(V):
     ax.set_xticks(XP, [tl for *_, tl in BARS], fontsize=6.2)  # all navy, as the mock-up
     ax.tick_params(axis="x", length=0, pad=3)
     ax.axvline(DIV, color=F.LGREY, lw=0.6, ls=":")
-    texts.append(("caption conv", ax.text(1.5, TOP * 0.97, "Conventional PS", ha="center", va="top", fontsize=6.2, color=F.GREY)))
-    texts.append(("caption rep", ax.text(6.0, TOP * 0.97, "Demographics + AI representations", ha="center", va="top", fontsize=6.2, color=F.GREY)))
+    # deck3 (2026-10-14): no grey group headings (the dotted separator stays)
     ax.set_xlim(-0.6, 8.1)
     ax.set_ylim(0, TOP)
     ax.set_yticks(np.arange(0, 0.351, 0.05), [f"{y:.2f}" for y in np.arange(0, 0.351, 0.05)], fontsize=6.2)
     ax.set_ylabel("Mean |Δ log HR| vs RCT\nlower = closer", fontsize=6.6)
     texts.append(("title", ax.set_title("Agreement: demographics + AI representations vs conventional PS", fontsize=7, loc="left")))
     F.letter(ax, "C", x=-0.08, y=1.03)
-    texts.append(("footnote", fig.text(0.012, 0.014, "\n".join(FOOT), ha="left", va="bottom", fontsize=4.7, color=F.GREY, linespacing=1.3)))
+    # deck3: no footnote (FOOT is no longer drawn)
     fig.canvas.draw()
     texts += [(f"xtick {i}", t) for i, t in enumerate(ax.get_xticklabels())] + [("ylabel", ax.yaxis.label)]
     lay = no_overlap(fig, texts)

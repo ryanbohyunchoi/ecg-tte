@@ -168,6 +168,7 @@ Sources: `docs/v1_audit/DEFECT_IMPACT.md` §1; `docs/v1_ps10/PS10.md`; `docs/v2_
 | 2026-10-14 | Figure 3 (agreement): A scatter, B agreement ladder with CLMBR-T arms, C by emulation quality; CLMBR-T shown as a comparison arm, not in take-home claims. | User request (queue `docs/queue/figure3.md`) |
 | 2026-10-14 | Deck slide 9 panel D shows demographics + AI representations (ECG, CLMBR-T) vs conventional PS (PS-CVD5, hdPS, PS-Clinical) as a comparison; per-trial panel moved to appendix A4; deck only, paper Figure 2 unchanged; CLMBR-T still not in the take-home claims. | User decision (queue `docs/queue/slide9_panelD.md`) |
 | 2026-10-14 | Deck slide 11 panel C shows agreement (mean \|Δ log HR\|) for demographics + AI representations (ECG, CLMBR-T) vs conventional PS; the quality-tier panel moved to an appendix slide; deck only, paper Figure 3 unchanged; CLMBR-T still not in the take-home claims. | User decision (queue `docs/queue/slide11_figure3.md`) |
+| 2026-10-14 | Display labels in the deck and the paper figures: AI-ECG (BCL ECG embedding, 32 PCs) and AI-EHR (CLMBR-T, 64 PCs); analysis unchanged. | User request (queue `docs/queue/QUEUE_2026_10_14_DECK3.md`) |
 
 ## 10. Open decisions (needed before the lock)
 

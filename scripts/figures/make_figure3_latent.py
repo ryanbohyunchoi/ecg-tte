@@ -58,7 +58,8 @@ SET = "s31"
 NAVY, RED, GREY, LGREY, GREEN, PURPLE = F2.NAVY, F2.RED, F2.GREY, F2.LGREY, F2.GREEN, F2.PURPLE
 RUNGS = [("P1", "PS-Demo"), ("P5", "PS-CVD5"), ("PS10", "PS-CVD10"), ("clinical_nolvef", "PS-Clinical\n(no LVEF, MI)"), ("hdPS200", "hdPS")]  # Figure 2C order
 ARM4 = ["base", "ECG", "CLMBR", "ECG+CLMBR"]
-LAB = {"base": "PS alone", "ECG": "+ ECG", "CLMBR": "+ CLMBR-T", "ECG+CLMBR": "+ CLMBR-T + ECG"}  # colours / markers: F2.ARMS
+LAB = {"base": "PS alone", "ECG": "+ AI-ECG", "CLMBR": "+ AI-EHR", "ECG+CLMBR": "+ AI-ECG + AI-EHR"}  # colours / markers: F2.ARMS; display
+# labels AI-ECG (ECG embedding) / AI-EHR (CLMBR-T), deck3 queue 2026-10-14
 TIERS = [("EG", "Excellent + Good", ("Excellent", "Good")), ("MO", "Moderate", ("Moderate",))]
 # queue file figure3.md item 5 (PS alone / + ECG / + CLMBR-T / + CLMBR-T + ECG); stop if any value differs by more than 0.001
 EXPECT = {"A": dict(base=0.232, ECG=0.198, closer=20, k=31),
@@ -179,7 +180,7 @@ def panel_a(ax, V):
     for xi, a, b in zip(x, y0, y1):
         ax.plot([xi, xi], [a, b], color=LGREY, lw=0.8, zorder=1)
     ax.scatter(x, y0, s=15, facecolor="white", edgecolor=NAVY, lw=0.9, zorder=2, label="PS-CVD5")
-    ax.scatter(x, y1, s=15, color=RED, edgecolor=RED, lw=0.9, zorder=3, label="PS-CVD5 + ECG")
+    ax.scatter(x, y1, s=15, color=RED, edgecolor=RED, lw=0.9, zorder=3, label="PS-CVD5 + AI-ECG")
     xl, yl = (0.45, 2.1), (0.3, 2.6)
     assert xl[0] < x.min() and x.max() < xl[1] and yl[0] < min(y0.min(), y1.min()) and max(y0.max(), y1.max()) < yl[1]  # nothing clipped
     hr_axis(ax, *xl, [0.5, 0.67, 1, 1.5, 2])
@@ -191,7 +192,7 @@ def panel_a(ax, V):
     ax.text(0.03, 0.97, f"Mean |Δ log HR|: {V['A']['base']:.3f} → {V['A']['ECG']:.3f}\n{V['A']['closer']} of {V['A']['k']} trials closer",
             transform=ax.transAxes, va="top", ha="left", fontsize=6.5, linespacing=1.35)
     ax.legend(loc="lower right", frameon=False, fontsize=6.3, handletextpad=0.3, borderaxespad=0.2)
-    ax.set_title("PS-CVD5 vs PS-CVD5 + ECG", fontsize=7, loc="left")
+    ax.set_title("PS-CVD5 vs PS-CVD5 + AI-ECG", fontsize=7, loc="left")
     F2.letter(ax, "A", x=-0.2, y=1.04)
 
 

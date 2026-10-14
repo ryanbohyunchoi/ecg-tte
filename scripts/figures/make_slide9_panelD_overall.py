@@ -14,6 +14,9 @@ modified); the style and helpers are those of make_figure2_latent.py (imported, 
 audited figure4.md values (display precision) and audits/claude-fig4-standalone-20261014/recomputed_f4.json (the independent
 recomputation; 1e-9).
 
+Deck3 (docs/queue/QUEUE_2026_10_14_DECK3.md): display labels AI-ECG / AI-EHR; no grey group headings, footnote or dagger. Numbers
+unchanged.
+
 Outputs: docs/paper/figures_latent/panels/deck/slide9_panelD_overall.{png,pdf} (300 dpi, 1283 px wide: the width of Figure 2's
 panel D slot); aggregate values: audits/claude-slide9d-20261014/panelD_values.json. Aggregates only (no patient counts).
 
@@ -47,7 +50,8 @@ ROWS = [("Unmatched", ("P5", "unmatched"), F.GREY, "ref"),
         ("PS-Clinical", ("clinical_nolvef", "base"), F.GOLD, "conv"),
         ("Demo + ECG", ("P1", "ECG"), F.RED, "rep"), ("Demo + CLMBR-T", ("P1", "CLMBR"), CLMBR, "rep"),
         ("Demo + ECG + CLMBR-T", ("P1", "ECG+CLMBR"), F.PURPLE, "rep")]
-YL = {"PS-Clinical": "PS-Clinical†"}
+# display labels (deck3 queue 2026-10-14): AI-ECG = ECG embedding, AI-EHR = CLMBR-T; no † (its footnote is removed)
+YL = {"Demo + ECG": "Demo + AI-ECG", "Demo + CLMBR-T": "Demo + AI-EHR", "Demo + ECG + CLMBR-T": "Demo + AI-ECG + AI-EHR"}
 YP = [0.0, 1.55, 2.45, 3.35, 4.95, 5.85, 6.75]  # bar positions (inverted axis); group captions above rows 1 and 4
 DIV, CAP_CONV, CAP_REP = 4.05, 0.92, 4.32  # dotted divider; caption baselines
 REFARM = "hdPS"
@@ -132,7 +136,7 @@ def check(V):
 
 def draw(V):
     fig = plt.figure(figsize=(W_PX / 300, H_PX / 300))
-    ax = fig.add_axes([0.268, 0.265, 0.715, 0.615])
+    ax = fig.add_axes([0.268, 0.14, 0.715, 0.74])  # deck3: no footnote, so the axes use its space
     vals = [V["levels"][lab] for lab, *_ in ROWS]
     ax.barh(YP, vals, color=[c for _, _, c, _ in ROWS], height=0.66, edgecolor="white", lw=0.6, zorder=2)
     xmax = 0.30
@@ -148,9 +152,7 @@ def draw(V):
         if g == "rep":
             ax.text(xmax * 0.995, y, vs_label(V["vs"][lab]), ha="right", va="center", fontsize=5.6, color=F.NAVY, zorder=3)
     ax.axhline(DIV, color=F.GREY, lw=0.6, ls=":", zorder=1)
-    for y, s in ((CAP_CONV, "Conventional PS"), (CAP_REP, "Demographics + AI representations")):
-        ax.text(0.004, y, s, transform=ax.get_yaxis_transform(), ha="left", va="center", fontsize=5.4, color=F.GREY, style="italic",
-                bbox=dict(boxstyle="square,pad=0.08", fc="white", ec="none"), zorder=3)
+    # deck3 (2026-10-14): no grey group headings (the dotted separator stays)
     ax.set_yticks(YP, [YL.get(lab, lab) for lab, *_ in ROWS], fontsize=6.2)
     for t, (_, _, _, g) in zip(ax.get_yticklabels(), ROWS):
         t.set_color(F.GREY if g == "ref" else F.NAVY)
@@ -162,7 +164,7 @@ def draw(V):
     ax.spines["left"].set_visible(False)
     ax.set_title("Overall balance: AI representations vs conventional PS", fontsize=7, loc="left", x=-0.315, y=1.02)
     F.letter(ax, "D", x=-0.362, y=1.03)
-    fig.text(0.012, 0.012, "\n".join(FOOT), ha="left", va="bottom", fontsize=4.55, color=F.GREY, linespacing=1.3)
+    # deck3: no footnote (FOOT is no longer drawn)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(OUT.with_suffix(".png"), dpi=300)  # fixed size (no tight bbox): exactly W_PX x H_PX
     fig.savefig(OUT.with_suffix(".pdf"))

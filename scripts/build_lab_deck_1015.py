@@ -58,15 +58,25 @@ cells and gated against figure4.md. The old panel C (agreement by emulation qual
 "Agreement by emulation quality", appended after A6 (no existing label changes) and linked from slide 11's "More:". Outputs of this
 builder go to audits/claude-slide11c-20261014/deck.
 
+Revision of 2026-10-14, third deck-edit job (docs/queue/QUEUE_2026_10_14_DECK3.md; no number changes): display labels AI-ECG (the
+BCL ECG embedding) and AI-EHR (CLMBR-T) everywhere (relabel(); defined once on slides 4 and 7; raw-test wording kept); figure slides
+headed "Figure 2. Covariate balance" / "Figure 3. Agreement with RCTs"; slide 8 = a copy of the slide 4 aims list with aim 2
+highlighted plus the balance endpoints and tests; new slide 10 = the same with aim 3 highlighted plus the agreement methods; the
+balance and trial emulation explorers leave the main sequence and become Supplementary Figures 2 and 3 (S2, S3: PS and
+representation selects only, version 1 cohorts, the 31 trials, main configuration, 54 leakage-corrected items), opened from
+slide 9's panel A and from a button after slide 11's last step, with "Back to Figure 2 / 3", Esc and the browser back button; the
+deck data gain the + AI-EHR and + AI-ECG + AI-EHR arms (version 1, main configuration) for them. Robustness slide deleted; plasmode
+and agreement by quality (two consecutive slides with the former Figure 3 panel C) moved to the appendix; appendix renumbered.
+
 Main slides: 1 title; 2 Background (10-01); 3 Problem (10-01 schematic, click reveal of the unmeasured side + three points); 4 Aims
 (four aims, revealed one at a time; the representations graphic between aims 1 and 2); 5 study overview (empty body); 6 LATENT-RCT
-pipeline; 7 PSM experiments; 8 methods: covariate balancing; 9 results 1 (Figure 2); 10 results 2 (balance explorer); 11 agreement
-with the RCTs (Figure 3); 12 emulation explorer; 13 robustness; 14 agreement by quality; 15 plasmode; 16 MIMIC-IV; 17 take-home; 18
-open decisions. Appendix A1-A7
-(hash-linked; "More:" links on main slides, "Back to slide N" on every appendix slide): A1 emulation-quality criteria + interactive
-quality viewer (v19; framework v2.0 toggle); A2 all 38 trials (Table 1, scrollable); A3 held-out panel and leakage-corrected masking;
-A4 per-trial covariate balance improvement (the former Figure 2D panel and its groupings popup); A5 framework v2.0 (sensitivity);
-A6 spec-v2 cohort fixes (sensitivity); A7 agreement by emulation quality (the former Figure 3 panel C).
+pipeline; 7 PSM experiments; 8 methods: covariate balancing (aims, aim 2); 9 Figure 2; 10 methods: agreement (aims, aim 3); 11
+Figure 3; 12 MIMIC-IV; 13 take-home; 14 open decisions. Supplementary S2 (covariate balance explorer), S3 (trial emulation explorer).
+Appendix A1-A9 (hash-linked; "More:" links on main slides, "Back to slide N" on every appendix slide): A1 emulation-quality
+criteria + interactive quality viewer (v19; framework v2.0 toggle); A2 all 38 trials (Table 1, scrollable); A3 held-out panel and
+leakage-corrected masking; A4 per-trial covariate balance improvement (the former Figure 2D panel and its groupings popup); A5
+plasmode; A6 framework v2.0 (sensitivity); A7 spec-v2 cohort fixes (sensitivity); A8 agreement by emulation quality (the former
+Figure 3 panel C); A9 agreement by emulation quality, interactive (the former main slide).
 
 Reuses (not modified): scripts/build_lab_deck.py (10-01 stylesheet, schematics), scripts/build_lab_deck_v2.py (template, explorers,
 static-slide helpers, claims table), scripts/build_balance_explorer.py (data loading and validated statistics). The 2026-10-09 deck is
@@ -110,7 +120,7 @@ DECK1001 = ROOT / "docs/presentation/ecg_tte_lab_2026_10_01.html"
 DECK1009 = V2.OUT
 S31D = A / "claude-s31-20261014"  # s31 run (queue 2026-10-14)
 FIG2DD = A / "claude-fig2d-20261014"  # Figure 2D job (docs/queue/figure2D.md)
-SCR = A / "claude-slide11c-20261014/deck"  # claims table and validation inputs (slide 11 panel C run; earlier runs' copies stay in their audit folders)
+SCR = A / "claude-deck3-20261014/deck"  # claims table and validation inputs (deck3 run; earlier runs' copies stay in their audit folders)
 FIG2 = ROOT / "docs/paper/figures_latent/figure2_covariate_balance.png"  # scripts/figures/make_figure2_latent.py
 FIG2V = FIG2DD / "figure2_values.json"  # its aggregate values (validated there)
 FIG2G = FIG2.parent / "panels" / "panelD_groupings"  # the panel D popup's tabs (scripts/figures/make_figure2d_groupings.py)
@@ -158,17 +168,21 @@ AREAS = ["AF", "HF", "Diabetes", "Hypertension", "ACS / MI", "Other"]
 TIERS = ["Excellent", "Good", "Moderate", "Limited"]
 FID = {"good": 0, "moderate": 1, "poor": 2}
 # main slides (ids, in order) and appendix slides (id, label, short title, default back-target)
-MAIN = ["s-title", "s-bg", "s-prob", "s-aims", "s-over", "s-pipe", "s-meth1", "s-meth2", "s-res2", "s-bal", "s-res3", "s-emu", "s-rob",
-        "s-agq", "s-plas", "s-mimic", "s-take", "s-dec"]  # 2026-10-14 (deck2): Figure 2 (s-res2) before the balance explorer (s-bal);
-# Figure 3 job (docs/queue/figure3.md): Figure 3 (s-res3) directly after the balance explorer, before the emulation explorer
-# appendix (deck2, 2026-10-14): the former A1 (trial selection) and A6 (design history) are removed; Table 1 is one scrollable
-# slide; the held-out panel, leakage map and masking moved from slide 8 to a new appendix slide; labels renumbered A1-A5
-# slide 9 panel D job (docs/queue/slide9_panelD.md): the per-trial panel D moves to a new A4 after A3; framework v2.0 -> A5, fixes -> A6
+MAIN = ["s-title", "s-bg", "s-prob", "s-aims", "s-over", "s-pipe", "s-meth1", "s-meth2", "s-res2", "s-meth3", "s-res3", "s-mimic",
+        "s-take", "s-dec"]  # deck3 (2026-10-14): new s-meth3 (aims, aim 3 + agreement methods) before Figure 3; the explorers (s-bal,
+# s-emu) leave the main sequence (supplementary figures, SUPPF); s-rob is deleted; s-agq and s-plas move to the appendix
+# supplementary figures (deck3): (id, label, title, the figure slide they open from and return to)
+SUPPF = [("s-bal", "S2", "Supplementary Figure 2. Covariate balance explorer", "s-res2"),
+         ("s-emu", "S3", "Supplementary Figure 3. Trial emulation", "s-res3")]
+# appendix (deck3 2026-10-14, renumbered): plasmode (from slide 9) after the per-trial panel; agreement by quality = two consecutive
+# slides (the former Figure 3 panel C, then the former main slide's interactive view), both from slide 11
 APP = [("a-qual", "A1", "Emulation-quality criteria", "s-pipe"), ("a-t1", "A2", "All 38 trials (Table 1)", "s-pipe"),
        ("a-panel", "A3", "Held-out panel and leakage map", "s-meth2"), ("a-f2d", "A4", "Per-trial covariate balance improvement", "s-res2"),
-       ("a-fw", "A5", "Framework v2.0 (sensitivity)", "s-res2"), ("a-fix", "A6", "Spec-v2 cohort fixes (sensitivity)", "s-rob"),
-       ("a-f3q", "A7", "Agreement by emulation quality", "s-res3")]  # slide 11 panel C job: the former Figure 3 panel C, appended
+       ("s-plas", "A5", "Plasmode", "s-res2"),
+       ("a-fw", "A6", "Framework v2.0 (sensitivity)", "s-res2"), ("a-fix", "A7", "Spec-v2 cohort fixes (sensitivity)", "s-res2"),
+       ("a-f3q", "A8", "Agreement by emulation quality", "s-res3"), ("s-agq", "A9", "Agreement by emulation quality: interactive", "s-res3")]
 SN = {s: str(i + 1) for i, s in enumerate(MAIN)}
+SN.update({sid: lab for sid, lab, _, _ in SUPPF})
 SN.update({sid: lab for sid, lab, _, _ in APP})
 APPT = {lab: t for _, lab, t, _ in APP}
 CTX = {}
@@ -197,8 +211,40 @@ def more(*labs):
             + "</div>")
 
 
-def back(sid):
-    return f'<div class="xrefs"><a class="xref back" href="#{SN[sid]}" data-goto="{sid}" data-back="1">Back to slide <span class="lbl">{SN[sid]}</span></a></div>'
+def back(sid, *labs):
+    """the "Back to slide N" link; with labs, followed by "More:" links in the same line (deck3: A8 -> A9, A9 -> A1)."""
+    m = (" · More: " + " · ".join(applink(l) for l in labs)) if labs else ""
+    return f'<div class="xrefs"><a class="xref back" href="#{SN[sid]}" data-goto="{sid}" data-back="1">Back to slide <span class="lbl">{SN[sid]}</span></a>{m}</div>'
+
+
+# ---------------------------------------------------------------- display labels (deck3, 2026-10-14)
+# "ECG" -> "AI-ECG" (the BCL ECG embedding) and "CLMBR-T" -> "AI-EHR" in every label and text; analysis unchanged. Words that mean
+# the raw test itself, and the two one-line definitions (slides 4 and 7), are protected; so is anything inside
+# <!--norelabel-->...<!--/norelabel--> and every data: URI.
+RAW_ECG = ["12-lead ECG", "with an ECG in", "raw ECG waveform", "ECG on or before index", "ECG foundation model embedding, BCL encoder",
+           "EHR foundation model, CLMBR-T; coded history", "frozen CLMBR-T-base", "ECG and EHR foundation models"]
+RELAB = [(r"CLMBR-T \+ ECG", "AI-ECG + AI-EHR"), (r"ECG \+ CLMBR-T", "AI-ECG + AI-EHR"), (r"(?<![\w-])CLMBR-T(?![\w-])", "AI-EHR"),
+         (r"(?<![\w-])ECG(?![\w-])", "AI-ECG"), (r"\b[Tt]he AI-ECG ", "AI-ECG ")]  # "The ECG improves" -> "AI-ECG improves"
+
+
+def relabel(h):
+    out = []
+    for k, part in enumerate(re.split(r'(<!--norelabel-->.*?<!--/norelabel-->|data:[a-z/+]+;base64,[A-Za-z0-9+/=]+)', h, flags=re.S)):
+        if k % 2:
+            out.append(part.replace("<!--norelabel-->", "").replace("<!--/norelabel-->", ""))
+            continue
+        keep = {}
+        for i, w in enumerate(RAW_ECG):
+            tok = f"\x00{i}\x00"
+            if w in part:
+                part = part.replace(w, tok)
+                keep[tok] = w
+        for a, b in RELAB:
+            part = re.sub(a, b, part)
+        for tok, w in keep.items():
+            part = part.replace(tok, w)
+        out.append(part)
+    return "".join(out)
 
 
 def sec(sid, title, body, cls="", links="", steps=None, wrap=True):
@@ -276,6 +322,24 @@ def load_v1(g):
         if key[1] != "clinical_nolvef":
             assert np.array_equal(g["G"][key], g1["G"][key], equal_nan=True)
     return g1, True
+
+
+SX_RUNGS, SX_ARMS = ("P5", "PS10", "clinical_nolvef", "hdPS200"), ("CLMBR", "ECG+CLMBR")
+
+
+def add_rep_arms(D, g1):
+    """deck3 (2026-10-14): the + AI-EHR (CLMBR) and + AI-ECG + AI-EHR (ECG+CLMBR) arms of the version 1 cells, main configuration, the
+    four PS of Supplementary Figures 2 and 3: per-trial |SMD| integers (as every other arm) and log HR / SE (V2.est_block's rules), plus
+    their arm masks (BE.LEAK_ARM: the 4 coded items, none of the 54). Aggregates only."""
+    R = g1["R"]
+    for rg in SX_RUNGS:
+        for a in SX_ARMS:
+            D["S"]["main"][rg][a] = BE.enc(g1["G"][("main", rg, a)], BE.SC)
+            h = R[(R.config == "main") & (R.rung == rg) & (R.arm == a)].set_index("trial").loc[g1["tids"]]
+            D["EST"]["v1"]["main"][rg][a] = [None if f or not (np.isfinite(l) and np.isfinite(s)) else [round(float(l), 8), round(float(s), 8)]
+                                             for f, l, s in zip(h.failed, h.loghr, h.se)]
+    D["leak"]["arm"] = {a: [BE.VN.index(c) for c in BE.LEAK_ARM[a]] for a in SX_ARMS}
+    assert not set(D["leak"]["arm"]["CLMBR"]) & set(BE.items("54"))
 
 
 def trials_new(trials_old, g):
@@ -593,7 +657,8 @@ def aims_graphic():
             return o + txt(x + 96, yc + 7, label, fs=20, w=700)
         return (o + txt(x + 96, yc - 12, label, fs=20, w=700) + "".join(txt(x + 96, yc + 14 + 19 * i, l, fs=14, col=MU) for i, l in enumerate(sub)))
 
-    for yc, head in ((100, "ECG embedding"), (300, "EHR embedding")):
+    # deck3 (2026-10-14): the path headings are the one-line definitions of the two display labels
+    for yc, head in ((100, DEF_ECG), (300, DEF_EHR)):
         s.append(txt(0, yc - 76, head, fs=17, w=700, col=RED, anc="start"))
     # (a) raw 12-lead ECG waveform: 3 rows x 4 columns of leads on ECG paper
     x0, y0, W, H = 0, 40, 320, 120
@@ -629,36 +694,54 @@ def aims_graphic():
     s.append(f'<line x1="{x0 + 306}" y1="{y0 + 12}" x2="{x0 + 306}" y2="{y0 + 108}" stroke="{RED}" stroke-width="2" stroke-dasharray="4 3"/>')
     s.append(txt(x0 + W / 2, y0 + H + 26, "coded patient timeline", fs=16, col=MU))
     # encoders, embedding vectors, propensity score matching
-    for yc, lab, sub in ((100, "AI-ECG encoder", None), (300, "CLMBR-T", ["EHR foundation model", "(coded history)"])):
+    for yc, lab, sub in ((100, "BCL encoder", None), (300, "CLMBR-T", None)):  # deck3: the encoders by name (the headings define them)
         s.append(arr(330, yc, 382, yc) + enc(390, yc, lab, sub) + arr(606, yc, 650, yc) + vec(660, yc - 56))
         s.append(txt(673, yc + 78, "embedding vector", fs=16, col=MU))
     s.append(f'<rect x="850" y="140" width="320" height="120" rx="8" fill="{NAVY}"/>' + txt(1010, 192, "Propensity score", fs=24, w=700, col="#fff")
              + txt(1010, 224, "matching", fs=24, w=700, col="#fff"))
     s.append(arr(696, 100, 846, 178) + arr(696, 300, 846, 222))
     s.append("</svg>")
-    return f'<div class="aimfig only" data-step="2" data-of="1">{"".join(s)}</div>'
+    return f'<div class="aimfig only" data-step="2" data-of="1"><!--norelabel-->{"".join(s)}<!--/norelabel--></div>'
 
 
-def s_aims():
-    sid = "s-aims"
-    claim(SN[sid], "MIMIC-IV external validation done", "done", ROOT / "docs/v21/MIMIC_PAPER2.md", probe="7 cardiovascular trials", ref_src=ROOT / "docs/v21/MIMIC_PAPER2.md")
+# the one-line definitions of the display labels (deck3, 2026-10-14): slide 4 (aims graphic) and slide 7 (PSM experiments)
+DEF_ECG = "AI-ECG (ECG foundation model embedding, BCL encoder)"
+DEF_EHR = "AI-EHR (EHR foundation model, CLMBR-T; coded history)"
+
+
+def aims_list():
+    """the slide 4 aims (number, icon, title, subtitle); reused by the aims copies on slides 8 and 10 (deck3)."""
     chip = lambda grp, what, done: (f'<div class="chip{" done" if done else ""}"><span class="cg">{grp}</span> {what} '
                                     f'<span class="st">{"✓ done" if done else "planned"}</span></div>')
-    aims = [
-        (1, ICON["ecg"] + ICON["ehr"], "Integrate ECG and EHR foundation models into matching",
-         "ECG encoder (BCL) · EHR foundation model (CLMBR-T) · easy to operationalize"),
+    return [
+        (1, ICON["ecg"] + ICON["ehr"], "Integrate ECG and EHR foundation models into matching", "AI-ECG and AI-EHR · easy to operationalize"),
         (2, ICON["bal"], "Covariate balance", "on held-out measurements"),
         (3, ICON["rct"], "Trial emulation and agreement with RCTs", f"{sum(t['s31'] for t in CTX['trials'])} benchmark RCTs"),
         (4, ICON["glob"], "External validation",
          '<span class="chips">' + chip("EHR", "MIMIC-IV", True) + chip("Biobank", "UK Biobank", False)
          + chip("Trial cohorts", "dbGaP: ACCORD, WHI, CHS", False) + "</span>"),
     ]
+
+
+def aim_row(k, ic, t, s, cls, extra=""):
+    return (f'<div class="aim {cls}"{extra}><div class="ic">{ic}</div><div class="num">{k}</div>'
+            f'<div><div class="at">{esc(t)}</div><div class="as">{s if k == 4 else esc(s)}</div></div></div>')
+
+
+def s_aims():
+    sid = "s-aims"
+    claim(SN[sid], "MIMIC-IV external validation done", "done", ROOT / "docs/v21/MIMIC_PAPER2.md", probe="7 cardiovascular trials", ref_src=ROOT / "docs/v21/MIMIC_PAPER2.md")
     st = {1: 1, 2: 3, 3: 4, 4: 5}  # click 2 = the representations graphic under aim 1 (aims_graphic); click 3 hides it and reveals aim 2
-    rows = "".join(f'<div class="aim fstep" data-step="{st[k]}"><div class="ic">{ic}</div><div class="num">{k}</div>'
-                   f'<div><div class="at">{esc(t)}</div><div class="as">{s if k == 4 else esc(s)}</div></div></div>' for k, ic, t, s in aims)
+    rows = "".join(aim_row(k, ic, t, s, "fstep", f' data-step="{st[k]}"') for k, ic, t, s in aims_list())
     body = f"""<p class="goal">The goal of <b>LATENT-RCT</b> is to bring unstructured information into trial emulation.</p>
 <div class="aims4">{rows}</div>{aims_graphic()}"""
     return sec(sid, "Aims", body, steps=6, cls="aimsl")
+
+
+def aims_copy(hl):
+    """deck3 (2026-10-14): a static copy of the slide 4 aims list (same layout, no graphic, no click reveal), aim hl highlighted and
+    the other aims dimmed."""
+    return '<div class="aims4 acopy">' + "".join(aim_row(k, ic, t, s, "ahl" if k == hl else "adim") for k, ic, t, s in aims_list()) + "</div>"
 
 
 def s_overview():
@@ -813,8 +896,9 @@ def s_methods_design():
          ("hdPS", "PS-Demo + 9–13 diagnoses + <b>200 yes/no code flags</b> (no values, no dates) " + pl("pop-hdps", "what are the flags?"), "")]
     lv = "".join(f'<div class="lvl build{" prim" if tag else ""}" data-step="{k}"><div class="ln">{esc(n)}{f"<span class=tg>{tag}</span>" if tag else ""}</div>'
                  f'<div class="ld">{d}</div></div>' for k, (n, d, tag) in enumerate(L, 1))
-    C = [(ICON["ecg"], "+ ECG representation", "ECG encoder → 32 PCs"), (ICON["ehr"], "+ CLMBR-T", "EHR foundation model → 64 PCs"),
-         (ICON["ecg"] + ICON["ehr"], "+ ECG + CLMBR-T", "both"), (ICON["shuf"], "+ permuted placebo", "ECG shuffled between patients")]
+    # deck3 (2026-10-14): display labels, defined here once (as on slide 4): AI-ECG and AI-EHR
+    C = [(ICON["ecg"], "+ AI-ECG", DEF_ECG.split(" ", 1)[1] + " → 32 PCs"), (ICON["ehr"], "+ AI-EHR", DEF_EHR.split(" ", 1)[1] + " → 64 PCs"),
+         (ICON["ecg"] + ICON["ehr"], "+ AI-ECG + AI-EHR", "both"), (ICON["shuf"], "+ permuted placebo", "AI-ECG shuffled between patients")]
     cm = "".join(f'<div class="cmp build" data-step="{len(L) + k}"><div class="cn">{k}</div><div class="ci">{ic}</div><div><div class="ct">{esc(t)}</div>'
                  f'<div class="cs">{esc(s)}</div></div></div>' for k, (ic, t, s) in enumerate(C, 1))
     body = f"""<div class="psm">
@@ -851,28 +935,32 @@ def s_methods_design():
 
 
 def s_methods_panel():
-    """slide 8 (deck2 2026-10-14): "Methods: covariate balancing", the endpoints and the tests only; the held-out characteristics,
-    the leakage map and the masking details are on appendix A3 (s_apanel), linked bottom left."""
+    """slide 8 (deck3 2026-10-14): a copy of the slide 4 aims list with aim 2 (covariate balance) highlighted, then, in one compact box,
+    the balance endpoints and tests (the deck2 slide 8 wording, shortened); the held-out characteristics, the leakage map and the
+    masking details stay on appendix A3 (s_apanel), linked bottom left."""
     sid = "s-meth2"
     sl = SN[sid]
     claim(sl, "held-out items", "54", PIPE, probe="54 non-coded items, leakage-corrected", ref_src=PIPE)
-    claim(sl, "bootstrap resamples", "4,000", PIPE, probe="95% CI from 4,000 bootstrap resamples of trials", ref_src=PIPE)
     claim(sl, "|SMD| threshold", "0.1", PIPE, probe="% of items with |SMD| < 0.1", ref_src=PIPE)
+    claim(sl, "bootstrap CI over trials", "as stated", PIPE, probe="95% CI from 4,000 bootstrap resamples of trials", ref_src=PIPE)
     claim(sl, "exact sign-flip across trials", "as stated", PIPE, probe="exact sign-flip permutation across trials", ref_src=PIPE)
     claim(sl, "placebo = permuted ECG", "as stated", PIPE, probe="Permuted ECG (embeddings shuffled between patients within each trial; same dimension)", ref_src=PIPE)
-    body = """<div class="cbal">
-<div class="card cb1"><h3 class="h3">Endpoints</h3><ul class="cbl">
-  <li><b>Primary:</b> relative reduction in mean |SMD| over the <b>54 held-out items</b> (measurements not in the PS: vitals, labs, echo)<div class="eq">1 − mean |SMD|<sub>PS + representation</sub> / mean |SMD|<sub>PS alone</sub></div></li>
-  <li><b>Secondary:</b> % of items with |SMD| &lt; 0.1</li>
-</ul></div>
-<div class="card cb1"><h3 class="h3">Tests</h3><ul class="cbl">
-  <li><b>Paired by trial:</b> each trial with vs without the representation</li>
-  <li><b>Bootstrap CI:</b> 4,000 resamples of trials</li>
-  <li><b>Exact sign-flip</b> permutation across trials</li>
-  <li><b>Placebo:</b> permuted ECG (shuffled between patients)</li>
-</ul></div>
-</div>"""
-    return sec(sid, "Methods: covariate balancing", body, links=more(SN["a-panel"]))
+    box = """<div class="mbx"><div><span class="mk">Endpoints</span><b>Primary:</b> relative reduction in mean |SMD| over the <b>54 held-out items</b> · <b>Secondary:</b> % of items with |SMD| &lt; 0.1</div>
+<div><span class="mk">Tests</span>paired by trial · bootstrap CI · exact sign-flip · placebo (permuted AI-ECG)</div></div>"""
+    return sec(sid, "Methods: covariate balancing", aims_copy(2) + box, links=more(SN["a-panel"]))
+
+
+def s_methods_agree():
+    """slide 10 (deck3 2026-10-14): the same aims copy with aim 3 (trial emulation and agreement with RCTs) highlighted, then the
+    agreement methods in one compact box (the endpoint and tests already used by the deck and Figure 3; no new metrics)."""
+    sid = "s-meth3"
+    sl = SN[sid]
+    claim(sl, "agreement metric |dlog HR| vs RCT", "as stated", PIPE, probe="| Metrics | |Δ log HR| vs RCT (paired, trials closer, sign-flip P)", ref_src=PIPE)
+    claim(sl, "benchmark permutation: RCT results reassigned across trials", "as stated", PIPE,
+          probe="Benchmark-permutation test (RCT results reassigned across trials", ref_src=PIPE)
+    box = """<div class="mbx"><div><span class="mk">Endpoint</span>mean |Δ log HR| between the emulated and RCT hazard ratios (lower = closer)</div>
+<div><span class="mk">Tests</span>paired by trial (exact sign-flip) · benchmark permutation (RCT results reassigned across trials)</div></div>"""
+    return sec(sid, "Methods: agreement with RCTs", aims_copy(3) + box)
 
 
 def s_apanel():
@@ -928,7 +1016,8 @@ def s_results2():
     f2n_claims(sl)
     # deck2: no subtitle / source line; minimal title; panels revealed A + B, then C, then D. Slide 9 panel D job: D = the overall-balance
     # panel (no popup); the per-trial panel and its groupings popup are on A4, linked first under "More:"
-    return sec(sid, "Results 1: covariate balance (Figure 2)", fig, links=more(SN["a-f2d"], SN["a-fw"], SN["a-fix"]))
+    # deck3: manuscript-style heading; panel A (once revealed) opens Supplementary Figure 2 (fig2_panels); the plasmode is linked here
+    return sec(sid, "Figure 2. Covariate balance", fig, links=more(SN["a-f2d"], SN["s-plas"], SN["a-fw"], SN["a-fix"]))
 
 
 def f2n_cells(T, rg, arm, ref=None):
@@ -1135,7 +1224,9 @@ def fig2_panels(disp_h=580):  # 560 before the Figure 2D job (the figure is now 
             out.append(f'<img class="f2p build" data-step="{FIG2_STEP[L]}" alt="{esc(F2N_ALT)}" src="{u}" '
                        f'style="left:{100 * x / W:.3f}%;top:{100 * y / H:.3f}%;width:{100 * nim.width / W:.3f}%">')
             continue
-        out.append(f'<img class="f2p build" data-step="{FIG2_STEP[L]}" alt="{esc(f"Figure 2 panel {L}")}" src="{u}" '
+        # deck3 (2026-10-14): panel A opens Supplementary Figure 2 (the covariate balance explorer); cursor / hover cue only
+        so = ' data-sopen="S2" aria-label="Open Supplementary Figure 2"' if L == "A" else ""
+        out.append(f'<img class="f2p build{" sopen" if so else ""}" data-step="{FIG2_STEP[L]}"{so} alt="{esc(f"Figure 2 panel {L}")}" src="{u}" '
                    f'style="left:{100 * x / W:.3f}%;top:{100 * y / H:.3f}%;width:{100 * pim.width / W:.3f}%">')
     assert pos["A"][0] < pos["B"][0] < pos["C"][0] and pos["D"][1] > pos["C"][1] and pos["B"][1] < pos["D"][1]
     # legend: the non-white bounding box of the band above the panels
@@ -1200,7 +1291,9 @@ def s_results3():
     W3 = json.load(open(F3CV))
     for lab_, arm in (("Demo + ECG", "ECG"), ("Demo + CLMBR-T", "CLMBR")):
         assert f"{W3['levels'][lab_]:.3f}" == f"{V['B']['P1'][arm]:.3f}", (lab_, W3["levels"][lab_], V["B"]["P1"][arm])
-    return sec(sid, "Results: agreement with the RCTs (Figure 3)", fig3_panels(), links=more(SN["a-f3q"]))
+    # deck3: manuscript-style heading; one click after panel C shows the Supplementary Figure 3 button (opens the emulation explorer)
+    btn = '<button type="button" class="sbtn build" data-step="4" data-sopen="S3">Supplementary Figure 3.<br>Trial emulation</button>'
+    return sec(sid, "Figure 3. Agreement with RCTs", fig3_panels() + btn, links=more(SN["a-f3q"]))
 
 
 FIG3 = ROOT / "docs/paper/figures_latent/figure3_rct_agreement.png"  # scripts/figures/make_figure3_latent.py
@@ -1349,73 +1442,19 @@ def s_af3q():
     body = (f'<p class="f3ql">{esc(line)}</p>'
             f'<img class="f3q" alt="{esc("Agreement by emulation quality (former Figure 3 panel C): mean |Δ log HR| vs RCT with PS-CVD5, PS alone, + ECG, + CLMBR-T, + CLMBR-T + ECG, by v19 tier (Excellent + Good; Moderate).")}" '
             f'src="{u}" style="width:{disp_h * pim.width / pim.height:.0f}px;height:{disp_h}px">')
-    return sec(sid, "Agreement by emulation quality (PS-CVD5)", body)
+    return sec(sid, "Agreement by emulation quality (PS-CVD5)", body, links=back("s-res3", SN["s-agq"]))  # deck3: A8 -> A9 (consecutive)
 
 
-def s_robust():
-    sid = "s-rob"
-    rows = []
-    p31, _ = stat_v1(sid, "PS-CVD5 + ECG (31, primary)", "s31", "P5", "ECG")
-    p32, _ = stat_v1(sid, "PS-CVD5 + ECG (32, with PROTECT AF)", "s32", "P5", "ECG")
-    rows.append(("Paper 1's 32 (with PROTECT AF; sensitivity)", f"{ci(p32['rr'], p32['lo'], p32['hi'])}, {p32['lower']} trials lower, {pv(p32['p'])}; "
-                 f"primary 31: {ci(p31['rr'], p31['lo'], p31['hi'])}, {p31['lower']}", "32"))
-    s, _ = stat_v1(sid, "permuted ECG vs PS alone (31)", "s31", "P5", "shufECG")
-    e, erow = stat_v1(sid, "ECG vs permuted (31)", "s31", "P5", "ECG", "shufECG")
-    rng = [stat_v1(sid, f"ECG vs permuted ({ts})", ts, "P5", "ECG", "shufECG")[0]["rr"] for ts in ("q37:Excellent,Good", "f37", "v2", "v2c")] + [e["rr"]]
-    rtxt = f"{fx(min(rng))} to {fx(max(rng))}%"
-    rows.append(("Placebo (permuted ECG)", f"Permuted vs PS alone: {ci(s['rr'], s['lo'], s['hi'])}, {pv(s['p'])} (two-sided). ECG vs permuted: {ci(e['rr'], e['lo'], e['hi'])}; {rtxt} across five trial sets (31; Excellent + Good; all 37 feasible; v2.0 29 / 30)", "31"))
-    cf, cfv = [], []
-    for c, lab in (("main", "1:1, cal. 0.2"), ("cal01", "cal. 0.1"), ("m13", "1:3"), ("iptw", "IPTW"), ("overlap", "overlap"), ("gbm", "GBM PS")):
-        x, _ = stat_v1(sid, f"PS method {c} (31)", "s31", "P5", "ECG", cfg=c)
-        cf.append(f"{lab} {fx(x['rr'])}% ({fx(x['lo'])} to {fx(x['hi'])})")
-        cfv.append(x)
-    nex = sum(x["lo"] > 0 for x in cfv)
-    neg = [lab for (c, lab), x in zip((("main", "1:1"), ("cal01", "cal. 0.1"), ("m13", "1:3"), ("iptw", "IPTW"), ("overlap", "overlap"), ("gbm", "GBM PS")), cfv) if x["rr"] <= 0]
-    rows.append(("Six PS methods", "; ".join(cf) + f". {nex} of 6 CIs exclude 0" + (f"; the gradient-boosted PS shows no gain" if "GBM PS" in neg else ""), "31"))
-    r5 = vc1("S31", "P5", "ECG")[0]
-    r5m = mis_row("S31", "P5", "ECG") if CTX["mi"] else None
-    clu = claim(SN[sid], "comparator-cluster sign-flip P (31)", fp(r5.m54_cluster_p), S31SUM["v1"] / "contrasts.csv", ref=None if r5m is None else fp(r5m.m54_cluster_p),
-                ref_how="s31 MI summary (independent run of the endpoint code; P5 row)")
-    loo = claim(SN[sid], "leave-one-trial-out max P (31)", fp(r5.m54_loo_max_p), S31SUM["v1"] / "contrasts.csv", ref=None if r5m is None else fp(r5m.m54_loo_max_p),
-                ref_how="s31 MI summary (P5 row)")
-    rows.append(("Comparator clusters; leave-one-trial-out", f"Cluster sign-flip {pv(r5.m54_cluster_p)} ({int(r5.m54_n_clusters)} comparator clusters); largest leave-one-out {pv(r5.m54_loo_max_p)}", "31"))
-    if CTX["mi"]:
-        mi, _ = stat_v1(sid, "PS-Clinical (no LVEF, MI) + ECG (31)", "s31", "clinical_nolvef", "ECG")
-        M = CTX["MIS"]
-        dr = [M[(M.set == "S31") & (M.config == "main") & (M.rung_a == f"clinical_nolvef#{k}") & (M.arm_a == "ECG") & (M.arm_b == "base")].iloc[0].relred54 for k in range(1, 6)]
-        drt = claim(SN[sid], "MI draw range (31)", f"{fx(min(dr))} to {fx(max(dr))}%", S31SUM["mi"] / "contrasts.csv",
-                    probe=f"single draws {fx(min(dr)).replace(V2.MINUS, '-')} to {fx(max(dr))}%", ref_src=S31DOC)
-        rows.append(("Multiple imputation (PS-Clinical, no LVEF)", f"5-draw MI: {ci(mi['rr'], mi['lo'], mi['hi'])}, {pv(mi['p'])}; single draws {drt}. Single-draw estimates should not be reported", "31"))
-    else:
-        rows.append(("Multiple imputation (PS-Clinical, no LVEF)", "MI pending on the version 1 cohorts (single imputation shown)", "31"))
-    RR = pd.read_csv(S31SUM["v1"] / "random_removal_summary.csv").set_index(["set", "arm"]).loc[("S31", "ECG")]
-    r2 = BE.pair_stats(BE.Grid(CTX["g2"]["G"], CTX["g2"]["U"], CTX["g2"]["ex"]), "main", "P5", "ECG", "base", T_("s31"), "54", True)
-    fv2 = claim(SN[sid], "spec-v2 fixed cohorts (31)", f"{fx(RR.relred54_v2)}%", S31SUM["v1"] / "random_removal_summary.csv", ref=f"{fx(r2['rr'])}%",
-                ref_how="recomputed from the spec-v2 cells (build_balance_explorer.pair_stats, set s31)")
-    rnd = claim(SN[sid], "random removal (31)", f"{fx(RR.relred54_random_median)} ({fx(RR.relred54_random_p5)} to {fx(RR.relred54_random_p95)})", S31SUM["v1"] / "random_removal_summary.csv",
-                probe=f"random removal median {fx(RR.relred54_random_median)} ({fx(RR.relred54_random_p5)} to {fx(RR.relred54_random_p95)})", ref_src=S31DOC)
-    rows.append((f"Spec-v2 cohort fixes (sensitivity; {SN['a-fix']})", f"{fx(RR.relred54_v1)}% → {fv2} with the fixes; removing the same numbers of patients at random: median {rnd}%, so the drop reflects smaller cohorts", "31"))
-    v29, _ = stat_v1(sid, "framework v2.0 provisional 29 (v1 cohorts)", "v2", "P5", "ECG")
-    v30, _ = stat_v1(sid, "framework v2.0 rescored 30 (v1 cohorts)", "v2c", "P5", "ECG")
-    rows.append((f"Framework v2.0 trial sets (sensitivity; {SN['a-fw']})", f"Provisional 29: {ci(v29['rr'], v29['lo'], v29['hi'])}; rescored 30: {ci(v30['rr'], v30['lo'], v30['hi'])} (version 1 cohorts; defined before the size-rule change, both include PROTECT AF)", "29 / 30"))
-    NB = json.load(open(S31D / "s31_numbers.json"))["S31"]
-    cvr, nir = NB["cv_penalty_r2"], NB["no_index_day_ecg"]
-    cvt = claim(SN[sid], "CV-tuned penalty (31)", ci(cvr["rr"], cvr["lo"], cvr["hi"]), S31D / "s31_numbers.json",
-                probe=f"| CV log-loss penalty (R2 cells, scenario S1) | {norm(ci(cvr['rr'], cvr['lo'], cvr['hi']))}", ref_src=S31DOC)
-    nit = claim(SN[sid], "no index-day ECG (31)", ci(nir["rr"], nir["lo"], nir["hi"]), S31D / "s31_numbers.json",
-                probe=f"| Index-day ECGs excluded (ECG ≥ 1 day before index) | {norm(ci(nir['rr'], nir['lo'], nir['hi']))}", ref_src=S31DOC)
-    claim(SN[sid], "R2 CV-tuned 35 trials", "4.7%", HAND, probe="S1 + ECG: 4.7% (−0.4 to 9.9)", ref_src=HAND)
-    rows.append(("Earlier sensitivities (version 1 cohorts)", f"CV-tuned penalty {cvt}; index-day ECGs excluded {nit}; R2 (CV-tuned PS, its own 35-trial set) 4.7%", "31"))
-    body = "".join(f'<tr><td><b>{esc(a)}</b></td><td>{b}</td><td>{c}</td></tr>' for a, b, c in rows)
-    allv = [x["rr"] for x in cfv] + [v29["rr"], v30["rr"], RR.relred54_v2, cvr["rr"], nir["rr"], p32["rr"]]
-    pos = sum(v > 0 for v in allv)
-    lo_, hi_ = math.floor(min(v for v in allv if v > 0)), math.ceil(max(allv))
-    claim(SN[sid], "positive checks", f"{pos} of {len(allv)}", "this slide's estimates", ref=str(pos) + f" of {len(allv)}", ref_how="count of the slide's estimates > 0")
-    claim(SN[sid], "size range", f"{lo_}–{hi_}%", "this slide's estimates", ref=f"{lo_}–{hi_}%", ref_how="floor(min positive)-ceil(max)")
-    return sec(sid, "Robustness of PS-CVD5 + ECG vs PS-CVD5 (54 items; 31 trials)", f"""
-<table class="t tsm rob"><tr><th style="width:250px">Check</th><th>Result</th><th>Trials</th></tr>{body}</table>
-<p style="font-size:19px;margin-top:10px">The direction holds in {pos} of {len(allv)} estimates (all but the gradient-boosted PS). Where positive, the size is about <b>{lo_}–{hi_}%</b> and moves by a few points with the PS method, cohort definition, trial set and penalty.</p>""",
-               links=more(SN["a-fix"], SN["a-fw"]))
+def s_agq():
+    """appendix A9 (deck3 2026-10-14): the former main slide "Agreement with the RCTs by emulation quality" (the 2026-10-09 template's
+    interactive view, unchanged apart from the display labels), after A8; back to slide 11, More: A1."""
+    T = V2.TEMPLATE
+    old = between(T, '<section class="slide" data-title="Agreement with the RCTs by emulation quality" id="s-agq">', "</section>\n", incl_b=True)
+    body = between(old, '  <div class="panel"', "</section>")
+    return f'<section class="slide app" id="s-agq" data-title="Agreement with the RCTs by emulation quality" data-app="{SN["s-agq"]}">\n{body}{back("s-res3", SN["a-qual"])}\n</section>\n', old
+
+
+# deck3 (2026-10-14): the robustness slide (s_robust) is deleted, with its claims
 
 
 def s_takehome():
@@ -1552,7 +1591,7 @@ def s_afix(trials_old, EX, RR):  # appendix A6 (A5 before the slide 9 panel D jo
 # ================================================================ CSS / JS added to the template
 EXTRA_CSS = r"""
 /* ===== LATENT-RCT deck (2026-10-15) additions ===== */
-.xrefs{position:absolute;left:22px;bottom:19px;font-size:12.5px;color:var(--muted);z-index:4;max-width:880px}
+.xrefs{position:absolute;left:22px;bottom:19px;font-size:12.5px;color:var(--muted);z-index:4;max-width:1040px}
 .xrefs a{color:var(--navy);text-decoration:underline;cursor:pointer}
 .slide.app .ttl{background:#5b5d86}
 .slide .build{transition:opacity .35s}
@@ -1678,6 +1717,26 @@ ul.cbl .eq sub{font-size:.68em}
 /* slide 11 panel C job: appendix A7, the former Figure 3 panel C (agreement by emulation quality) */
 .f3ql{font-size:19px;margin:0 0 10px;color:var(--navy);text-align:center}
 img.f3q{display:block;margin:0 auto}
+/* deck3 (2026-10-14): aims copies (slides 8 and 10), the methods box, the supplementary-figure links and the simplified explorers */
+.aims4.acopy .aim.adim{opacity:.25}
+.aims4.acopy .aim.ahl{border-color:var(--red);background:#fbeceb}
+.mbx{margin-top:18px;border:2px solid var(--navy);background:var(--band);padding:10px 18px;display:grid;gap:8px}
+.mbx div{font-size:17.5px;line-height:1.35;color:var(--navy)}
+.mbx .mk{display:inline-block;width:112px;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--red)}
+.fig2box img.sopen{cursor:pointer}
+.fig2box img.sopen:hover,.fig2box img.sopen:focus{outline:2px solid var(--red);outline-offset:3px}
+.sbtn{position:absolute;right:0;bottom:0;width:236px;text-align:center;line-height:1.3;border:2px solid var(--navy);background:#fff;color:var(--navy);font-family:inherit;font-weight:700;font-size:14.5px;padding:6px 8px;cursor:pointer}
+.sbtn:hover,.sbtn:focus{background:var(--navy);color:#fff}
+.panel.sx{grid-template-columns:180px 1fr 270px}
+.panel.sx .ctrl label.h{font-size:12px;margin:12px 0 4px}
+.panel.sx .ctrl select{font-size:14px;padding:3px 4px}
+.panel.sx .side{padding-left:14px}
+.sxh{font-size:13px;font-weight:700;color:var(--navy);margin:6px 0 14px;line-height:1.3}
+.sxn{margin:0 0 16px}
+.sxl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--navy)}
+.sxv{font-size:22px;font-weight:700;color:var(--navy);margin-top:2px;white-space:nowrap}
+.sxs{font-size:12px;color:var(--muted)}
+.xrefs a.sback{font-size:14px;font-weight:700}
 """
 POP_JS = r"""
 /* ===== popups (slides 6 and 7): open on click / Enter; close with the button, a click outside the box, or Esc. While a popup is
@@ -1704,6 +1763,132 @@ function f2dInit() {
     m.querySelectorAll(".f2view").forEach(v => { v.hidden = +v.dataset.tab !== k; }); };
   m.querySelectorAll(".f2tab").forEach(b => b.addEventListener("click", e => { e.preventDefault(); set(+b.dataset.tab); }));
   document.querySelectorAll('[data-pop="pop-f2d"]').forEach(el => { el.addEventListener("click", () => set(0)); el.addEventListener("keydown", e => { if (e.key === "Enter") set(0); }); });
+}
+"""
+
+def s_supp():
+    """deck3 (2026-10-14): Supplementary Figures 2 and 3, the simplified explorers (SX_JS); out of the main sequence, reached from
+    slide 9's panel A / slide 11's button, with "Back to Figure 2 / 3" (also Esc and the browser back button)."""
+    out = []
+    for sid, lab, title, frm in SUPPF:
+        k = "s2" if sid == "s-bal" else "s3"
+        fig = "Figure 2" if k == "s2" else "Figure 3"
+        out.append(f'<section class="slide app supp" id="{sid}" data-title="{esc(title)}" data-app="{lab}" data-supp="1" data-back="{frm}">\n'
+                   f'  <div class="panel sx">\n    <div class="ctrl" id="{k}-ctrl"></div>\n    <div class="chart"><svg id="{k}-svg" viewBox="0 0 760 590"></svg></div>\n'
+                   f'    <div class="side" id="{k}-sum"></div>\n  </div>\n'
+                   f'<div class="xrefs"><a class="sback" href="#{SN[frm]}" data-goto="{frm}">← Back to {fig}</a></div>\n</section>\n')
+    return "".join(out)
+
+
+SX_JS = r"""
+/* ===== deck3 (2026-10-14): Supplementary Figures 2 and 3, the simplified explorers. Fixed: version 1 cohorts, the 31 trials, main
+   configuration (1:1, caliper 0.2), 54 leakage-corrected held-out items, love plot / HR forest. Controls: PS and added representation.
+   Statistics: the balance explorer's paired() (bootstrap CI, exact sign-flip) and the emulation explorer's agree() / closer(). ===== */
+const SXPS = [["P5", "PS-CVD5"], ["PS10", "PS-CVD10"], ["clinical_nolvef", "PS-Clinical"], ["hdPS200", "hdPS"]];
+const SXREP = [["ECG", "+ AI-ECG"], ["CLMBR", "+ AI-EHR"], ["ECG+CLMBR", "+ AI-ECG + AI-EHR"]];
+const SXST = {unmatched: ["#8a8d99", "x", false], base: [NAVY, "circle", true], ECG: [RED, "circle", false], CLMBR: ["#2a7f62", "square", true],
+  "ECG+CLMBR": ["#7b4fa0", "diamond", false]};
+const SXG = {"Vitals & core labs": "Vitals, labs", "Other labs": "Other labs", "Echo: LV structure": "LV structure", "Echo: LV function": "LV func.",
+  "Echo: diastolic / LA": "Diastolic", "Echo: RV / pulmonary": "RV / PA", "Echo: valves / aorta": "Valves"};
+const umin = s => String(s).replace(/-/g, "−");
+const sxP = p => !Number.isFinite(p) ? "–" : p < 0.001 ? "<.001" : p < 0.1 ? p.toFixed(3).slice(1) : p < 0.995 ? p.toFixed(2).slice(1) : p.toFixed(2);  /* the static slides' P format */
+const sxMk = (a, x, y, r, extra) => { const [c, mk, ho] = SXST[a]; return marker(mk, x, y, r, c, ho, extra || ""); };
+function sxCtrl(k, upd) {
+  $(`#${k}-ctrl`).innerHTML = `<label class="h">PS</label><select id="${k}-ps">${SXPS.map(([v, l]) => `<option value="${v}"${v === "P5" ? " selected" : ""}>${l}</option>`).join("")}</select>` +
+    `<label class="h">Added representation</label><select id="${k}-rep">${SXREP.map(([v, l]) => `<option value="${v}"${v === "ECG" ? " selected" : ""}>${l}</option>`).join("")}</select>`;
+  $(`#${k}-ps`).onchange = upd; $(`#${k}-rep`).onchange = upd;
+  bindTips($(`#${k}-svg`)); upd();
+}
+function sxSel(k) { const p = $(`#${k}-ps`), r = $(`#${k}-rep`), lp = p.selectedOptions[0].text; return {rung: p.value, a: r.value, lb: lp, la: lp + " " + r.selectedOptions[0].text}; }
+function sxLegend(items, x0, y) { let s = "", x = x0; for (const [mk, lab] of items) { s += `<g transform="translate(${x} ${y})">${mk}<text x="14" y="4" font-size="12.5" fill="${NAVY}">${esc(lab)}</text></g>`; x += 34 + lab.length * 7.4; } return s; }
+const sxNum = (lab, val, sub) => `<div class="sxn"><div class="sxl">${lab}</div><div class="sxv">${val}</div>${sub ? `<div class="sxs">${sub}</div>` : ""}</div>`;
+function s2Update() {
+  const {rung, a, lb, la} = sxSel("s2"), T = trialSet("s31"), get = getter("54", true, "v1"), cfg = "main", arms = ["unmatched", "base", a];
+  const its = itemsOf("54").filter(v => T.some(t => fin(get(cfg, rung, "base", t, v.j))));
+  const rows = its.map(v => ({lab: v.lab, g: v.g, val: Object.fromEntries(arms.map(x => [x, median(T.map(t => get(cfg, rung, x, t, v.j)))]))}));
+  const W = 760, H = 590, ml = 186, mr = 24, mt = 30, mb = 40, ph = H - mt - mb, rh = ph / rows.length;
+  let xmax = 0.05; rows.forEach(r => arms.forEach(x => { if (fin(r.val[x])) xmax = Math.max(xmax, r.val[x]); }));
+  xmax = Math.min(1.5, Math.ceil(xmax * 1.08 * 20) / 20);
+  const xs = x => ml + Math.min(x, xmax) / xmax * (W - ml - mr);
+  let s = sxLegend([[sxMk("unmatched", 4, 0, 4.5), "Unmatched"], [sxMk("base", 4, 0, 4.5), lb], [sxMk(a, 4, 0, 4.5), la]], ml, 12);
+  let prev = null;
+  rows.forEach((r, i) => {
+    const y = mt + i * rh + rh / 2;
+    if (i % 2 === 0) s += `<rect x="${ml}" y="${mt + i * rh}" width="${W - ml - mr}" height="${rh}" fill="#f5f5f8"/>`;
+    if (r.g !== prev) { const gh = rh * rows.filter(q => q.g === r.g).length, gl = SXG[r.g] || r.g;
+      s += `<line x1="4" x2="${W - mr}" y1="${mt + i * rh}" y2="${mt + i * rh}" stroke="#b9bbc8" stroke-width="0.8"/>`;
+      const gf = Math.min(9.5, (gh - 6) / (gl.length * 0.66));  /* rotated label sized to fit its group (bold, ~0.66 em per character) */
+      if (gf >= 6) s += `<text transform="translate(12 ${mt + i * rh + gh / 2}) rotate(-90)" font-size="${gf.toFixed(1)}" font-weight="700" text-anchor="middle" fill="${RED}">${esc(gl)}</text>`;
+      prev = r.g; }
+    const fs = Math.max(6, Math.min(11, rh * 0.85));
+    s += `<text x="${ml - 5}" y="${y + fs * 0.35}" font-size="${fs}" text-anchor="end" fill="${NAVY}">${esc(r.lab)}</text>`;
+    const v = arms.filter(x => fin(r.val[x])).map(x => r.val[x]);
+    if (v.length > 1) s += `<line x1="${xs(Math.min(...v))}" x2="${xs(Math.max(...v))}" y1="${y}" y2="${y}" stroke="#c9cad4" stroke-width="1"/>`;
+    const tt = `<b>${esc(r.lab)}</b><br>` + [["unmatched", "Unmatched"], ["base", lb], [a, la]].map(([x, l]) => `${esc(l)}: ${f3(r.val[x])}`).join("<br>");
+    s += `<rect x="0" y="${mt + i * rh}" width="${W}" height="${rh}" fill="transparent" data-tip="${esc(tt)}"/>`;
+    for (const x of arms) if (fin(r.val[x])) s += sxMk(x, xs(r.val[x]), y, Math.max(2.2, Math.min(4.6, rh * 0.38)), `pointer-events="none"`);
+  });
+  const y0 = mt + ph, stp = xmax > 0.6 ? 0.2 : xmax > 0.3 ? 0.1 : 0.05;
+  s += `<line x1="${ml}" x2="${W - mr}" y1="${y0}" y2="${y0}" stroke="${NAVY}"/>`;
+  for (let x = 0; x <= xmax + 1e-9; x += stp) s += `<line x1="${xs(x)}" x2="${xs(x)}" y1="${y0}" y2="${y0 + 4}" stroke="${NAVY}"/><text x="${xs(x)}" y="${y0 + 16}" font-size="11" text-anchor="middle" fill="${NAVY}">${x.toFixed(2)}</text>`;
+  s += `<text x="${(ml + W - mr) / 2}" y="${y0 + 33}" font-size="12" text-anchor="middle" fill="${NAVY}">|SMD| (median across ${T.length} trials)</text>`;
+  s += `<line x1="${xs(0.1)}" x2="${xs(0.1)}" y1="${mt}" y2="${y0}" stroke="${RED}" stroke-dasharray="4 3" stroke-width="1.2" pointer-events="none"/>`;
+  $("#s2-svg").innerHTML = s;
+  const x = paired(get, cfg, rung, a, "base", T, itemsOf("54").map(v => v.j), 0.1);
+  $("#s2-sum").innerHTML = `<div class="sxh">${esc(lb)} → ${esc(la)}</div>` + sxNum("Mean |SMD|", `${f3(x.m_ref)} → ${f3(x.m_arm)}`) +
+    sxNum("Relative reduction", `${umin(f1(x.rr))}% (${umin(f1(x.lo))} to ${umin(f1(x.hi))})`, "95% CI") + sxNum("P", sxP(x.p_m)) + sxNum("Trials improved", `${x.lower}/${x.k}`);
+}
+function s3Update() {
+  const {rung, a, lb, la} = sxSel("s3"), coh = "v1", cfg = "main", arms = ["base", a];
+  const T = [...trialSet("s31")].sort((p, q) => { const kp = [AREAS.indexOf(D.trials[p].area), D.trials[p].rb], kq = [AREAS.indexOf(D.trials[q].area), D.trials[q].rb];
+    for (let i = 0; i < 2; i++) { if (kp[i] < kq[i]) return -1; if (kp[i] > kq[i]) return 1; } return 0; });
+  const W = 760, H = 590, ml = 150, mr = 16, mt = 30, mb = 42, lo = Math.log(0.2), hi = Math.log(5), ph = H - mt - mb, rh = ph / T.length;
+  const xs = l => ml + (Math.max(lo, Math.min(hi, l)) - lo) / (hi - lo) * (W - ml - mr);
+  let s = sxLegend([[`<rect x="-2" y="-6" width="12" height="12" fill="#d9dae6"/>`, "RCT 95% CI"], [`<line x1="4" x2="4" y1="-6" y2="6" stroke="#000" stroke-width="2"/>`, "RCT HR"],
+    [sxMk("base", 4, 0, 4.5), lb], [sxMk(a, 4, 0, 4.5), la]], ml, 12);
+  for (const v of [0.25, 0.5, 1, 2, 4]) s += `<line x1="${xs(Math.log(v))}" x2="${xs(Math.log(v))}" y1="${mt}" y2="${mt + ph}" stroke="${v === 1 ? "#9a9cb0" : "#ececf1"}" stroke-width="${v === 1 ? 1.2 : 1}"/>`;
+  T.forEach((t, i) => {
+    const tr = D.trials[t], y0 = mt + i * rh, yc = y0 + rh / 2;
+    if (i % 2 === 0) s += `<rect x="0" y="${y0}" width="${W}" height="${rh}" fill="#f7f7fa"/>`;
+    s += `<rect x="${xs(tr.rb - 1.96 * tr.rs)}" y="${y0 + 1}" width="${xs(tr.rb + 1.96 * tr.rs) - xs(tr.rb - 1.96 * tr.rs)}" height="${Math.max(1, rh - 2)}" fill="#d9dae6"/>`;
+    s += `<line x1="${xs(tr.rb)}" x2="${xs(tr.rb)}" y1="${y0 + 1}" y2="${y0 + rh - 1}" stroke="#000" stroke-width="2"/>`;
+    const fs = Math.max(7, Math.min(12, rh * 0.75));
+    s += `<text x="${ml - 6}" y="${yc + fs * 0.35}" font-size="${fs}" text-anchor="end" fill="${NAVY}">${esc(tr.name)}</text>`;
+    let tt = `<b>${esc(tr.full)}</b><br>RCT: ${Math.exp(tr.rb).toFixed(2)} (${Math.exp(tr.rb - 1.96 * tr.rs).toFixed(2)}–${Math.exp(tr.rb + 1.96 * tr.rs).toFixed(2)})`;
+    arms.forEach((x, k) => {
+      const [l, se] = estOf(coh, cfg, rung, x, t), yy = yc + (k ? 3 : -3), col = SXST[x][0], lab = k ? la : lb;
+      if (!fin(l)) { tt += `<br>${esc(lab)}: –`; return; }
+      s += `<line x1="${xs(l - 1.96 * se)}" x2="${xs(l + 1.96 * se)}" y1="${yy}" y2="${yy}" stroke="${col}" stroke-width="1.3" pointer-events="none"/>`;
+      s += sxMk(x, xs(l), yy, Math.max(2.2, Math.min(4.2, rh * 0.3)), `pointer-events="none"`);
+      if (l < lo || l > hi) s += `<text x="${xs(l) + (l < lo ? -2 : 2)}" y="${yy + 3}" font-size="9" text-anchor="${l < lo ? "end" : "start"}" fill="${col}">${l < lo ? "◂" : "▸"}</text>`;
+      tt += `<br>${esc(lab)}: ${Math.exp(l).toFixed(2)} (${Math.exp(l - 1.96 * se).toFixed(2)}–${Math.exp(l + 1.96 * se).toFixed(2)})`;
+    });
+    s += `<rect x="0" y="${y0}" width="${W}" height="${rh}" fill="transparent" data-tip="${esc(tt)}"/>`;
+  });
+  const yb = mt + ph;
+  s += `<line x1="${ml}" x2="${W - mr}" y1="${yb}" y2="${yb}" stroke="${NAVY}"/>`;
+  for (const v of [0.2, 0.25, 0.5, 1, 2, 4, 5]) s += `<line x1="${xs(Math.log(v))}" x2="${xs(Math.log(v))}" y1="${yb}" y2="${yb + 4}" stroke="${NAVY}"/><text x="${xs(Math.log(v))}" y="${yb + 16}" font-size="11" text-anchor="middle" fill="${NAVY}">${v}</text>`;
+  s += `<text x="${(ml + W - mr) / 2}" y="${yb + 33}" font-size="12" text-anchor="middle" fill="${NAVY}">Hazard ratio (log scale)</text>`;
+  $("#s3-svg").innerHTML = s;
+  const mb_ = agree(coh, cfg, rung, "base", T), ma = agree(coh, cfg, rung, a, T), c = closer(coh, cfg, rung, a, T);
+  $("#s3-sum").innerHTML = `<div class="sxh">${esc(lb)} → ${esc(la)}</div>` + sxNum("Mean |Δ log HR| vs RCT", `${f3(mb_.gap)} → ${f3(ma.gap)}`) +
+    sxNum("Trials closer", `${c.closer}/${c.k}`) + sxNum("Sign-flip P", sxP(c.p)) + sxNum("Benchmark-permutation P", sxP(c.perm));
+}
+function s2Init() { sxCtrl("s2", s2Update); }
+function s3Init() { sxCtrl("s3", s3Update); }
+/* supplementary-figure navigation: opened from slide 9's panel A / slide 11's button (pushes a history entry, so the browser back button
+   returns); "Back to Figure N", Esc or the back button return to that slide with all its panels shown */
+function suppOpen(key) { const j = indexOf(key); if (j < 0) return; history.pushState({supp: key}, "", "#" + label(j)); show(j); }
+function suppBack() { const sl = slides[cur]; if (history.state && history.state.supp === sl.dataset.app) history.back(); else show(indexOf(sl.dataset.back), true); }
+function suppInit() {
+  document.querySelectorAll("[data-sopen]").forEach(el => {
+    if (el.tagName !== "BUTTON") { el.setAttribute("tabindex", "0"); el.setAttribute("role", "button"); }
+    const go = e => { e.preventDefault(); e.stopPropagation(); suppOpen(el.dataset.sopen); };
+    el.addEventListener("click", go); el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") go(e); });
+  });
+  document.querySelectorAll("a.sback").forEach(a => a.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); suppBack(); }));
+  addEventListener("popstate", () => { const j = fromHash(); if (j !== cur) show(j, !!slides[cur].dataset.supp && !slides[j].dataset.supp); });
+  addEventListener("keydown", e => { if (e.key === "Escape" && !POP && slides[cur].dataset.supp) { e.preventDefault(); suppBack(); } });
 }
 """
 
@@ -1756,7 +1941,7 @@ const slides = [...document.querySelectorAll(".slide")];
 const label = i => slides[i].dataset.app || String(i + 1);
 slides.forEach((sl, i) => {
   if (sl.dataset.notitle || sl.classList.contains("full")) return;
-  sl.insertAdjacentHTML("afterbegin", `<div class="ttl">${sl.dataset.app ? sl.dataset.app + " · " : ""}${sl.dataset.title}</div><div class="rule top"></div><div class="num">${label(i)}</div>` +
+  sl.insertAdjacentHTML("afterbegin", `<div class="ttl">${sl.dataset.app && !sl.dataset.supp ? sl.dataset.app + " · " : ""}${sl.dataset.title}</div><div class="rule top"></div><div class="num">${label(i)}</div>` +
     `<div class="rule bot"></div><div class="foot"><b>CarDS</b>Lab</div><img class="logo" alt="" src="${LOGO}">`);
 });
 let cur = 0, step = 0, backTo = null;
@@ -1769,8 +1954,11 @@ function applyBuild() {
   sl.querySelectorAll(".build").forEach(e => e.classList.toggle("hid", (+e.dataset.step || 0) > step));
   sl.querySelectorAll(".fstep").forEach(e => { const k = +e.dataset.step || 0; e.classList.toggle("hid", k > step); e.classList.toggle("dim", k < step && step <= last && !on.includes(k)); });
 }
-function next() { if (POP) { popClose(); return; } if (step < nSteps(slides[cur])) { step++; applyBuild(); } else if (cur < slides.length - 1) show(cur + 1); }
-function prev() { if (POP) { popClose(); return; } if (step > 0) { step--; applyBuild(); } else if (cur > 0) show(cur - 1, true); }
+/* deck3: the supplementary figures (data-supp) are outside the arrow-key sequence: it skips them, and on them the arrows do nothing
+   (leave with Back, Esc or the browser back button) */
+const seqStep = (i, d) => { while (i >= 0 && i < slides.length && slides[i].dataset.supp) i += d; return i; };
+function next() { if (POP) { popClose(); return; } if (slides[cur].dataset.supp) return; if (step < nSteps(slides[cur])) { step++; applyBuild(); } else { const j = seqStep(cur + 1, 1); if (j < slides.length) show(j); } }
+function prev() { if (POP) { popClose(); return; } if (slides[cur].dataset.supp) return; if (step > 0) { step--; applyBuild(); } else { const j = seqStep(cur - 1, -1); if (j >= 0) show(j, true); } }
 function indexOf(key) {
   if (key === null || key === undefined || key === "") return -1;
   let i = slides.findIndex(s => s.dataset.app === key || s.id === key);
@@ -1833,9 +2021,18 @@ def patch_explorer(js):
          'the 31 trials (paper 1\'s 32 minus PROTECT AF, excluded at feasibility; v19 tiers). ${M.coh === "v1" ? "Version 1 cohorts." : "Spec-v2 fixed cohorts (sensitivity analysis)."}'),
         ('const COH = {v2: "Spec-v2 fixed cohorts", v1: "Version 1 cohorts"};', 'const COH = {v2: "Spec-v2 fixed cohorts (sensitivity)", v1: "Version 1 cohorts"};'),
     ]
+    # deck3 (2026-10-14): display labels; the + AI-EHR arms (Supplementary Figures 2 and 3); the full explorer's controls, views and
+    # summary are no longer used (the simplified explorers SX_JS replace them), so its code from the controls section on is dropped
+    P += [('  ECG: {lab: "+ ECG", col: RED, mk: "circle"},', '  ECG: {lab: "+ AI-ECG", col: RED, mk: "circle"},'),
+          ('  shufECG: {lab: "+ permuted ECG", col: "#d69a00", mk: "tri", hollow: true}\n};',
+           '  shufECG: {lab: "+ permuted AI-ECG", col: "#d69a00", mk: "tri", hollow: true},\n  CLMBR: {lab: "+ AI-EHR", col: "#2a7f62", mk: "square", hollow: true},\n'
+           '  "ECG+CLMBR": {lab: "+ AI-ECG + AI-EHR", col: "#7b4fa0", mk: "diamond"}\n};'),
+          ('const SL = {unmatched: "Unmatched", base: "PS alone", ECG: "+ ECG", shufECG: "+ perm. ECG"};',
+           'const SL = {unmatched: "Unmatched", base: "PS alone", ECG: "+ AI-ECG", shufECG: "+ perm. AI-ECG", CLMBR: "+ AI-EHR", "ECG+CLMBR": "+ AI-ECG + AI-EHR"};')]
     for a, b in P:
         js = one(js, a, b)
-    return js
+    i = js.index("/* =========================================================\n   controls")
+    return js[:i]
 
 
 def build_template(T1001, deck1001, D):
@@ -1843,18 +2040,16 @@ def build_template(T1001, deck1001, D):
     h = T
     h = one(h, "<title>TRACE-ECG | CarDS Lab update | October 9, 2026</title>", "<title>LATENT-RCT | CarDS Lab | 15 October 2026</title>")
     h = one(h, "</style>", intro_css(T1001, deck1001) + EXTRA_CSS + "</style>")
-    h = one(h, '<section class="slide" data-title="Results 1: covariate balance explorer (spec-v2 fixed cohorts by default)" id="s-bal">',
-            '<section class="slide" data-title="Results 2: covariate balance explorer" id="s-bal">')  # deck2: after Figure 2 (Results 1)
-    h = one(h, '    <div class="side" id="sum"></div>\n  </div>\n</section>', '    <div class="side" id="sum"></div>\n  </div>\n' + more(SN["a-fw"], SN["a-fix"]) + "\n</section>")
-    h = one(h, '<div class="chart" style="padding:2px 10px;overflow-y:auto"><svg id="agq-svg" viewBox="0 0 900 300" style="width:100%;height:auto;flex:none"></svg><div id="agq-tab"></div></div>\n  </div>\n</section>',
-            '<div class="chart" style="padding:2px 10px;overflow-y:auto"><svg id="agq-svg" viewBox="0 0 900 300" style="width:100%;height:auto;flex:none"></svg><div id="agq-tab"></div></div>\n  </div>\n' + more(SN["a-qual"]) + "\n</section>")
+    # deck3 (2026-10-14): the template's explorer sections go (the simplified Supplementary Figures 2 and 3 replace the balance and
+    # emulation explorers, s_supp; agreement by quality is appendix A9, s_agq); every slide is placed through __STATIC1__
+    h = one(h, between(h, '<section class="slide" data-title="Results 1: covariate balance explorer', "</section>\n", incl_b=True), "")
+    h = one(h, between(h, '<section class="slide" data-title="Results 3: trial emulation explorer', "</section>\n", incl_b=True), "")
+    h = one(h, s_agq()[1], "")
+    h = one(h, between(h, "function emuInit() {", "function agqInit() {"), "")
     h = one(h, 'const TSRC = {tier: "Framework v2.0, rescored (spec-v2 cohorts)", tq1: "Framework v2.0, version 1 cohorts", t19: "v19 tiers (paper 1)"};',
             'const TSRC = {t19: "v19 tiers (paper 1; primary)", tv2: "Framework v2.0, rescored on spec-v2 cohorts (sensitivity)", tq1: "Framework v2.0, version 1 cohorts (sensitivity)"};')
     h = one(h, 'const cohOpt = `<option value="v2" selected>Spec-v2 fixed cohorts (primary)</option><option value="v1">Version 1 cohorts (as built)</option>`;',
             'const cohOpt = `<option value="v1" selected>Version 1 cohorts (primary)</option><option value="v2">Spec-v2 fixed cohorts (sensitivity)</option>`;')
-    h = one(h, "PS-Clinical (no LVEF) on the spec-v2 cohorts: HRs combined over 5 imputation draws (Rubin).",
-            "PS-Clinical (no LVEF): HRs combined over 5 imputation draws (Rubin) on both cohort versions." if CTX["mi"] else
-            "PS-Clinical (no LVEF): spec-v2 cohorts, HRs combined over 5 imputation draws (Rubin); version 1 cohorts, single imputation (MI pending).")
     h = one(h, "All 38 emulated trials, grouped by their quality tier. Tiers were assigned blind to the results; the rescored tiers are provisional (not frozen; LLM raters, no clinician review yet).",
             "The 37 feasible trials (default; PROTECT AF excluded at feasibility) or all 38 emulated, grouped by quality tier (default: v19 tiers, as paper 1). Tiers were assigned from design information, blind to the results, by LLM-assisted raters; no clinician review yet. Framework v2.0 tiers: sensitivity.")
     # agreement by quality (s31, 2026-10-14): a trial-set control, default = the 37 feasible (PROTECT AF excluded at feasibility)
@@ -1870,12 +2065,12 @@ def build_template(T1001, deck1001, D):
     # deck mechanics: replace from the chrome block to the fit() function
     i = h.index("/* ===== deck mechanics (2026-10-01 deck) ===== */")
     j = h.index('addEventListener("resize", fit);', i)
-    h = h[:i] + intro_js(T1001, deck1001) + QV_JS + POP_JS + NAV_JS + h[j:]
+    h = h[:i] + intro_js(T1001, deck1001) + QV_JS + POP_JS + NAV_JS + SX_JS + h[j:]
     h = one(h, '$("#nav-next").onclick = next;\n',
             '$("#nav-next").onclick = next;\n/* a click on a slide with builds (outside any control, link or popup) reveals the next step (2026-10-01 deck) */\n'
-            '$("#stage").addEventListener("click", e => { if (!POP && nSteps(slides[cur]) && !e.target.closest("select,input,label,button,a,.ctrl,.side,.modal,[data-pop]")) next(); });\n')
+            '$("#stage").addEventListener("click", e => { if (!POP && nSteps(slides[cur]) && !e.target.closest("select,input,label,button,a,.ctrl,.side,.modal,[data-pop],[data-sopen]")) next(); });\n')
     h = one(h, "init(); emuInit(); agqInit(); fit();\nshow((parseInt(location.hash.slice(1), 10) || 1) - 1);",
-            "drawIntro(); qvInit(); init(); emuInit(); agqInit(); linkInit(); popInit(); f2dInit(); fit();\nshow(fromHash());")
+            "drawIntro(); qvInit(); s2Init(); s3Init(); agqInit(); linkInit(); popInit(); f2dInit(); suppInit(); fit();\nshow(fromHash());")
     return h
 
 
@@ -1929,6 +2124,10 @@ def balance_combos(D, g1, g2):
         rg = "clinical_nolvef" if s.rung_a == "clinical_nolvef_mi" else s.rung_a
         add("psclin_mi summary (spec-v2)", "v2", "main", rg, s.arm_a, s.arm_b, SM[s.set], "54", True,
             dict(rr=s.relred54, lo=s.relred54_lo, hi=s.relred54_hi, p_m=s.m54_p, lower=s.m54_better), sided=s.sided)
+    for rg in SX_RUNGS:  # deck3: every state of Supplementary Figure 2 (version 1, main, the 31 trials, 54 leakage-corrected items)
+        for a in ("ECG",) + SX_ARMS:
+            add("computed (pair_stats)", "v1", "main", rg, a, "base", "s31", "54", True, {},
+                tag="S2 default (8.7% (4.2 to 13.5), 20/31)" if (rg, a) == ("P5", "ECG") else "S2")
     for coh in ("v1", "v2"):  # computed-only combinations (no summary): v19 tier filters, areas
         for ts in ("q37:Excellent,Good", "q37:Moderate", "area31:AF", "area31:Diabetes", "phys:yes,s31", "f37", "q:Excellent,Good", "phys:yes,s32"):
             for rg in ("P1", "P5", "hdPS200", "clinical_nolvef"):
@@ -1951,6 +2150,14 @@ def emu_refs(D):
         T = BE.trial_set(D["trials"], SM[s.set])
         out.append(dict(coh="v1", cfg="main", rung=rg, arm=s.arm_a, trials=SM[s.set], sum_absd_a=s.absd_a, sum_absd_b=s.absd_b, sum_better=s.absd_better,
                         sum_bshuf=s.bshuf_p, py=V2.agree_py(D, "v1", "main", rg, s.arm_a, T), py_base=V2.agree_py(D, "v1", "main", rg, "base", T)))
+    T = BE.trial_set(D["trials"], "s31")
+    for rg in SX_RUNGS:  # deck3: every state of Supplementary Figure 3 (version 1, main, the 31 trials), from the deck's log HRs
+        for a in ("ECG",) + SX_ARMS:
+            E = D["EST"]["v1"]["main"][rg]
+            TT = [t for t in T if E[a][t] is not None and E["base"][t] is not None]
+            bs = V2.bshuf_py(np.array([E[a][t][0] for t in TT]), np.array([E["base"][t][0] for t in TT]), np.array([D["trials"][t]["rb"] for t in TT]))
+            out.append(dict(coh="v1", cfg="main", rung=rg, arm=a, trials="s31", tag="S3", py=V2.agree_py(D, "v1", "main", rg, a, T),
+                            py_base=V2.agree_py(D, "v1", "main", rg, "base", T), py_bshuf=bs))
     return out
 
 
@@ -1979,6 +2186,7 @@ def main():
     CTX["trials"] = trials
     D = V2.build_data(g1, g2, trials)
     D["EST"]["v1"] = V2.est_block(g1)  # (build_data already uses g1; explicit for clarity)
+    add_rep_arms(D, g1)  # deck3: + AI-EHR, + AI-ECG + AI-EHR (version 1, main configuration) for Supplementary Figures 2 and 3
     CTX["D"] = D
     V2.GRID2.update(grid=BE.Grid(g2["G"], g2["U"], g2["ex"]), D=D)
     CTX["G1"], CTX["E1"] = BE.Grid(g1["G"], g1["U"], g1["ex"]), BE.Grid.from_data(D, "v1")
@@ -1989,23 +2197,33 @@ def main():
     # s31 primary from the cells = the s31 summary (8.7% (4.2 to 13.5), 20/31; docs/s31/S31_RESULTS.md)
     r = ps(CTX["G1"], "main", "P5", "ECG", "base", "s31")
     assert f"{r['rr']:.1f}|{r['lo']:.1f}|{r['hi']:.1f}|{r['lower']}/{r['k']}" == "8.7|4.2|13.5|20/31", r
+    # deck3: the added arms, decoded from the embedded integers / log HRs, equal Figure 2C and Figure 3B (display precision)
+    F2V, F3V = json.load(open(FIG2V)), json.load(open(FIG3V))
+    for rg in SX_RUNGS:
+        for a in ("ECG",) + SX_ARMS:
+            re_, rf = ps(CTX["E1"], "main", rg, a, "base", "s31"), ps(CTX["G1"], "main", rg, a, "base", "s31")
+            assert f"{re_['rr']:.1f}|{re_['lo']:.1f}|{re_['hi']:.1f}|{re_['lower']}|{fp(re_['p_m'])}" == f"{rf['rr']:.1f}|{rf['lo']:.1f}|{rf['hi']:.1f}|{rf['lower']}|{fp(rf['p_m'])}", (rg, a)
+            assert f"{re_['rr']:.1f}" == f"{F2V['C'][rg]['rr_' + a][0]:.1f}", (rg, a, re_["rr"])
+            assert f"{V2.agree_py(D, 'v1', 'main', rg, a, T_('s31'))['absd']:.3f}" == f"{F3V['B'][rg][a]:.3f}", (rg, a)
     EX = load_ex()
     RR = pd.read_csv(V2.RRS)
     T1001, deck1001 = L1.TEMPLATE, DECK1001.read_text()
-    # deck2: Figure 2 (s_results2) now precedes the balance explorer, so it joins the block before the explorer section
-    static1 = [intro_markup(T1001, deck1001), s_aims(), s_overview(), s_pipe(), s_methods_design(), s_methods_panel(), s_results2()]
-    static2 = [s_results3()]  # Figure 3 job: after the balance explorer, before the emulation explorer
-    static3 = [s_robust()]
-    static4 = [retitle(V2.s_plasmode(), "s-plas", "Plasmode: a known truth with a hidden physiological confounder (version 1 cohorts)"),
-               retitle(V2.s_mimic(), "s-mimic", "External replication: MIMIC-IV (PS-CVD5 analog ± ECG)"),
-               s_takehome(), s_decisions(), s_a2(), s_a3(), s_apanel(), s_af2d(), s_afw(trials_old, Q), s_afix(trials_old, EX, RR),
-               s_af3q()]  # slide 11 panel C job: A7 appended after A6
-    for c in V2.CL:  # plasmode / MIMIC claims carry V2's slide numbers 14 / 15
-        if c["slide"] in (14, 15):
-            c["slide"] = SN["s-plas"] if c["slide"] == 14 else SN["s-mimic"]
+    # deck3 (2026-10-14): main slides, then the supplementary figures, then the appendix, all through __STATIC1__; display labels
+    # (relabel) applied to every slide's markup (the 10-01 Background / Problem slides have no representation labels)
+    n0 = len(V2.CL)
+    plas = V2.s_plasmode()
+    mimic = V2.s_mimic()
+    for c in V2.CL[n0:]:  # plasmode / MIMIC claims carry V2's slide numbers 14 / 15
+        assert c["slide"] in (14, 15), c
+        c["slide"] = SN["s-plas"] if c["slide"] == 14 else SN["s-mimic"]
+    slides = [intro_markup(T1001, deck1001), s_aims(), s_overview(), s_pipe(), s_methods_design(), s_methods_panel(), s_results2(),
+              s_methods_agree(), s_results3(), retitle(mimic, "s-mimic", "External replication: MIMIC-IV (PS-CVD5 analog ± ECG)"),
+              s_takehome(), s_decisions(), s_supp(), s_a2(), s_a3(), s_apanel(), s_af2d(),
+              retitle(plas, "s-plas", "Plasmode: a known truth with a hidden physiological confounder (version 1 cohorts)"),
+              s_afw(trials_old, Q), s_afix(trials_old, EX, RR), s_af3q(), s_agq()[0]]
     h = build_template(T1001, deck1001, D)
-    h = (h.replace("__TITLE__", s_title()).replace("__STATIC1__", "".join(static1)).replace("__STATIC2__", "".join(static2))
-         .replace("__STATIC3__", "".join(static3)).replace("__STATIC4__", "".join(static4))
+    h = (h.replace("__TITLE__", s_title()).replace("__STATIC1__", "".join(relabel(x) for x in slides)).replace("__STATIC2__", "")
+         .replace("__STATIC3__", "").replace("__STATIC4__", "")
          .replace("__EXPLORER_JS__", patch_explorer(V2.explorer_js())).replace("__LOGO__", V2.logo_uri(None))
          .replace("__DATA__", json.dumps(D, separators=(",", ":"), allow_nan=False)))
     for bad in ("http://", "https://", "@import", "<link", "src=\"//", "__"):
@@ -2018,7 +2236,7 @@ def main():
     assert not re.search(r"[Pp]rovisional:|not frozen", vis), re.search(r".{60}([Pp]rovisional:|not frozen).{30}", vis)
     secs = re.findall(r'<section class="slide[^"]*"[^>]*>', h)
     ids = [re.search(r' id="([^"]+)"', x).group(1) for x in secs]
-    assert ids == MAIN + [s for s, _, _, _ in APP], ids
+    assert ids == MAIN + [s for s, _, _, _ in SUPPF] + [s for s, _, _, _ in APP], ids
     old = os.umask(0o022)
     OUT.write_text(h)
     os.umask(old)
