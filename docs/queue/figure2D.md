@@ -59,14 +59,44 @@ Replace the current Figure 2 **panel D** (per-trial change in % of items with |S
 1. **Rebuild** `scripts/build_lab_deck_1015.py` → `docs/presentation/ecg_tte_lab_2026_10_15.html` so the Figure 2 slide uses the new panel D:
    - click 3 of the reveal (A+B → C → D) shows the new panel;
    - everything else on the slide, and in the deck, stays unchanged.
-2. **Update any deck text** that quotes the old panel D summary (e.g. "20 of 32 trials improved") to the new computed values. Also update the builder's claims table and expected values for these numbers.
-3. **Speaker note or alt text, if the builder has them:** "Gains were concentrated in cardiac-physiology decisions (rhythm control, HF / RAAS drugs); descriptive grouping."
+2. **Clicking panel D opens a popup of other groupings.** Once panel D is revealed (click 3), clicking on it opens a popup.
+   - **Use the deck's existing `popup()` mechanism** (`data-pop`; a close button, click-outside and Esc close it; arrow keys don't navigate while it is open).
+   - **Add a small hint** under panel D, e.g. "Click for other groupings".
+   - **The popup has tab buttons**, one view at a time, each a PNG of the same per-trial values (same endpoint, same 31 trials). Generate them from `make_figure2_latent.py`, or a new `scripts/figures/make_figure2d_groupings.py`, into `docs/paper/figures_latent/panels/panelD_groupings/`. The tabs:
+     1. **Cardiac-physiology** (default; identical to panel D).
+     2. **Clinical area:** AF, HF, ACS/MI, Hypertension, Diabetes, Other, from `trials_meta` `area`.
+        - **Grouped layout:** bars clustered by area and sorted within each area; a dashed group-mean line; above each group, the group name plus "*k*/*n* improved, mean *±x.x*".
+        - One distinct colour per area, colour-blind safe (Okabe–Ito, as in the mock-up).
+     3. **Type of treatment decision** (6 groups), in the same grouped layout:
+        - rhythm control (drug or ablation): AF-CHF, AFFIRM, EAST-AFNET 4, CABANA, RAFT-AF;
+        - HF / RAAS drug choice: PARADIGM-HF, ELITE II, TRANSFORM-HF, COMET, EMPEROR-Preserved, VALIANT;
+        - antithrombotic (incl. LAA occlusion): ARISTOTLE, ROCKET-AF, RE-LY, FRAIL-AF, ACTIVE W, AMPLIFY, PLATO, LAAOS III;
+        - glucose-lowering: CANVAS, CAROLINA, CARMELINA, LEADER, EMPA-REG OUTCOME, SUSTAIN-6, TECOS;
+        - BP-lowering: LIFE, INSIGHT;
+        - other (statin, NSAID): PROVE IT, LODESTAR, PRECISION.
+        - Assert that this covers exactly the 31.
+     4. **Physiologic label** (blind labels, `docs/v21/TRIAL_LABELS.json` `physiologic`): the sorted layout, blue = yes, grey = no, legend with "*k* of *n* improved; mean".
+   - **Mock-ups** (same folder as above):
+     - `panelD_v3_area_grouped.png` (tab 2);
+     - `panelD_v3_decision_grouped.png` (tab 3);
+     - `panelD_option1_coloured_bars.png` (tab 4);
+     - scripts `d_mock.py` and `d_mock2.py`.
+     - **Fix the mock-ups' overlapping group titles** (BP-lowering / Other); wrap or shorten them.
+   - **Every tab says "descriptive grouping".** Show no group P values.
+   - **Expected values** (add them as checks):
+     - area: AF 7/11, +4.5; HF 4/5, +7.4; ACS/MI 1/2, +5.5; Hypertension 1/2, −4.7; Diabetes 3/7, +0.8; Other 3/4, +2.3;
+     - decision: rhythm 5/5, +12.2; HF/RAAS 5/6, +8.0; antithrombotic 3/8, −0.5; glucose 3/7, +0.8; BP 1/2, −4.7; other 2/3, +0.6;
+     - physiologic: yes 9/10, +8.5; no 10/21, +0.9.
+   - **Readable at 1366×768:** the popup image fits without scrolling, or scrolls cleanly.
+3. **Update any deck text** that quotes the old panel D summary (e.g. "20 of 32 trials improved") to the new computed values. Also update the builder's claims table and expected values for these numbers.
+4. **Speaker note or alt text, if the builder has them:** "Gains were concentrated in cardiac-physiology decisions (rhythm control, HF / RAAS drugs); descriptive grouping."
 
 ## Verification (a fresh subagent that built nothing)
 
 The verifier checks:
 - the panel D values, recomputed independently from the cells (group counts, means, the overall P);
 - the grouping matches item 2 exactly;
+- the panel D popup: it opens on click; each of the 4 tabs shows the right image; the tab values are recomputed independently and match the expected values; Esc, the close button and click-outside work; arrow keys don't navigate while it is open; screenshots of each tab at both sizes;
 - screenshots of the Figure 2 slide at each reveal step, at 1920×1080 and 1366×768;
 - no overlap or clipping in the full figure or the slide;
 - 0 console or page errors;
@@ -77,6 +107,6 @@ Fix BLOCKING issues and re-verify, up to 3 rounds. Report: `docs/presentation/VE
 
 ## Commit and summary
 
-1. **Commit locally:** the figure script, `docs/paper/figures_latent/`, the deck builder, the deck and the verify report. Don't push.
+1. **Commit locally:** the figure script(s), `docs/paper/figures_latent/` (including `panels/panelD_groupings/`), the deck builder, the deck and the verify report. Don't push.
 2. **Add one line to `pipeline.md`'s deviations log:** "Figure 2D colours trials by cardiac-physiology decision (rhythm control, HF / RAAS drugs; descriptive grouping); endpoint unchanged."
 3. **Write the summary** at the top of the status log and copy it to `docs/queue/FIGURE2D_RESULTS.md` (commit). Cover the new panel D values, what changed in the deck, and the verification verdict.
