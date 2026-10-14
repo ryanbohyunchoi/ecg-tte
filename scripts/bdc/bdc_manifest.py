@@ -96,8 +96,9 @@ def latest(records: list) -> list:
 def row(rec: dict, study: str, kind: str) -> dict:
     p = path_of(rec)
     did = rec["did"]
-    # drs_uri: the compact form Gen3 reports as each object's DRS self_uri; host form kept as a fallback
-    return dict(drs_uri=f"drs://dg.4503:{did.split('/', 1)[-1]}", name=Path(p).name, folder=f"{study}/{str(Path(p).parent)}",
+    # drs_uri: the form BDC Seven Bridges itself uses for Gen3 objects (seen in its import log, 2026-10-14):
+    # drs://dg.4503:<did>, where the did already starts with 'dg.4503/'. Host form kept as a fallback.
+    return dict(drs_uri=f"drs://dg.4503:{did}", name=Path(p).name, folder=f"{study}/{str(Path(p).parent)}",
                 object_id=did, host_drs_uri=f"drs://{HOST}/{did}", size=rec.get("size"),
                 md5=(rec.get("hashes") or {}).get("md5"),
                 consent=",".join(a for a in (rec.get("acl") or []) if a != "admin"))
