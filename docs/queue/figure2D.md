@@ -24,7 +24,7 @@ Replace the current Figure 2 **panel D** (per-trial change in % of items with |S
    - Unchanged: s31; main configuration; PS-CVD5 `base` vs `ECG`; 54 leakage-corrected items.
    - Use the existing `trial_dpct()`.
    - Keep the existing `BE.pair_stats` asserts.
-2. **Grouping** (descriptive, by type of treatment decision): put it in `scripts/figures/make_figure2_latent.py` as a named constant keyed by trial `full` name. Assert that all 11 are in s31.
+2. **Grouping** (descriptive, by type of treatment decision): put it in `scripts/figures/make_figure2_latent.py` as a named constant keyed by trial `full` name. The names here are short forms: map them to `trials_meta` `full` names, e.g. "PROVE IT-TIMI 22", "CANVAS Program", "EMPA-REG OUTCOME". Assert that all 11 are in s31.
    - **Cardiac-physiology** (11):
      - rhythm control: AF-CHF, AFFIRM, EAST-AFNET 4, CABANA, RAFT-AF;
      - HF / RAAS drug choice: PARADIGM-HF, ELITE II, TRANSFORM-HF, COMET, EMPEROR-Preserved, VALIANT.
