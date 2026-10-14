@@ -128,6 +128,7 @@ New script `scripts/figures/make_figure4_standalone.py`, in the style of `make_f
 
 1. **CLMBR-T in the headline.** `pipeline.md` currently keeps CLMBR-T out of the take-home claims. This figure's main result depends on CLMBR-T: Demo + CLMBR-T alone is 12.5% better than PS-CVD5. Change the lock?
 2. **Where it goes:** the deck (Thursday), the paper, or both. This also decides the slide placement above.
+   - **Resolved (user, 2026-10-14):** deck slide 9 panel D only; no separate Figure 4 slide (queue `docs/queue/slide9_panelD.md`; results in `docs/queue/SLIDE9_PANELD_RESULTS.md`). The "Deck" section above is superseded. Decision 1 stays open for the paper.
 3. **Optional:**
    - add Demo + CLMBR-T as its own bar, to show how much of the gain is CLMBR-T vs ECG;
    - drop panel D;

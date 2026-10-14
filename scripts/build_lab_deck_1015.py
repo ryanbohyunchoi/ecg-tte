@@ -43,14 +43,22 @@ after the balance explorer (slides 11-17 become 12-18), built from the per-panel
 revealed A, B, C (one per click). Panel A's inset numbers and every B / C value are claims (figure3_values.json vs S31_RESULTS.md and
 the log HRs). CLMBR-T is a comparison arm only. Outputs of this builder go to audits/claude-fig3-20261014/deck.
 
+Revision of 2026-10-14, slide 9 panel D job (docs/queue/slide9_panelD.md; deck only, the paper's Figure 2 is unchanged): slide 9's
+click 3 shows a new panel D, overall balance of demographics + AI representations (Demo + ECG, Demo + CLMBR-T, Demo + ECG + CLMBR-T)
+vs conventional PS (PS-CVD5, hdPS, PS-Clinical), labels vs hdPS (scripts/figures/make_slide9_panelD_overall.py); its 7 means and 3
+contrasts are claims, recomputed here from the cells (cross-rung, items observed in both arms) and gated against figure4.md. The
+per-trial panel D and its groupings popup move unchanged to a new appendix A4 "Per-trial covariate balance improvement"; framework
+v2.0 becomes A5 and the spec-v2 fixes A6. Outputs of this builder go to audits/claude-slide9d-20261014/deck.
+
 Main slides: 1 title; 2 Background (10-01); 3 Problem (10-01 schematic, click reveal of the unmeasured side + three points); 4 Aims
 (four aims, revealed one at a time; the representations graphic between aims 1 and 2); 5 study overview (empty body); 6 LATENT-RCT
 pipeline; 7 PSM experiments; 8 methods: covariate balancing; 9 results 1 (Figure 2); 10 results 2 (balance explorer); 11 agreement
 with the RCTs (Figure 3); 12 emulation explorer; 13 robustness; 14 agreement by quality; 15 plasmode; 16 MIMIC-IV; 17 take-home; 18
-open decisions. Appendix A1-A5
+open decisions. Appendix A1-A6
 (hash-linked; "More:" links on main slides, "Back to slide N" on every appendix slide): A1 emulation-quality criteria + interactive
 quality viewer (v19; framework v2.0 toggle); A2 all 38 trials (Table 1, scrollable); A3 held-out panel and leakage-corrected masking;
-A4 framework v2.0 (sensitivity); A5 spec-v2 cohort fixes (sensitivity).
+A4 per-trial covariate balance improvement (the former Figure 2D panel and its groupings popup); A5 framework v2.0 (sensitivity);
+A6 spec-v2 cohort fixes (sensitivity).
 
 Reuses (not modified): scripts/build_lab_deck.py (10-01 stylesheet, schematics), scripts/build_lab_deck_v2.py (template, explorers,
 static-slide helpers, claims table), scripts/build_balance_explorer.py (data loading and validated statistics). The 2026-10-09 deck is
@@ -94,7 +102,7 @@ DECK1001 = ROOT / "docs/presentation/ecg_tte_lab_2026_10_01.html"
 DECK1009 = V2.OUT
 S31D = A / "claude-s31-20261014"  # s31 run (queue 2026-10-14)
 FIG2DD = A / "claude-fig2d-20261014"  # Figure 2D job (docs/queue/figure2D.md)
-SCR = A / "claude-fig3-20261014/deck"  # claims table and validation inputs (Figure 3 run; earlier runs' copies stay in their audit folders)
+SCR = A / "claude-slide9d-20261014/deck"  # claims table and validation inputs (slide 9 panel D run; earlier runs' copies stay in their audit folders)
 FIG2 = ROOT / "docs/paper/figures_latent/figure2_covariate_balance.png"  # scripts/figures/make_figure2_latent.py
 FIG2V = FIG2DD / "figure2_values.json"  # its aggregate values (validated there)
 FIG2G = FIG2.parent / "panels" / "panelD_groupings"  # the panel D popup's tabs (scripts/figures/make_figure2d_groupings.py)
@@ -109,6 +117,17 @@ EXPECT_F2D = {"cardiac": "10 of 11|+9.9", "other": "9 of 20|-0.3", "all": "19 of
                            "Other (statin, NSAID)": "2 of 3|+0.6"},
               "physiologic": {"yes": "9 of 10|+8.5", "no": "10 of 21|+0.9"}}
 F2D_NOTE = "Gains were concentrated in cardiac-physiology decisions (rhythm control, HF / RAAS drugs); descriptive grouping."
+# slide 9 panel D job (docs/queue/slide9_panelD.md): the new panel D (deck only; scripts/figures/make_slide9_panelD_overall.py)
+F2N = ROOT / "docs/paper/figures_latent/panels/deck/slide9_panelD_overall.png"
+F2NV = A / "claude-slide9d-20261014/panelD_values.json"  # its aggregate values (gated there against figure4.md and recomputed_f4.json)
+# rows: (label, rung, arm); expected displayed values (figure4.md, audited): mean |SMD| and the vs-hdPS labels (deck P format)
+F2N_ROWS = [("Unmatched", "P5", "unmatched"), ("PS-CVD5", "P5", "base"), ("hdPS", "hdPS200", "base"), ("PS-Clinical", "clinical_nolvef", "base"),
+            ("Demo + ECG", "P1", "ECG"), ("Demo + CLMBR-T", "P1", "CLMBR"), ("Demo + ECG + CLMBR-T", "P1", "ECG+CLMBR")]
+EXPECT_F2N = {"Unmatched": "0.143", "PS-CVD5": "0.129", "hdPS": "0.114", "PS-Clinical": "0.118", "Demo + ECG": "0.126", "Demo + CLMBR-T": "0.112",
+              "Demo + ECG + CLMBR-T": "0.106", "vs Demo + ECG": "10.2% higher|.029", "vs Demo + CLMBR-T": "2.0% lower|.53",
+              "vs Demo + ECG + CLMBR-T": "8.0% lower|.012"}  # figure4.md P = .03 for Demo + ECG (2 decimals; .0286)
+F2N_ALT = ("Figure 2 panel D (deck): overall balance, mean |SMD| over the 54 held-out items (31 trials): Unmatched; conventional PS "
+           "(PS-CVD5, hdPS, PS-Clinical); demographics + AI representations (Demo + ECG, Demo + CLMBR-T, Demo + ECG + CLMBR-T), labelled vs hdPS.")
 S31SUM = {"v1": S31D / "summary_v1", "mi": S31D / "summary_mi"}  # scripts/s31/s31_summaries.py (sets S31, S32; S32 gated)
 S31DOC = ROOT / "docs/s31/S31_RESULTS.md"  # scripts/s31/s31_numbers.py
 MIDIR = A / "claude-v1-psclin-mi"
@@ -136,9 +155,10 @@ MAIN = ["s-title", "s-bg", "s-prob", "s-aims", "s-over", "s-pipe", "s-meth1", "s
 # Figure 3 job (docs/queue/figure3.md): Figure 3 (s-res3) directly after the balance explorer, before the emulation explorer
 # appendix (deck2, 2026-10-14): the former A1 (trial selection) and A6 (design history) are removed; Table 1 is one scrollable
 # slide; the held-out panel, leakage map and masking moved from slide 8 to a new appendix slide; labels renumbered A1-A5
+# slide 9 panel D job (docs/queue/slide9_panelD.md): the per-trial panel D moves to a new A4 after A3; framework v2.0 -> A5, fixes -> A6
 APP = [("a-qual", "A1", "Emulation-quality criteria", "s-pipe"), ("a-t1", "A2", "All 38 trials (Table 1)", "s-pipe"),
-       ("a-panel", "A3", "Held-out panel and leakage map", "s-meth2"), ("a-fw", "A4", "Framework v2.0 (sensitivity)", "s-res2"),
-       ("a-fix", "A5", "Spec-v2 cohort fixes (sensitivity)", "s-rob")]
+       ("a-panel", "A3", "Held-out panel and leakage map", "s-meth2"), ("a-f2d", "A4", "Per-trial covariate balance improvement", "s-res2"),
+       ("a-fw", "A5", "Framework v2.0 (sensitivity)", "s-res2"), ("a-fix", "A6", "Spec-v2 cohort fixes (sensitivity)", "s-rob")]
 SN = {s: str(i + 1) for i, s in enumerate(MAIN)}
 SN.update({sid: lab for sid, lab, _, _ in APP})
 APPT = {lab: t for _, lab, t, _ in APP}
@@ -890,20 +910,98 @@ def s_results2():
             M = G1.block("main", rg, a, True)[np.ix_(T, BE.items("54"))]
             ok = np.isfinite(M).any(1)
             claim(sl, f"Fig 2C {lab} {a} mean |SMD|", f"{c[a]:.3f}", FIG2V, ref=f"{np.nanmean(M[ok], 1).mean():.3f}", ref_how="explorer ladder level on the cells")
-    d = V["D"]
-    r = ps(G1, "main", "P5", "ECG", "base", "s31")
-    claim(sl, "Fig 2D trials improved", f"{int(d['improved'])} of {int(d['k'])}", FIG2V, ref=f"{r['better']} of {r['k']}", ref_how="pair_stats on the cells")
-    claim(sl, "Fig 2D mean change (points)", f"{d['mean']:+.1f}", FIG2V, ref=f"{r['dpts']:+.1f}", ref_how="pair_stats on the cells")
-    claim(sl, "Fig 2D P", fp(d["p"]), FIG2V, ref=fp(r["p"]), ref_how="exact one-sided sign-flip on the cells")
     for g, x in V["B"].items():
         js = BE.items("54") if g == "All 54" else V2.dom_items(g)
         for a in ("unmatched", "base", "ECG"):
             M = G1.block("main", "P5", a, True)[np.ix_(T, js)]
             ok = np.isfinite(M).any(1)
             claim(sl, f"Fig 2B {g} {a}", f"{x[a]:.3f}", FIG2V, ref=f"{np.nanmean(M[ok], 1).mean():.3f}", ref_how="explorer domain view (mean) on the cells")
+    f2n_claims(sl)
+    # deck2: no subtitle / source line; minimal title; panels revealed A + B, then C, then D. Slide 9 panel D job: D = the overall-balance
+    # panel (no popup); the per-trial panel and its groupings popup are on A4, linked first under "More:"
+    return sec(sid, "Results 1: covariate balance (Figure 2)", fig, links=more(SN["a-f2d"], SN["a-fw"], SN["a-fix"]))
+
+
+def f2n_cells(T, rg, arm, ref=None):
+    """slide 9 panel D, recomputed here from the version 1 cells (independent of the figure script): the explorer ladder level (mean
+    over trials of each trial's mean |SMD| on its observed items, own masks) or, with ref = (rung, arm), the paired contrast vs ref on
+    the items observed in both cells (pair_stats' formulae, across rungs): relative change in mean |SMD|, two-sided exact sign-flip P."""
+    G1, js = CTX["G1"], BE.items("54")
+    Ma = G1.block("main", rg, arm, True)[np.ix_(T, js)]
+    if ref is None:
+        ok = np.isfinite(Ma).any(1)
+        assert ok.all()
+        return float(np.nanmean(Ma[ok], 1).mean())
+    Mb = G1.block("main", ref[0], ref[1], True)[np.ix_(T, js)]
+    m = np.isnan(Ma) | np.isnan(Mb)
+    ma, mb = np.nanmean(np.where(m, np.nan, Ma), 1), np.nanmean(np.where(m, np.nan, Mb), 1)
+    dm = mb - ma
+    rr = 100 * (1 - ma.mean() / mb.mean())
+    return rr, min(1.0, 2 * min(BE.signflip_1s(dm), BE.signflip_1s(-dm)))
+
+
+def f2n_claims(sl):
+    """slide 9 panel D job: every value in the new panel D (7 means, 3 vs-hdPS contrasts with P) is a claim, shown from
+    panelD_values.json and checked against f2n_cells on the cells; the displayed values are also gated against figure4.md."""
+    assert F2N.exists() and F2NV.exists(), "run scripts/figures/make_slide9_panelD_overall.py first"
+    V = json.load(open(F2NV))
+    T = T_("s31")
+    assert V["k_set"] == len(T) == 31
+    got = {}
+    for lab, rg, arm in F2N_ROWS:
+        shown = f"{V['levels'][lab]:.3f}"
+        claim(sl, f"Panel D mean |SMD| {lab}", shown, F2NV, ref=f"{f2n_cells(T, rg, arm):.3f}",
+              ref_how="explorer ladder level on the version 1 cells (own masks)")
+        got[lab] = shown
+    for lab, rg, arm in F2N_ROWS[4:]:
+        c = V["vs_hdPS"][lab]
+        rr, p = f2n_cells(T, rg, arm, ref=("hdPS200", "base"))
+        word = lambda x: "lower" if x > 0 else "higher"
+        shown, ref = f"{abs(c['rr']):.1f}% {word(c['rr'])}", f"{abs(rr):.1f}% {word(rr)}"
+        assert V["labels"][lab].startswith(f"{shown} than hdPS (P = {fp(c['p_m_two'])})"), V["labels"][lab]
+        claim(sl, f"Panel D {lab} vs hdPS: relative change in mean |SMD|", shown, F2NV, ref=ref,
+              ref_how="paired by trial on items observed in both cells (version 1 cells)")
+        claim(sl, f"Panel D {lab} vs hdPS: P (two-sided sign-flip)", fp(c["p_m_two"]), F2NV, ref=fp(p), ref_how="exact two-sided sign-flip on the cells")
+        got[f"vs {lab}"] = f"{shown}|{fp(c['p_m_two'])}"
+    assert got == EXPECT_F2N, (got, EXPECT_F2N)
+
+
+def F2FMT_P(p):
+    """P as printed in the Figure 2 panels (make_figure2_latent.fmt_p; copied: importing the figure script resets matplotlib)."""
+    return "P < .001" if p < 0.001 else f"P = {p:.3f}".replace("0.", ".") if p < 0.01 else f"P = {p:.2f}".replace("0.", ".")
+
+
+def s_af2d():
+    """appendix A4 (slide 9 panel D job): the per-trial panel D of Figure 2 (Figure 2D job's version, coloured by cardiac-physiology
+    decision) with its groupings popup (moved unchanged from slide 9: click the panel or the hint), one summary line from the existing
+    values (no new numbers) and a back-link to slide 9."""
+    from PIL import Image
+    sid = "a-f2d"
+    sl = SN[sid]
+    V = json.load(open(FIG2V))
+    d = V["D"]
+    r = ps(CTX["G1"], "main", "P5", "ECG", "base", "s31")
+    claim(sl, "Fig 2D trials improved", f"{int(d['improved'])} of {int(d['k'])}", FIG2V, ref=f"{r['better']} of {r['k']}", ref_how="pair_stats on the cells")
+    claim(sl, "Fig 2D mean change (points)", f"{d['mean']:+.1f}", FIG2V, ref=f"{r['dpts']:+.1f}", ref_how="pair_stats on the cells")
+    claim(sl, "Fig 2D P", fp(d["p"]), FIG2V, ref=fp(r["p"]), ref_how="exact one-sided sign-flip on the cells")
+    pshown = F2FMT_P(d["p"])  # as printed in the panel (make_figure2_latent.fmt_p)
+    claim(sl, "Fig 2D P (as in the panel)", pshown, FIG2V, ref=F2FMT_P(r["p"]), ref_how="exact one-sided sign-flip on the cells")
     pops = fig2d_popup(sl, V)
-    # deck2: no subtitle / source line; minimal title; panels revealed A + B, then C, then D (Figure 2D job: D opens pop-f2d)
-    return sec(sid, "Results 1: covariate balance (Figure 2)", fig, links=more(SN["a-fw"], SN["a-fix"]) + pops)
+    pim = Image.open(FIG2P / "figure2_covariate_balance_D.png").convert("RGB")
+    disp_h = 488
+    u, nb = uri(transp(pim).resize((round(pim.width * 2 * disp_h / pim.height), 2 * disp_h), Image.LANCZOS))
+    CTX["a_f2d"] = dict(src_size=list(pim.size), disp_h=disp_h, bytes=nb)
+    mean = f'{d["mean"]:+.1f}'.replace("-", "−")
+    line = (f'{int(d["improved"])} of {int(d["k"])} trials improved; mean {mean} points in % of items with |SMD| &lt; 0.1; '
+            f'{pshown} (exact one-sided sign-flip)')
+    q = "19 of 31 trials improved; mean +3.3 points in % of items with |SMD| < 0.1; P = .02 (exact one-sided sign-flip)"  # queue file
+    assert line.replace("&lt;", "<") == q, line
+    claim(sl, "A4 summary line", q, FIG2V, probe=q, ref_src=ROOT / "docs/queue/slide9_panelD.md")
+    body = (f'<p class="f2dl">{line}</p>'
+            f'<div class="f2dbox" style="width:{disp_h * pim.width / pim.height:.0f}px;height:{disp_h}px">'
+            f'<img class="f2d" data-pop="pop-f2d" alt="{esc("Per-trial covariate balance improvement (Figure 2 panel D). " + F2D_NOTE)}" src="{u}">'
+            '<div class="f2hint" data-pop="pop-f2d">Click for other groupings ›</div></div>')
+    return sec(sid, "Per-trial covariate balance improvement (PS-CVD5 + ECG vs PS-CVD5)", body, links=back("s-res2") + pops)
 
 
 def fig2d_popup(sl, V):
@@ -1018,14 +1116,19 @@ def fig2_panels(disp_h=580):  # 560 before the Figure 2D job (the figure is now 
         pos[L] = (x, y, pim.width, pim.height)
         u, nb = uri(transp(pim).resize((round(pim.width * sc), round(pim.height * sc)), Image.LANCZOS))
         meta[L] = dict(xy=[x, y], size=[pim.width, pim.height], msd=round(float(m), 2), bytes=nb)
-        # Figure 2D job: once revealed, panel D opens the popup of other groupings (pop-f2d); its alt text carries the speaker note
-        pop, alt = (' data-pop="pop-f2d"', f"Figure 2 panel D. {F2D_NOTE}") if L == "D" else ("", f"Figure 2 panel {L}")
-        out.append(f'<img class="f2p build{" f2d" if L == "D" else ""}" data-step="{FIG2_STEP[L]}"{pop} alt="{esc(alt)}" src="{u}" '
+        if L == "D":
+            # slide 9 panel D job: the slot of Figure 2's panel D shows the overall-balance panel instead (same left / top / width; it
+            # may extend below the old panel's bottom, within the figure box); no popup (the per-trial panel and its popup are on A4)
+            nim = Image.open(F2N).convert("RGB")
+            assert nim.width == pim.width and y + nim.height <= H, (nim.size, pim.size, y, H)
+            u, nb = uri(transp(nim).resize((round(nim.width * sc), round(nim.height * sc)), Image.LANCZOS))
+            meta[L] = dict(xy=[x, y], size=list(nim.size), replaced="slide9_panelD_overall.png (old panel D located: msd %.2f)" % m, bytes=nb)
+            out.append(f'<img class="f2p build" data-step="{FIG2_STEP[L]}" alt="{esc(F2N_ALT)}" src="{u}" '
+                       f'style="left:{100 * x / W:.3f}%;top:{100 * y / H:.3f}%;width:{100 * nim.width / W:.3f}%">')
+            continue
+        out.append(f'<img class="f2p build" data-step="{FIG2_STEP[L]}" alt="{esc(f"Figure 2 panel {L}")}" src="{u}" '
                    f'style="left:{100 * x / W:.3f}%;top:{100 * y / H:.3f}%;width:{100 * pim.width / W:.3f}%">')
     assert pos["A"][0] < pos["B"][0] < pos["C"][0] and pos["D"][1] > pos["C"][1] and pos["B"][1] < pos["D"][1]
-    x, y, w, h = pos["D"]  # the hint, right-aligned under panel D (also a popup trigger)
-    out.append(f'<div class="f2hint build" data-step="{FIG2_STEP["D"]}" data-pop="pop-f2d" style="right:{100 * (W - x - w) / W:.3f}%;'
-               f'top:{100 * (y + h) / H:.3f}%">Click for other groupings ›</div>')
     # legend: the non-white bounding box of the band above the panels
     top = min(p[1] for p in pos.values())
     band = np.asarray(full.convert("L"))[:top - 2]
@@ -1292,7 +1395,7 @@ def s_a3():
     return sec(sid, "All 38 emulated trials (paper Table 1)", f'<div class="t1wrap t1scroll" tabindex="0"><table class="t1">{hdr}<tbody>{out}</tbody></table></div>{foot}')
 
 
-def s_a4(trials_old, Q):
+def s_afw(trials_old, Q):  # appendix A5 (A4 before the slide 9 panel D job)
     sid = "a-fw"
     n0 = len(V2.CL)
     h = V2.s_framework(trials_old, Q)
@@ -1302,7 +1405,7 @@ def s_a4(trials_old, Q):
     return retitle(h, sid, "Emulation-quality framework v2.0 (sensitivity)")
 
 
-def s_a5(trials_old, EX, RR):
+def s_afix(trials_old, EX, RR):  # appendix A6 (A5 before the slide 9 panel D job)
     sid = "a-fix"
     b31 = {t["id"]: t["s31"] for t in CTX["trials"]}
     t31 = [dict(t, v2c=b31[t["id"]]) for t in trials_old]  # colour = in the 31 (the primary set)
@@ -1428,10 +1531,7 @@ ul.cbl .eq sub{font-size:.68em}
 .fig2box{position:relative;margin:-10px auto 0}
 .fig2box img.f2p{position:absolute;display:block;height:auto}
 .fig2box img.f2p.build{transition:opacity .45s}
-/* Figure 2D job: panel D opens a popup of other groupings (tabs, one view at a time) */
-.fig2box img.f2d{cursor:pointer}
-.fig2box img.f2d:focus{outline:2px solid var(--red);outline-offset:2px}
-.fig2box .f2hint{position:absolute;font-size:13px;font-weight:700;color:var(--red);cursor:pointer;white-space:nowrap;border-bottom:1px dotted var(--red);line-height:1.2}
+/* Figure 2D job: the popup of other groupings of the per-trial panel D (tabs, one view at a time; on A4 since the slide 9 panel D job) */
 .mbox .f2tabs{display:flex;gap:6px;margin:0 0 8px;flex-wrap:wrap}
 .mbox .f2tab{border:2px solid var(--navy);background:#fff;color:var(--navy);font-weight:700;font-size:14px;line-height:1.2;font-family:inherit;padding:5px 12px;cursor:pointer}
 .mbox .f2tab.on{background:var(--navy);color:#fff}
@@ -1442,6 +1542,12 @@ ul.cbl .eq sub{font-size:.68em}
 .mbox figure.f2view figcaption{font-size:13.5px;line-height:1.3;color:var(--navy);margin:4px 0 0;text-align:left}
 .mbox p.f2pn{font-size:12.5px;color:var(--muted);margin-top:4px}
 /* Figure 3 job: the agreement slide (Figure 3), built from its per-panel PNGs */
+/* slide 9 panel D job: appendix A4, the per-trial panel D (opens the groupings popup) */
+.f2dl{font-size:19px;margin:0 0 8px;color:var(--navy);text-align:center}
+.f2dbox{position:relative;margin:0 auto}
+.f2dbox img.f2d{display:block;width:100%;height:100%;cursor:pointer}
+.f2dbox img.f2d:focus{outline:2px solid var(--red);outline-offset:2px}
+.f2dbox .f2hint{position:absolute;right:0;bottom:-22px;font-size:15px;font-weight:700;color:var(--red);cursor:pointer;white-space:nowrap;border-bottom:1px dotted var(--red);line-height:1.2}
 .fig3box{position:relative;margin:-10px auto 0}
 .fig3box img.f3p{position:absolute;display:block;height:auto}
 .fig3box img.f3p.build{transition:opacity .45s}
@@ -1765,7 +1871,7 @@ def main():
     static3 = [s_robust()]
     static4 = [retitle(V2.s_plasmode(), "s-plas", "Plasmode: a known truth with a hidden physiological confounder (version 1 cohorts)"),
                retitle(V2.s_mimic(), "s-mimic", "External replication: MIMIC-IV (PS-CVD5 analog ± ECG)"),
-               s_takehome(), s_decisions(), s_a2(), s_a3(), s_apanel(), s_a4(trials_old, Q), s_a5(trials_old, EX, RR)]
+               s_takehome(), s_decisions(), s_a2(), s_a3(), s_apanel(), s_af2d(), s_afw(trials_old, Q), s_afix(trials_old, EX, RR)]
     for c in V2.CL:  # plasmode / MIMIC claims carry V2's slide numbers 14 / 15
         if c["slide"] in (14, 15):
             c["slide"] = SN["s-plas"] if c["slide"] == 14 else SN["s-mimic"]
