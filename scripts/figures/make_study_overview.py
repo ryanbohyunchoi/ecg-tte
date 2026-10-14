@@ -5,9 +5,10 @@ Hand-built with matplotlib primitives (no raster icons), so the SVG and PDF are 
 Only design-level counts (numbers of trials and of held-out items) appear; no patient data.
 
 Sources for every number on the figure:
-- 99 candidates -> 38 emulated -> 32 analysed; tiers 3/12/17/6: docs/paper/paper.md (Methods, Results),
-  docs/paper/supplement.md eMethods 3, docs/v19/quality_tiers.json (counted by area, Limited excluded).
-- Areas of the 32 (AF 12, diabetes 7, HF 5, other 4, hypertension 2, ACS/MI 2): docs/v19/quality_tiers.json.
+- 99 candidates -> 37 feasible -> 31 analysed; v19 tiers of the 37 = 3/11/17/6 (pipeline.md update 2026-10-14: the size rule
+  was raised to >=350 patients with an ECG in the smaller arm, which removes PROTECT AF; disclosed as post hoc). Counted here from
+  docs/v19/quality_tiers.json minus the feasibility exclusion (scripts/build_balance_explorer.FEAS_EXCL); Limited excluded.
+- Areas of the 31 (AF 11, diabetes 7, HF 5, other 4, hypertension 2, ACS/MI 2): same source, asserted below.
 - MIMIC-IV set (7 CV trials + PEPTIC negative control): docs/v21/MIMIC_PAPER2.md, eMethods 11.
 - PS ladder, representations, matching, 54-item held-out panel, analyses: pipeline.md (2026-10-13 update).
 - Planned validation cohorts (ACCORD, WHI, CHS waveforms on BDC): docs/v20/COHORT_ECG_AVAILABILITY.md.
@@ -405,12 +406,28 @@ def col_data():
     pill(x + 26, y0 + 16, "PLANNED", fc=WHITE, tc=MUTED, ec=FAINT, ls=(0, (3, 2)), size=10.5)
 
 
+def trial_counts():
+    """feasible / analysed / tier / area counts: docs/v19/quality_tiers.json minus the feasibility exclusion (PROTECT AF)."""
+    import json
+    root = Path(__file__).resolve().parents[2]
+    q = json.loads((root / "docs/v19/quality_tiers.json").read_text())["trials"]
+    feas = [x for x in q if x["key"] != "protect_af"]  # = build_balance_explorer.FEAS_EXCL (smaller arm < 350)
+    tier = lambda x: x["tier"].split(" - ")[0]
+    tiers = {k: sum(tier(x) == k for x in feas) for k in ("Excellent", "Good", "Moderate", "Limited")}
+    an = [x for x in feas if tier(x) != "Limited"]
+    areas = {a: sum(x["area"] == a for x in an) for a in ("AF", "Diabetes", "HF", "Other", "Hypertension", "ACS / MI")}
+    assert len(q) == 38 and len(feas) == 37 and len(an) == 31 and tiers == dict(Excellent=3, Good=11, Moderate=17, Limited=6), tiers
+    assert areas == {"AF": 11, "Diabetes": 7, "HF": 5, "Other": 4, "Hypertension": 2, "ACS / MI": 2}, areas
+    return len(feas), len(an), tiers, areas
+
+
 def col_trials():
     x, w = COLS["trials"]
+    nf, na, tc, ac = trial_counts()
     panel(x, w, 2, "Target trials")
     cx = x + w / 2
     # funnel
-    bars = [(99, "candidate RCTs", 236, MNAVY), (38, "emulated", 196, NAVY), (32, "analysed", 156, RED)]
+    bars = [(99, "candidate RCTs", 236, MNAVY), (nf, "feasible", 196, NAVY), (na, "analysed", 156, RED)]
     steps = ["feasibility", "emulation quality"]
     y = 718
     bh = 40
@@ -425,31 +442,31 @@ def col_trials():
             arrow(cx - 52, y - 2, cx - 52, y - 34, color=NAVY, lw=1.4, hw=7, hl=8)
             t(cx - 40, y - 18, steps[k], size=11.5, color=MUTED, style="italic")
             y -= bh + 36
-    # quality tiers of the 38
+    # quality tiers of the 37 feasible
     yq = 516
-    t(x + 16, yq + 28, "Quality of the 38 (points-based)", size=11.5, weight="bold")
-    tiers = [("Excellent", 3, NAVY), ("Good", 12, MNAVY), ("Moderate", 17, "#a6a8c2"), ("Limited", 6, PRED)]
+    t(x + 16, yq + 28, f"Quality of the {nf} (points-based)", size=11.5, weight="bold")
+    tiers = [("Excellent", tc["Excellent"], NAVY), ("Good", tc["Good"], MNAVY), ("Moderate", tc["Moderate"], "#a6a8c2"), ("Limited", tc["Limited"], PRED)]
     sx, sw = x + 16, w - 32
-    cell = sw / 38
+    cell = sw / nf
     xx = sx
     for name, n, col in tiers:
         for i in range(n):
             box(xx + 0.6, yq, cell - 1.2, 16, fc=col, ec=RED if name == "Limited" else col, lw=0.8, r=1.5, z=3)
             xx += cell
     # cross out Limited
-    lx0 = sx + cell * 32
+    lx0 = sx + cell * na
     line([lx0 + 1, sx + sw - 1], [yq + 1, yq + 15], color=DRED, lw=1.3, z=4)
-    leg = [("Excellent 3", NAVY), ("Good 12", MNAVY), ("Moderate 17", "#a6a8c2"), ("Limited 6 (out)", PRED)]
+    leg = [(f"Excellent {tc['Excellent']}", NAVY), (f"Good {tc['Good']}", MNAVY), (f"Moderate {tc['Moderate']}", "#a6a8c2"), (f"Limited {tc['Limited']} (out)", PRED)]
     pos = [(sx, yq - 18), (sx + 118, yq - 18), (sx, yq - 38), (sx + 118, yq - 38)]
     for (s, col), (px, py) in zip(leg, pos):
         box(px, py - 5.5, 11, 11, fc=col, ec=RED if col == PRED else col, lw=0.8, r=2, z=3)
         t(px + 16, py, s, size=11.5, color=NAVY)
 
-    # areas of the 32
+    # areas of the 31
     ya = 438
-    t(x + 16, ya, "Analysed 32 by clinical area", size=11.5, weight="bold")
-    areas = [("AF", 12, RED), ("Diabetes", 7, NAVY), ("Heart failure", 5, NAVY), ("Other", 4, NAVY),
-             ("Hypertension", 2, NAVY), ("ACS / MI", 2, NAVY)]
+    t(x + 16, ya, f"Analysed {na} by clinical area", size=11.5, weight="bold")
+    areas = [("AF", ac["AF"], RED), ("Diabetes", ac["Diabetes"], NAVY), ("Heart failure", ac["HF"], NAVY), ("Other", ac["Other"], NAVY),
+             ("Hypertension", ac["Hypertension"], NAVY), ("ACS / MI", ac["ACS / MI"], NAVY)]
     for k, (name, n, col) in enumerate(areas):
         yy = ya - 30 - k * 28
         t(x + 110, yy, name, size=12, ha="right")

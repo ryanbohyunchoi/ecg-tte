@@ -38,6 +38,10 @@ Cohort toggle (queue 2026-10-08 step C): spec-v2 fixed cohorts (default) or vers
   audits/claude-v2-cohorts/summary, audits/claude-v2-psclin-mi/summary   Python summaries (validation targets for the spec-v2 rungs)
   docs/emulation_quality_v2/quality_v2_cohorts.json              rescored set on the spec-v2 cohorts (extra trial-set option, if present)
 The expanded panel exists for version 1 cohorts only. Every version 1 validation is unchanged.
+Trial sets (2026-10-14): "s31" = the primary set of the lab deck and Figure 2 (paper 1's 32 minus PROTECT AF, excluded at
+feasibility: smaller arm < 350); "f37" = the 37 feasible; "q37:<tiers>" / "area31:<area>" = tier / area subsets of those. The
+validations keep their published sets (s32, all). This standalone explorer's HTML template is shared with the 2026-10-09 deck
+(scripts/build_lab_deck_v2.explorer_js) and is not changed; the s31 options are patched into the 2026-10-15 deck only.
 
 Usage (tte-analysis env):
   python scripts/build_balance_explorer.py            build the HTML (+ aggregate JSON copy in the audits folder)
@@ -115,6 +119,10 @@ SHORT = {"EMPA-REG OUTCOME": "EMPA-REG", "CANVAS Program": "CANVAS", "DECLARE-TI
          "EMPEROR-Preserved": "EMPEROR-Pres."}
 BUCKETS = ["Comorbidities", "Medications", "Healthcare use & testing", "Additional labs & vitals", "Devices & procedures",
            "Preventive care", "Risk & frailty scores"]
+# primary trial set "s31" (pipeline.md update 2026-10-14): feasibility size rule raised from >=300 to >=350 patients with an ECG in
+# the smaller arm, which removes PROTECT AF only: 99 -> 37 feasible -> 31 analysed (v19 tiers, Limited excluded). Disclosed as post
+# hoc; paper 1's 32 (with PROTECT AF) is kept as set "s32" (sensitivity) and every validation keyed to it is unchanged.
+FEAS_EXCL = {"protect_af": "excluded at feasibility (smaller arm < 350)"}
 
 
 # ================================================================ data
@@ -239,9 +247,12 @@ def trials_meta(g):
         nm = T1NAME[k]
         assert nm in paper, nm
         tier = QT[k]["tier"].split(" - ")[0]
+        feas = k not in FEAS_EXCL
         out.append(dict(id=tid, name=SHORT.get(nm, nm), full=nm, area=QT[k]["area"], tier=tier, s32=tier != "Limited",
-                        phys=LB[nm]["physiologic"] == "yes", v2=nm in v2, v2c=nm in v2c))
+                        phys=LB[nm]["physiologic"] == "yes", v2=nm in v2, v2c=nm in v2c, f37=feas, s31=feas and tier != "Limited",
+                        status=FEAS_EXCL.get(k, "analysed" if tier != "Limited" else "excluded at emulation quality (Limited)")))
     assert sum(t["s32"] for t in out) == 32 and sum(t["phys"] for t in out) == 11 and sum(t["v2"] for t in out) == 29
+    assert sum(t["s31"] for t in out) == 31 and sum(t["f37"] for t in out) == 37 and {t["full"] for t in out if t["s32"] and not t["s31"]} == {"PROTECT AF"}
     return out
 
 
@@ -367,6 +378,10 @@ def pair_stats(grid, cfg, rg, a, b, T, panel="58", leak=False, thr=0.1):
 
 def trial_set(trials, v):
     idx = list(range(len(trials)))
+    if v == "s31":  # primary (2026-10-14): paper 1's 32 minus PROTECT AF (excluded at feasibility)
+        return [i for i in idx if trials[i]["s31"]]
+    if v == "f37":  # the 37 feasible trials (all 38 emulated minus PROTECT AF)
+        return [i for i in idx if trials[i]["f37"]]
     if v == "s32":
         return [i for i in idx if trials[i]["s32"]]
     if v == "v2":
@@ -380,9 +395,13 @@ def trial_set(trials, v):
         return [i for i in idx if trials[i]["area"] == x]
     if k == "q":
         return [i for i in idx if trials[i]["tier"] in x.split(",")]
+    if k == "q37":  # quality tier among the 37 feasible trials
+        return [i for i in idx if trials[i]["tier"] in x.split(",") and trials[i]["f37"]]
+    if k == "area31":  # clinical area among the 31 analysed trials
+        return [i for i in idx if trials[i]["area"] == x and trials[i]["s31"]]
     if k == "phys":
         y, s = x.split(",")
-        return [i for i in idx if trials[i]["phys"] == (y == "yes") and (s == "all" or trials[i]["s32"])]
+        return [i for i in idx if trials[i]["phys"] == (y == "yes") and (s == "all" or trials[i][s])]  # s = all / s32 / s31
     if k == "t":
         return [int(x)]
     raise ValueError(v)

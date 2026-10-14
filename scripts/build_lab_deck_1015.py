@@ -15,6 +15,15 @@ experiments" (PS levels one at a time, then + ECG, + CLMBR-T, + ECG + CLMBR-T, +
 PS / matching; no PS-Flags, no ladder graphic); slide 10 = the updated Figure 2 (scripts/figures/make_figure2_latent.py) only.
 Popups: Esc or the close button closes them; while one is open no key reaches the deck.
 
+Revision of 2026-10-14 (docs/queue/QUEUE_2026_10_14_S31.md; pipeline.md update 2026-10-14): PRIMARY trial set = "s31" (paper 1's
+32 minus PROTECT AF, excluded at feasibility after the size rule was raised from >=300 to >=350 patients with an ECG in the smaller
+arm): 99 -> 37 feasible -> 31 analysed (v19 tiers 3 / 11 / 17 / 6; AF 11). Disclosed as post hoc; paper 1's 32 (with PROTECT AF)
+is a sensitivity analysis and stays selectable (as do all 38) in the explorers, where s31 is the default. Static s31 numbers come
+from the s31 Python summaries (scripts/s31/s31_summaries.py; audits/claude-s31-20261014/summary_{v1,mi}) and are re-derived from
+the cells (build_balance_explorer.pair_stats) or the deck's embedded data in the claims table; the robustness rows not in those
+summaries are taken from docs/s31/S31_RESULTS.md (scripts/s31/s31_numbers.py) and probed there. Outputs of this builder now go to
+audits/claude-s31-20261014/deck (the 2026-10-13 run in audits/claude-lab-deck-1015-v2 is kept).
+
 Main slides: 1 title; 2 Background (10-01); 3 Problem (10-01 schematic, click reveal of the unmeasured side + three points); 4 Aims
 (four aims, revealed one at a time); 5 study overview (empty body); 6 LATENT-RCT pipeline; 7 PSM experiments; 8 held-out panel;
 9 balance explorer; 10 results (Figure 2); 11 emulation explorer; 12 robustness; 13 agreement by quality;
@@ -62,9 +71,12 @@ A = V2.A
 OUT = ROOT / "docs/presentation/ecg_tte_lab_2026_10_15.html"
 DECK1001 = ROOT / "docs/presentation/ecg_tte_lab_2026_10_01.html"
 DECK1009 = V2.OUT
-SCR = A / "claude-lab-deck-1015-v2"
+S31D = A / "claude-s31-20261014"  # s31 run (queue 2026-10-14)
+SCR = S31D / "deck"
 FIG2 = ROOT / "docs/paper/figures_latent/figure2_covariate_balance.png"  # scripts/figures/make_figure2_latent.py
-FIG2V = A / "claude-deckq-20261013/figure2_values.json"  # its aggregate values (validated there)
+FIG2V = S31D / "figure2_values.json"  # its aggregate values (validated there)
+S31SUM = {"v1": S31D / "summary_v1", "mi": S31D / "summary_mi"}  # scripts/s31/s31_summaries.py (sets S31, S32; S32 gated)
+S31DOC = ROOT / "docs/s31/S31_RESULTS.md"  # scripts/s31/s31_numbers.py
 MIDIR = A / "claude-v1-psclin-mi"
 MI_V1 = MIDIR / "cells/restricted_cells_v1_mi_v1layout.parquet"
 MI_V1SUM = MIDIR / "summary"
@@ -216,6 +228,12 @@ def trials_new(trials_old, g):
                         cap=bool(q["tier_capped"]), hz=int(q["horizon_months"]), rat=q["rationale"], prov=t["prov"], s32=t["s32"], v2=t["v2"],
                         v2c=t["v2c"], phys=t["phys"], rb=t["rb"], rs=t["rs"]))
     assert sum(t["tier"] != "Limited" for t in out) == 32 == sum(t["s32"] for t in out)
+    # s31 primary (2026-10-14): build_balance_explorer.trials_meta adds s31 / f37 / status (PROTECT AF excluded at feasibility)
+    BM = {t["id"]: t for t in BE.trials_meta(g)}
+    for t in out:
+        t.update(s31=BM[t["id"]]["s31"], f37=BM[t["id"]]["f37"], status=BM[t["id"]]["status"])
+    assert sum(t["s31"] for t in out) == 31 and sum(t["f37"] for t in out) == 37
+    assert [t["full"] for t in out if not t["f37"]] == ["PROTECT AF"]
     return out
 
 
@@ -239,8 +257,8 @@ def vc1(st, rg, a, b="base", cfg="main"):
         r = M[(M.set == st) & (M.config == cfg) & (M.rung_a == "clinical_nolvef_mi") & (M.rung_b == "clinical_nolvef_mi") & (M.arm_a == a)
               & (M.arm_b == b) & M.kind.isin(["within", "ladder"])]
         assert len(r) == 1, (st, rg, a, b, cfg, len(r))
-        return r.iloc[0], MI_V1SUM / "contrasts.csv"
-    return V2.vrow(CTX["VC"], "v1", st, rg, a, b, cfg), V2SUM / "contrasts.csv"
+        return r.iloc[0], (S31SUM["mi"] if st == "S31" else MI_V1SUM) / "contrasts.csv"
+    return V2.vrow(CTX["VC"], "v1", st, rg, a, b, cfg), (S31SUM["v1"] if st == "S31" else V2SUM) / "contrasts.csv"
 
 
 def mis_row(st, rg, a, b="base", cfg="main"):
@@ -251,7 +269,8 @@ def mis_row(st, rg, a, b="base", cfg="main"):
     return r.iloc[0]
 
 
-SETS1 = {"s32": "S32", "all": "S38", "v2": "S29", "v2c": "Snew"}
+SETS1 = {"s31": "S31", "s32": "S32", "all": "S38", "v2": "S29", "v2c": "Snew"}
+SUMSETS = ("S31", "S32", "S38", "S29")  # sets with a version 1 Python summary row (S31: scripts/s31/s31_summaries.py)
 
 
 def stat_v1(sid, what, ts, rg, a, b="base", cfg="main", panel="54"):
@@ -261,7 +280,7 @@ def stat_v1(sid, what, ts, rg, a, b="base", cfg="main", panel="54"):
     r = ps(G1, cfg, rg, a, b, ts, panel)
     st = SETS1.get(ts)
     row, src = None, None
-    if st in ("S32", "S38", "S29"):
+    if st in SUMSETS:
         row, src = vc1(st, rg, a, b, cfg)
     elif st == "Snew" and CTX["mi"] and rg in ("P1", "P5", "PS10", "hdPS200", "clinical_nolvef"):
         row, src = mis_row(st, "clinical_nolvef_mi" if rg == "clinical_nolvef" else rg, a, b, cfg), MI_V1SUM / "contrasts.csv"
@@ -294,7 +313,7 @@ def agree_v1(sid, what, ts, rg, a="ECG", cfg="main", coh="v1"):
     bs = V2.bshuf_py(np.array([E[a][t][0] for t in TT]), np.array([E["base"][t][0] for t in TT]), np.array([D["trials"][t]["rb"] for t in TT]))
     st = SETS1.get(ts)
     mine = f"{mb['absd']:.3f} → {m['absd']:.3f}"
-    if coh == "v1" and st in ("S32", "S38", "S29"):
+    if coh == "v1" and st in SUMSETS:
         row, src = vc1(st, rg, a, "base", cfg)
         shown = f"{row.absd_b:.3f} → {row.absd_a:.3f}"
         claim(SN[sid], what + ": |dlog HR|", shown, src, ref=mine, ref_how="recomputed from the deck's embedded log HRs")
@@ -413,9 +432,9 @@ FEAS = [
     ("primary endpoint ascertainable in the EHR", "Primary endpoint ascertainable in the EHR", "DIONYSOS excluded: AF recurrence needs rhythm monitoring"),
     ("intervention and comparator identifiable", "Intervention and comparator identifiable",
      "From medication orders or procedure codes; a strategy never used in 2011–2024 fails"),
-    ("≥300 with ECG in the smaller arm, ≥50 events", "Size: ≥300 with an ECG in the smaller arm; ≥50 pooled events",
-     "PARAGON-HF, DAPA-HF/EMPEROR-Reduced and PARTNER were built in development but had fewer than 400 PS-Clinical pairs "
-     "(development data-sufficiency rule) and are not among the 38"),
+    ("≥ 350 with an ECG in the smaller arm\nand ≥ 50 events", "Size: ≥350 with an ECG in the smaller arm; ≥50 pooled events",
+     "PROTECT AF (LAA closure) excluded: smaller arm < 350. PARAGON-HF, DAPA-HF/EMPEROR-Reduced and PARTNER were built in "
+     "development but had fewer than 400 PS-Clinical pairs (development data-sufficiency rule) and are not among the emulated trials"),
     ("not a near-duplicate cohort", "Not a near-duplicate (≥80% shared patient–index-date records)",
      "ACCOMPLISH excluded (96% of ALLHAT's records); 50–80% kept, e.g. ACTIVE W vs RE-LY 69%"),
 ]
@@ -432,8 +451,20 @@ DESIGNS = ("<b>New-user, active-comparator</b> designs (time zero = first order 
            "(pipeline.md; paper). Note: the version 1 audit found COMET index dates extending into 2025.")
 
 
+SIZE_NOTE = ("Size threshold raised from 300 to 350 after near-separation was observed in the smallest trial (PROTECT AF); "
+             "the 32-trial results are reported as a sensitivity analysis.")
+
+
 def feas_rows():
     return "".join(f"<tr><td><b>{k}.</b> {esc(c)}</td><td>{esc(e)}</td></tr>" for k, (_, c, e) in enumerate(FEAS, 1))
+
+
+def counts():
+    """flow, tier and area counts of the s31 design, from the deck's trial records (claims checked against quality_tiers.json)."""
+    tr = CTX["trials"]
+    feas = [t for t in tr if t["f37"]]
+    return dict(nf=len(feas), na=sum(t["s31"] for t in tr), tc={q: sum(t["tier"] == q for t in feas) for q in TIERS},
+                ac={a: sum(t["area"] == a and t["s31"] for t in tr) for a in AREAS})
 
 
 def q_examples(sid=None):
@@ -472,7 +503,7 @@ def s_aims():
         (1, ICON["ecg"] + ICON["ehr"], "Integrate ECG and EHR foundation models into matching",
          "ECG encoder (BCL) · EHR foundation model (CLMBR-T) · easy to operationalize"),
         (2, ICON["bal"], "Covariate balance", "on held-out measurements"),
-        (3, ICON["rct"], "Trial emulation and agreement with RCTs", "32 benchmark RCTs"),
+        (3, ICON["rct"], "Trial emulation and agreement with RCTs", f"{sum(t['s31'] for t in CTX['trials'])} benchmark RCTs"),
         (4, ICON["glob"], "External validation",
          '<span class="chips">' + chip("EHR", "MIMIC-IV", True) + chip("Biobank", "UK Biobank", False)
          + chip("Trial cohorts", "dbGaP: ACCORD, WHI, CHS", False) + "</span>"),
@@ -493,17 +524,19 @@ def s_pipe():
     sid = "s-pipe"
     tr = CTX["trials"]
     QJ = json.load(open(QT19))
-    tc = {t: sum(x["tier"] == t for x in tr) for t in TIERS}
+    C_ = counts()
+    nf, na, tc, ac = C_["nf"], C_["na"], C_["tc"], C_["ac"]
+    QF = [x for x in QJ["trials"] if x["key"] != "protect_af"]  # independent count: quality_tiers.json minus the feasibility exclusion
     for t in TIERS:
-        claim(SN[sid], f"v19 tier count {t}", str(tc[t]), QT19, ref=str(next(v for k, v in QJ["counts_tier"].items() if k.startswith(t))),
-              ref_how="quality_tiers.json counts_tier")
-    claim(SN[sid], "tier counts 3/12/17/6", "/".join(str(tc[t]) for t in TIERS), QT19, probe="3 were rated excellent, 12 good, 17 moderate and 6 limited", ref_src=SUPP)
-    claim(SN[sid], "99 candidates -> 38 -> 32", "99 -> 38 -> 32", PAPER, probe="Of 99 candidate trials, 38 met the feasibility criteria and were emulated, and 32 were retained", ref_src=PAPER)
-    ac = {a: sum(t["area"] == a and t["s32"] for t in tr) for a in AREAS}
-    claim(SN[sid], "areas of the 32", ", ".join(f"{a} {ac[a]}" for a in AREAS), QT19,
-          probe="atrial fibrillation (12), diabetes (7), heart failure (5), hypertension (2), acute coronary syndromes or myocardial infarction (2) and other indications (4)",
-          ref_src=PAPER)
-    claim(SN[sid], "size threshold", ">=300 with an ECG in the smaller arm; >=50 events", SUPP, probe="at least 300 patients with an ECG in the smaller arm and at least 50 pooled primary events", ref_src=SUPP)
+        claim(SN[sid], f"v19 tier count {t} (of the {nf} feasible)", str(tc[t]), QT19, ref=str(sum(x["tier"].startswith(t) for x in QF)),
+              ref_how="quality_tiers.json trials minus PROTECT AF")
+    claim(SN[sid], "tier counts 3/11/17/6", " / ".join(str(tc[t]) for t in TIERS), QT19, probe="v19 tiers " + " / ".join(str(tc[t]) for t in TIERS), ref_src=PIPE)
+    claim(SN[sid], "99 candidates -> 37 -> 31", f"99 → {nf} feasible → {na} analysed", PIPE, probe=f"99 → {nf} feasible → {na} analysed", ref_src=PIPE)
+    claim(SN[sid], f"areas of the {na}", ", ".join(f"{a} {ac[a]}" for a in AREAS), QT19,
+          ref=", ".join(f"{a} {sum(x['area'] == a and not x['tier'].startswith('Limited') for x in QF)}" for a in AREAS), ref_how="quality_tiers.json trials minus PROTECT AF")
+    claim(SN[sid], "size threshold", ">=350 with an ECG in the smaller arm", PIPE, probe="≥300 to ≥350 patients with an ECG in the smaller arm", ref_src=PIPE)
+    claim(SN[sid], "events threshold", ">=50 events", SUPP, probe="at least 50 pooled primary events", ref_src=SUPP)
+    claim(SN[sid], "PROTECT AF removed by the size rule", "PROTECT AF", PIPE, probe="This removes only **PROTECT AF**", ref_src=PIPE)
     claim(SN[sid], "near-duplicate threshold", ">=80% shared records", SUPP, probe="Cohorts sharing 80% or more of patient–index date records", ref_src=SUPP)
     claim(SN[sid], "points rule", "F1-F5 1 point each; comparator/outcome 0/1/2; Limited >=4", QT19, probe="Each flag scored 1 point, and comparator and outcome fidelity scored 0, 1 or 2 points", ref_src=SUPP)
     W, H = 1192, 470
@@ -525,15 +558,21 @@ def s_pipe():
     hint = lambda x, y: (f'<circle cx="{x + 7}" cy="{y - 4.5}" r="7.5" fill="{RED}"/><text x="{x + 7}" y="{y}" font-size="12" font-weight="700" '
                          f'text-anchor="middle" fill="#fff">i</text><text x="{x + 20}" y="{y}" font-size="12.5" font-style="italic" fill="{RED}">'
                          'click for the full criteria and examples</text>')
-    # the flow populates one step after another: 99 -> feasibility -> 38 -> emulation quality -> 32 analysed -> clinical areas
+    # the flow populates one step after another: 99 -> feasibility -> 37 -> emulation quality -> 31 analysed -> clinical areas
     s.append(box(0, yc - 50, 128, 100, ["99", "candidate", "RCTs"], fs=18))
     s.append('<g class="build" data-step="1">' + arr(130, yc, 160, yc))
     s.append(f'<g class="ptrig" data-pop="pop-feas" aria-label="Feasibility criteria: details"><rect x="162" y="{yc - 108}" width="408" height="216" fill="#f5f5f8" stroke="{NAVY}" stroke-width="2" rx="6"/>')
     s.append(f'<text x="176" y="{yc - 78}" font-size="18" font-weight="700" fill="{NAVY}">Feasibility criteria</text>')
+    yy = yc - 48  # one row per criterion; a criterion label with a line break continues on an indented second row
     for i, (lab, _, _) in enumerate(FEAS):
-        s.append(f'<text x="176" y="{yc - 47 + i * 29}" font-size="14.5" fill="{NAVY}"><tspan font-weight="700">{i + 1}.</tspan> {esc(lab)}</text>')
+        l1, *rest = lab.split("\n")
+        s.append(f'<text x="176" y="{yy}" font-size="14.5" fill="{NAVY}"><tspan font-weight="700">{i + 1}.</tspan> {esc(l1)}</text>')
+        for l2 in rest:
+            yy += 21
+            s.append(f'<text x="194" y="{yy}" font-size="14.5" fill="{NAVY}">{esc(l2)}</text>')
+        yy += 26
     s.append(hint(176, yc + 98) + "</g></g>")
-    s.append('<g class="build" data-step="2">' + arr(572, yc, 602, yc) + box(604, yc - 50, 112, 100, ["38", "feasible", "trials"], fs=18) + "</g>")
+    s.append('<g class="build" data-step="2">' + arr(572, yc, 602, yc) + box(604, yc - 50, 112, 100, [str(nf), "feasible", "trials"], fs=18) + "</g>")
     qual = ["basic, rule-based points:", "• design flags F1–F5: 1 point each", "• comparator, outcome fidelity: 0 / 1 / 2",
             "Excellent 0 · Good 1–2 · Moderate 3", "Limited (≥4 points) excluded"]
     s.append('<g class="build" data-step="3">' + arr(718, yc, 748, yc))
@@ -542,10 +581,10 @@ def s_pipe():
     for i, l in enumerate(qual):
         s.append(f'<text x="764" y="{yc - 47 + i * 29}" font-size="15" fill="{RED if i == 4 else NAVY}">{esc(l)}</text>')
     s.append(hint(764, yc + 98).replace("the full criteria", "the rule") + "</g></g>")
-    s.append('<g class="build" data-step="4">' + arr(1076, yc, 1100, yc) + box(1102, yc - 50, 90, 100, ["32", "analysed"], fs=18, fill=NAVY, col="#fff") + "</g>")
-    # bottom right (with the 32): emulation quality of the 38; bottom left (last step): the 32 by clinical area
+    s.append('<g class="build" data-step="4">' + arr(1076, yc, 1100, yc) + box(1102, yc - 50, 90, 100, [str(na), "analysed"], fs=18, fill=NAVY, col="#fff") + "</g>")
+    # bottom right (with the 31): emulation quality of the 37 feasible; bottom left (last step): the 31 by clinical area
     y0 = 290
-    s.append(f'<g class="build" data-step="5"><text x="0" y="{y0}" font-size="17" font-weight="700" fill="{NAVY}">The 32 analysed trials by clinical area</text>')
+    s.append(f'<g class="build" data-step="5"><text x="0" y="{y0}" font-size="17" font-weight="700" fill="{NAVY}">The {na} analysed trials by clinical area</text>')
     lab = {"AF": "Atrial fibrillation", "HF": "Heart failure", "Diabetes": "Diabetes", "Hypertension": "Hypertension", "ACS / MI": "ACS / MI", "Other": "Other"}
     order = sorted(AREAS, key=lambda a: -ac[a])
     for i, a in enumerate(order):
@@ -555,27 +594,28 @@ def s_pipe():
                  f'<text x="{186 + ac[a] * 30}" y="{y + 17}" font-size="15" font-weight="700" fill="{NAVY}">{ac[a]}</text>')
     s.append("</g>")
     x1 = 700
-    s.append(f'<g class="build" data-step="4"><text x="{x1}" y="{y0}" font-size="17" font-weight="700" fill="{NAVY}">Emulation quality of the 38 feasible trials</text>')
+    s.append(f'<g class="build" data-step="4"><text x="{x1}" y="{y0}" font-size="17" font-weight="700" fill="{NAVY}">Emulation quality of the {nf} feasible trials</text>')
     cols = {"Excellent": NAVY, "Good": "#5b5d86", "Moderate": "#c9cbd8", "Limited": "#fbe3e2"}
-    xx, wsc = x1, 490 / 38
+    xx, wsc = x1, 490 / nf
     for t in TIERS:
         w = tc[t] * wsc
         s.append(f'<rect x="{xx:.1f}" y="{y0 + 18}" width="{w:.1f}" height="40" fill="{cols[t]}" stroke="#fff"/>'
                  f'<text x="{xx + w / 2:.1f}" y="{y0 + 44}" font-size="16" font-weight="700" text-anchor="middle" fill="{"#fff" if t in ("Excellent", "Good") else (NAVY if t == "Moderate" else "#a8322e")}">{tc[t]}</text>'
                  f'<text x="{xx + w / 2:.1f}" y="{y0 + 78}" font-size="14" text-anchor="middle" fill="{NAVY if t != "Limited" else "#a8322e"}">{t}</text>')
         xx += w
-    s.append(f'<line x1="{x1}" x2="{x1 + 32 * wsc:.1f}" y1="{y0 + 92}" y2="{y0 + 92}" stroke="{NAVY}" stroke-width="2"/>'
-             f'<text x="{x1 + 16 * wsc:.1f}" y="{y0 + 112}" font-size="15" text-anchor="middle" fill="{NAVY}">analysed (32)</text>'
-             f'<text x="{x1 + 35 * wsc:.1f}" y="{y0 + 112}" font-size="15" text-anchor="middle" fill="#a8322e">excluded</text>')
+    s.append(f'<line x1="{x1}" x2="{x1 + na * wsc:.1f}" y1="{y0 + 92}" y2="{y0 + 92}" stroke="{NAVY}" stroke-width="2"/>'
+             f'<text x="{x1 + na / 2 * wsc:.1f}" y="{y0 + 112}" font-size="15" text-anchor="middle" fill="{NAVY}">analysed ({na})</text>'
+             f'<text x="{x1 + (na + nf) / 2 * wsc:.1f}" y="{y0 + 112}" font-size="15" text-anchor="middle" fill="#a8322e">excluded</text>')
     s.append(f'<text x="{x1}" y="{y0 + 150}" font-size="14" fill="#55576f">Ratings from design information only, blind to all emulation results.</text></g>')
     s.append("</svg>")
-    pops = popup("pop-feas", "Feasibility criteria (stage 1: 99 candidates → 38 emulated)",
+    pops = popup("pop-feas", f"Feasibility criteria (stage 1: 99 candidates → {nf} feasible)",
                  f'<table class="t tq mt"><tr><th style="width:36%">Criterion</th><th>Example</th></tr>{feas_rows()}</table>'
-                 f'<p class="small" style="margin-top:8px"><b>Designs and dates.</b> {DESIGNS}</p>', links="More: " + applink("A1") + " · " + applink("A3"))
-    pops += popup("pop-qual", "Emulation-quality criteria (stage 2: v19 points rule; 38 → 32)",
+                 f'<p class="small red" style="margin-top:6px"><b>{esc(SIZE_NOTE)}</b></p>'
+                 f'<p class="small" style="margin-top:6px"><b>Designs and dates.</b> {DESIGNS}</p>', links="More: " + applink("A1") + " · " + applink("A3"))
+    pops += popup("pop-qual", f"Emulation-quality criteria (stage 2: v19 points rule; {nf} → {na})",
                   f'<p class="mp">{QRULE}</p><h4 class="mh4">Examples</h4><p class="mp">{"<br>".join(q_examples())}</p>'
-                  f'<p class="small" style="margin-top:8px">Tier counts of the 38: Excellent {tc["Excellent"]}, Good {tc["Good"]}, Moderate {tc["Moderate"]}, '
-                  f'Limited {tc["Limited"]} (excluded). Framework v2.0 tiers are a sensitivity analysis (A4).</p>', links="More: " + applink("A2") + " (interactive quality viewer) · " + applink("A4"))
+                  f'<p class="small" style="margin-top:8px">Tier counts of the {nf} feasible: Excellent {tc["Excellent"]}, Good {tc["Good"]}, Moderate {tc["Moderate"]}, '
+                  f'Limited {tc["Limited"]} (excluded). PROTECT AF (Good) was excluded earlier, at feasibility. Framework v2.0 tiers are a sensitivity analysis (A4).</p>', links="More: " + applink("A2") + " (interactive quality viewer) · " + applink("A4"))
     return sec(sid, "LATENT-RCT pipeline", "".join(s), links=more("A1", "A2", "A3") + pops)  # popups outside .body: they cover the slide
 
 
@@ -678,12 +718,13 @@ def s_results2():
     uri = "data:image/png;base64," + base64.b64encode(b.getvalue()).decode()
     CTX["fig2"] = dict(src_size=[w, h], embedded_size=list(im.size), bytes=len(b.getvalue()))
     V = json.load(open(FIG2V))
-    T = T_("s32")
+    assert V["k_set"] == 31
+    T = T_("s31")
     G1 = CTX["G1"]
     for rg, lab in (("P1", "PS-Demo"), ("P5", "PS-CVD5"), ("PS10", "PS-CVD10"), ("hdPS200", "hdPS"), ("clinical_nolvef", "PS-Clinical (no LVEF, MI)")):
         c = V["C"][rg]
         for a in ("ECG", "CLMBR", "ECG+CLMBR"):
-            r = ps(G1, "main", rg, a, "base", "s32")
+            r = ps(G1, "main", rg, a, "base", "s31")
             claim(sl, f"Fig 2C {lab} + {a} relative change", f"{c['rr_' + a][0]:.1f}%", FIG2V, ref=f"{r['rr']:.1f}%",
                   ref_how="recomputed from the version 1 cells (build_balance_explorer.pair_stats)")
         for a in ("unmatched", "base", "ECG", "CLMBR", "ECG+CLMBR"):
@@ -691,7 +732,7 @@ def s_results2():
             ok = np.isfinite(M).any(1)
             claim(sl, f"Fig 2C {lab} {a} mean |SMD|", f"{c[a]:.3f}", FIG2V, ref=f"{np.nanmean(M[ok], 1).mean():.3f}", ref_how="explorer ladder level on the cells")
     d = V["D"]
-    r = ps(G1, "main", "P5", "ECG", "base", "s32")
+    r = ps(G1, "main", "P5", "ECG", "base", "s31")
     claim(sl, "Fig 2D trials improved", f"{int(d['improved'])} of {int(d['k'])}", FIG2V, ref=f"{r['better']} of {r['k']}", ref_how="pair_stats on the cells")
     claim(sl, "Fig 2D mean change (points)", f"{d['mean']:+.1f}", FIG2V, ref=f"{r['dpts']:+.1f}", ref_how="pair_stats on the cells")
     claim(sl, "Fig 2D P", fp(d["p"]), FIG2V, ref=fp(r["p"]), ref_how="exact one-sided sign-flip on the cells")
@@ -701,8 +742,8 @@ def s_results2():
             M = G1.block("main", "P5", a, True)[np.ix_(T, js)]
             ok = np.isfinite(M).any(1)
             claim(sl, f"Fig 2B {g} {a}", f"{x[a]:.3f}", FIG2V, ref=f"{np.nanmean(M[ok], 1).mean():.3f}", ref_how="explorer domain view (mean) on the cells")
-    note = ("Version 1 cohorts · paper 1's 32 trials · 1:1 matching, caliper 0.2, C = 1 · 54 held-out items, leakage-corrected masks · "
-            "PS-Clinical: 5-draw MI · scripts/figures/make_figure2_latent.py")
+    note = ("Version 1 cohorts · 31 trials (paper 1's 32 minus PROTECT AF, excluded at feasibility) · 1:1 matching, caliper 0.2, C = 1 · "
+            "54 held-out items, leakage-corrected masks · PS-Clinical: 5-draw MI")
     body = (f'<img class="fig2" alt="Figure 2: covariate balance on the 54 held-out items" src="{uri}">'
             f'<div class="fig2src">{esc(note)}</div>')
     return sec(sid, "Results 2: covariate balance (Figure 2)", body, links=more("A4", "A5"))
@@ -711,89 +752,103 @@ def s_results2():
 def s_robust():
     sid = "s-rob"
     rows = []
-    s, _ = stat_v1(sid, "permuted ECG vs PS alone (32)", "s32", "P5", "shufECG")
-    e, erow = stat_v1(sid, "ECG vs permuted (32)", "s32", "P5", "ECG", "shufECG")
-    rng = [stat_v1(sid, f"ECG vs permuted ({ts})", ts, "P5", "ECG", "shufECG")[0]["rr"] for ts in ("q:Excellent,Good", "all", "v2", "v2c")] + [e["rr"]]
+    p31, _ = stat_v1(sid, "PS-CVD5 + ECG (31, primary)", "s31", "P5", "ECG")
+    p32, _ = stat_v1(sid, "PS-CVD5 + ECG (32, with PROTECT AF)", "s32", "P5", "ECG")
+    rows.append(("Paper 1's 32 (with PROTECT AF; sensitivity)", f"{ci(p32['rr'], p32['lo'], p32['hi'])}, {p32['lower']} trials lower, {pv(p32['p'])}; "
+                 f"primary 31: {ci(p31['rr'], p31['lo'], p31['hi'])}, {p31['lower']}", "32"))
+    s, _ = stat_v1(sid, "permuted ECG vs PS alone (31)", "s31", "P5", "shufECG")
+    e, erow = stat_v1(sid, "ECG vs permuted (31)", "s31", "P5", "ECG", "shufECG")
+    rng = [stat_v1(sid, f"ECG vs permuted ({ts})", ts, "P5", "ECG", "shufECG")[0]["rr"] for ts in ("q37:Excellent,Good", "f37", "v2", "v2c")] + [e["rr"]]
     rtxt = f"{fx(min(rng))} to {fx(max(rng))}%"
-    rows.append(("Placebo (permuted ECG)", f"Permuted vs PS alone: {ci(s['rr'], s['lo'], s['hi'])}, {pv(s['p'])} (two-sided). ECG vs permuted: {ci(e['rr'], e['lo'], e['hi'])}; {rtxt} across the five trial sets", "32"))
+    rows.append(("Placebo (permuted ECG)", f"Permuted vs PS alone: {ci(s['rr'], s['lo'], s['hi'])}, {pv(s['p'])} (two-sided). ECG vs permuted: {ci(e['rr'], e['lo'], e['hi'])}; {rtxt} across five trial sets (31; Excellent + Good; all 37 feasible; v2.0 29 / 30)", "31"))
     cf, cfv = [], []
     for c, lab in (("main", "1:1, cal. 0.2"), ("cal01", "cal. 0.1"), ("m13", "1:3"), ("iptw", "IPTW"), ("overlap", "overlap"), ("gbm", "GBM PS")):
-        x, _ = stat_v1(sid, f"PS method {c} (32)", "s32", "P5", "ECG", cfg=c)
+        x, _ = stat_v1(sid, f"PS method {c} (31)", "s31", "P5", "ECG", cfg=c)
         cf.append(f"{lab} {fx(x['rr'])}% ({fx(x['lo'])} to {fx(x['hi'])})")
         cfv.append(x)
     nex = sum(x["lo"] > 0 for x in cfv)
     neg = [lab for (c, lab), x in zip((("main", "1:1"), ("cal01", "cal. 0.1"), ("m13", "1:3"), ("iptw", "IPTW"), ("overlap", "overlap"), ("gbm", "GBM PS")), cfv) if x["rr"] <= 0]
-    rows.append(("Six PS methods", "; ".join(cf) + f". {nex} of 6 CIs exclude 0" + (f"; the gradient-boosted PS shows no gain" if "GBM PS" in neg else ""), "32"))
-    r5 = vc1("S32", "P5", "ECG")[0]
-    r5m = mis_row("S32", "P5", "ECG") if CTX["mi"] else None
-    clu = claim(SN[sid], "comparator-cluster sign-flip P (32)", fp(r5.m54_cluster_p), V2SUM / "contrasts.csv", ref=None if r5m is None else fp(r5m.m54_cluster_p),
-                ref_how="v1 MI summary (independent run of the endpoint code; P5 row)")
-    loo = claim(SN[sid], "leave-one-trial-out max P (32)", fp(r5.m54_loo_max_p), V2SUM / "contrasts.csv", ref=None if r5m is None else fp(r5m.m54_loo_max_p),
-                ref_how="v1 MI summary (P5 row)")
-    rows.append(("Comparator clusters; leave-one-trial-out", f"Cluster sign-flip {pv(r5.m54_cluster_p)} ({int(r5.m54_n_clusters)} comparator clusters); largest leave-one-out {pv(r5.m54_loo_max_p)}", "32"))
+    rows.append(("Six PS methods", "; ".join(cf) + f". {nex} of 6 CIs exclude 0" + (f"; the gradient-boosted PS shows no gain" if "GBM PS" in neg else ""), "31"))
+    r5 = vc1("S31", "P5", "ECG")[0]
+    r5m = mis_row("S31", "P5", "ECG") if CTX["mi"] else None
+    clu = claim(SN[sid], "comparator-cluster sign-flip P (31)", fp(r5.m54_cluster_p), S31SUM["v1"] / "contrasts.csv", ref=None if r5m is None else fp(r5m.m54_cluster_p),
+                ref_how="s31 MI summary (independent run of the endpoint code; P5 row)")
+    loo = claim(SN[sid], "leave-one-trial-out max P (31)", fp(r5.m54_loo_max_p), S31SUM["v1"] / "contrasts.csv", ref=None if r5m is None else fp(r5m.m54_loo_max_p),
+                ref_how="s31 MI summary (P5 row)")
+    rows.append(("Comparator clusters; leave-one-trial-out", f"Cluster sign-flip {pv(r5.m54_cluster_p)} ({int(r5.m54_n_clusters)} comparator clusters); largest leave-one-out {pv(r5.m54_loo_max_p)}", "31"))
     if CTX["mi"]:
-        mi, _ = stat_v1(sid, "PS-Clinical (no LVEF, MI) + ECG (32)", "s32", "clinical_nolvef", "ECG")
+        mi, _ = stat_v1(sid, "PS-Clinical (no LVEF, MI) + ECG (31)", "s31", "clinical_nolvef", "ECG")
         M = CTX["MIS"]
-        dr = [M[(M.set == "S32") & (M.config == "main") & (M.rung_a == f"clinical_nolvef#{k}") & (M.arm_a == "ECG") & (M.arm_b == "base")].iloc[0].relred54 for k in range(1, 6)]
-        drt = claim(SN[sid], "MI draw range (32)", f"{fx(min(dr))} to {fx(max(dr))}%", MI_V1SUM / "contrasts.csv", probe="(range −1.8 to 6.0)", ref_src=MI_V1DOC)
-        sg = M[(M.set == "S32") & (M.config == "main") & (M.rung_a == "clinical_nolvef_v1single") & (M.arm_a == "ECG") & (M.arm_b == "base")]
-        rows.append(("Multiple imputation (PS-Clinical, no LVEF)", f"5-draw MI: {ci(mi['rr'], mi['lo'], mi['hi'])}, {pv(mi['p'])}; single draws {drt}. Single-draw estimates should not be reported", "32"))
+        dr = [M[(M.set == "S31") & (M.config == "main") & (M.rung_a == f"clinical_nolvef#{k}") & (M.arm_a == "ECG") & (M.arm_b == "base")].iloc[0].relred54 for k in range(1, 6)]
+        drt = claim(SN[sid], "MI draw range (31)", f"{fx(min(dr))} to {fx(max(dr))}%", S31SUM["mi"] / "contrasts.csv",
+                    probe=f"single draws {fx(min(dr)).replace(V2.MINUS, '-')} to {fx(max(dr))}%", ref_src=S31DOC)
+        rows.append(("Multiple imputation (PS-Clinical, no LVEF)", f"5-draw MI: {ci(mi['rr'], mi['lo'], mi['hi'])}, {pv(mi['p'])}; single draws {drt}. Single-draw estimates should not be reported", "31"))
     else:
-        rows.append(("Multiple imputation (PS-Clinical, no LVEF)", "MI pending on the version 1 cohorts (single imputation shown)", "32"))
-    RR = pd.read_csv(V2.RRS).set_index(["set", "arm"]).loc[("S32", "ECG")]
-    fv2 = claim(SN[sid], "spec-v2 fixed cohorts (32)", f"{fx(RR.relred54_v2)}%", V2.RRS, probe="PS-CVD5 + ECG 6.6% vs 8.8% on version 1", ref_src=PIPE)
-    rnd = claim(SN[sid], "random removal (32)", f"{fx(RR.relred54_random_median)} ({fx(RR.relred54_random_p5)} to {fx(RR.relred54_random_p95)})", V2.RRS,
-                probe=f"| S32 | + ECG | {fx(RR.relred54_v1)} | {fx(RR.relred54_v2)} | {fx(RR.relred54_random_median)} ({fx(RR.relred54_random_p5)} to {fx(RR.relred54_random_p95)}) |", ref_src=FIXD)
-    rows.append(("Spec-v2 cohort fixes (sensitivity; A5)", f"{fx(RR.relred54_v1)}% → {fv2} with the fixes; removing the same numbers of patients at random: median {rnd}%, so the drop reflects smaller cohorts", "32"))
+        rows.append(("Multiple imputation (PS-Clinical, no LVEF)", "MI pending on the version 1 cohorts (single imputation shown)", "31"))
+    RR = pd.read_csv(S31SUM["v1"] / "random_removal_summary.csv").set_index(["set", "arm"]).loc[("S31", "ECG")]
+    r2 = BE.pair_stats(BE.Grid(CTX["g2"]["G"], CTX["g2"]["U"], CTX["g2"]["ex"]), "main", "P5", "ECG", "base", T_("s31"), "54", True)
+    fv2 = claim(SN[sid], "spec-v2 fixed cohorts (31)", f"{fx(RR.relred54_v2)}%", S31SUM["v1"] / "random_removal_summary.csv", ref=f"{fx(r2['rr'])}%",
+                ref_how="recomputed from the spec-v2 cells (build_balance_explorer.pair_stats, set s31)")
+    rnd = claim(SN[sid], "random removal (31)", f"{fx(RR.relred54_random_median)} ({fx(RR.relred54_random_p5)} to {fx(RR.relred54_random_p95)})", S31SUM["v1"] / "random_removal_summary.csv",
+                probe=f"random removal median {fx(RR.relred54_random_median)} ({fx(RR.relred54_random_p5)} to {fx(RR.relred54_random_p95)})", ref_src=S31DOC)
+    rows.append(("Spec-v2 cohort fixes (sensitivity; A5)", f"{fx(RR.relred54_v1)}% → {fv2} with the fixes; removing the same numbers of patients at random: median {rnd}%, so the drop reflects smaller cohorts", "31"))
     v29, _ = stat_v1(sid, "framework v2.0 provisional 29 (v1 cohorts)", "v2", "P5", "ECG")
     v30, _ = stat_v1(sid, "framework v2.0 rescored 30 (v1 cohorts)", "v2c", "P5", "ECG")
-    rows.append(("Framework v2.0 trial sets (sensitivity; A4)", f"Provisional 29: {ci(v29['rr'], v29['lo'], v29['hi'])}; rescored 30: {ci(v30['rr'], v30['lo'], v30['hi'])} (version 1 cohorts)", "29 / 30"))
-    claim(SN[sid], "CV-tuned penalty (v1)", "5.7% (−0.5 to 11.4)", HAND, probe="A CV-tuned penalty gives 5.7% (−0.5 to 11.4)", ref_src=HAND)
-    claim(SN[sid], "no index-day ECG (v1)", "6.9% (0.4–13.4)", HAND, probe="gives 6.9% (0.4–13.4)", ref_src=HAND)
+    rows.append(("Framework v2.0 trial sets (sensitivity; A4)", f"Provisional 29: {ci(v29['rr'], v29['lo'], v29['hi'])}; rescored 30: {ci(v30['rr'], v30['lo'], v30['hi'])} (version 1 cohorts; defined before the size-rule change, both include PROTECT AF)", "29 / 30"))
+    NB = json.load(open(S31D / "s31_numbers.json"))["S31"]
+    cvr, nir = NB["cv_penalty_r2"], NB["no_index_day_ecg"]
+    cvt = claim(SN[sid], "CV-tuned penalty (31)", ci(cvr["rr"], cvr["lo"], cvr["hi"]), S31D / "s31_numbers.json",
+                probe=f"| CV log-loss penalty (R2 cells, scenario S1) | {norm(ci(cvr['rr'], cvr['lo'], cvr['hi']))}", ref_src=S31DOC)
+    nit = claim(SN[sid], "no index-day ECG (31)", ci(nir["rr"], nir["lo"], nir["hi"]), S31D / "s31_numbers.json",
+                probe=f"| Index-day ECGs excluded (ECG ≥ 1 day before index) | {norm(ci(nir['rr'], nir['lo'], nir['hi']))}", ref_src=S31DOC)
     claim(SN[sid], "R2 CV-tuned 35 trials", "4.7%", HAND, probe="S1 + ECG: 4.7% (−0.4 to 9.9)", ref_src=HAND)
-    rows.append(("Earlier sensitivities (version 1 cohorts)", "CV-tuned penalty 5.7% (−0.5 to 11.4); index-day ECGs excluded 6.9% (0.4 to 13.4); R2 (CV-tuned PS, 35 trials) 4.7%", "32"))
+    rows.append(("Earlier sensitivities (version 1 cohorts)", f"CV-tuned penalty {cvt}; index-day ECGs excluded {nit}; R2 (CV-tuned PS, its own 35-trial set) 4.7%", "31"))
     body = "".join(f'<tr><td><b>{esc(a)}</b></td><td>{b}</td><td>{c}</td></tr>' for a, b, c in rows)
-    allv = [x["rr"] for x in cfv] + [v29["rr"], v30["rr"], RR.relred54_v2, 5.7, 6.9]
+    allv = [x["rr"] for x in cfv] + [v29["rr"], v30["rr"], RR.relred54_v2, cvr["rr"], nir["rr"], p32["rr"]]
     pos = sum(v > 0 for v in allv)
     lo_, hi_ = math.floor(min(v for v in allv if v > 0)), math.ceil(max(allv))
     claim(SN[sid], "positive checks", f"{pos} of {len(allv)}", "this slide's estimates", ref=str(pos) + f" of {len(allv)}", ref_how="count of the slide's estimates > 0")
     claim(SN[sid], "size range", f"{lo_}–{hi_}%", "this slide's estimates", ref=f"{lo_}–{hi_}%", ref_how="floor(min positive)-ceil(max)")
-    return sec(sid, "Robustness of PS-CVD5 + ECG vs PS-CVD5 (54 items; paper 1's 32)", f"""
+    return sec(sid, "Robustness of PS-CVD5 + ECG vs PS-CVD5 (54 items; 31 trials)", f"""
 <table class="t tsm rob"><tr><th style="width:250px">Check</th><th>Result</th><th>Trials</th></tr>{body}</table>
-<p style="font-size:19px;margin-top:12px">The direction holds in {pos} of {len(allv)} estimates (all but the gradient-boosted PS). Where positive, the size is about <b>{lo_}–{hi_}%</b> and moves by a few points with the PS method, cohort definition, trial set and penalty.</p>""",
+<p style="font-size:19px;margin-top:10px">The direction holds in {pos} of {len(allv)} estimates (all but the gradient-boosted PS). Where positive, the size is about <b>{lo_}–{hi_}%</b> and moves by a few points with the PS method, cohort definition, trial set and penalty.</p>""",
                links=more("A5", "A4"))
 
 
 def s_takehome():
     sid = "s-take"
-    p5, _ = stat_v1(sid, "take-home PS-CVD5 + ECG (32)", "s32", "P5", "ECG")
-    d, _ = stat_v1(sid, "take-home PS-Demo + ECG (32)", "s32", "P1", "ECG")
-    e, _ = stat_v1(sid, "take-home ECG vs permuted (32)", "s32", "P5", "ECG", "shufECG")
-    c10, _ = stat_v1(sid, "take-home PS-CVD10 + ECG (32)", "s32", "PS10", "ECG")
-    h, _ = stat_v1(sid, "take-home hdPS + ECG (32)", "s32", "hdPS200", "ECG")
-    m, _ = stat_v1(sid, "take-home PS-Clinical + ECG (32)", "s32", "clinical_nolvef", "ECG")
-    bps = [agree_v1(sid, f"take-home P5 agreement {ts}", ts, "P5")[1] for ts in ("s32", "all", "v2")]
-    _, bc10 = agree_v1(sid, "take-home CVD10 agreement 32", "s32", "PS10")
-    claim(SN[sid], "CVD10 + ECG permutation P .003 (pipeline)", fp(bc10), V2SUM / "contrasts.csv", probe="CVD10 + ECG showed a trial-specific signal (permutation P = .003)", ref_src=PIPE)
+    p5, _ = stat_v1(sid, "take-home PS-CVD5 + ECG (31)", "s31", "P5", "ECG")
+    p32, _ = stat_v1(sid, "take-home PS-CVD5 + ECG (32, with PROTECT AF)", "s32", "P5", "ECG")
+    d, _ = stat_v1(sid, "take-home PS-Demo + ECG (31)", "s31", "P1", "ECG")
+    e, _ = stat_v1(sid, "take-home ECG vs permuted (31)", "s31", "P5", "ECG", "shufECG")
+    c10, _ = stat_v1(sid, "take-home PS-CVD10 + ECG (31)", "s31", "PS10", "ECG")
+    h, _ = stat_v1(sid, "take-home hdPS + ECG (31)", "s31", "hdPS200", "ECG")
+    m, _ = stat_v1(sid, "take-home PS-Clinical + ECG (31)", "s31", "clinical_nolvef", "ECG")
+    bps = [agree_v1(sid, f"take-home P5 agreement {ts}", ts, "P5")[1] for ts in ("s31", "f37", "v2")]
+    _, bc10 = agree_v1(sid, "take-home CVD10 agreement 31", "s31", "PS10")
     clin = "5-draw MI" if CTX["mi"] else "single imputation; MI pending"
+    RRF = pd.read_csv(S31SUM["v1"] / "random_removal_summary.csv").set_index(["set", "arm"]).loc[("S31", "ECG")]
+    claim(SN[sid], "take-home fixed cohorts (31)", f"{fx(RRF.relred54_v2)}%", S31SUM["v1"] / "random_removal_summary.csv", probe=f"→ {fx(RRF.relred54_v2)}%; random removal", ref_src=S31DOC)
     return sec(sid, "Take-home", f"""
 <ol class="aims" style="margin-top:4px">
-  <li><b>The ECG improves held-out balance when the PS is thin</b> (demographics and a few diagnoses): PS-CVD5 + ECG {ci(p5['rr'], p5['lo'], p5['hi'])} on paper 1's 32 trials (PS-Demo + ECG {fx(d['rr'])}%). It beats its permuted placebo ({fx(e['rr'])}%).</li>
+  <li><b>The ECG improves held-out balance when the PS is thin</b> (demographics and a few diagnoses): PS-CVD5 + ECG {ci(p5['rr'], p5['lo'], p5['hi'])} on the 31 trials (PS-Demo + ECG {fx(d['rr'])}%; with PROTECT AF, 32 trials: {fx(p32['rr'])}%). It beats its permuted placebo ({fx(e['rr'])}%).</li>
   <li><b>The gain is smaller with richer PS:</b> PS-CVD10 + ECG {fx(c10['rr'])}%, hdPS + ECG {fx(h['rr'])}%, PS-Clinical (no LVEF; {clin}) + ECG {ci(m['rr'], m['lo'], m['hi'])}, concentrated in observed LVEF and echo structure.</li>
-  <li><b>No trial-specific agreement with the RCTs</b> for PS-CVD5 + ECG: benchmark-permutation P ≥ {min(bps):.2f} in the 32, all 38 and the 29-trial set. (CVD10 + ECG gave P = {fp(bc10)} on the 32: post hoc, exploratory only.)</li>
+  <li><b>No trial-specific agreement with the RCTs</b> for PS-CVD5 + ECG: benchmark-permutation P ≥ {min(bps):.2f} in the 31, all 37 feasible and the 29-trial set. (CVD10 + ECG gave {pv(bc10)} on the 31: post hoc, exploratory only.)</li>
   <li><b>Supporting:</b> the plasmode (the ECG removes part of a hidden physiological confounder's bias beyond PS-CVD5) and MIMIC-IV (similar balance gain, no agreement gain).</li>
-  <li><b>Caveats:</b> one health system; quality tiers graded post hoc with LLM-assisted raters (clinician review pending); post hoc switch of the primary to PS-CVD5; the return to version 1 cohorts was decided after the fixed-cohort results were known (fixed cohorts: 6.6%; both reported).</li>
+  <li><b>Caveats:</b> one health system; quality tiers graded post hoc with LLM-assisted raters (clinician review pending); post hoc switch of the primary to PS-CVD5; the return to version 1 cohorts was decided after the fixed-cohort results were known (fixed cohorts: {fx(RRF.relred54_v2)}%; both reported); the size rule was raised to ≥350 after the PROTECT AF near-separation was seen (32-trial results reported as a sensitivity).</li>
 </ol>""", links=more("A6"))
 
 
 def s_decisions():
     sid = "s-dec"
+    mi, _ = stat_v1(sid, "open decision PS-Clinical (no LVEF, MI) + ECG (31)", "s31", "clinical_nolvef", "ECG")
+    mtxt = f"{fx(mi['rr'])}%, {pv(mi['p'])} on the 31"
     return sec(sid, "Open decisions", """
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:36px">
 <ol class="dec">
   <li><b>Clinician review</b> of the v19 emulation-quality tiers and the physiologic trial labels (both LLM-assisted so far).</li>
-  <li><b>PS-Clinical (no LVEF), 5-draw MI on version 1 cohorts</b>: review the result (3.2%, P = .075 on the 32) and the unstable PS-alone HRs across draws; decide whether to add "was measured" flags.</li>
-  <li><b>Disclosure</b> of the post hoc decisions: PS-CVD5 as primary; return to version 1 cohorts after the fixed-cohort results; spec-v2 fixes and framework v2.0 as sensitivities.</li>
+  <li><b>PS-Clinical (no LVEF), 5-draw MI on version 1 cohorts</b>: review the result (__MI__) and the unstable PS-alone HRs across draws; decide whether to add "was measured" flags.</li>
+  <li><b>Disclosure</b> of the post hoc decisions: PS-CVD5 as primary; return to version 1 cohorts after the fixed-cohort results; feasibility size rule raised to ≥350 after the PROTECT AF near-separation (32-trial results as a sensitivity); spec-v2 fixes and framework v2.0 as sensitivities.</li>
   <li><b>Known version 1 cohort issues</b> (COMET metoprolol formulation and LVEF, EMPEROR-Preserved DPP-4i agents, class washouts, LIFE ECG-LVH, TRANSFORM-HF time zero): limitation text, or targeted rebuilds.</li>
   <li><b>Plasmode re-check</b> on the final trial set (pipeline.md §8, pending).</li>
 </ol>
@@ -803,7 +858,7 @@ def s_decisions():
   <li><b>Study name</b> LATENT-RCT (for now): "RCT" may be read as a randomized-trial label by journals and indexers (alternative: LATENT-TTE).</li>
   <li><b>Manuscript file</b> (paper.md vs paper2.md) and the methods lock (pipeline.md §10–11).</li>
 </ol>
-</div>""", links=more("A6"))
+</div>""".replace("__MI__", mtxt), links=more("A6"))
 
 
 # ================================================================ appendix
@@ -823,6 +878,7 @@ def s_a1():
     claim(SN[sid], "development data-sufficiency threshold", "400 PS-Clinical pairs", SUPP, probe="fewer than 400 matched pairs with PS-Clinical", ref_src=SUPP)
     claim(SN[sid], "index dates 2011-2024", "2011–2024", PIPE, probe="index dates 2011–2024", ref_src=PIPE)
     claim(SN[sid], "index dates: v1 audit 2025 note", "COMET into 2025", CLRE, probe="2011–2025: COMET has", ref_src=CLRE)
+    claim(SN[sid], "size threshold 300 -> 350 (post hoc, PROTECT AF)", "300 -> 350", PIPE, probe="the threshold was raised after the near-separation was observed", ref_src=PIPE)
     return sec(sid, "Trial selection in depth", """
 <div style="display:grid;grid-template-columns:1.05fr 1fr;gap:26px">
 <div>
@@ -833,16 +889,17 @@ def s_a1():
   <tr><td class="n">3. v1.8, prespecified</td><td>AF scouting (28 candidates); the AF hypothesis arose from a post hoc wave-2 pattern</td><td>5</td></tr></table>
   <p class="small" style="margin-top:5px"><b>Counting rule:</b> one RCT = one candidate; design variants of a trial count once, grouped screening entries count separately: 63 + 8 + 28 = 99. Ambiguous groupings (a peri-procedural group; PARTNER 2A/3) give a defensible range of 99–104 (manuscript audit 2026-10-01).</p>
   <h3 class="h3" style="margin-top:8px">Coverage check: PRISMA-style structured search (2026-10-13)</h3>
-  <p class="small">PubMed (10 area queries, 6 journals; 5,646 hits, 4,611 unique records), ClinicalTrials.gov (908 records), the RCT-DUPLICATE list and a guideline hand search; one LLM screener. <b>161</b> eligible trials: <b>42%</b> already in the pool (68/161); <b>97% recall</b> of the pool's eligible trials (68/70); 38 new candidates in groups A–C (exploratory) and an infeasible group D. Not used for the current 38.</p>
+  <p class="small">PubMed (10 area queries, 6 journals; 5,646 hits, 4,611 unique records), ClinicalTrials.gov (908 records), the RCT-DUPLICATE list and a guideline hand search; one LLM screener. <b>161</b> eligible trials: <b>42%</b> already in the pool (68/161); <b>97% recall</b> of the pool's eligible trials (68/70); 38 new candidates in groups A–C (exploratory) and an infeasible group D. Not used to select the current trials.</p>
 </div>
 <div>
   <h3 class="h3">Feasibility criteria, with examples</h3>
   <table class="t tq"><tr><th>Criterion</th><th>Example</th></tr>
   {FEAS_ROWS}</table>
-  <h3 class="h3" style="margin-top:8px">Designs and dates</h3>
+  <p class="small red" style="margin-top:5px"><b>{SIZE_NOTE}</b></p>
+  <h3 class="h3" style="margin-top:6px">Designs and dates</h3>
   <p class="small">{DESIGNS}</p>
 </div>
-</div>""".replace("{FEAS_ROWS}", feas_rows()).replace("{DESIGNS}", DESIGNS))
+</div>""".replace("{FEAS_ROWS}", feas_rows()).replace("{DESIGNS}", DESIGNS).replace("{SIZE_NOTE}", esc(SIZE_NOTE)))
 
 
 def s_a2():
@@ -886,15 +943,19 @@ def s_a3():
         inv = f"{hr:.2f}" != v and f"{1 / hr:.2f}" == v  # benchmark stored in the emulation's arm orientation (e.g. COMET)
         claim(SN[sid], f"Table 1 RCT estimate {r['Trial']}", v, PICOT, ref=f"{1 / hr if inv else hr:.2f}",
               ref_how="deck RCT benchmark " + ("1/exp(rb) (arms stored in the reverse orientation)" if inv else "exp(rb)"))
-        an = t["s32"]
-        out += (f'<tr class="{"an" if an else "ex"}"><td>{esc(r["Area"])}</td><td class="n">{esc(r["Trial"])}</td><td>{esc(r["Population"])}</td><td>{esc(r["Intervention"])}</td>'
+        an = t["s31"]
+        fe = "" if t["f37"] else f'<span class="fxl">{esc(t["status"])}</span>'  # PROTECT AF: excluded at feasibility (smaller arm < 350)
+        if not t["f37"]:
+            claim(SN[sid], f"Table 1 status {r['Trial']}", t["status"], ROOT / "scripts/build_balance_explorer.py", probe="excluded at feasibility (smaller arm < 350)",
+                  ref_src=ROOT / "scripts/build_balance_explorer.py")
+        out += (f'<tr class="{"an" if an else "ex"}"><td>{esc(r["Area"])}</td><td class="n">{esc(r["Trial"])}{fe}</td><td>{esc(r["Population"])}</td><td>{esc(r["Intervention"])}</td>'
                 f'<td>{esc(r["Comparator"])}</td><td>{esc(r["Outcome (RCT primary endpoint)"])}</td><td>{esc(r["Time (mo)"])}</td><td>{esc(r["RCT estimate (CI)"])}</td>'
                 f'<td class="nw">{esc(tq)}</td><td>{"yes" if an else "no"}</td></tr>')
     parts.append(out)
     assert len(parts) == 2 and [x.count("<tr") for x in parts] == [17, 21], [x.count("<tr") for x in parts]
     hdr = ('<colgroup><col style="width:68px"><col style="width:128px"><col style="width:170px"><col style="width:112px"><col style="width:118px">'
-           '<col style="width:250px"><col style="width:24px"><col style="width:166px"><col style="width:86px"><col style="width:56px"></colgroup>') + '<tr><th>Area</th><th>Trial</th><th>Population</th><th>Intervention</th><th>Comparator</th><th>Outcome (RCT primary endpoint)</th><th>Mo</th><th>RCT estimate (CI)</th><th>Quality (pts)</th><th>In 32</th></tr>'
-    foot = '<p class="xs" style="margin-top:4px">HR unless indicated; 95% CI unless indicated. Mo = trial-matched horizon. Quality = v19 tier (design points); Limited (grey) excluded. Source: docs/paper/table1_picot.md (= paper.md Table 1).</p>'
+           '<col style="width:250px"><col style="width:24px"><col style="width:166px"><col style="width:86px"><col style="width:56px"></colgroup>') + '<tr><th>Area</th><th>Trial</th><th>Population</th><th>Intervention</th><th>Comparator</th><th>Outcome (RCT primary endpoint)</th><th>Mo</th><th>RCT estimate (CI)</th><th>Quality (pts)</th><th>In 31</th></tr>'
+    foot = '<p class="xs" style="margin-top:4px">HR unless indicated; 95% CI unless indicated. Mo = trial-matched horizon. Quality = v19 tier (design points). <b>The 31 analysed</b> are marked in red; grey = excluded (Limited, or PROTECT AF at feasibility: smaller arm &lt; 350). Source: docs/paper/table1_picot.md (= paper.md Table 1).</p>'
     return "".join(sec(sid, f"All 38 emulated trials (paper Table 1), {k + 1} of 2: {areas}", f'<div class="t1wrap"><table class="t1">{hdr}{p}</table></div>{foot}')
                    for k, (sid, areas, p) in enumerate(zip(("a-t1", "a-t1b"), ("AF, HF", "hypertension, ACS / MI, diabetes, other"), parts)))
 
@@ -911,13 +972,21 @@ def s_a4(trials_old, Q):
 
 def s_a5(trials_old, EX, RR):
     sid = "a-fix"
-    t32 = [dict(t, v2c=t["s32"]) for t in trials_old]  # colour = in paper 1's 32 (the primary set)
+    b31 = {t["id"]: t["s31"] for t in CTX["trials"]}
+    t31 = [dict(t, v2c=b31[t["id"]]) for t in trials_old]  # colour = in the 31 (the primary set)
     n0 = len(V2.CL)
-    h = V2.s_fixes(t32, EX, RR)
+    h = V2.s_fixes(t31, EX, RR)
     cl_slide(n0, sid)
-    h = one(h, "(navy = in the analysed 30)", "(navy = in paper 1's 32)")
+    h = one(h, "(navy = in the analysed 30)", "(navy = in the 31 analysed)")
+    R31 = pd.read_csv(S31SUM["v1"] / "random_removal_summary.csv").set_index(["set", "arm"]).loc[("S31", "ECG")]
+    v1, v2 = fx(R31.relred54_v1), fx(R31.relred54_v2)
+    rnd = f"{fx(R31.relred54_random_median)} ({fx(R31.relred54_random_p5)} to {fx(R31.relred54_random_p95)})"
+    claim(SN[sid], "random removal S31 ECG", f"{v1} | {v2} | {rnd}", S31SUM["v1"] / "random_removal_summary.csv",
+          probe=f"{v1}% → {v2}%; random removal median {rnd}", ref_src=S31DOC)
+    h = one(h, "<tr><td>Paper 1's 32</td>", f"<tr><td><b>31 (primary)</b></td><td>{v1}%</td><td><b>{v2}%</b></td><td>{rnd}</td></tr><tr><td>Paper 1's 32 (with PROTECT AF)</td>")
     h = one(h, '<h3 class="h3">Five kinds of fix', '<p class="small red" style="margin:0 0 4px"><b>Sensitivity analysis</b>; the primary analysis uses the version 1 cohorts.</p>\n    <h3 class="h3">Five kinds of fix')
     h = one(h, '<p style="font-size:18px;margin-top:10px">Removing the', '<p style="font-size:16px;margin-top:8px">Removing the')
+    h = one(h, "So the drop from about 9% to 6.5% reflects", "So the drop from about 9% to 6.5–7% reflects")
     return retitle(h, sid, "Spec-v2 cohort fixes (sensitivity): what was removed, and does it explain the smaller ECG gain?")
 
 
@@ -934,11 +1003,12 @@ def s_a6():
   <li><b>R2 restart</b> (branch <code>r2</code>): with a CV-tuned PS, PS-CVD5 + ECG fell to 4.7%, mostly from the CV penalty (8.6% at C = 1). Reverted to version 1, audited, hardened.</li>
   <li><b>Explored:</b> spec-v2 cohort fixes and emulation-quality framework v2.0.</li>
 </ul></div>
-<div><h3 class="h3">10-09 → 10-13 (user decisions)</h3><ul class="chg">
+<div><h3 class="h3">10-09 → 10-14 (user decisions)</h3><ul class="chg">
   <li><b>Primary back to version 1 cohorts and paper 1's 32 trials</b> (v19 tiers). Decided after the fixed-cohort results were known (6.6% vs 8.8%): both are reported.</li>
   <li><b>Spec-v2 cohort fixes</b> (A5) and <b>framework v2.0 tiers</b> (A4; 29 / 30 trials) become sensitivity analyses.</li>
   <li><b>PS-Clinical (no LVEF)</b>: 5-draw MI re-run on the version 1 cohorts.</li>
   <li><b>Study name LATENT-RCT</b> (replaces TRACE-ECG); <b>CLMBR-T</b> back on the aims, and as a comparison arm in the PSM experiments (slide 7) and Figure 2C.</li>
+  <li><b>10-14: feasibility size rule ≥300 → ≥350</b> (smaller arm with an ECG). This removes PROTECT AF, where the rich PS models (hdPS, hdPS + CLMBR-T) nearly separated: 99 → 37 feasible → 31 analysed. Post hoc, so paper 1's 32 is reported as a sensitivity.</li>
   <li><b>Note: PS-Flags</b> (PS-Demo + yes/no ICD-10 3-character diagnosis flags, ≥1% prevalence) is a supplement comparator only; it is not on the main slides and is selectable, off by default, in the balance explorer.</li>
 </ul></div>
 </div>""")
@@ -999,6 +1069,8 @@ table.t1 td.n{font-weight:700;white-space:nowrap}
 table.t1 td.nw{white-space:nowrap}
 table.t1 tr.an td{background:#fff}
 table.t1 tr.ex td{color:#8a8d99;background:#f6f6f8}
+table.t1 tr.an td:first-child{box-shadow:inset 3px 0 0 var(--red)}
+table.t1 .fxl{display:block;font-weight:600;font-size:9px;color:#a8322e;white-space:normal;line-height:1.15}
 /* popups (slides 6 and 7) */
 .modal{position:absolute;inset:0;background:rgba(14,16,60,.38);display:flex;align-items:center;justify-content:center;z-index:60}
 .modal[hidden]{display:none}
@@ -1068,16 +1140,16 @@ function qWhy(t) {
 function qvInit() {
   $("#qv-ctrl").innerHTML = `
   <label class="h">Sort by</label><select id="qv-sort"><option value="tier">v19 tier, points</option><option value="area">Area</option><option value="name">Trial</option><option value="tv2">v2.0 tier (sens.)</option></select>
-  <label class="h">Show</label><select id="qv-filt"><option value="all">All 38</option><option value="an">Analysed (32)</option><option value="ex">Excluded (Limited)</option></select>
+  <label class="h">Show</label><select id="qv-filt"><option value="all">All 38 emulated</option><option value="an">Analysed (31)</option><option value="ex">Excluded (Limited or feasibility)</option></select>
   <label class="cb" style="margin-top:8px"><input type="checkbox" id="qv-v2">Framework v2.0 (sensitivity)</label>
-  <div class="desc" style="margin-top:8px">v19 points rule (primary): F1–F5 = design flags; Comp. / Outc. = comparator / outcome fidelity (G 0, M 1, P 2). Tier: Excellent 0, Good 1–2, Moderate 3 (or capped), Limited ≥4 (excluded). Tick to add the framework v2.0 items (EL–SI, 0–2), its total and tiers. Click a row for the rationale.</div>`;
+  <div class="desc" style="margin-top:8px">v19 points rule (primary): F1–F5 = design flags; Comp. / Outc. = comparator / outcome fidelity (G 0, M 1, P 2). Tier: Excellent 0, Good 1–2, Moderate 3 (or capped), Limited ≥4 (excluded). PROTECT AF is excluded earlier, at feasibility (smaller arm &lt; 350). Tick to add the framework v2.0 items (EL–SI, 0–2), its total and tiers. Click a row for the rationale.</div>`;
   for (const id of ["qv-sort", "qv-filt", "qv-v2"]) $("#" + id).onchange = qvUpdate;
   qvUpdate();
 }
 let QSEL = null;
 function qvUpdate() {
   const v2 = $("#qv-v2").checked, srt = $("#qv-sort").value, f = $("#qv-filt").value;
-  let T = D.trials.map((t, i) => i).filter(i => f === "all" || (f === "an" ? D.trials[i].s32 : !D.trials[i].s32));
+  let T = D.trials.map((t, i) => i).filter(i => f === "all" || (f === "an" ? D.trials[i].s31 : !D.trials[i].s31));
   const key = {tier: t => [QTI[t.t19], t.tot, AREAS.indexOf(t.area), t.name], area: t => [AREAS.indexOf(t.area), QTI[t.t19], t.tot, t.name], name: t => [t.name],
     tv2: t => [QTI[t.tv2], t.tot2, t.name]}[srt];
   T.sort((a, b) => { const ka = key(D.trials[a]), kb = key(D.trials[b]); for (let i = 0; i < ka.length; i++) { if (ka[i] < kb[i]) return -1; if (ka[i] > kb[i]) return 1; } return 0; });
@@ -1085,15 +1157,15 @@ function qvUpdate() {
   let h = `<table><tr><th class="l">Trial</th><th class="l">Area</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>Comp.</th><th>Outc.</th><th>Pts</th><th class="l">v19 tier</th><th class="l">Analysed</th>` +
     (v2 ? QI2.map(x => `<th>${x}</th>`).join("") + `<th>Tot</th><th class="l">v2.0 (spec-v2)</th><th class="l">v2.0 (v1 coh.)</th><th>in 30</th>` : "") + `</tr>`;
   for (const i of T) { const t = D.trials[i];
-    h += `<tr class="${t.s32 ? "" : "ex"} ${QSEL === i ? "sel" : ""}" data-i="${i}"><td class="l"><b>${esc(t.name)}</b>${v2 && t.prov ? "†" : ""}</td><td class="l">${esc(t.area)}</td>` +
+    h += `<tr class="${t.s31 ? "" : "ex"} ${QSEL === i ? "sel" : ""}" data-i="${i}"><td class="l"><b>${esc(t.name)}</b>${v2 && t.prov ? "†" : ""}</td><td class="l">${esc(t.area)}</td>` +
       t.fl.map(v => `<td>${v ? "✓" : ""}</td>`).join("") + `<td class="${t.co === "P" ? "P" : ""}">${t.co}</td><td class="${t.ou === "P" ? "P" : ""}">${t.ou}</td><td><b>${t.tot}</b></td><td class="l">${tg(t.t19)}</td>` +
-      `<td class="l">${t.s32 ? "yes" : "no (≥4 pts)"}</td>` +
+      `<td class="l">${t.s31 ? "yes" : t.f37 ? "no (≥4 pts)" : "no (feasibility)"}</td>` +
       (v2 ? t.it.map(v => `<td class="v2 ${v === 2 ? "P" : ""}">${v || ""}</td>`).join("") + `<td class="v2"><b>${t.tot2}</b></td><td class="l v2">${tg(t.tv2)}</td><td class="l v2">${tg(t.tq1)}</td><td class="v2">${t.v2c ? "✓" : ""}</td>` : "") + `</tr>`; }
   $("#qv-tab").innerHTML = h + `</table>`;
   $("#qv-tab").querySelectorAll("tr[data-i]").forEach(r => r.onclick = () => { QSEL = +r.dataset.i; qvUpdate(); });
   const t = QSEL === null ? null : D.trials[QSEL];
   $("#qv-det").innerHTML = !t ? `<div class="note" style="margin-top:20px">Click a trial for its items, points and rationale.</div>` :
-    `<h4>${esc(t.full)}</h4><div class="note"><b>${esc(t.area)}</b>; horizon ${t.hz} mo</div><div class="note"><b>v19:</b> ${esc(qWhy(t))} → <b>${t.t19}</b>${t.cap ? " (capped)" : ""}; ${t.s32 ? "<b>analysed</b>" : "<b style='color:#a8322e'>excluded (Limited)</b>"}</div>` +
+    `<h4>${esc(t.full)}</h4><div class="note"><b>${esc(t.area)}</b>; horizon ${t.hz} mo</div><div class="note"><b>v19:</b> ${esc(qWhy(t))} → <b>${t.t19}</b>${t.cap ? " (capped)" : ""}; ${t.s31 ? "<b>analysed</b>" : `<b style='color:#a8322e'>${t.f37 ? "excluded (Limited)" : esc(t.status)}</b>`}</div>` +
     `<div class="note">${esc(t.rat)}</div>` + (v2 ? `<div class="note"><b>Framework v2.0 (sensitivity):</b> total ${t.tot2} → ${t.tv2} (spec-v2 cohorts), ${t.tq1} (version 1 cohorts)${t.prov ? "; † a provisional item could change the tier" : ""}</div>` : "");
 }
 """
@@ -1153,16 +1225,28 @@ function fit() { const s = Math.min(innerWidth / 1280, innerHeight / 720); $("#s
 def patch_explorer(js):
     P = [
         ('let h = `<option value="v2c">Analysed set, rescored (${n(t => t.v2c)}; provisional)</option><option value="v2">Provisional v2.0 set (${n(t => t.v2)})</option><option value="s32">Paper 1\'s set (${n(t => t.s32)} trials)</option>',
-         'let h = `<option value="s32">Primary: paper 1\'s ${n(t => t.s32)} (v19 tiers)</option><option value="v2c">Sens.: framework v2.0, rescored (${n(t => t.v2c)})</option><option value="v2">Sens.: framework v2.0, provisional (${n(t => t.v2)})</option>'),
-        ('<optgroup label="Quality tier (v2.0, rescored)">', '<optgroup label="Quality tier (v19, paper 1)">'),
+         'let h = `<option value="s31">Primary: ${n(t => t.s31)} trials (paper 1\'s 32 minus PROTECT AF)</option><option value="s32">Sens.: paper 1\'s ${n(t => t.s32)} (with PROTECT AF)</option><option value="v2c">Sens.: framework v2.0, rescored (${n(t => t.v2c)})</option><option value="v2">Sens.: framework v2.0, provisional (${n(t => t.v2)})</option>'),
+        ('<optgroup label="Quality tier (v2.0, rescored)">', '<optgroup label="Quality tier (v19, of the 37 feasible)">'),
+        # s31 (2026-10-14): the 37 feasible / all 38, areas of the 31, tiers of the 37, physiologic label within the 31
+        ('<option value="all">All ${NT} emulated trials</option><optgroup label="Clinical area (all 38)">`;',
+         '<option value="f37">All ${n(t => t.f37)} feasible trials</option><option value="all">All ${NT} emulated (with PROTECT AF)</option><optgroup label="Clinical area (of the 31)">`;'),
+        ('h += `<option value="area:${a}">${a} (${n(t => t.area === a)})</option>`;', 'h += `<option value="area31:${a}">${a} (${n(t => t.area === a && t.s31)})</option>`;'),
+        ('h += `<option value="q:${q.join(",")}">${q.join(" or ")} (${n(t => q.includes(t.tier))})</option>`;',
+         'h += `<option value="q37:${q.join(",")}">${q.join(" or ")} (${n(t => q.includes(t.tier) && t.f37)})</option>`;'),
+        ('["yes", "s32", "Physiologic: yes, paper 1 set"], ["no", "s32", "Physiologic: no, paper 1 set"]', '["yes", "s31", "Physiologic: yes, the 31"], ["no", "s31", "Physiologic: no, the 31"]'),
+        ('(${n(t => t.phys === (y === "yes") && (s === "all" || t.s32))})', '(${n(t => t.phys === (y === "yes") && (s === "all" || t[s]))})'),
+        ('  if (v === "s32") return idx.filter(i => D.trials[i].s32);\n',
+         '  if (v === "s31") return idx.filter(i => D.trials[i].s31);\n  if (v === "f37") return idx.filter(i => D.trials[i].f37);\n  if (v === "s32") return idx.filter(i => D.trials[i].s32);\n'),
+        ('  if (k === "q") {', '  if (k === "q37") { const q = x.split(","); return idx.filter(i => q.includes(D.trials[i].tier) && D.trials[i].f37); }\n  if (k === "area31") return idx.filter(i => D.trials[i].area === x && D.trials[i].s31);\n  if (k === "q") {'),
+        ('(s === "all" || D.trials[i].s32)); }', '(s === "all" || D.trials[i][s])); }'),
         ('<select id="c-coh"><option value="v2" selected>Spec-v2 fixed cohorts (primary)</option><option value="v1">Version 1 cohorts (as built)</option></select>',
          '<select id="c-coh"><option value="v1" selected>Version 1 cohorts (primary)</option><option value="v2">Spec-v2 fixed cohorts (sensitivity)</option></select>'),
         ('" Version 1: single imputation (draw 1)."', '" Version 1: ' + ('5-draw multiple imputation; per-item |SMD| averaged across the draws."' if CTX["mi"] else 'single imputation (draw 1); MI pending."')),
         ('"Cohorts as built for paper 1 (no fixes); the expanded panel exists only here."', '"Version 1 cohorts as built (primary; original selection criteria); the expanded panel exists only here."'),
-        ('$("#c-trials").value === "v2c" && panel === "54"', '$("#c-trials").value === "s32" && panel === "54"'),
-        ('<b>Primary analysis (pipeline.md; ECG-only paper):</b>', '<b>Primary analysis (pipeline.md, 2026-10-13):</b>'),
+        ('$("#c-trials").value === "v2c" && panel === "54"', '$("#c-trials").value === "s31" && panel === "54"'),
+        ('<b>Primary analysis (pipeline.md; ECG-only paper):</b>', '<b>Primary analysis (pipeline.md, 2026-10-14):</b>'),
         ('rescored analysed set (30 trials; provisional, not frozen). ${M.coh === "v2" ? "Spec-v2 fixed cohorts." : "Version 1 cohorts (pre-fix reference)."}',
-         'paper 1\'s 32 trials (v19 tiers). ${M.coh === "v1" ? "Version 1 cohorts." : "Spec-v2 fixed cohorts (sensitivity analysis)."}'),
+         'the 31 trials (paper 1\'s 32 minus PROTECT AF, excluded at feasibility; v19 tiers). ${M.coh === "v1" ? "Version 1 cohorts." : "Spec-v2 fixed cohorts (sensitivity analysis)."}'),
         ('const COH = {v2: "Spec-v2 fixed cohorts", v1: "Version 1 cohorts"};', 'const COH = {v2: "Spec-v2 fixed cohorts (sensitivity)", v1: "Version 1 cohorts"};'),
     ]
     for a, b in P:
@@ -1188,7 +1272,17 @@ def build_template(T1001, deck1001, D):
             "PS-Clinical (no LVEF): HRs combined over 5 imputation draws (Rubin) on both cohort versions." if CTX["mi"] else
             "PS-Clinical (no LVEF): spec-v2 cohorts, HRs combined over 5 imputation draws (Rubin); version 1 cohorts, single imputation (MI pending).")
     h = one(h, "All 38 emulated trials, grouped by their quality tier. Tiers were assigned blind to the results; the rescored tiers are provisional (not frozen; LLM raters, no clinician review yet).",
-            "All 38 emulated trials, grouped by quality tier (default: v19 tiers, as paper 1). Tiers were assigned from design information, blind to the results, by LLM-assisted raters; no clinician review yet. Framework v2.0 tiers: sensitivity.")
+            "The 37 feasible trials (default; PROTECT AF excluded at feasibility) or all 38 emulated, grouped by quality tier (default: v19 tiers, as paper 1). Tiers were assigned from design information, blind to the results, by LLM-assisted raters; no clinician review yet. Framework v2.0 tiers: sensitivity.")
+    # agreement by quality (s31, 2026-10-14): a trial-set control, default = the 37 feasible (PROTECT AF excluded at feasibility)
+    h = one(h, '  <label class="h">Cohorts</label>${sel("agq-coh", cohOpt)}\n  <label class="h">PS base</label>${sel("agq-rung", rungOptE())}',
+            '  <label class="h">Cohorts</label>${sel("agq-coh", cohOpt)}\n  <label class="h">Trials</label>${sel("agq-set", `<option value="f37" selected>37 feasible (primary)</option><option value="all">All 38 (with PROTECT AF)</option>`)}\n'
+            '  <label class="h">PS base</label>${sel("agq-rung", rungOptE())}')
+    h = one(h, 'for (const id of ["agq-coh", "agq-rung", "agq-cfg", "agq-src", "agq-split", "agq-met"]) $("#" + id).onchange = agqUpdate;',
+            'for (const id of ["agq-coh", "agq-set", "agq-rung", "agq-cfg", "agq-src", "agq-split", "agq-met"]) $("#" + id).onchange = agqUpdate;')
+    h = one(h, '  const idx = D.trials.map((_, i) => i), tq = i => D.trials[i][src];',
+            '  const idx = D.trials.map((_, i) => i).filter(i => $("#agq-set").value === "all" || D.trials[i].f37), tq = i => D.trials[i][src];')
+    h = one(h, '${coh === "v2" ? "spec-v2" : "version 1"} cohorts · tiers: ${esc(TSRC[src])}</text>`;',
+            '${coh === "v2" ? "spec-v2" : "version 1"} cohorts · ${$("#agq-set").value === "all" ? "all 38" : "37 feasible"} · ${esc(TSRC[src].split(" (")[0])}</text>`;')
     # deck mechanics: replace from the chrome block to the fit() function
     i = h.index("/* ===== deck mechanics (2026-10-01 deck) ===== */")
     j = h.index('addEventListener("resize", fit);', i)
@@ -1217,13 +1311,13 @@ def balance_combos(D, g1, g2):
     VC = CTX["VC"]
     V1 = VC[(VC.cohort == "v1") & (VC.kind == "within") & VC.arm_a.isin(["ECG", "shufECG"]) & VC.arm_b.isin(["base", "shufECG"])
             & VC.rung_a.isin(["P1", "P5", "PS10", "Flags", "hdPS200"] + ([] if CTX["mi"] else ["clinical_nolvef"]))]
-    SM = {"S32": "s32", "S38": "all", "S29": "v2", "Snew": "v2c"}
+    SM = {"S31": "s31", "S32": "s32", "S38": "all", "S29": "v2", "Snew": "v2c"}
     for _, s in V1.iterrows():
         if not (s.config == "main" or s.rung_a == "P5"):
             continue
         for panel in ("54", "58"):
             pre, mm = ("relred54", "m54") if panel == "54" else ("relred58", "m58")
-            tag = "REQUIRED default (v1, 32, PS-CVD5, 54 leak)" if (s.set == "S32" and s.config == "main" and s.rung_a == "P5" and s.arm_a == "ECG" and s.arm_b == "base" and panel == "54") else ""
+            tag = "REQUIRED default (v1, 31, PS-CVD5, 54 leak)" if (s.set == "S31" and s.config == "main" and s.rung_a == "P5" and s.arm_a == "ECG" and s.arm_b == "base" and panel == "54") else ""
             add("v2_cohorts summary (cohort v1)", "v1", s.config, s.rung_a, s.arm_a, s.arm_b, SM[s.set], panel, True,
                 dict(rr=s[pre], lo=s[pre + "_lo"], hi=s[pre + "_hi"], p_m=s[f"{mm}_p"], lower=s[f"{mm}_better"]), sided=s.sided, tag=tag)
     if CTX["mi"]:
@@ -1238,7 +1332,7 @@ def balance_combos(D, g1, g2):
                 pre, mm = ("relred54", "m54") if panel == "54" else ("relred58", "m58")
                 add("v1 MI summary", "v1", s.config, rg, s.arm_a, s.arm_b, SM[s.set], panel, True,
                     dict(rr=s[pre], lo=s[pre + "_lo"], hi=s[pre + "_hi"], p_m=s[f"{mm}_p"], lower=s[f"{mm}_better"]), sided=s.sided,
-                    tag="REQUIRED PS-Clinical MI v1 32" if (s.set == "S32" and s.config == "main" and rg == "clinical_nolvef" and s.arm_a == "ECG" and s.arm_b == "base" and panel == "54") else "")
+                    tag="REQUIRED PS-Clinical MI v1 31" if (s.set == "S31" and s.config == "main" and rg == "clinical_nolvef" and s.arm_a == "ECG" and s.arm_b == "base" and panel == "54") else "")
     for (src, ts, cfg, rg, a, panel, leak, exp) in BE.EXPECT:
         aa, bb = (a.split("|") + ["base"])[:2]
         if rg in V2.RUNGS_D and aa in V2.ARMS_D and bb in V2.ARMS_D and not (rg == "clinical_nolvef"):
@@ -1252,7 +1346,7 @@ def balance_combos(D, g1, g2):
         add("psclin_mi summary (spec-v2)", "v2", "main", rg, s.arm_a, s.arm_b, SM[s.set], "54", True,
             dict(rr=s.relred54, lo=s.relred54_lo, hi=s.relred54_hi, p_m=s.m54_p, lower=s.m54_better), sided=s.sided)
     for coh in ("v1", "v2"):  # computed-only combinations (no summary): v19 tier filters, areas
-        for ts in ("q:Excellent,Good", "q:Moderate", "area:AF", "area:Diabetes", "phys:yes,s32"):
+        for ts in ("q37:Excellent,Good", "q37:Moderate", "area31:AF", "area31:Diabetes", "phys:yes,s31", "f37", "q:Excellent,Good", "phys:yes,s32"):
             for rg in ("P1", "P5", "hdPS200", "clinical_nolvef"):
                 add("computed (pair_stats)", coh, "main", rg, "ECG", "base", ts, "54", True, {})
     return combos
@@ -1263,7 +1357,7 @@ def emu_refs(D):
     VC = CTX["VC"]
     V1 = VC[(VC.cohort == "v1") & (VC.kind == "within") & (VC.config == "main") & VC.rung_a.isin(["P1", "P5", "PS10", "hdPS200"]) & (VC.arm_b == "base")
             & VC.arm_a.isin(["ECG", "shufECG"])]
-    SM = {"S32": "s32", "S38": "all", "S29": "v2", "Snew": "v2c"}
+    SM = {"S31": "s31", "S32": "s32", "S38": "all", "S29": "v2", "Snew": "v2c"}
     rows = [(s, s.rung_a) for _, s in V1.iterrows()]
     if CTX["mi"]:
         M = CTX["MIS"]
@@ -1289,9 +1383,13 @@ def main():
     print(f"10-09 deck regenerated: byte-identical to {DECK1009.relative_to(ROOT)}")
     V2.CL.clear()
     g1, mi = load_v1(g)
-    CTX.update(mi=mi, g1=g1, g2=g2, VC=V2.get_contrasts()[1])
+    VC = V2.get_contrasts()[1]
+    s31v = pd.read_csv(S31SUM["v1"] / "contrasts.csv")
+    assert json.load(open(S31D / "summary_gate.json"))["passed"]  # its S32 rows equal the committed summaries
+    CTX.update(mi=mi, g1=g1, g2=g2, VC=pd.concat([VC, s31v[s31v.set == "S31"]], ignore_index=True))
     if mi:
-        CTX["MIS"] = pd.read_csv(MI_V1SUM / "contrasts.csv")
+        s31m = pd.read_csv(S31SUM["mi"] / "contrasts.csv")
+        CTX["MIS"] = pd.concat([pd.read_csv(MI_V1SUM / "contrasts.csv"), s31m[s31m.set == "S31"]], ignore_index=True)
     print("PS-Clinical (no LVEF), version 1 cohorts:", "5-draw MI cells" if mi else "single imputation (MI pending)")
     trials = trials_new(trials_old, g1)
     CTX["trials"] = trials
@@ -1304,6 +1402,9 @@ def main():
     if mi:
         r = ps(CTX["G1"], "main", "clinical_nolvef", "ECG", "base", "s32")
         assert f"{r['rr']:.1f}|{r['lo']:.1f}|{r['hi']:.1f}|{r['lower']}" == "3.2|-1.0|7.2|19", r
+    # s31 primary from the cells = the s31 summary (8.7% (4.2 to 13.5), 20/31; docs/s31/S31_RESULTS.md)
+    r = ps(CTX["G1"], "main", "P5", "ECG", "base", "s31")
+    assert f"{r['rr']:.1f}|{r['lo']:.1f}|{r['hi']:.1f}|{r['lower']}/{r['k']}" == "8.7|4.2|13.5|20/31", r
     EX = load_ex()
     RR = pd.read_csv(V2.RRS)
     T1001, deck1001 = L1.TEMPLATE, DECK1001.read_text()

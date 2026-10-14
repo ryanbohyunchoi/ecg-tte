@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-"""LATENT-RCT manuscript Figure 2 (covariate balance), updated design of 2026-10-13 (pipeline.md):
-version 1 cohorts, paper 1's 32 trials (v19 tiers), 1:1 nearest-neighbour matching on the PS logit (caliper 0.2), fixed C = 1,
+"""LATENT-RCT manuscript Figure 2 (covariate balance), updated design of 2026-10-13 / 2026-10-14 (pipeline.md):
+version 1 cohorts, the 31-trial primary set "s31" (paper 1's 32, v19 tiers, minus PROTECT AF: excluded at feasibility, smaller arm
+< 350; build_balance_explorer.trial_set), 1:1 nearest-neighbour matching on the PS logit (caliper 0.2), fixed C = 1,
 the 54 non-coded held-out items with the leakage-corrected masks of pipeline.md section 6.
 
-  A  love plot: median |SMD| across the 32 trials per held-out item; unmatched, PS-CVD5, PS-CVD5 + ECG; grouped by domain
+  A  love plot: median |SMD| across the 31 trials per held-out item; unmatched, PS-CVD5, PS-CVD5 + ECG; grouped by domain
   B  mean |SMD| by domain (mean across trials of each trial's domain mean), same arms; "All 54" = the ladder level
   C  PS ladder: PS-Demo, PS-CVD5, PS-CVD10, hdPS, PS-Clinical (no LVEF; 5-draw MI); unmatched (reference), PS alone, PS + ECG,
      PS + CLMBR-T, PS + CLMBR-T + ECG; labels = relative change in mean |SMD| with + ECG vs PS alone (paired by trial). No PS-Flags.
@@ -17,10 +18,11 @@ ladder computations) on the grid used by the 2026-10-15 lab deck:
   audits/claude-v1-psclin-mi/cells/restricted_cells_v1_mi_v1layout.parquet   PS-Clinical (no LVEF), 5-draw MI (|SMD| averaged)
   audits/claude-v18-embed-compare/results.csv               unmatched |SMD| (as build_balance_explorer.load_grid)
 Cells with fewer than 11 matched pairs are failed (missing). Every plotted value is re-derived from the integers embedded in the
-lab deck HTML (the explorer's data) and the + ECG labels are gated against the expected values (11.3 / 8.8 / 5.0 / 7.6 / 3.2).
+lab deck HTML (the explorer's data); ladder levels, relative reductions and panel D are checked against the s31 Python summaries
+(scripts/s31/s31_summaries.py) and the + ECG labels are gated against EXPECT_ECG (the s31 summary values).
 
 Outputs: docs/paper/figures_latent/figure2_covariate_balance.{png,pdf} (300 dpi), panels/figure2_covariate_balance_{A..D}.{png,pdf};
-aggregate validation table: audits/claude-deckq-20261013/figure2_values.json. Aggregates only (no patient counts).
+aggregate validation table: audits/claude-s31-20261014/figure2_values.json. Aggregates only (no patient counts).
 
   python scripts/figures/make_figure2_latent.py
 """
@@ -48,14 +50,16 @@ A = Path("/mnt/raid0/rbc58/ecg-tte/audits")
 MI_V1 = A / "claude-v1-psclin-mi/cells/restricted_cells_v1_mi_v1layout.parquet"
 DECK = ROOT / "docs/presentation/ecg_tte_lab_2026_10_15.html"
 OUT = ROOT / "docs/paper/figures_latent"
-VALS = A / "claude-deckq-20261013/figure2_values.json"
+VALS = A / "claude-s31-20261014/figure2_values.json"
+SUMS = A / "claude-s31-20261014"  # s31 Python summaries (scripts/s31/s31_summaries.py; S32 rows gated equal to the committed runs)
+SET = "s31"
 NAVY, RED, GOLD, GREY, LGREY = "#0d1040", "#d9534f", "#c9a227", "#7a7c8c", "#d9dbe6"
 GREEN, PURPLE = "#2a7f62", "#7b4fa0"
 RUNGS = [("P1", "PS-Demo"), ("P5", "PS-CVD5"), ("PS10", "PS-CVD10"), ("clinical_nolvef", "PS-Clinical\n(no LVEF, MI)"), ("hdPS200", "hdPS")]  # ordered by number of inputs (3, 8, 13, ~30, ~210); user decision 2026-10-14
 # arm: (legend label, colour, marker, face); unmatched drawn as a cross
 ARMS = {"unmatched": ("Unmatched", GREY, "x", None), "base": ("PS alone", NAVY, "o", "white"), "ECG": ("PS + ECG", RED, "o", RED),
         "CLMBR": ("PS + CLMBR-T", GREEN, "s", "white"), "ECG+CLMBR": ("PS + CLMBR-T + ECG", PURPLE, "D", PURPLE)}
-EXPECT_ECG = {"P1": 11.3, "P5": 8.8, "PS10": 5.0, "hdPS200": 7.6, "clinical_nolvef": 3.2}
+EXPECT_ECG = {"P1": 10.6, "P5": 8.7, "PS10": 3.8, "hdPS200": 7.1, "clinical_nolvef": 3.3}  # s31 summaries (docs/s31/S31_RESULTS.md)
 GSHORT = {"Vitals & core labs": "Vitals, core labs", "Other labs": "Other labs", "Echo: LV structure": "LV structure",
           "Echo: LV function": "LV function", "Echo: diastolic / LA": "Diastolic / LA", "Echo: RV / pulmonary": "RV / pulmonary",
           "Echo: valves / aorta": "Valves / aorta"}
@@ -187,9 +191,9 @@ def trial_dpct(grid, T, rg, a="ECG", b="base", thr=0.1):
 
 
 def compute(grid, trials):
-    T = BE.trial_set(trials, "s32")
-    assert len(T) == 32
-    V = {"A": {}, "B": {}, "C": {}, "D": {}}
+    T = BE.trial_set(trials, SET)
+    assert len(T) == 31 and not any(trials[i]["id"] == "protect-af" for i in T)
+    V = {"A": {}, "B": {}, "C": {}, "D": {}, "k_set": len(T)}
     for a in ("unmatched", "base", "ECG"):
         V["A"][a] = love(grid, T, "P5", a)
     doms = [("All 54", ITEMS)] + [(gname, [j for j in ITEMS if BE.GROUP[BE.VN[j]] == gname]) for gname in GROUPS]
@@ -203,14 +207,6 @@ def compute(grid, trials):
         for a in ("ECG", "CLMBR", "ECG+CLMBR"):
             r = BE.pair_stats(grid, "main", rg, a, "base", T, "54", True) if has(grid, rg, a) else dict(rr=np.nan, lo=np.nan, hi=np.nan, k=0)
             V["C"][rg][f"rr_{a}"] = (r["rr"], r["lo"], r["hi"], r["k"])
-    # hdPS + CLMBR-T: the level rises because of one small trial (PROTECT AF; near-separation with ~274 PS inputs at C = 1);
-    # report the level and the paired change without it (footnote only; the plotted point keeps all trials)
-    ipa = [i for i in T if trials[i]["id"] == "protect-af"]
-    if ipa and has(grid, "hdPS200", "CLMBR"):
-        Tx = [i for i in T if i not in ipa]
-        rx = BE.pair_stats(grid, "main", "hdPS200", "CLMBR", "base", Tx, "54", True)
-        V["C"]["hdPS200"]["ex_protect"] = dict(base=level(grid, Tx, "hdPS200", "base"), CLMBR=level(grid, Tx, "hdPS200", "CLMBR"),
-                                               rr_CLMBR=(rx["rr"], rx["lo"], rx["hi"], rx["k"]))
     d = trial_dpct(grid, T, "P5")
     r = BE.pair_stats(grid, "main", "P5", "ECG", "base", T, "54", True)
     assert len(d) == r["k"] and abs(d.mean() - r["dpts"]) < 1e-9 and int((d > 0).sum()) == r["better"]
@@ -238,18 +234,19 @@ def compare(V, W):
 
 
 def summaries(V):
-    """ladder levels, relative reductions and panel D against the Python summaries (independent runs of the endpoint code):
-    scripts/v1_psclin_mi (v1 MI summary: every rung's PS alone / + ECG; PS-Clinical (no LVEF, MI) incl. the CLMBR-T arms) and
-    scripts/v2_cohorts/summarize.py (cohort v1: CLMBR-T arms of PS-Demo, PS-CVD5, PS-CVD10, hdPS). Leakage-corrected, F1 applied."""
+    """ladder levels, relative reductions and panel D against the s31 Python summaries (scripts/s31/s31_summaries.py: independent
+    runs of the endpoint code, set S31): the v1 MI summary (every rung's PS alone / + ECG; PS-Clinical (no LVEF, MI) incl. the
+    CLMBR-T arms) and scripts/v2_cohorts/summarize.py (cohort v1: CLMBR-T arms of PS-Demo, PS-CVD5, PS-CVD10, hdPS).
+    Leakage-corrected, F1 applied."""
     import pandas as pd
-    MC = pd.read_csv(A / "claude-v1-psclin-mi/summary/contrasts.csv")
-    ML = pd.read_csv(A / "claude-v1-psclin-mi/summary/ladder.csv")
-    VC = pd.read_csv(A / "claude-v2-cohorts/summary/contrasts.csv")
-    VL = pd.read_csv(A / "claude-v2-cohorts/summary/ladder.csv")
-    MC = MC[(MC.set == "S32") & (MC.config == "main") & MC.kind.isin(["within", "ladder"]) & (MC.rung_a == MC.rung_b) & (MC.arm_b == "base")]
-    VC = VC[(VC.cohort == "v1") & (VC.set == "S32") & (VC.config == "main") & (VC.kind == "within") & (VC.rung_a == VC.rung_b) & (VC.arm_b == "base")]
-    ML = ML[(ML.set == "S32") & (ML.config == "main") & (ML.panel.astype(str) == "54")]
-    VL = VL[(VL.cohort == "v1") & (VL.set == "S32") & (VL.config == "main") & (VL.panel.astype(str) == "54")]
+    MC = pd.read_csv(SUMS / "summary_mi/contrasts.csv")
+    ML = pd.read_csv(SUMS / "summary_mi/ladder.csv")
+    VC = pd.read_csv(SUMS / "summary_v1/contrasts.csv")
+    VL = pd.read_csv(SUMS / "summary_v1/ladder.csv")
+    MC = MC[(MC.set == "S31") & (MC.config == "main") & MC.kind.isin(["within", "ladder"]) & (MC.rung_a == MC.rung_b) & (MC.arm_b == "base")]
+    VC = VC[(VC.cohort == "v1") & (VC.set == "S31") & (VC.config == "main") & (VC.kind == "within") & (VC.rung_a == VC.rung_b) & (VC.arm_b == "base")]
+    ML = ML[(ML.set == "S31") & (ML.config == "main") & (ML.panel.astype(str) == "54")]
+    VL = VL[(VL.cohort == "v1") & (VL.set == "S31") & (VL.config == "main") & (VL.panel.astype(str) == "54")]
     rows, unchecked = [], []
     for rg, _ in RUNGS:
         mr = "clinical_nolvef_mi" if rg == "clinical_nolvef" else rg
@@ -322,7 +319,7 @@ def figure2(V):
     xmax = float(np.ceil(np.nanmax(med[0]) * 20) / 20)
     ax.set_xlim(0, max(0.3, xmax))
     ax.set_ylim(-0.8, len(names) - 0.2)
-    ax.set_xlabel("|SMD| (median across 32 trials)", fontsize=7)
+    ax.set_xlabel(f"|SMD| (median across {V['k_set']} trials)", fontsize=7)
     ax.set_title("PS-CVD5 ± ECG, 54 held-out items", fontsize=7, loc="left", x=-0.55)
     letter(ax, "A", x=-0.75, y=1.01)
     # B: mean |SMD| by domain
@@ -339,7 +336,7 @@ def figure2(V):
     ax.get_yticklabels()[0].set_fontweight("bold")
     ax.axvline(0.1, color=RED, ls="--", lw=0.6)
     ax.set_xlim(0.05, None)
-    ax.set_xlabel("Mean |SMD| (mean across 32 trials)", fontsize=7)
+    ax.set_xlabel(f"Mean |SMD| (mean across {V['k_set']} trials)", fontsize=7)
     ax.set_title("PS-CVD5 ± ECG, by domain", fontsize=7, loc="left", x=-0.86)
     letter(ax, "B", x=-1.04)
     # C: PS ladder
@@ -355,9 +352,6 @@ def figure2(V):
         lab, col, mk, fc = ARMS[a]
         ax.plot(xs + dx, v, "-", color=col, lw=0.6, alpha=0.55, zorder=2)
         scatter(ax, xs + dx, v, a, s=11 if mk != "D" else 8, zorder=3)
-    if V["C"].get("hdPS200", {}).get("ex_protect"):  # anchor for the † footnote on the hdPS + CLMBR-T point
-        kx = [rg for rg, _ in RUNGS].index("hdPS200")
-        ax.text(kx + offs["CLMBR"] + 0.07, V["C"]["hdPS200"]["CLMBR"], "†", fontsize=6.5, color=ARMS["CLMBR"][1], va="center", ha="left")
     lo_y = np.floor((min(V["C"][rg][a] for rg, _ in RUNGS for a in offs) - 0.016) * 100) / 100
     for k, (rg, _) in enumerate(RUNGS):  # + ECG labels in one row at the foot of the panel
         rr = V["C"][rg]["rr_ECG"][0]
@@ -367,16 +361,12 @@ def figure2(V):
     ax.set_ylim(max(0, lo_y), max(U) + 0.012)
     short = {rg: l.split("\n")[0] for rg, l in RUNGS}
     fewer = [f"{ARMS[a][0].replace('PS', short[rg], 1)}: {V['C'][rg]['k_' + a]} trials (failed cell)" for rg, _ in RUNGS for a in ARMS
-             if a != "unmatched" and V["C"][rg]["k_" + a] < 32]
-    ax.set_ylabel("Mean |SMD| (32 trials" + ("*)" if fewer else ")"), fontsize=7)
+             if a != "unmatched" and V["C"][rg]["k_" + a] < V["k_set"]]  # footnote whenever an arm rests on fewer trials than the set
+    ax.set_ylabel(f"Mean |SMD| ({V['k_set']} trials" + ("*)" if fewer else ")"), fontsize=7)
     ax.set_title("PS ladder (fewer → more covariates)", fontsize=7, loc="left", x=-0.3)
     ax.text(0.99, 0.985, "red: relative change in mean\n|SMD| with + ECG vs PS alone", transform=ax.transAxes, ha="right", va="top", fontsize=5.2,
             color=RED, linespacing=1.1)
     notes = (["* " + "; ".join(fewer)] if fewer else [])
-    ex = V["C"].get("hdPS200", {}).get("ex_protect")
-    if ex:
-        notes.append(f"† hdPS + CLMBR-T is raised by one small trial (PROTECT AF; near-separation). Without it: hdPS {ex['base']:.3f}, "
-                     f"+ CLMBR-T {ex['CLMBR']:.3f} ({-ex['rr_CLMBR'][0]:+.1f}%, {ex['rr_CLMBR'][3]} trials).")
     if notes:
         ax.text(-0.3, -0.42, "\n".join(notes), transform=ax.transAxes, ha="left", va="top", fontsize=5.0, color=GREY, linespacing=1.15)
     letter(ax, "C", x=-0.42)
@@ -420,16 +410,15 @@ def main():
         assert f"{V['C'][rg]['rr_ECG'][0]:.1f}" == f"{W['C'][rg]['rr_ECG'][0]:.1f}", rg
     figure2(V)
     out = dict(
-        basis="version 1 cohorts; paper 1's 32 trials (v19 tiers); main configuration (1:1, caliper 0.2, C = 1); 54 items, leakage-corrected masks",
+        basis="version 1 cohorts; the 31-trial primary set s31 (paper 1's 32, v19 tiers, minus PROTECT AF: excluded at feasibility); main configuration (1:1, caliper 0.2, C = 1); 54 items, leakage-corrected masks",
         A_median_all_items={a: dict(median_of_items=round(float(np.nanmedian(V["A"][a])), 4), n_items_plotted=int(np.isfinite(V["A"][a]).sum()))
                             for a in V["A"]},
         A_items={BE.VARS[j][1]: {a: (None if not np.isfinite(V["A"][a][i]) else round(float(V["A"][a][i]), 4)) for a in V["A"]} for i, j in enumerate(ITEMS)},
-        B={g: {k: (round(v, 4) if isinstance(v, float) else v) for k, v in x.items()} for g, x in V["B"].items()},
-        C={rg: {k: (round(v, 4) if isinstance(v, float) else v if isinstance(v, int) else [round(float(u), 2) for u in v[:3]] + [int(v[3])])
+        B={g: {k: (round(v, 6) if isinstance(v, float) else v) for k, v in x.items()} for g, x in V["B"].items()},
+        C={rg: {k: (round(v, 6) if isinstance(v, float) else v if isinstance(v, int) else [round(float(u), 4) for u in v[:3]] + [int(v[3])])
                 for k, v in x.items() if not isinstance(v, dict)} for rg, x in V["C"].items()},
-        C_hdps_clmbr_without_protect_af={k: (round(v, 4) if isinstance(v, float) else [round(float(u), 2) for u in v[:3]] + [int(v[3])])
-                                         for k, v in V["C"].get("hdPS200", {}).get("ex_protect", {}).items()},
-        D={k: (v if isinstance(v, int) else round(float(v), 4)) for k, v in V["D"].items() if k != "d"},
+        k_set=V["k_set"],
+        D={k: (v if isinstance(v, int) else round(float(v), 6)) for k, v in V["D"].items() if k != "d"},
         check=dict(embedded_vs_full_max_smd_dev=dev, embedded_vs_full_max_rr_dev=rrdev, ecg_labels=got, expected=EXPECT_ECG, summaries=SM))
     VALS.parent.mkdir(parents=True, exist_ok=True)
     json.dump(out, open(VALS, "w"), indent=1)
