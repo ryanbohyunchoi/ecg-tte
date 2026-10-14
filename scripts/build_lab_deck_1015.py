@@ -50,15 +50,23 @@ contrasts are claims, recomputed here from the cells (cross-rung, items observed
 per-trial panel D and its groupings popup move unchanged to a new appendix A4 "Per-trial covariate balance improvement"; framework
 v2.0 becomes A5 and the spec-v2 fixes A6. Outputs of this builder go to audits/claude-slide9d-20261014/deck.
 
+Revision of 2026-10-14, slide 11 panel C job (docs/queue/slide11_figure3.md; deck only, the paper's Figure 3 is unchanged): slide 11's
+click 3 shows a new full-width panel C under A and B, agreement with the RCTs (mean |dlog HR|) of demographics + AI representations
+(Demo + ECG, Demo + CLMBR-T, Demo + ECG + CLMBR-T) vs conventional PS (PS-CVD5, hdPS, PS-Clinical), labelled vs PS-CVD5 and vs hdPS
+(scripts/figures/make_slide11_panelC_agreement.py); its 7 means and 6 contrasts with P are claims, recomputed here from the version 1
+cells and gated against figure4.md. The old panel C (agreement by emulation quality) moves with its claims to a new appendix A7
+"Agreement by emulation quality", appended after A6 (no existing label changes) and linked from slide 11's "More:". Outputs of this
+builder go to audits/claude-slide11c-20261014/deck.
+
 Main slides: 1 title; 2 Background (10-01); 3 Problem (10-01 schematic, click reveal of the unmeasured side + three points); 4 Aims
 (four aims, revealed one at a time; the representations graphic between aims 1 and 2); 5 study overview (empty body); 6 LATENT-RCT
 pipeline; 7 PSM experiments; 8 methods: covariate balancing; 9 results 1 (Figure 2); 10 results 2 (balance explorer); 11 agreement
 with the RCTs (Figure 3); 12 emulation explorer; 13 robustness; 14 agreement by quality; 15 plasmode; 16 MIMIC-IV; 17 take-home; 18
-open decisions. Appendix A1-A6
+open decisions. Appendix A1-A7
 (hash-linked; "More:" links on main slides, "Back to slide N" on every appendix slide): A1 emulation-quality criteria + interactive
 quality viewer (v19; framework v2.0 toggle); A2 all 38 trials (Table 1, scrollable); A3 held-out panel and leakage-corrected masking;
 A4 per-trial covariate balance improvement (the former Figure 2D panel and its groupings popup); A5 framework v2.0 (sensitivity);
-A6 spec-v2 cohort fixes (sensitivity).
+A6 spec-v2 cohort fixes (sensitivity); A7 agreement by emulation quality (the former Figure 3 panel C).
 
 Reuses (not modified): scripts/build_lab_deck.py (10-01 stylesheet, schematics), scripts/build_lab_deck_v2.py (template, explorers,
 static-slide helpers, claims table), scripts/build_balance_explorer.py (data loading and validated statistics). The 2026-10-09 deck is
@@ -102,7 +110,7 @@ DECK1001 = ROOT / "docs/presentation/ecg_tte_lab_2026_10_01.html"
 DECK1009 = V2.OUT
 S31D = A / "claude-s31-20261014"  # s31 run (queue 2026-10-14)
 FIG2DD = A / "claude-fig2d-20261014"  # Figure 2D job (docs/queue/figure2D.md)
-SCR = A / "claude-slide9d-20261014/deck"  # claims table and validation inputs (slide 9 panel D run; earlier runs' copies stay in their audit folders)
+SCR = A / "claude-slide11c-20261014/deck"  # claims table and validation inputs (slide 11 panel C run; earlier runs' copies stay in their audit folders)
 FIG2 = ROOT / "docs/paper/figures_latent/figure2_covariate_balance.png"  # scripts/figures/make_figure2_latent.py
 FIG2V = FIG2DD / "figure2_values.json"  # its aggregate values (validated there)
 FIG2G = FIG2.parent / "panels" / "panelD_groupings"  # the panel D popup's tabs (scripts/figures/make_figure2d_groupings.py)
@@ -158,7 +166,8 @@ MAIN = ["s-title", "s-bg", "s-prob", "s-aims", "s-over", "s-pipe", "s-meth1", "s
 # slide 9 panel D job (docs/queue/slide9_panelD.md): the per-trial panel D moves to a new A4 after A3; framework v2.0 -> A5, fixes -> A6
 APP = [("a-qual", "A1", "Emulation-quality criteria", "s-pipe"), ("a-t1", "A2", "All 38 trials (Table 1)", "s-pipe"),
        ("a-panel", "A3", "Held-out panel and leakage map", "s-meth2"), ("a-f2d", "A4", "Per-trial covariate balance improvement", "s-res2"),
-       ("a-fw", "A5", "Framework v2.0 (sensitivity)", "s-res2"), ("a-fix", "A6", "Spec-v2 cohort fixes (sensitivity)", "s-rob")]
+       ("a-fw", "A5", "Framework v2.0 (sensitivity)", "s-res2"), ("a-fix", "A6", "Spec-v2 cohort fixes (sensitivity)", "s-rob"),
+       ("a-f3q", "A7", "Agreement by emulation quality", "s-res3")]  # slide 11 panel C job: the former Figure 3 panel C, appended
 SN = {s: str(i + 1) for i, s in enumerate(MAIN)}
 SN.update({sid: lab for sid, lab, _, _ in APP})
 APPT = {lab: t for _, lab, t, _ in APP}
@@ -1176,7 +1185,7 @@ def s_results3():
           ref_how="recomputed from the deck's embedded log HRs (V2.agree_py)")
     claim(sl, "Fig 3A trials closer with + ECG", f"{a['trials_closer']} of {a['trials']}", FIG3V, ref=f"{m['closer']} of {m['kp']}",
           ref_how="recomputed from the deck's embedded log HRs (V2.agree_py)")
-    # panels B and C (values in the image)
+    # panel B (values in the image)
     lab = V["B_labels"]
     for rg in V["B"]:
         for arm in ("base", "ECG", "CLMBR", "ECG+CLMBR"):
@@ -1185,14 +1194,13 @@ def s_results3():
             else:
                 ref, how = f"{cells(rg, arm):.3f}", "log HRs of the version 1 cells"
             claim(sl, f"Fig 3B {lab[rg]} {arm} mean |dlog HR|", f"{V['B'][rg][arm]:.3f}", FIG3V, ref=ref, ref_how=how)
-    tier = np.array([D["trials"][i]["tier"] for i in T])
-    for k, tt in (("EG", ("Excellent", "Good")), ("MO", ("Moderate",))):
-        c = V["C"][k]
-        msk = np.isin(tier, tt)
-        claim(sl, f"Fig 3C {c['label']} trials", str(c["trials"]), FIG3V, ref=str(int(msk.sum())), ref_how="v19 tiers of the deck's trials")
-        for arm in ("base", "ECG", "CLMBR", "ECG+CLMBR"):
-            claim(sl, f"Fig 3C {c['label']} {arm} mean |dlog HR|", f"{c[arm]:.3f}", FIG3V, ref=f"{cells('P5', arm, msk):.3f}", ref_how="log HRs of the version 1 cells")
-    return sec(sid, "Results: agreement with the RCTs (Figure 3)", fig3_panels())
+    # slide 11 panel C job: the old panel C (by emulation quality) and its claims are on A7 (s_af3q); the new panel C's claims here
+    f3c_claims(sl, cells)
+    # the new panel C must show the same PS-Demo + ECG / + CLMBR-T points as panel B (queue file: 0.207, 0.174)
+    W3 = json.load(open(F3CV))
+    for lab_, arm in (("Demo + ECG", "ECG"), ("Demo + CLMBR-T", "CLMBR")):
+        assert f"{W3['levels'][lab_]:.3f}" == f"{V['B']['P1'][arm]:.3f}", (lab_, W3["levels"][lab_], V["B"]["P1"][arm])
+    return sec(sid, "Results: agreement with the RCTs (Figure 3)", fig3_panels(), links=more(SN["a-f3q"]))
 
 
 FIG3 = ROOT / "docs/paper/figures_latent/figure3_rct_agreement.png"  # scripts/figures/make_figure3_latent.py
@@ -1200,21 +1208,88 @@ FIG3V = A / "claude-fig3-20261014/figure3_values.json"  # its aggregate values (
 FIG3_STEP = {"A": 1, "B": 2, "C": 3}
 FIG3_ALT = {"A": "Figure 3 panel A: emulated vs RCT hazard ratios, PS-CVD5 and PS-CVD5 + ECG (31 trials).",
             "B": "Figure 3 panel B: agreement ladder, mean |Δ log HR| vs RCT across the PS ladder with + ECG, + CLMBR-T or both.",
-            "C": "Figure 3 panel C: mean |Δ log HR| vs RCT by emulation quality (PS-CVD5)."}
+            "C": "Figure 3 panel C (deck): agreement with the RCTs, mean |Δ log HR| vs RCT (31 trials): Unmatched; conventional PS (PS-CVD5, "
+                 "hdPS, PS-Clinical); demographics + AI representations (Demo + ECG, Demo + CLMBR-T, Demo + ECG + CLMBR-T), labelled vs "
+                 "PS-CVD5 and vs hdPS."}
 FIG3_CAPTION = ("Figure 3. Agreement of emulated and RCT results (31 trials). A, Emulated vs RCT hazard ratios with PS-CVD5 and PS-CVD5 + ECG. "
                 "B, Mean absolute difference from RCT log HRs across the PS ladder with the ECG, CLMBR-T or both added. C, Mean absolute "
-                "difference by emulation quality (PS-CVD5). Lower is closer to the RCT.")
+                "difference from RCT log HRs with demographics + AI representations (Demo + ECG, Demo + CLMBR-T, Demo + ECG + CLMBR-T) vs "
+                "conventional PS (PS-CVD5, hdPS, PS-Clinical) and unmatched; labels are paired differences vs PS-CVD5 and vs hdPS. Lower is "
+                "closer to the RCT.")
+# slide 11 panel C job (docs/queue/slide11_figure3.md): the new panel C (deck only; scripts/figures/make_slide11_panelC_agreement.py)
+F3C = ROOT / "docs/paper/figures_latent/panels/deck/slide11_panelC_agreement.png"
+F3CV = A / "claude-slide11c-20261014/panelC_values.json"  # its aggregate values (gated there against figure4.md and recomputed_f4.json)
+F3C_ROWS = [("Unmatched", "P5", "unmatched"), ("PS-CVD5", "P5", "base"), ("hdPS", "hdPS200", "base"), ("PS-Clinical", "clinical_nolvef", "base"),
+            ("Demo + ECG", "P1", "ECG"), ("Demo + CLMBR-T", "P1", "CLMBR"), ("Demo + ECG + CLMBR-T", "P1", "ECG+CLMBR")]
+F3C_REFS = (("PS-CVD5", "P5", "base"), ("hdPS", "hdPS200", "base"))
+# expected displayed values (figure4.md and the queue file, audited): mean |dlog HR|; paired difference (a - b) and two-sided P
+EXPECT_F3C = {"Unmatched": "0.248", "PS-CVD5": "0.232", "hdPS": "0.182", "PS-Clinical": "0.171", "Demo + ECG": "0.207", "Demo + CLMBR-T": "0.174",
+              "Demo + ECG + CLMBR-T": "0.164",
+              "Demo + ECG vs PS-CVD5": "−0.026|P = .20", "Demo + CLMBR-T vs PS-CVD5": "−0.058|P = .055", "Demo + ECG + CLMBR-T vs PS-CVD5": "−0.068|P = .037",
+              "Demo + ECG vs hdPS": "+0.025|P = .56", "Demo + CLMBR-T vs hdPS": "−0.008|P = .71", "Demo + ECG + CLMBR-T vs hdPS": "−0.018|P = .21"}
+V18U = A / "claude-v18-embed-compare/results.csv"  # unmatched log HRs (rung "none", full cohort), as f4_numbers.py
+
+
+def f3c_claims(sl, cells):
+    """slide 11 panel C job: every value in the new panel C (7 means; 6 paired contrasts with their two-sided P) is a claim, shown from
+    panelC_values.json and checked against an independent recomputation here: the version 1 cells' log HRs (cells(); the deck's own
+    v1 grid with the PS-Clinical MI cells) and, for Unmatched, the v18 results' rung "none"; the contrasts are paired by trial with an
+    exact two-sided sign-flip. The displayed values are also gated against figure4.md (EXPECT_F3C)."""
+    assert F3C.exists() and F3CV.exists(), "run scripts/figures/make_slide11_panelC_agreement.py first"
+    V = json.load(open(F3CV))
+    D, R = CTX["D"], CTX["g1"]["R"]
+    T = T_("s31")
+    assert V["k_set"] == len(T) == 31
+    ids = [D["trials"][i]["id"] for i in T]
+    rb = np.array([D["trials"][i]["rb"] for i in T], float)
+
+    def per(rg, arm):
+        if arm == "unmatched":
+            u = pd.read_csv(V18U)
+            u = u[(u.half == "full") & (u.rung == "none")].set_index("trial").loc[ids]
+            assert np.allclose(u.rb.to_numpy(float), rb, atol=1e-6)
+            return np.abs(u.loghr.to_numpy(float) - rb)
+        x = R[(R.config == "main") & (R.rung == rg) & (R.arm == arm)].set_index("trial").loc[ids]
+        assert not x.failed.any() and np.allclose(x.rb.to_numpy(float), rb, atol=1e-6)
+        return np.abs(x.loghr.to_numpy(float) - rb)
+
+    dd = {lab: per(rg, arm) for lab, rg, arm in F3C_ROWS}
+    got = {}
+    for lab, rg, arm in F3C_ROWS:
+        shown = f"{V['levels'][lab]:.3f}"
+        if arm != "unmatched":
+            assert abs(cells(rg, arm) - dd[lab].mean()) < 1e-6  # the Figure 3 claims' own helper agrees (cells' vs the deck's RCT log HRs)
+        claim(sl, f"Fig 3C (deck) mean |dlog HR| {lab}", shown, F3CV, ref=f"{dd[lab].mean():.3f}",
+              ref_how="log HRs of the version 1 cells (unmatched: v18 results, rung none) vs the deck's RCT log HRs")
+        got[lab] = shown
+    pfmt = lambda p: "P < .001" if p < 0.001 else "P = " + (f"{p:.3f}"[1:] if p < 0.1 else f"{p:.2f}"[1:])
+    sgn = lambda x: f"{x:+.3f}".replace("-", "−")
+    for lab, _, _ in F3C_ROWS[4:]:
+        for b, _, _ in F3C_REFS:
+            k = f"{lab} vs {b}"
+            c = V["vs"][k]
+            g = dd[b] - dd[lab]
+            p = min(1.0, 2 * min(BE.signflip_1s(g), BE.signflip_1s(-g)))
+            shown = f"{sgn(c['diff'])}|{pfmt(c['p_ag_two'])}"
+            assert V["labels"][k] == f"{sgn(c['diff'])} ({pfmt(c['p_ag_two'])})", V["labels"][k]
+            claim(sl, f"Fig 3C (deck) {k}: paired difference in mean |dlog HR|", sgn(c["diff"]), F3CV, ref=sgn(-g.mean()),
+                  ref_how="paired by trial on the cells' log HRs")
+            claim(sl, f"Fig 3C (deck) {k}: P (two-sided sign-flip)", pfmt(c["p_ag_two"]), F3CV, ref=pfmt(p), ref_how="exact two-sided sign-flip on the cells")
+            got[k] = shown
+    assert got == EXPECT_F3C, (got, EXPECT_F3C)
 
 
 def fig3_panels(disp_h=580):
     """Figure 3 rebuilt from its per-panel PNGs, laid out as in the full figure (as fig2_panels; no shared legend); the caption (the
-    speaker note; the deck has no notes) is the figure box's aria-label."""
+    speaker note; the deck has no notes) is the figure box's aria-label. Slide 11 panel C job: panels A and B as before; the slot under
+    them shows the new full-width panel C (slide11_panelC_agreement.png: the figure's full width, bottom-aligned, below panel B); the
+    figure box keeps its size."""
     from PIL import Image
     full = Image.open(FIG3).convert("RGB")
     W, H = full.size
     sc = 2 * disp_h / H
     pos, out, meta = {}, [], {}
-    for L in "ABC":
+    for L in "AB":
         pim = Image.open(FIG3.parent / "panels" / f"figure3_rct_agreement_{L}.png").convert("RGB")
         m, x, y = locate(full, pim)
         assert m < 400, (L, m)
@@ -1223,9 +1298,58 @@ def fig3_panels(disp_h=580):
         meta[L] = dict(xy=[x, y], size=[pim.width, pim.height], msd=round(float(m), 2), bytes=nb)
         out.append(f'<img class="f3p build" data-step="{FIG3_STEP[L]}" alt="{esc(FIG3_ALT[L])}" src="{u}" '
                    f'style="left:{100 * x / W:.3f}%;top:{100 * y / H:.3f}%;width:{100 * pim.width / W:.3f}%">')
-    assert pos["A"][0] < pos["B"][0] and pos["C"][1] > pos["A"][1] + pos["A"][3] * 0.9  # A | B on top, C below
+    assert pos["A"][0] < pos["B"][0]  # A | B on top
+    nim = Image.open(F3C).convert("RGB")
+    x, y = 0, H - nim.height
+    assert nim.width == W and y >= max(p[1] + p[3] for p in pos.values()), (nim.size, W, H, pos)  # full width, below A and B
+    u, nb = uri(transp(nim).resize((round(nim.width * sc), round(nim.height * sc)), Image.LANCZOS))
+    meta["C"] = dict(xy=[x, y], size=list(nim.size), replaced="slide11_panelC_agreement.png (full width; the old panel C is on A7)", bytes=nb)
+    out.append(f'<img class="f3p build" data-step="{FIG3_STEP["C"]}" alt="{esc(FIG3_ALT["C"])}" src="{u}" '
+               f'style="left:{100 * x / W:.3f}%;top:{100 * y / H:.3f}%;width:{100 * nim.width / W:.3f}%">')
     CTX["fig3"] = dict(src_size=[W, H], disp_h=disp_h, panels=meta)
     return f'<div class="fig3box" role="img" aria-label="{esc(FIG3_CAPTION)}" style="width:{disp_h * W / H:.0f}px;height:{disp_h}px">{"".join(out)}</div>'
+
+
+def s_af3q():
+    """appendix A7 (slide 11 panel C job): "Agreement by emulation quality (PS-CVD5)", the former Figure 3 panel C (its PNG, unchanged)
+    with its claims (moved from slide 11), one plain line of its values (figure3_values.json; no new numbers) and a back-link to
+    slide 11."""
+    from PIL import Image
+    sid = "a-f3q"
+    sl = SN[sid]
+    V = json.load(open(FIG3V))
+    D, R = CTX["D"], CTX["g1"]["R"]
+    T = T_("s31")
+    ids = [D["trials"][i]["id"] for i in T]
+
+    def cells(rg, a, m):
+        x = R[(R.config == "main") & (R.rung == rg) & (R.arm == a)].set_index("trial").loc[ids]
+        assert not x.failed.any()
+        return float(np.abs(x.loghr.to_numpy(float) - x.rb.to_numpy(float))[m].mean())
+
+    tier = np.array([D["trials"][i]["tier"] for i in T])
+    arms = ("base", "ECG", "CLMBR", "ECG+CLMBR")
+    for k, tt in (("EG", ("Excellent", "Good")), ("MO", ("Moderate",))):  # moved unchanged from slide 11
+        c = V["C"][k]
+        msk = np.isin(tier, tt)
+        claim(sl, f"Fig 3C {c['label']} trials", str(c["trials"]), FIG3V, ref=str(int(msk.sum())), ref_how="v19 tiers of the deck's trials")
+        for arm in arms:
+            claim(sl, f"Fig 3C {c['label']} {arm} mean |dlog HR|", f"{c[arm]:.3f}", FIG3V, ref=f"{cells('P5', arm, msk):.3f}", ref_how="log HRs of the version 1 cells")
+    eg, mo = V["C"]["EG"], V["C"]["MO"]
+    line = (f"Mean |Δ log HR| vs RCT with PS-CVD5: {eg['label']} ({eg['trials']}) {' / '.join(f'{eg[a]:.3f}' for a in arms)} vs "
+            f"{mo['label']} ({mo['trials']}) {' / '.join(f'{mo[a]:.3f}' for a in arms)} (PS alone / + ECG / + CLMBR-T / + both)")
+    q = ("Mean |Δ log HR| vs RCT with PS-CVD5: Excellent + Good (14) 0.230 / 0.176 / 0.149 / 0.152 vs Moderate (17) 0.235 / 0.217 / 0.185 / "
+         "0.168 (PS alone / + ECG / + CLMBR-T / + both)")  # queue file
+    assert line == q, line
+    claim(sl, "A7 summary line", q, FIG3V, probe=q, ref_src=ROOT / "docs/queue/slide11_figure3.md")
+    pim = Image.open(FIG3.parent / "panels" / "figure3_rct_agreement_C.png").convert("RGB")
+    disp_h = 480
+    u, nb = uri(transp(pim).resize((round(pim.width * 2 * disp_h / pim.height), 2 * disp_h), Image.LANCZOS))
+    CTX["a_f3q"] = dict(src_size=list(pim.size), disp_h=disp_h, bytes=nb)
+    body = (f'<p class="f3ql">{esc(line)}</p>'
+            f'<img class="f3q" alt="{esc("Agreement by emulation quality (former Figure 3 panel C): mean |Δ log HR| vs RCT with PS-CVD5, PS alone, + ECG, + CLMBR-T, + CLMBR-T + ECG, by v19 tier (Excellent + Good; Moderate).")}" '
+            f'src="{u}" style="width:{disp_h * pim.width / pim.height:.0f}px;height:{disp_h}px">')
+    return sec(sid, "Agreement by emulation quality (PS-CVD5)", body)
 
 
 def s_robust():
@@ -1551,6 +1675,9 @@ ul.cbl .eq sub{font-size:.68em}
 .fig3box{position:relative;margin:-10px auto 0}
 .fig3box img.f3p{position:absolute;display:block;height:auto}
 .fig3box img.f3p.build{transition:opacity .45s}
+/* slide 11 panel C job: appendix A7, the former Figure 3 panel C (agreement by emulation quality) */
+.f3ql{font-size:19px;margin:0 0 10px;color:var(--navy);text-align:center}
+img.f3q{display:block;margin:0 auto}
 """
 POP_JS = r"""
 /* ===== popups (slides 6 and 7): open on click / Enter; close with the button, a click outside the box, or Esc. While a popup is
@@ -1871,7 +1998,8 @@ def main():
     static3 = [s_robust()]
     static4 = [retitle(V2.s_plasmode(), "s-plas", "Plasmode: a known truth with a hidden physiological confounder (version 1 cohorts)"),
                retitle(V2.s_mimic(), "s-mimic", "External replication: MIMIC-IV (PS-CVD5 analog ± ECG)"),
-               s_takehome(), s_decisions(), s_a2(), s_a3(), s_apanel(), s_af2d(), s_afw(trials_old, Q), s_afix(trials_old, EX, RR)]
+               s_takehome(), s_decisions(), s_a2(), s_a3(), s_apanel(), s_af2d(), s_afw(trials_old, Q), s_afix(trials_old, EX, RR),
+               s_af3q()]  # slide 11 panel C job: A7 appended after A6
     for c in V2.CL:  # plasmode / MIMIC claims carry V2's slide numbers 14 / 15
         if c["slide"] in (14, 15):
             c["slide"] = SN["s-plas"] if c["slide"] == 14 else SN["s-mimic"]
