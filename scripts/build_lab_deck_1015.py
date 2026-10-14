@@ -38,10 +38,16 @@ popup() mechanism) with four tabs of the same per-trial values: cardiac-physiolo
 decision, physiologic label (PNGs from scripts/figures/make_figure2d_groupings.py). Every group count and mean is a claim, checked
 against pair_stats on the group's trials and against EXPECT_F2D. Outputs of this builder go to audits/claude-fig2d-20261014/deck.
 
+Revision of 2026-10-14, Figure 3 job (docs/queue/figure3.md): new slide 11 "Results: agreement with the RCTs (Figure 3)" directly
+after the balance explorer (slides 11-17 become 12-18), built from the per-panel PNGs of scripts/figures/make_figure3_latent.py and
+revealed A, B, C (one per click). Panel A's inset numbers and every B / C value are claims (figure3_values.json vs S31_RESULTS.md and
+the log HRs). CLMBR-T is a comparison arm only. Outputs of this builder go to audits/claude-fig3-20261014/deck.
+
 Main slides: 1 title; 2 Background (10-01); 3 Problem (10-01 schematic, click reveal of the unmeasured side + three points); 4 Aims
 (four aims, revealed one at a time; the representations graphic between aims 1 and 2); 5 study overview (empty body); 6 LATENT-RCT
-pipeline; 7 PSM experiments; 8 methods: covariate balancing; 9 results 1 (Figure 2); 10 results 2 (balance explorer); 11 emulation
-explorer; 12 robustness; 13 agreement by quality; 14 plasmode; 15 MIMIC-IV; 16 take-home; 17 open decisions. Appendix A1-A5
+pipeline; 7 PSM experiments; 8 methods: covariate balancing; 9 results 1 (Figure 2); 10 results 2 (balance explorer); 11 agreement
+with the RCTs (Figure 3); 12 emulation explorer; 13 robustness; 14 agreement by quality; 15 plasmode; 16 MIMIC-IV; 17 take-home; 18
+open decisions. Appendix A1-A5
 (hash-linked; "More:" links on main slides, "Back to slide N" on every appendix slide): A1 emulation-quality criteria + interactive
 quality viewer (v19; framework v2.0 toggle); A2 all 38 trials (Table 1, scrollable); A3 held-out panel and leakage-corrected masking;
 A4 framework v2.0 (sensitivity); A5 spec-v2 cohort fixes (sensitivity).
@@ -88,7 +94,7 @@ DECK1001 = ROOT / "docs/presentation/ecg_tte_lab_2026_10_01.html"
 DECK1009 = V2.OUT
 S31D = A / "claude-s31-20261014"  # s31 run (queue 2026-10-14)
 FIG2DD = A / "claude-fig2d-20261014"  # Figure 2D job (docs/queue/figure2D.md)
-SCR = FIG2DD / "deck"  # claims table and validation inputs (Figure 2D run; the deck2 / s31 runs' copies stay in their audit folders)
+SCR = A / "claude-fig3-20261014/deck"  # claims table and validation inputs (Figure 3 run; earlier runs' copies stay in their audit folders)
 FIG2 = ROOT / "docs/paper/figures_latent/figure2_covariate_balance.png"  # scripts/figures/make_figure2_latent.py
 FIG2V = FIG2DD / "figure2_values.json"  # its aggregate values (validated there)
 FIG2G = FIG2.parent / "panels" / "panelD_groupings"  # the panel D popup's tabs (scripts/figures/make_figure2d_groupings.py)
@@ -125,8 +131,9 @@ AREAS = ["AF", "HF", "Diabetes", "Hypertension", "ACS / MI", "Other"]
 TIERS = ["Excellent", "Good", "Moderate", "Limited"]
 FID = {"good": 0, "moderate": 1, "poor": 2}
 # main slides (ids, in order) and appendix slides (id, label, short title, default back-target)
-MAIN = ["s-title", "s-bg", "s-prob", "s-aims", "s-over", "s-pipe", "s-meth1", "s-meth2", "s-res2", "s-bal", "s-emu", "s-rob", "s-agq",
-        "s-plas", "s-mimic", "s-take", "s-dec"]  # 2026-10-14 (deck2): Figure 2 (s-res2) before the balance explorer (s-bal)
+MAIN = ["s-title", "s-bg", "s-prob", "s-aims", "s-over", "s-pipe", "s-meth1", "s-meth2", "s-res2", "s-bal", "s-res3", "s-emu", "s-rob",
+        "s-agq", "s-plas", "s-mimic", "s-take", "s-dec"]  # 2026-10-14 (deck2): Figure 2 (s-res2) before the balance explorer (s-bal);
+# Figure 3 job (docs/queue/figure3.md): Figure 3 (s-res3) directly after the balance explorer, before the emulation explorer
 # appendix (deck2, 2026-10-14): the former A1 (trial selection) and A6 (design history) are removed; Table 1 is one scrollable
 # slide; the held-out panel, leakage map and masking moved from slide 8 to a new appendix slide; labels renumbered A1-A5
 APP = [("a-qual", "A1", "Emulation-quality criteria", "s-pipe"), ("a-t1", "A2", "All 38 trials (Table 1)", "s-pipe"),
@@ -956,6 +963,43 @@ FIG2P = FIG2.parent / "panels"  # per-panel PNGs (same figure, same 300 dpi; leg
 FIG2_STEP = {"A": 1, "B": 1, "C": 2, "D": 3}
 
 
+# helpers for slides built from a figure's per-panel PNGs (Figure 2; Figure 3 job: lifted out of fig2_panels, unchanged)
+def msd(A_, B_, y, x):
+    h, w = B_.shape
+    y0, x0, y1, x1 = max(0, y), max(0, x), min(A_.shape[0], y + h), min(A_.shape[1], x + w)
+    if y1 - y0 < h * .85 or x1 - x0 < w * .85:
+        return np.inf
+    return ((A_[y0:y1, x0:x1] - B_[y0 - y:y1 - y, x0 - x:x1 - x]) ** 2).mean()
+
+
+def uri(im):
+    b = io.BytesIO()
+    im.save(b, "PNG", optimize=True)
+    return "data:image/png;base64," + base64.b64encode(b.getvalue()).decode(), len(b.getvalue())
+
+
+def transp(im):
+    """colour-to-alpha against white: composited on white the image is unchanged, and white padding is fully transparent."""
+    from PIL import Image
+    a = np.asarray(im.convert("RGB")).astype(float) / 255
+    al = (1 - a).max(2)
+    col = np.where(al[..., None] > 0, (a - (1 - al[..., None])) / np.maximum(al[..., None], 1e-9), 0)
+    return Image.fromarray(np.dstack([np.clip(col * 255 + .5, 0, 255), al * 255 + .5]).astype(np.uint8), "RGBA")
+
+
+def locate(full, pim, K=8):
+    """(mean squared difference, x, y) of a panel PNG in the full PNG: coarse search on 1/K-scale images, then a +-12 px refinement."""
+    from PIL import Image
+    W, H = full.size
+    F = 255 - np.asarray(full.convert("L"), float)
+    Fs = 255 - np.asarray(full.convert("L").resize((W // K, H // K), Image.BOX), float)
+    P = 255 - np.asarray(pim.convert("L"), float)
+    Ps = 255 - np.asarray(pim.convert("L").resize((pim.width // K, pim.height // K), Image.BOX), float)
+    _, ys, xs = min((msd(Fs, Ps, y, x), y, x) for y in range(-6, Fs.shape[0]) for x in range(-6, Fs.shape[1]))
+    m, y, x = min((msd(F, P, y, x), y, x) for y in range(ys * K - 12, ys * K + 13) for x in range(xs * K - 12, xs * K + 13))
+    return m, x, y
+
+
 def fig2_panels(disp_h=580):  # 560 before the Figure 2D job (the figure is now 5.85 in tall, 5.3 before)
     """Figure 2 rebuilt from its per-panel PNGs, laid out as in the full figure: each panel is located in the full PNG (coarse search
     on 1/8-scale images, then a +-12 px refinement at full resolution; the match is asserted), white made transparent so padded
@@ -964,38 +1008,12 @@ def fig2_panels(disp_h=580):  # 560 before the Figure 2D job (the figure is now 
     from PIL import Image
     full = Image.open(FIG2).convert("RGB")
     W, H = full.size
-    F = 255 - np.asarray(full.convert("L"), float)
-    K = 8
-    Fs = 255 - np.asarray(full.convert("L").resize((W // K, H // K), Image.BOX), float)
-
-    def msd(A_, B_, y, x):
-        h, w = B_.shape
-        y0, x0, y1, x1 = max(0, y), max(0, x), min(A_.shape[0], y + h), min(A_.shape[1], x + w)
-        if y1 - y0 < h * .85 or x1 - x0 < w * .85:
-            return np.inf
-        return ((A_[y0:y1, x0:x1] - B_[y0 - y:y1 - y, x0 - x:x1 - x]) ** 2).mean()
-
     sc = 2 * disp_h / H
-
-    def uri(im):
-        b = io.BytesIO()
-        im.save(b, "PNG", optimize=True)
-        return "data:image/png;base64," + base64.b64encode(b.getvalue()).decode(), len(b.getvalue())
-
-    def transp(im):
-        """colour-to-alpha against white: composited on white the image is unchanged, and white padding is fully transparent."""
-        a = np.asarray(im.convert("RGB")).astype(float) / 255
-        al = (1 - a).max(2)
-        col = np.where(al[..., None] > 0, (a - (1 - al[..., None])) / np.maximum(al[..., None], 1e-9), 0)
-        return Image.fromarray(np.dstack([np.clip(col * 255 + .5, 0, 255), al * 255 + .5]).astype(np.uint8), "RGBA")
 
     pos, out, meta = {}, [], {}
     for L in "ABCD":
         pim = Image.open(FIG2P / f"figure2_covariate_balance_{L}.png").convert("RGB")
-        P = 255 - np.asarray(pim.convert("L"), float)
-        Ps = 255 - np.asarray(pim.convert("L").resize((pim.width // K, pim.height // K), Image.BOX), float)
-        _, ys, xs = min((msd(Fs, Ps, y, x), y, x) for y in range(-6, Fs.shape[0]) for x in range(-6, Fs.shape[1]))
-        m, y, x = min((msd(F, P, y, x), y, x) for y in range(ys * K - 12, ys * K + 13) for x in range(xs * K - 12, xs * K + 13))
+        m, x, y = locate(full, pim)
         assert m < 400, (L, m)  # sub-pixel edge differences only (A 7.6, B 28.6, C 127, D 195 on 2026-10-14)
         pos[L] = (x, y, pim.width, pim.height)
         u, nb = uri(transp(pim).resize((round(pim.width * sc), round(pim.height * sc)), Image.LANCZOS))
@@ -1019,6 +1037,92 @@ def fig2_panels(disp_h=580):  # 560 before the Figure 2D job (the figure is now 
     out.insert(0, f'<img class="f2p" alt="Figure 2 legend" src="{u}" style="left:{100 * lb[0] / W:.3f}%;top:{100 * lb[1] / H:.3f}%;width:{100 * (lb[2] - lb[0]) / W:.3f}%">')
     CTX["fig2"] = dict(src_size=[W, H], disp_h=disp_h, panels=meta)
     return f'<div class="fig2box" style="width:{disp_h * W / H:.0f}px;height:{disp_h}px">{"".join(out)}</div>'
+
+
+def s_results3():
+    """Figure 3 job (docs/queue/figure3.md): "Results: agreement with the RCTs (Figure 3)", directly after the balance explorer. Built
+    from the per-panel PNGs of scripts/figures/make_figure3_latent.py, laid out as in the full figure; panels revealed A, B, C (one per
+    click); minimal title, no subtitle or source line. Panel A's inset numbers (and every B / C value) are registered as claims, checked
+    against figure3_values.json, docs/s31/S31_RESULTS.md and the log HRs (deck's embedded data for PS alone / + ECG; the cells for the
+    CLMBR-T arms). CLMBR-T is a comparison arm only."""
+    sid = "s-res3"
+    sl = SN[sid]
+    assert FIG3.exists() and FIG3V.exists(), "run scripts/figures/make_figure3_latent.py first"
+    V = json.load(open(FIG3V))
+    D, R = CTX["D"], CTX["g1"]["R"]
+    T = T_("s31")
+    assert len(T) == 31 and V["A"]["trials"] == 31
+    ids = [D["trials"][i]["id"] for i in T]
+
+    def cells(rg, a, m=None):
+        """mean |dlog HR| vs RCT from the cells (main configuration, the s31 trials, or the subset m)."""
+        x = R[(R.config == "main") & (R.rung == rg) & (R.arm == a)].set_index("trial").loc[ids]
+        assert not x.failed.any()
+        d = np.abs(x.loghr.to_numpy(float) - x.rb.to_numpy(float))
+        return float(d[m].mean() if m is not None else d.mean())
+
+    # panel A (static text on the slide): 0.232 -> 0.198; 20 of 31 trials closer
+    a = V["A"]
+    shown = f"{a['mean_absd_PS_CVD5']:.3f} → {a['mean_absd_PS_CVD5_ECG']:.3f}"
+    assert a["inset"] == f"Mean |Δ log HR|: {shown} / {a['trials_closer']} of {a['trials']} trials closer"
+    claim(sl, "Fig 3A mean |dlog HR| PS-CVD5 -> + ECG (31)", shown, FIG3V, probe=f"| \\|Δ log HR\\| vs RCT, PS-CVD5 → + ECG | {shown} ({a['trials_closer']}/{a['trials']} closer",
+          ref_src=S31DOC)
+    m = V2.agree_py(D, "v1", "main", "P5", "ECG", T)
+    mb = V2.agree_py(D, "v1", "main", "P5", "base", T)
+    claim(sl, "Fig 3A mean |dlog HR| PS-CVD5 -> + ECG (31): log HRs", shown, FIG3V, ref=f"{mb['absd']:.3f} → {m['absd']:.3f}",
+          ref_how="recomputed from the deck's embedded log HRs (V2.agree_py)")
+    claim(sl, "Fig 3A trials closer with + ECG", f"{a['trials_closer']} of {a['trials']}", FIG3V, ref=f"{m['closer']} of {m['kp']}",
+          ref_how="recomputed from the deck's embedded log HRs (V2.agree_py)")
+    # panels B and C (values in the image)
+    lab = V["B_labels"]
+    for rg in V["B"]:
+        for arm in ("base", "ECG", "CLMBR", "ECG+CLMBR"):
+            if arm in ("base", "ECG"):
+                ref, how = f"{V2.agree_py(D, 'v1', 'main', rg, arm, T)['absd']:.3f}", "deck's embedded log HRs (V2.agree_py)"
+            else:
+                ref, how = f"{cells(rg, arm):.3f}", "log HRs of the version 1 cells"
+            claim(sl, f"Fig 3B {lab[rg]} {arm} mean |dlog HR|", f"{V['B'][rg][arm]:.3f}", FIG3V, ref=ref, ref_how=how)
+    tier = np.array([D["trials"][i]["tier"] for i in T])
+    for k, tt in (("EG", ("Excellent", "Good")), ("MO", ("Moderate",))):
+        c = V["C"][k]
+        msk = np.isin(tier, tt)
+        claim(sl, f"Fig 3C {c['label']} trials", str(c["trials"]), FIG3V, ref=str(int(msk.sum())), ref_how="v19 tiers of the deck's trials")
+        for arm in ("base", "ECG", "CLMBR", "ECG+CLMBR"):
+            claim(sl, f"Fig 3C {c['label']} {arm} mean |dlog HR|", f"{c[arm]:.3f}", FIG3V, ref=f"{cells('P5', arm, msk):.3f}", ref_how="log HRs of the version 1 cells")
+    return sec(sid, "Results: agreement with the RCTs (Figure 3)", fig3_panels())
+
+
+FIG3 = ROOT / "docs/paper/figures_latent/figure3_rct_agreement.png"  # scripts/figures/make_figure3_latent.py
+FIG3V = A / "claude-fig3-20261014/figure3_values.json"  # its aggregate values (validated there)
+FIG3_STEP = {"A": 1, "B": 2, "C": 3}
+FIG3_ALT = {"A": "Figure 3 panel A: emulated vs RCT hazard ratios, PS-CVD5 and PS-CVD5 + ECG (31 trials).",
+            "B": "Figure 3 panel B: agreement ladder, mean |Δ log HR| vs RCT across the PS ladder with + ECG, + CLMBR-T or both.",
+            "C": "Figure 3 panel C: mean |Δ log HR| vs RCT by emulation quality (PS-CVD5)."}
+FIG3_CAPTION = ("Figure 3. Agreement of emulated and RCT results (31 trials). A, Emulated vs RCT hazard ratios with PS-CVD5 and PS-CVD5 + ECG. "
+                "B, Mean absolute difference from RCT log HRs across the PS ladder with the ECG, CLMBR-T or both added. C, Mean absolute "
+                "difference by emulation quality (PS-CVD5). Lower is closer to the RCT.")
+
+
+def fig3_panels(disp_h=580):
+    """Figure 3 rebuilt from its per-panel PNGs, laid out as in the full figure (as fig2_panels; no shared legend); the caption (the
+    speaker note; the deck has no notes) is the figure box's aria-label."""
+    from PIL import Image
+    full = Image.open(FIG3).convert("RGB")
+    W, H = full.size
+    sc = 2 * disp_h / H
+    pos, out, meta = {}, [], {}
+    for L in "ABC":
+        pim = Image.open(FIG3.parent / "panels" / f"figure3_rct_agreement_{L}.png").convert("RGB")
+        m, x, y = locate(full, pim)
+        assert m < 400, (L, m)
+        pos[L] = (x, y, pim.width, pim.height)
+        u, nb = uri(transp(pim).resize((round(pim.width * sc), round(pim.height * sc)), Image.LANCZOS))
+        meta[L] = dict(xy=[x, y], size=[pim.width, pim.height], msd=round(float(m), 2), bytes=nb)
+        out.append(f'<img class="f3p build" data-step="{FIG3_STEP[L]}" alt="{esc(FIG3_ALT[L])}" src="{u}" '
+                   f'style="left:{100 * x / W:.3f}%;top:{100 * y / H:.3f}%;width:{100 * pim.width / W:.3f}%">')
+    assert pos["A"][0] < pos["B"][0] and pos["C"][1] > pos["A"][1] + pos["A"][3] * 0.9  # A | B on top, C below
+    CTX["fig3"] = dict(src_size=[W, H], disp_h=disp_h, panels=meta)
+    return f'<div class="fig3box" role="img" aria-label="{esc(FIG3_CAPTION)}" style="width:{disp_h * W / H:.0f}px;height:{disp_h}px">{"".join(out)}</div>'
 
 
 def s_robust():
@@ -1337,6 +1441,10 @@ ul.cbl .eq sub{font-size:.68em}
 .mbox figure.f2view img{height:418px;width:auto;max-width:100%;display:block;margin:0 auto}
 .mbox figure.f2view figcaption{font-size:13.5px;line-height:1.3;color:var(--navy);margin:4px 0 0;text-align:left}
 .mbox p.f2pn{font-size:12.5px;color:var(--muted);margin-top:4px}
+/* Figure 3 job: the agreement slide (Figure 3), built from its per-panel PNGs */
+.fig3box{position:relative;margin:-10px auto 0}
+.fig3box img.f3p{position:absolute;display:block;height:auto}
+.fig3box img.f3p.build{transition:opacity .45s}
 """
 POP_JS = r"""
 /* ===== popups (slides 6 and 7): open on click / Enter; close with the button, a click outside the box, or Esc. While a popup is
@@ -1653,7 +1761,7 @@ def main():
     T1001, deck1001 = L1.TEMPLATE, DECK1001.read_text()
     # deck2: Figure 2 (s_results2) now precedes the balance explorer, so it joins the block before the explorer section
     static1 = [intro_markup(T1001, deck1001), s_aims(), s_overview(), s_pipe(), s_methods_design(), s_methods_panel(), s_results2()]
-    static2 = []
+    static2 = [s_results3()]  # Figure 3 job: after the balance explorer, before the emulation explorer
     static3 = [s_robust()]
     static4 = [retitle(V2.s_plasmode(), "s-plas", "Plasmode: a known truth with a hidden physiological confounder (version 1 cohorts)"),
                retitle(V2.s_mimic(), "s-mimic", "External replication: MIMIC-IV (PS-CVD5 analog ± ECG)"),
@@ -1695,7 +1803,7 @@ def main():
           f"mismatched {int((C.match == False).sum())}")  # noqa: E712
     if (C.match == False).any():  # noqa: E712
         print(C[C.match == False].to_string())  # noqa: E712
-    meta = dict(mi=mi, fig2=CTX.get("fig2"), table1_diffs=CTX.get("table1_diffs"), slides=[(SN[s], t) for s, t in titles])
+    meta = dict(mi=mi, fig2=CTX.get("fig2"), fig3=CTX.get("fig3"), table1_diffs=CTX.get("table1_diffs"), slides=[(SN[s], t) for s, t in titles])
     json.dump(meta, open(SCR / "build_meta.json", "w"), indent=1, default=str)
     combos = balance_combos(D, g1, g2)
     json.dump(combos, open(SCR / "balance_combos.json", "w"), indent=0)
