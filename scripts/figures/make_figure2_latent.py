@@ -8,7 +8,10 @@ the 54 non-coded held-out items with the leakage-corrected masks of pipeline.md 
   B  mean |SMD| by domain (mean across trials of each trial's domain mean), same arms; "All 54" = the ladder level
   C  PS ladder: PS-Demo, PS-CVD5, PS-CVD10, hdPS, PS-Clinical (no LVEF; 5-draw MI); unmatched (reference), PS alone, PS + ECG,
      PS + CLMBR-T, PS + CLMBR-T + ECG; labels = relative change in mean |SMD| with + ECG vs PS alone (paired by trial). No PS-Flags.
-  D  per trial: change in % of items with |SMD| < 0.1, PS-CVD5 + ECG vs PS-CVD5 (paired items), exact one-sided sign-flip P
+  D  per trial: change in % of items with |SMD| < 0.1, PS-CVD5 + ECG vs PS-CVD5 (paired items), exact one-sided sign-flip P (all 31).
+     2026-10-14 (docs/queue/figure2D.md): bars coloured by type of treatment decision, a descriptive grouping (CARDIAC_PHYSIOLOGY:
+     rhythm control, HF / RAAS drug choice vs the other 20); trial names on the x-axis; group counts and means in the legend (gated
+     against EXPECT_D); no test of the group difference. The popup's other groupings: scripts/figures/make_figure2d_groupings.py.
 
 Style and plotting code follow scripts/v20/make_paper_figures.py (figure2; copied, not imported: importing it rebuilds paper 1's
 deck data). Statistics come from scripts/build_balance_explorer.py (Grid.block, pair_stats, the explorer's love-plot / domain /
@@ -22,7 +25,8 @@ lab deck HTML (the explorer's data); ladder levels, relative reductions and pane
 (scripts/s31/s31_summaries.py) and the + ECG labels are gated against EXPECT_ECG (the s31 summary values).
 
 Outputs: docs/paper/figures_latent/figure2_covariate_balance.{png,pdf} (300 dpi), panels/figure2_covariate_balance_{A..D}.{png,pdf};
-aggregate validation table: audits/claude-s31-20261014/figure2_values.json. Aggregates only (no patient counts).
+panels/panelD_groupings/*.png (the deck's panel D popup); aggregate validation table: audits/claude-fig2d-20261014/figure2_values.json.
+Aggregates only (no patient counts).
 
   python scripts/figures/make_figure2_latent.py
 """
@@ -50,7 +54,7 @@ A = Path("/mnt/raid0/rbc58/ecg-tte/audits")
 MI_V1 = A / "claude-v1-psclin-mi/cells/restricted_cells_v1_mi_v1layout.parquet"
 DECK = ROOT / "docs/presentation/ecg_tte_lab_2026_10_15.html"
 OUT = ROOT / "docs/paper/figures_latent"
-VALS = A / "claude-s31-20261014/figure2_values.json"
+VALS = A / "claude-fig2d-20261014/figure2_values.json"  # (Figure 2D job; the s31 job's copy stays in claude-s31-20261014)
 SUMS = A / "claude-s31-20261014"  # s31 Python summaries (scripts/s31/s31_summaries.py; S32 rows gated equal to the committed runs)
 SET = "s31"
 NAVY, RED, GOLD, GREY, LGREY = "#0d1040", "#d9534f", "#c9a227", "#7a7c8c", "#d9dbe6"
@@ -60,6 +64,18 @@ RUNGS = [("P1", "PS-Demo"), ("P5", "PS-CVD5"), ("PS10", "PS-CVD10"), ("clinical_
 ARMS = {"unmatched": ("Unmatched", GREY, "x", None), "base": ("PS alone", NAVY, "o", "white"), "ECG": ("PS + ECG", RED, "o", RED),
         "CLMBR": ("PS + CLMBR-T", GREEN, "s", "white"), "ECG+CLMBR": ("PS + CLMBR-T + ECG", PURPLE, "D", PURPLE)}
 EXPECT_ECG = {"P1": 10.6, "P5": 8.7, "PS10": 3.8, "hdPS200": 7.1, "clinical_nolvef": 3.3}  # s31 summaries (docs/s31/S31_RESULTS.md)
+# panel D grouping (docs/queue/figure2D.md, 2026-10-14): descriptive, by type of treatment decision; trials_meta "full" names.
+# Cardiac-physiology = rhythm control + HF / RAAS drug choice; "Other" = the remaining 20 of s31 (anticoagulant / antithrombotic
+# incl. LAA occlusion, glucose-, BP-, lipid-lowering, NSAID).
+CARDIAC_PHYSIOLOGY = {"rhythm control": ["AF-CHF", "AFFIRM", "EAST-AFNET 4", "CABANA", "RAFT-AF"],
+                      "HF / RAAS drug choice": ["PARADIGM-HF", "ELITE II", "TRANSFORM-HF", "COMET", "EMPEROR-Preserved", "VALIANT"]}
+CARDIAC = [t for v in CARDIAC_PHYSIOLOGY.values() for t in v]
+EXPECT_D = {"cardiac": (10, 11, 9.9), "other": (9, 20, -0.3), "all": (19, 31, 3.3)}  # (improved, trials, mean points); queue file item 9
+CARD, OTHER = "#2f6db5", "#c9cbd6"  # bars; "other" tick labels use GREY (as the mock-up), the light bar grey is too faint for text
+D_LEG = {"cardiac": "Cardiac-physiology (rhythm control, HF / RAAS drugs)", "other": "Other (anticoagulant, glucose-, BP-, lipid-lowering, NSAID)"}
+D_NOTE = "Trials grouped descriptively by type of treatment decision."
+FIG_H, ROW2_H, D_NAMES_H, HSPACE = 5.85, 1.12, 0.55, 0.5  # figure height (in), bottom-row height ratio, share of the D cell kept
+# for trial names, row spacing (5.3 in, 0.82, -, 0.62 before the Figure 2D job)
 GSHORT = {"Vitals & core labs": "Vitals, core labs", "Other labs": "Other labs", "Echo: LV structure": "LV structure",
           "Echo: LV function": "LV function", "Echo: diastolic / LA": "Diastolic / LA", "Echo: RV / pulmonary": "RV / pulmonary",
           "Echo: valves / aorta": "Valves / aorta"}
@@ -212,8 +228,80 @@ def compute(grid, trials):
     assert len(d) == r["k"] and abs(d.mean() - r["dpts"]) < 1e-9 and int((d > 0).sum()) == r["better"]
     p = BE.signflip_1s(d)
     assert abs(p - r["p"]) < 1e-12
-    V["D"] = dict(d=d, improved=int((d > 0).sum()), k=len(d), mean=float(d.mean()), p=p, pct_ref=r["pct_ref"], pct_arm=r["pct_arm"])
+    assert len(d) == len(T)  # every s31 trial has both cells, so d is in trial-set order
+    full = [trials[i]["full"] for i in T]
+    assert set(CARDIAC) <= set(full) and len(set(CARDIAC)) == len(CARDIAC) == 11, set(CARDIAC) - set(full)
+    V["D"] = dict(d=d, improved=int((d > 0).sum()), k=len(d), mean=float(d.mean()), p=p, pct_ref=r["pct_ref"], pct_arm=r["pct_arm"],
+                  name=[trials[i]["name"] for i in T], full=full, area=[trials[i]["area"] for i in T], phys=[trials[i]["phys"] for i in T],
+                  cardiac=np.array([f in CARDIAC for f in full]))
     return V
+
+
+def d_summary(d, m):
+    """(improved, trials, mean points) of a group of panel D trials."""
+    return int((d[m] > 0).sum()), int(m.sum()), float(d[m].mean())
+
+
+def sorted_order(d, names):
+    """largest to smallest change; ties broken by trial name."""
+    return np.lexsort((np.array(names), -np.round(d, 9)))
+
+
+def mfmt(x):
+    return f"{x:+.1f}".replace("-", "−")
+
+
+def panel_d(ax, V, legend_fs=6.0, tick_fs=5.4, note=True, wrap=True):
+    """panel D: per trial, PS-CVD5 + ECG vs PS-CVD5, change in % of items with |SMD| < 0.1; bars coloured by cardiac-physiology
+    decision (CARDIAC_PHYSIOLOGY; descriptive). Shared by Figure 2 and the popup's first tab (make_figure2d_groupings.py)."""
+    from matplotlib.patches import Patch
+    D = V["D"]
+    d, nm, cm = D["d"], np.array(D["name"]), D["cardiac"]
+    o = sorted_order(d, nm)
+    x = np.arange(len(d))
+    ax.bar(x, d[o], color=[CARD if c else OTHER for c in cm[o]], width=0.8)
+    ax.axhline(0, color=NAVY, lw=0.6)
+    ax.set_xticks(x, nm[o], rotation=60, ha="right", rotation_mode="anchor", fontsize=tick_fs)
+    ax.tick_params(axis="x", length=2, pad=1.5)
+    for t, c in zip(ax.get_xticklabels(), cm[o]):
+        t.set_color(CARD if c else GREY)
+        t.set_fontweight("bold" if c else "normal")
+    ax.set_xlim(-0.8, len(d) - 0.2)
+    ax.set_ylim(min(-1.0, d.min() - 1.0), max(d.max() + 4.5, 20))  # headroom for the legend and the all-trials line
+    sep = ":\n" if wrap else ": "
+    lab = {k: f"{D_LEG[k]}{sep}{a} of {n} improved; mean {mfmt(m)} points" for k, (a, n, m) in
+           (("cardiac", d_summary(d, cm)), ("other", d_summary(d, ~cm)))}
+    lg = ax.legend(handles=[Patch(color=CARD, label=lab["cardiac"]), Patch(color=OTHER, label=lab["other"])], loc="upper right",
+                   bbox_to_anchor=(1.0, 1.04), frameon=False, fontsize=legend_fs, handlelength=1.2, handletextpad=0.5, labelspacing=0.45,
+                   borderaxespad=0.2)
+    a, n, m = d_summary(d, np.ones(len(d), bool))
+    ax.annotate(f"All {n} trials: {a} of {n} improved; mean {mfmt(m)} points; {fmt_p(D['p'])}", xy=(1, 0), xycoords=lg, xytext=(-2, -2),
+                textcoords="offset points", ha="right", va="top", fontsize=legend_fs - 0.3, color=NAVY)
+    ax.set_ylabel("Change in % of items\nwith |SMD| < 0.1", fontsize=6.6)
+    ax.set_title("PS-CVD5 + ECG vs PS-CVD5, per trial", fontsize=7, loc="left", x=-0.12)
+    if note:
+        panel_d_note(ax)
+    return lab
+
+
+def panel_d_note(ax):
+    """the footnote, one line under the trial names (placed after a draw, in axes coordinates, so the panel export keeps it)."""
+    fig = ax.figure
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    y0 = min(t.get_window_extent(r).y0 for t in ax.get_xticklabels())
+    y = ax.transAxes.inverted().transform((0, y0 - 3 * fig.dpi / 72))[1]
+    return ax.text(0.0, y, D_NOTE, transform=ax.transAxes, ha="left", va="top", fontsize=5.4, color=GREY, style="italic")
+
+
+def check_d(V):
+    """the queue file's expected panel D values (item 9); stop (do not adjust the grouping) if they differ."""
+    d, cm = V["D"]["d"], V["D"]["cardiac"]
+    got = {k: (a, n, round(m, 1)) for k, (a, n, m) in (("cardiac", d_summary(d, cm)), ("other", d_summary(d, ~cm)),
+                                                         ("all", d_summary(d, np.ones(len(d), bool))))}
+    if got != EXPECT_D:
+        raise SystemExit(f"panel D grouping values differ from the expected values: got {got}, expected {EXPECT_D}")
+    return got
 
 
 def compare(V, W):
@@ -281,9 +369,9 @@ def summaries(V):
 
 # ---------------------------------------------------------------- figure
 def figure2(V):
-    fig = plt.figure(figsize=(7.4, 5.3))
-    gs = fig.add_gridspec(2, 3, width_ratios=[1.1, 0.82, 1.18], height_ratios=[1, 0.82], hspace=0.62, wspace=0.95,
-                          left=0.19, right=0.985, top=0.9, bottom=0.08)
+    fig = plt.figure(figsize=(7.4, FIG_H))
+    gs = fig.add_gridspec(2, 3, width_ratios=[1.1, 0.82, 1.18], height_ratios=[1, ROW2_H], hspace=HSPACE, wspace=0.95,
+                          left=0.19, right=0.985, top=1 - 0.53 / FIG_H, bottom=0.42 / FIG_H)  # same margins in inches as at 5.3 in
     # shared legend (A, B and D use the first three arms; C all five)
     hs = []
     for a, (lab, col, mk, fc) in ARMS.items():
@@ -370,20 +458,10 @@ def figure2(V):
     if notes:
         ax.text(-0.3, -0.42, "\n".join(notes), transform=ax.transAxes, ha="left", va="top", fontsize=5.0, color=GREY, linespacing=1.15)
     letter(ax, "C", x=-0.42)
-    # D: per-trial change in % balanced (PS-CVD5 + ECG vs PS-CVD5)
-    ax = fig.add_subplot(gs[1, 1:])
-    d = V["D"]["d"]
-    order = np.argsort(d)[::-1]
-    cols = [RED if x > 0 else (LGREY if x == 0 else GREY) for x in d[order]]
-    ax.bar(np.arange(len(d)), d[order], color=cols, width=0.8)
-    ax.axhline(0, color=NAVY, lw=0.6)
-    ax.text(0.98, 0.95, f"{V['D']['improved']} of {V['D']['k']} trials improved\nmean {V['D']['mean']:+.1f} points; {fmt_p(V['D']['p'])}",
-            transform=ax.transAxes, ha="right", va="top", fontsize=6.3)
-    ax.set_xticks([])
-    ax.set_xlim(-0.8, len(d) - 0.2)
-    ax.set_xlabel("Trials (sorted)", fontsize=7)
-    ax.set_ylabel("Change in % of items\nwith |SMD| < 0.1", fontsize=6.6)
-    ax.set_title("PS-CVD5 + ECG vs PS-CVD5, per trial", fontsize=7, loc="left", x=-0.12)
+    # D: per-trial change in % balanced (PS-CVD5 + ECG vs PS-CVD5), coloured by cardiac-physiology decision (descriptive); the
+    # lower part of the bottom-row cell is left for the rotated trial names and the footnote
+    ax = fig.add_subplot(gs[1, 1:].subgridspec(2, 1, height_ratios=[1, D_NAMES_H], hspace=0)[0])
+    panel_d(ax, V)
     letter(ax, "D", x=-0.2)
     save(fig, OUT / "figure2_covariate_balance")
 
@@ -408,7 +486,13 @@ def main():
         for a in ("unmatched", "base", "ECG"):
             assert f"{V['C'][rg][a]:.3f}" == f"{W['C'][rg][a]:.3f}", (rg, a)
         assert f"{V['C'][rg]['rr_ECG'][0]:.1f}" == f"{W['C'][rg]['rr_ECG'][0]:.1f}", rg
+    gotD = check_d(V)
+    gotDW = check_d(W)  # the same groups from the deck's embedded integers
+    assert gotD == gotDW and W["D"]["full"] == V["D"]["full"]
+    print("panel D groups (improved, trials, mean):", gotD)
     figure2(V)
+    import make_figure2d_groupings as G  # the popup's tabs (the same per-trial values)
+    GV = G.make_all(V)
     out = dict(
         basis="version 1 cohorts; the 31-trial primary set s31 (paper 1's 32, v19 tiers, minus PROTECT AF: excluded at feasibility); main configuration (1:1, caliper 0.2, C = 1); 54 items, leakage-corrected masks",
         A_median_all_items={a: dict(median_of_items=round(float(np.nanmedian(V["A"][a])), 4), n_items_plotted=int(np.isfinite(V["A"][a]).sum()))
@@ -418,7 +502,10 @@ def main():
         C={rg: {k: (round(v, 6) if isinstance(v, float) else v if isinstance(v, int) else [round(float(u), 4) for u in v[:3]] + [int(v[3])])
                 for k, v in x.items() if not isinstance(v, dict)} for rg, x in V["C"].items()},
         k_set=V["k_set"],
-        D={k: (v if isinstance(v, int) else round(float(v), 6)) for k, v in V["D"].items() if k != "d"},
+        D={k: (v if isinstance(v, int) else round(float(v), 6)) for k, v in V["D"].items() if k in ("improved", "k", "mean", "p", "pct_ref", "pct_arm")},
+        D_per_trial={f: round(float(x), 6) for f, x in zip(V["D"]["full"], V["D"]["d"])},  # per-trial aggregates (no patient counts)
+        D_groups=dict(cardiac_physiology=CARDIAC_PHYSIOLOGY, summary={k: list(v) for k, v in gotD.items()}, expected={k: list(v) for k, v in EXPECT_D.items()},
+                      popup_tabs=GV),
         check=dict(embedded_vs_full_max_smd_dev=dev, embedded_vs_full_max_rr_dev=rrdev, ecg_labels=got, expected=EXPECT_ECG, summaries=SM))
     VALS.parent.mkdir(parents=True, exist_ok=True)
     json.dump(out, open(VALS, "w"), indent=1)
@@ -429,7 +516,7 @@ def main():
               f"+both {c['ECG+CLMBR']:.3f}  | rr ECG {c['rr_ECG'][0]:.1f} ({c['rr_ECG'][1]:.1f} to {c['rr_ECG'][2]:.1f})  "
               f"CLMBR-T {c['rr_CLMBR'][0]:.1f}  both {c['rr_ECG+CLMBR'][0]:.1f}")
     print("  B:", {g: tuple(round(V["B"][g][a], 3) for a in ("unmatched", "base", "ECG")) for g in V["B"]})
-    print("  D:", {k: v for k, v in V["D"].items() if k != "d"})
+    print("  D:", {k: V["D"][k] for k in ("improved", "k", "mean", "p", "pct_ref", "pct_arm")})
 
 
 if __name__ == "__main__":

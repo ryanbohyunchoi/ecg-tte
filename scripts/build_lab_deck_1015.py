@@ -32,6 +32,12 @@ regression, PS-Clinical before hdPS, no "no LVEF" labels, the former A6 (design 
 balancing" (endpoints and tests), its panel / leakage map / masking moved to a new appendix slide; Figure 2 now precedes the
 balance explorer and is built from the per-panel PNGs, revealed A + B, then C, then D, without the source line. Appendix renumbered.
 
+Revision of 2026-10-14, Figure 2D job (docs/queue/figure2D.md): the new panel D (bars coloured by cardiac-physiology decision,
+descriptive; trial names) is shown at click 3; once revealed, clicking it (or the hint under it) opens a popup (the existing
+popup() mechanism) with four tabs of the same per-trial values: cardiac-physiology (default), clinical area, type of treatment
+decision, physiologic label (PNGs from scripts/figures/make_figure2d_groupings.py). Every group count and mean is a claim, checked
+against pair_stats on the group's trials and against EXPECT_F2D. Outputs of this builder go to audits/claude-fig2d-20261014/deck.
+
 Main slides: 1 title; 2 Background (10-01); 3 Problem (10-01 schematic, click reveal of the unmeasured side + three points); 4 Aims
 (four aims, revealed one at a time; the representations graphic between aims 1 and 2); 5 study overview (empty body); 6 LATENT-RCT
 pipeline; 7 PSM experiments; 8 methods: covariate balancing; 9 results 1 (Figure 2); 10 results 2 (balance explorer); 11 emulation
@@ -81,9 +87,22 @@ OUT = ROOT / "docs/presentation/ecg_tte_lab_2026_10_15.html"
 DECK1001 = ROOT / "docs/presentation/ecg_tte_lab_2026_10_01.html"
 DECK1009 = V2.OUT
 S31D = A / "claude-s31-20261014"  # s31 run (queue 2026-10-14)
-SCR = A / "claude-deck2-20261014" / "deck"  # claims table and validation inputs (deck2 run; the s31 run's copy stays in S31D / "deck")
+FIG2DD = A / "claude-fig2d-20261014"  # Figure 2D job (docs/queue/figure2D.md)
+SCR = FIG2DD / "deck"  # claims table and validation inputs (Figure 2D run; the deck2 / s31 runs' copies stay in their audit folders)
 FIG2 = ROOT / "docs/paper/figures_latent/figure2_covariate_balance.png"  # scripts/figures/make_figure2_latent.py
-FIG2V = S31D / "figure2_values.json"  # its aggregate values (validated there)
+FIG2V = FIG2DD / "figure2_values.json"  # its aggregate values (validated there)
+FIG2G = FIG2.parent / "panels" / "panelD_groupings"  # the panel D popup's tabs (scripts/figures/make_figure2d_groupings.py)
+# panel D groups (improved, trials, mean points), displayed values; queue file figure2D.md. Three popup means differ by 0.1 from the
+# queue file's, which were computed from 1-decimal per-trial values (make_figure2d_groupings.summaries): ACS / MI +5.6 (5.556),
+# Hypertension and BP-lowering -4.6 (-4.630)
+EXPECT_F2D = {"cardiac": "10 of 11|+9.9", "other": "9 of 20|-0.3", "all": "19 of 31|+3.3",
+              "area": {"AF": "7 of 11|+4.5", "HF": "4 of 5|+7.4", "ACS / MI": "1 of 2|+5.6", "Hypertension": "1 of 2|-4.6", "Diabetes": "3 of 7|+0.8",
+                       "Other": "3 of 4|+2.3"},
+              "decision": {"Rhythm control (drug or ablation)": "5 of 5|+12.2", "HF / RAAS drug choice": "5 of 6|+8.0",
+                           "Antithrombotic (incl. LAA occlusion)": "3 of 8|-0.5", "Glucose-lowering": "3 of 7|+0.8", "BP-lowering": "1 of 2|-4.6",
+                           "Other (statin, NSAID)": "2 of 3|+0.6"},
+              "physiologic": {"yes": "9 of 10|+8.5", "no": "10 of 21|+0.9"}}
+F2D_NOTE = "Gains were concentrated in cardiac-physiology decisions (rhythm control, HF / RAAS drugs); descriptive grouping."
 S31SUM = {"v1": S31D / "summary_v1", "mi": S31D / "summary_mi"}  # scripts/s31/s31_summaries.py (sets S31, S32; S32 gated)
 S31DOC = ROOT / "docs/s31/S31_RESULTS.md"  # scripts/s31/s31_numbers.py
 MIDIR = A / "claude-v1-psclin-mi"
@@ -875,15 +894,69 @@ def s_results2():
             M = G1.block("main", "P5", a, True)[np.ix_(T, js)]
             ok = np.isfinite(M).any(1)
             claim(sl, f"Fig 2B {g} {a}", f"{x[a]:.3f}", FIG2V, ref=f"{np.nanmean(M[ok], 1).mean():.3f}", ref_how="explorer domain view (mean) on the cells")
-    # deck2: no subtitle / source line; minimal title; panels revealed A + B, then C, then D
-    return sec(sid, "Results 1: covariate balance (Figure 2)", fig, links=more(SN["a-fw"], SN["a-fix"]))
+    pops = fig2d_popup(sl, V)
+    # deck2: no subtitle / source line; minimal title; panels revealed A + B, then C, then D (Figure 2D job: D opens pop-f2d)
+    return sec(sid, "Results 1: covariate balance (Figure 2)", fig, links=more(SN["a-fw"], SN["a-fix"]) + pops)
+
+
+def fig2d_popup(sl, V):
+    """Figure 2D job (docs/queue/figure2D.md): the panel D popup, one tab per descriptive grouping of the same per-trial values (PNGs
+    from scripts/figures/make_figure2d_groupings.py). Every group count and mean shown in panel D or a tab is registered as a claim:
+    the figure script's value (trial_dpct) vs build_balance_explorer.pair_stats on that group's trials, from the cells."""
+    from PIL import Image
+    G1, tr = CTX["G1"], CTX["trials"]
+    T = T_("s31")
+    full = {tr[i]["full"]: i for i in T}
+    DG, PT = V["D_groups"], V["D_groups"]["popup_tabs"]
+    card = [t for v in DG["cardiac_physiology"].values() for t in v]
+    dec = PT["decision"]
+    assert len(card) == 11 and set(card) <= set(full) and sorted(t for v in dec.values() for t in v) == sorted(full)
+    grp = {"cardiac": [full[t] for t in card], "other": [i for i in T if tr[i]["full"] not in card], "all": list(T)}
+    shown = {k: DG["summary"][k] for k in grp}
+    for g in EXPECT_F2D["area"]:
+        grp[("area", g)] = [i for i in T if tr[i]["area"] == g]
+        shown[("area", g)] = PT["summary"]["area"][g]
+    for g, ts in dec.items():
+        grp[("decision", g)] = [full[t] for t in ts]
+        shown[("decision", g)] = PT["summary"]["decision"][g]
+    for g in ("yes", "no"):
+        grp[("physiologic", g)] = [i for i in T if tr[i]["phys"] == (g == "yes")]
+        shown[("physiologic", g)] = PT["summary"]["physiologic"][g]
+    assert sum(len(grp[("area", g)]) for g in EXPECT_F2D["area"]) == 31
+    for k, idx in grp.items():
+        r = BE.pair_stats(G1, "main", "P5", "ECG", "base", sorted(idx), "54", True)
+        a, n, m = shown[k]
+        val = f"{a} of {n}|{m:+.1f}"
+        exp = EXPECT_F2D[k] if isinstance(k, str) else EXPECT_F2D[k[0]][k[1]]
+        assert val == exp, (k, val, exp)
+        lab = k if isinstance(k, str) else f"{k[0]}: {k[1]}"
+        claim(sl, f"Fig 2D group {lab}: improved; mean change (points)", val, FIG2V, ref=f"{r['better']} of {r['k']}|{r['dpts']:+.1f}",
+              ref_how="pair_stats on the group's trials (cells)")
+    cap = {0: "Panel D as in Figure 2: trials coloured by type of treatment decision (cardiac-physiology = rhythm control, HF / RAAS drug choice).",
+           1: "Clustered by clinical area, sorted within each area; dashed line = group mean.",
+           2: "Clustered by type of treatment decision (6 groups), sorted within each group; dashed line = group mean.",
+           3: "Coloured by the blind physiologic trial label (docs/v21/TRIAL_LABELS.json; two blind LLM runs, clinician review pending)."}
+    tabs, views = [], []
+    for k, (fn, title) in enumerate(PT["tabs"]):
+        im = Image.open(FIG2G / fn).convert("RGB")
+        im = im.resize((1700, round(im.height * 1700 / im.width)), Image.LANCZOS) if im.width > 1700 else im
+        b = io.BytesIO()
+        im.save(b, "PNG", optimize=True)
+        u = "data:image/png;base64," + base64.b64encode(b.getvalue()).decode()
+        tabs.append(f'<button type="button" class="f2tab{" on" if k == 0 else ""}" role="tab" aria-selected="{"true" if k == 0 else "false"}" data-tab="{k}">{esc(title)}</button>')
+        views.append(f'<figure class="f2view" data-tab="{k}"{"" if k == 0 else " hidden"}><img alt="Figure 2D grouped by {esc(title.lower())}: per-trial change in % of items with |SMD| &lt; 0.1, PS-CVD5 + ECG vs PS-CVD5 (31 trials); descriptive grouping" src="{u}">'
+                     f'<figcaption>{esc(cap[k])} <b>Descriptive grouping</b>: the same per-trial values in every tab; no tests of group differences.</figcaption></figure>')
+    body = (f'<div class="f2tabs" role="tablist">{"".join(tabs)}</div>{"".join(views)}'
+            '<p class="mp f2pn">PS-CVD5 + ECG vs PS-CVD5; change in % of the 54 leakage-corrected held-out items with |SMD| &lt; 0.1; the 31 analysed trials. '
+            f'{esc(F2D_NOTE)}</p>')
+    return popup("pop-f2d", "Figure 2D: other groupings of the same trials", body)
 
 
 FIG2P = FIG2.parent / "panels"  # per-panel PNGs (same figure, same 300 dpi; legend hidden)
 FIG2_STEP = {"A": 1, "B": 1, "C": 2, "D": 3}
 
 
-def fig2_panels(disp_h=560):
+def fig2_panels(disp_h=580):  # 560 before the Figure 2D job (the figure is now 5.85 in tall, 5.3 before)
     """Figure 2 rebuilt from its per-panel PNGs, laid out as in the full figure: each panel is located in the full PNG (coarse search
     on 1/8-scale images, then a +-12 px refinement at full resolution; the match is asserted), white made transparent so padded
     panel edges never hide a neighbour, and embedded at 2x the displayed size. The shared legend is cropped from the full figure's
@@ -927,9 +1000,14 @@ def fig2_panels(disp_h=560):
         pos[L] = (x, y, pim.width, pim.height)
         u, nb = uri(transp(pim).resize((round(pim.width * sc), round(pim.height * sc)), Image.LANCZOS))
         meta[L] = dict(xy=[x, y], size=[pim.width, pim.height], msd=round(float(m), 2), bytes=nb)
-        out.append(f'<img class="f2p build" data-step="{FIG2_STEP[L]}" alt="Figure 2 panel {L}" src="{u}" '
+        # Figure 2D job: once revealed, panel D opens the popup of other groupings (pop-f2d); its alt text carries the speaker note
+        pop, alt = (' data-pop="pop-f2d"', f"Figure 2 panel D. {F2D_NOTE}") if L == "D" else ("", f"Figure 2 panel {L}")
+        out.append(f'<img class="f2p build{" f2d" if L == "D" else ""}" data-step="{FIG2_STEP[L]}"{pop} alt="{esc(alt)}" src="{u}" '
                    f'style="left:{100 * x / W:.3f}%;top:{100 * y / H:.3f}%;width:{100 * pim.width / W:.3f}%">')
     assert pos["A"][0] < pos["B"][0] < pos["C"][0] and pos["D"][1] > pos["C"][1] and pos["B"][1] < pos["D"][1]
+    x, y, w, h = pos["D"]  # the hint, right-aligned under panel D (also a popup trigger)
+    out.append(f'<div class="f2hint build" data-step="{FIG2_STEP["D"]}" data-pop="pop-f2d" style="right:{100 * (W - x - w) / W:.3f}%;'
+               f'top:{100 * (y + h) / H:.3f}%">Click for other groupings ›</div>')
     # legend: the non-white bounding box of the band above the panels
     top = min(p[1] for p in pos.values())
     band = np.asarray(full.convert("L"))[:top - 2]
@@ -1246,6 +1324,19 @@ ul.cbl .eq sub{font-size:.68em}
 .fig2box{position:relative;margin:-10px auto 0}
 .fig2box img.f2p{position:absolute;display:block;height:auto}
 .fig2box img.f2p.build{transition:opacity .45s}
+/* Figure 2D job: panel D opens a popup of other groupings (tabs, one view at a time) */
+.fig2box img.f2d{cursor:pointer}
+.fig2box img.f2d:focus{outline:2px solid var(--red);outline-offset:2px}
+.fig2box .f2hint{position:absolute;font-size:13px;font-weight:700;color:var(--red);cursor:pointer;white-space:nowrap;border-bottom:1px dotted var(--red);line-height:1.2}
+.mbox .f2tabs{display:flex;gap:6px;margin:0 0 8px;flex-wrap:wrap}
+.mbox .f2tab{border:2px solid var(--navy);background:#fff;color:var(--navy);font-weight:700;font-size:14px;line-height:1.2;font-family:inherit;padding:5px 12px;cursor:pointer}
+.mbox .f2tab.on{background:var(--navy);color:#fff}
+.mbox .f2tab:hover,.mbox .f2tab:focus{outline:2px solid var(--red);outline-offset:1px}
+.mbox figure.f2view{margin:0;text-align:center}
+.mbox figure.f2view[hidden]{display:none}
+.mbox figure.f2view img{height:418px;width:auto;max-width:100%;display:block;margin:0 auto}
+.mbox figure.f2view figcaption{font-size:13.5px;line-height:1.3;color:var(--navy);margin:4px 0 0;text-align:left}
+.mbox p.f2pn{font-size:12.5px;color:var(--muted);margin-top:4px}
 """
 POP_JS = r"""
 /* ===== popups (slides 6 and 7): open on click / Enter; close with the button, a click outside the box, or Esc. While a popup is
@@ -1264,6 +1355,14 @@ function popInit() {
     if (e.target === m || e.target.closest(".mclose")) { e.preventDefault(); popClose(); }
   }));
   addEventListener("keydown", e => { if (!POP) return; e.stopImmediatePropagation(); if (e.key === "Escape") { e.preventDefault(); popClose(); } else if (e.key === " ") e.preventDefault(); }, true);
+}
+/* Figure 2D job: the panel D popup's tabs (one view at a time; it opens on the first tab) */
+function f2dInit() {
+  const m = document.getElementById("pop-f2d"); if (!m) return;
+  const set = k => { m.querySelectorAll(".f2tab").forEach(b => { const on = +b.dataset.tab === k; b.classList.toggle("on", on); b.setAttribute("aria-selected", on ? "true" : "false"); });
+    m.querySelectorAll(".f2view").forEach(v => { v.hidden = +v.dataset.tab !== k; }); };
+  m.querySelectorAll(".f2tab").forEach(b => b.addEventListener("click", e => { e.preventDefault(); set(+b.dataset.tab); }));
+  document.querySelectorAll('[data-pop="pop-f2d"]').forEach(el => { el.addEventListener("click", () => set(0)); el.addEventListener("keydown", e => { if (e.key === "Enter") set(0); }); });
 }
 """
 
@@ -1435,7 +1534,7 @@ def build_template(T1001, deck1001, D):
             '$("#nav-next").onclick = next;\n/* a click on a slide with builds (outside any control, link or popup) reveals the next step (2026-10-01 deck) */\n'
             '$("#stage").addEventListener("click", e => { if (!POP && nSteps(slides[cur]) && !e.target.closest("select,input,label,button,a,.ctrl,.side,.modal,[data-pop]")) next(); });\n')
     h = one(h, "init(); emuInit(); agqInit(); fit();\nshow((parseInt(location.hash.slice(1), 10) || 1) - 1);",
-            "drawIntro(); qvInit(); init(); emuInit(); agqInit(); linkInit(); popInit(); fit();\nshow(fromHash());")
+            "drawIntro(); qvInit(); init(); emuInit(); agqInit(); linkInit(); popInit(); f2dInit(); fit();\nshow(fromHash());")
     return h
 
 
