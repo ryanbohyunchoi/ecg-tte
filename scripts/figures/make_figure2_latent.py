@@ -51,7 +51,7 @@ OUT = ROOT / "docs/paper/figures_latent"
 VALS = A / "claude-deckq-20261013/figure2_values.json"
 NAVY, RED, GOLD, GREY, LGREY = "#0d1040", "#d9534f", "#c9a227", "#7a7c8c", "#d9dbe6"
 GREEN, PURPLE = "#2a7f62", "#7b4fa0"
-RUNGS = [("P1", "PS-Demo"), ("P5", "PS-CVD5"), ("PS10", "PS-CVD10"), ("hdPS200", "hdPS"), ("clinical_nolvef", "PS-Clinical\n(no LVEF, MI)")]
+RUNGS = [("P1", "PS-Demo"), ("P5", "PS-CVD5"), ("PS10", "PS-CVD10"), ("clinical_nolvef", "PS-Clinical\n(no LVEF, MI)"), ("hdPS200", "hdPS")]  # ordered by number of inputs (3, 8, 13, ~30, ~210); user decision 2026-10-14
 # arm: (legend label, colour, marker, face); unmatched drawn as a cross
 ARMS = {"unmatched": ("Unmatched", GREY, "x", None), "base": ("PS alone", NAVY, "o", "white"), "ECG": ("PS + ECG", RED, "o", RED),
         "CLMBR": ("PS + CLMBR-T", GREEN, "s", "white"), "ECG+CLMBR": ("PS + CLMBR-T + ECG", PURPLE, "D", PURPLE)}
@@ -203,6 +203,14 @@ def compute(grid, trials):
         for a in ("ECG", "CLMBR", "ECG+CLMBR"):
             r = BE.pair_stats(grid, "main", rg, a, "base", T, "54", True) if has(grid, rg, a) else dict(rr=np.nan, lo=np.nan, hi=np.nan, k=0)
             V["C"][rg][f"rr_{a}"] = (r["rr"], r["lo"], r["hi"], r["k"])
+    # hdPS + CLMBR-T: the level rises because of one small trial (PROTECT AF; near-separation with ~274 PS inputs at C = 1);
+    # report the level and the paired change without it (footnote only; the plotted point keeps all trials)
+    ipa = [i for i in T if trials[i]["id"] == "protect-af"]
+    if ipa and has(grid, "hdPS200", "CLMBR"):
+        Tx = [i for i in T if i not in ipa]
+        rx = BE.pair_stats(grid, "main", "hdPS200", "CLMBR", "base", Tx, "54", True)
+        V["C"]["hdPS200"]["ex_protect"] = dict(base=level(grid, Tx, "hdPS200", "base"), CLMBR=level(grid, Tx, "hdPS200", "CLMBR"),
+                                               rr_CLMBR=(rx["rr"], rx["lo"], rx["hi"], rx["k"]))
     d = trial_dpct(grid, T, "P5")
     r = BE.pair_stats(grid, "main", "P5", "ECG", "base", T, "54", True)
     assert len(d) == r["k"] and abs(d.mean() - r["dpts"]) < 1e-9 and int((d > 0).sum()) == r["better"]
@@ -347,6 +355,9 @@ def figure2(V):
         lab, col, mk, fc = ARMS[a]
         ax.plot(xs + dx, v, "-", color=col, lw=0.6, alpha=0.55, zorder=2)
         scatter(ax, xs + dx, v, a, s=11 if mk != "D" else 8, zorder=3)
+    if V["C"].get("hdPS200", {}).get("ex_protect"):  # anchor for the † footnote on the hdPS + CLMBR-T point
+        kx = [rg for rg, _ in RUNGS].index("hdPS200")
+        ax.text(kx + offs["CLMBR"] + 0.07, V["C"]["hdPS200"]["CLMBR"], "†", fontsize=6.5, color=ARMS["CLMBR"][1], va="center", ha="left")
     lo_y = np.floor((min(V["C"][rg][a] for rg, _ in RUNGS for a in offs) - 0.016) * 100) / 100
     for k, (rg, _) in enumerate(RUNGS):  # + ECG labels in one row at the foot of the panel
         rr = V["C"][rg]["rr_ECG"][0]
@@ -358,11 +369,16 @@ def figure2(V):
     fewer = [f"{ARMS[a][0].replace('PS', short[rg], 1)}: {V['C'][rg]['k_' + a]} trials (failed cell)" for rg, _ in RUNGS for a in ARMS
              if a != "unmatched" and V["C"][rg]["k_" + a] < 32]
     ax.set_ylabel("Mean |SMD| (32 trials" + ("*)" if fewer else ")"), fontsize=7)
-    ax.set_title("PS ladder (thin → rich)", fontsize=7, loc="left", x=-0.3)
+    ax.set_title("PS ladder (fewer → more covariates)", fontsize=7, loc="left", x=-0.3)
     ax.text(0.99, 0.985, "red: relative change in mean\n|SMD| with + ECG vs PS alone", transform=ax.transAxes, ha="right", va="top", fontsize=5.2,
             color=RED, linespacing=1.1)
-    if fewer:
-        ax.text(-0.3, -0.42, "* " + "; ".join(fewer), transform=ax.transAxes, ha="left", va="top", fontsize=5.0, color=GREY)
+    notes = (["* " + "; ".join(fewer)] if fewer else [])
+    ex = V["C"].get("hdPS200", {}).get("ex_protect")
+    if ex:
+        notes.append(f"† hdPS + CLMBR-T is raised by one small trial (PROTECT AF; near-separation). Without it: hdPS {ex['base']:.3f}, "
+                     f"+ CLMBR-T {ex['CLMBR']:.3f} ({-ex['rr_CLMBR'][0]:+.1f}%, {ex['rr_CLMBR'][3]} trials).")
+    if notes:
+        ax.text(-0.3, -0.42, "\n".join(notes), transform=ax.transAxes, ha="left", va="top", fontsize=5.0, color=GREY, linespacing=1.15)
     letter(ax, "C", x=-0.42)
     # D: per-trial change in % balanced (PS-CVD5 + ECG vs PS-CVD5)
     ax = fig.add_subplot(gs[1, 1:])
@@ -410,7 +426,9 @@ def main():
         A_items={BE.VARS[j][1]: {a: (None if not np.isfinite(V["A"][a][i]) else round(float(V["A"][a][i]), 4)) for a in V["A"]} for i, j in enumerate(ITEMS)},
         B={g: {k: (round(v, 4) if isinstance(v, float) else v) for k, v in x.items()} for g, x in V["B"].items()},
         C={rg: {k: (round(v, 4) if isinstance(v, float) else v if isinstance(v, int) else [round(float(u), 2) for u in v[:3]] + [int(v[3])])
-                for k, v in x.items()} for rg, x in V["C"].items()},
+                for k, v in x.items() if not isinstance(v, dict)} for rg, x in V["C"].items()},
+        C_hdps_clmbr_without_protect_af={k: (round(v, 4) if isinstance(v, float) else [round(float(u), 2) for u in v[:3]] + [int(v[3])])
+                                         for k, v in V["C"].get("hdPS200", {}).get("ex_protect", {}).items()},
         D={k: (v if isinstance(v, int) else round(float(v), 4)) for k, v in V["D"].items() if k != "d"},
         check=dict(embedded_vs_full_max_smd_dev=dev, embedded_vs_full_max_rr_dev=rrdev, ecg_labels=got, expected=EXPECT_ECG, summaries=SM))
     VALS.parent.mkdir(parents=True, exist_ok=True)
