@@ -47,7 +47,7 @@ Full inventory: [v20/UKB_FEASIBILITY.md](v20/UKB_FEASIBILITY.md). Results: [v20/
 Do not use the genotypes or polygenic scores under `/mnt/raid0/rbc58/prs`. The project excludes genetics.
 
 ## 4. NHLBI BioData Catalyst (Seven Bridges): dbGaP controlled access held by the PI
-Data are accessible **only inside the BDC workspace**, not on this server. Studies and ECG availability: [v20/COHORT_ECG_AVAILABILITY.md](v20/COHORT_ECG_AVAILABILITY.md). Each study needs the phenotype accession plus the ECG ("Imaging") accession. C1–C4 are consent groups.
+Data are accessible **only inside the BDC workspace**, not on this server. Figure 5 feasibility (hidden-confounder benchmark inside SPRINT, ACCORD and WHI), import manifests and the probe: [bdc/BDC_FEASIBILITY.md](bdc/BDC_FEASIBILITY.md). Studies and ECG availability: [v20/COHORT_ECG_AVAILABILITY.md](v20/COHORT_ECG_AVAILABILITY.md). Each study needs the phenotype accession plus the ECG ("Imaging") accession. C1–C4 are consent groups.
 
 | Study | Phenotype / clinical | Raw 12-lead ECG (XML) | Other imaging | Genomics (not used) |
 |---|---|---|---|---|
