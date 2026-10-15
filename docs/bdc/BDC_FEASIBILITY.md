@@ -183,3 +183,44 @@ The public index lists superseded releases alongside the current ones; `bdc_mani
 - WHI: Manson, JAMA 2013 (PMC3963523); dbGaP phs000200 (FTP v12.p3), phs003824 (GapExchange)
 - BDC: Dynamic PFB Importer https://sb-biodatacatalyst.readme.io/docs/dynamic-pfb-importer ; DRS import https://sb-biodatacatalyst.readme.io/docs/import-a-drs-file ; Data Studio files https://sb-biodatacatalyst.readme.io/docs/about-files-in-a-data-cruncher-analysis ; network access https://sb-biodatacatalyst.readme.io/docs/modify-project-settings#manage-network-access-control
 - Gen3 index (public metadata): https://gen3.biodatacatalyst.nhlbi.nih.gov/index/index?acl=phs003566.c1
+
+## 10. Results so far (aggregates from BDC runs, relayed by the user)
+
+**2026-10-15: probe** (`scripts/bdc/bdc_probe.py`, SPRINT clinical CSVs + Gen3 PFB tables + all 24,269 ECG XML imported through Gen3 "Export to Seven Bridges"):
+- **Import notes.**
+  - Some exports partially fail with 90001 "Unauthorized" for random files. Re-exporting the same selection with Skip retries only the missing files.
+  - The DRS URI form BDC uses is `drs://dg.4503:dg.4503/<uuid>`.
+  - Data Studio has no SSH key, so clone the repo over HTTPS with a personal access token (or upload the two probe files).
+- **ECG XML** (30 sampled):
+  - GE MUSE `RestingECG` 8.0, MAC 1200;
+  - Rhythm waveform with 8 stored leads (I, II, V1–V6) × 5,000 samples at 500 Hz, 4.88 µV/bit, MICROVOLTS; plus a Median beat (600 samples);
+  - no decode errors and no flat leads;
+  - III, aVR, aVL and aVF must be derived.
+- **Linkage tables:**
+  - `tsv/imaging_file.tsv` has 24,269 files → `subject`;
+  - `tsv/subject.tsv` has 9,320 subjects; `submitter_id` = MASKID;
+  - `ecg.csv` has 24,428 reading-centre ECGs with ECGDAYS.
+
+**2026-10-15: cohort** (`scripts/bdc/sprint_cohort.py`, git ad3f99d):
+
+| Check | Result |
+|---|---|
+| Randomized | 9,361 (4,678 intensive / 4,683 standard) |
+| Gen3 subject → MASKID | `object.submitter_id`, exact for 9,320 / 9,320; all 24,269 files linked and present locally |
+| File / reading-centre ECG counts equal | 8,976 participants (98 more files, 259 fewer files) |
+| Year spacing consistent after alignment | 23,531 / 23,531 files |
+| Baseline ECG XML assigned (ECGDAYS in [−90, 30]) | **8,815 (94.2%)**: 4,412 intensive / 4,403 standard; file years 2010–2013 |
+| Randomized-arm balance | max \|SMD\| 0.05 over 50 covariates |
+| Primary HR, SPRINT-POP (published 0.75, 0.64–0.89) | 243 vs 319 events; **0.755 (0.639–0.892)**; baseline-ECG subset 0.758 (0.637–0.901) |
+| Death HR (published 0.73) | 155 vs 210; 0.735 (0.597–0.905); subset 0.730 |
+| Primary, full adjudicated file (incl. post-intervention) | 315 vs 411; 0.757 (0.653–0.876) |
+
+**Baseline coverage of the hidden-confounder candidates:**
+- eGFR 99.6%;
+- BMI 99.2%;
+- UACR 95.2%;
+- NT-proBNP 94.1% and hs-TnI 94.2% (randomization visit);
+- LDL (Friedewald) 98.7%;
+- reading-centre ECG measures at baseline 97.7%: LVH by Cornell, Cornell product, Minnesota and Sokolow-Lyon; QRS duration; AF/flutter.
+
+**Not yet assigned:** 329 participants have a baseline reading-centre ECG but an unequal file count. A fallback rule, using the earliest file when its year precedes the next ECG, could recover some of them. This is not needed for feasibility.
