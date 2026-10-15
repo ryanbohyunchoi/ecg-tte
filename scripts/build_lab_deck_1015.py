@@ -168,7 +168,7 @@ AREAS = ["AF", "HF", "Diabetes", "Hypertension", "ACS / MI", "Other"]
 TIERS = ["Excellent", "Good", "Moderate", "Limited"]
 FID = {"good": 0, "moderate": 1, "poor": 2}
 # main slides (ids, in order) and appendix slides (id, label, short title, default back-target)
-MAIN = ["s-title", "s-bg", "s-prob", "s-aims", "s-over", "s-pipe", "s-meth1", "s-meth2", "s-res2", "s-meth3", "s-res3", "s-mimic",
+MAIN = ["s-title", "s-bg", "s-prob", "s-aims", "s-pipe", "s-meth1", "s-meth2", "s-res2", "s-meth3", "s-res3", "s-mimic", "s-plasm", "s-plas",
         "s-take", "s-dec"]  # deck3 (2026-10-14): new s-meth3 (aims, aim 3 + agreement methods) before Figure 3; the explorers (s-bal,
 # s-emu) leave the main sequence (supplementary figures, SUPPF); s-rob is deleted; s-agq and s-plas move to the appendix
 # supplementary figures (deck3): (id, label, title, the figure slide they open from and return to)
@@ -178,9 +178,10 @@ SUPPF = [("s-bal", "S2", "Supplementary Figure 2. Covariate balance explorer", "
 # slides (the former Figure 3 panel C, then the former main slide's interactive view), both from slide 11
 APP = [("a-qual", "A1", "Emulation-quality criteria", "s-pipe"), ("a-t1", "A2", "All 38 trials (Table 1)", "s-pipe"),
        ("a-panel", "A3", "Held-out panel and leakage map", "s-meth2"), ("a-f2d", "A4", "Per-trial covariate balance improvement", "s-res2"),
-       ("s-plas", "A5", "Plasmode", "s-res2"),
-       ("a-fw", "A6", "Framework v2.0 (sensitivity)", "s-res2"), ("a-fix", "A7", "Spec-v2 cohort fixes (sensitivity)", "s-res2"),
-       ("a-f3q", "A8", "Agreement by emulation quality", "s-res3"), ("s-agq", "A9", "Agreement by emulation quality: interactive", "s-res3")]
+       ("a-fw", "A5", "Framework v2.0 (sensitivity)", "s-res2"), ("a-fix", "A6", "Spec-v2 cohort fixes (sensitivity)", "s-res2"),
+       ("a-f3q", "A7", "Agreement by emulation quality", "s-res3"), ("s-agq", "A8", "Agreement by emulation quality: interactive", "s-res3")]
+# final touches (2026-10-15): slide 5 (empty study overview) removed; the plasmode returns to the main sequence after MIMIC-IV as a
+# methods graphic (s-plasm) and the former appendix A5 results (s-plas); appendix renumbered A1-A8
 SN = {s: str(i + 1) for i, s in enumerate(MAIN)}
 SN.update({sid: lab for sid, lab, _, _ in SUPPF})
 SN.update({sid: lab for sid, lab, _, _ in APP})
@@ -483,8 +484,8 @@ def intro_markup(T, deck1001):
     <div style="display:grid;grid-template-columns:600px 1fr;gap:40px">
       <svg id="svg-psm" width="600" height="420" viewBox="0 0 600 420"></svg>
       <div style="padding-top:34px"><ol class="pts">
-        <li class="build" data-step="2"><b>Missingness:</b> real-world EHR data are incomplete</li>
-        <li class="build" data-step="3"><b>Missing physiology:</b> LV function, congestion, atrial substrate</li>
+        <li class="build" data-step="1"><b>Missingness:</b> real-world EHR data are incomplete</li>
+        <li class="build" data-step="2"><b>Missing physiology:</b> LV function, congestion, atrial substrate</li>
         <li class="build" data-step="4"><b>Hard to operationalize:</b> codes differ across systems</li>
       </ol></div>
     </div>
@@ -523,7 +524,7 @@ def intro_js(T, deck1001):
     for x in (esc_l, helpers, draw):
         assert x in deck1001
     draw = one(draw, '  s += `<text x="0" y="274" font-size="15" fill="${RED}" font-weight="700">unmeasured</text>`;',
-               '  s += `<g class="build rise" data-step="1">`;\n  s += `<text x="0" y="274" font-size="15" fill="${RED}" font-weight="700">unmeasured</text>`;')
+               '  s += `<g class="build rise" data-step="3">`;\n  s += `<text x="0" y="274" font-size="15" fill="${RED}" font-weight="700">unmeasured</text>`;')
     draw = one(draw, '  $("#svg-psm").innerHTML = s;', '  s += `</g>`;\n  $("#svg-psm").innerHTML = s;')
     return f"""/* ===== slides 2-3: schematics of the 2026-10-01 deck (scripts/build_lab_deck.py drawStatic: RCT/TTE and PSM drawings) ===== */
 function drawIntro() {{
@@ -711,15 +712,15 @@ DEF_EHR = "AI-EHR (EHR foundation model, CLMBR-T; coded history)"
 
 def aims_list():
     """the slide 4 aims (number, icon, title, subtitle); reused by the aims copies on slides 8 and 10 (deck3)."""
-    chip = lambda grp, what, done: (f'<div class="chip{" done" if done else ""}"><span class="cg">{grp}</span> {what} '
-                                    f'<span class="st">{"✓ done" if done else "planned"}</span></div>')
+    chip = lambda grp, what, done, st=None: (f'<div class="chip{" done" if done else ""}"><span class="cg">{grp}</span> {what} '
+                                            f'<span class="st">{st or ("✓ done" if done else "planned")}</span></div>')
     return [
         (1, ICON["ecg"] + ICON["ehr"], "Integrate ECG and EHR foundation models into matching", "AI-ECG and AI-EHR · easy to operationalize"),
         (2, ICON["bal"], "Covariate balance", "on held-out measurements"),
         (3, ICON["rct"], "Trial emulation and agreement with RCTs", f"{sum(t['s31'] for t in CTX['trials'])} benchmark RCTs"),
         (4, ICON["glob"], "External validation",
-         '<span class="chips">' + chip("EHR", "MIMIC-IV", True) + chip("Biobank", "UK Biobank", False)
-         + chip("Trial cohorts", "dbGaP: ACCORD, WHI, CHS", False) + "</span>"),
+         '<span class="chips">' + chip("EHR", "MIMIC-IV", True) + chip("EHR", "All of Us", False)
+         + chip("Trial cohorts", "SPRINT, ACCORD, WHI", False, "currently running") + "</span>"),
     ]
 
 
@@ -1017,7 +1018,7 @@ def s_results2():
     # deck2: no subtitle / source line; minimal title; panels revealed A + B, then C, then D. Slide 9 panel D job: D = the overall-balance
     # panel (no popup); the per-trial panel and its groupings popup are on A4, linked first under "More:"
     # deck3: manuscript-style heading; panel A (once revealed) opens Supplementary Figure 2 (fig2_panels); the plasmode is linked here
-    return sec(sid, "Figure 2. Covariate balance", fig, links=more(SN["a-f2d"], SN["s-plas"], SN["a-fw"], SN["a-fix"]))
+    return sec(sid, "Figure 2. Covariate balance", fig, links=more(SN["a-f2d"], SN["a-fw"], SN["a-fix"]))
 
 
 def f2n_cells(T, rg, arm, ref=None):
@@ -1457,28 +1458,93 @@ def s_agq():
 # deck3 (2026-10-14): the robustness slide (s_robust) is deleted, with its claims
 
 
+def s_plasmode_methods():
+    """final touches (2026-10-15): a simple visual of how the plasmode simulation works (design facts from the plasmode doc)."""
+    sid = "s-plasm"
+    claim(SN[sid], "plasmode cells and replicates", "107 / 50", V2.PLD, probe="107 analysed trial × confounder cells in 31 trials", ref_src=V2.PLD)
+    steps = [("Real patients", ["real covariates,", "ECGs and follow-up"], "pts"),
+             ("Hide a confounder C", ["LVEF · NT-proBNP", "BMI · eGFR"], "c"),
+             ("Simulate treatment", ["assigned from C;", "true HR fixed at 0.80"], "rx"),
+             ("Match without C", ["PS-CVD5", "vs PS-CVD5 + AI-ECG"], "ps"),
+             ("Bias removed", ["% of C's bias", "removed vs unmatched"], "bar")]
+    W, bw, gap, y0, bh = 1580, 270, 55, 20, 330
+    g = [f'<svg viewBox="0 0 {W} 430" style="display:block;width:100%;height:auto;margin:34px auto 0">']
+    for i, (t, sub, ic) in enumerate(steps):
+        x = 6 + i * (bw + gap)
+        cx = x + bw / 2
+        hl = ic in ("c",)
+        g.append(f'<rect x="{x}" y="{y0}" width="{bw}" height="{bh}" rx="12" fill="{"#fbe3e2" if hl else "#fff"}" stroke="{RED if hl else NAVY}" stroke-width="2"/>')
+        g.append(f'<text x="{cx}" y="{y0 + 44}" text-anchor="middle" font-size="22" font-weight="700" fill="{NAVY}">{esc(t)}</text>')
+        iy = y0 + 130
+        if ic == "pts":
+            for r in range(3):
+                for c_ in range(4):
+                    px, py = cx - 54 + c_ * 36, iy - 34 + r * 34
+                    g.append(f'<circle cx="{px}" cy="{py - 8}" r="7" fill="{NAVY}"/><path d="M{px - 11} {py + 12} Q{px} {py - 6} {px + 11} {py + 12} Z" fill="{NAVY}"/>')
+        elif ic == "c":
+            g.append(f'<circle cx="{cx}" cy="{iy}" r="44" fill="#fff" stroke="{RED}" stroke-width="3" stroke-dasharray="7 5"/>'
+                     f'<text x="{cx}" y="{iy + 15}" text-anchor="middle" font-size="44" font-weight="700" fill="{RED}">C</text>')
+        elif ic == "rx":
+            g.append(f'<text x="{cx - 50}" y="{iy + 6}" text-anchor="middle" font-size="30" font-weight="700" fill="{RED}">C</text>'
+                     f'<line x1="{cx - 30}" y1="{iy - 4}" x2="{cx + 8}" y2="{iy - 30}" stroke="{NAVY}" stroke-width="2.5"/>'
+                     f'<line x1="{cx - 30}" y1="{iy + 4}" x2="{cx + 8}" y2="{iy + 30}" stroke="{NAVY}" stroke-width="2.5"/>'
+                     f'<rect x="{cx + 10}" y="{iy - 46}" width="78" height="30" rx="6" fill="{NAVY}"/><text x="{cx + 49}" y="{iy - 25}" text-anchor="middle" font-size="16" fill="#fff" font-weight="700">drug A</text>'
+                     f'<rect x="{cx + 10}" y="{iy + 16}" width="78" height="30" rx="6" fill="#fff" stroke="{NAVY}" stroke-width="2"/><text x="{cx + 49}" y="{iy + 37}" text-anchor="middle" font-size="16" fill="{NAVY}" font-weight="700">drug B</text>')
+        elif ic == "ps":
+            for k in range(4):
+                yy = iy - 42 + k * 28
+                g.append(f'<circle cx="{cx - 46}" cy="{yy}" r="9" fill="{NAVY}"/><line x1="{cx - 34}" y1="{yy}" x2="{cx + 34}" y2="{yy}" stroke="#c9cbd6" stroke-width="2"/>'
+                         f'<circle cx="{cx + 46}" cy="{yy}" r="9" fill="#fff" stroke="{NAVY}" stroke-width="2.5"/>')
+            g.append(f'<text x="{cx}" y="{iy + 64}" text-anchor="middle" font-size="16" fill="{RED}" font-weight="700">C not in the PS</text>')
+        else:
+            base = iy + 52
+            g.append(f'<line x1="{cx - 70}" y1="{base}" x2="{cx + 70}" y2="{base}" stroke="{NAVY}" stroke-width="2"/>'
+                     f'<rect x="{cx - 52}" y="{base - 40}" width="40" height="40" fill="{NAVY}"/><rect x="{cx + 12}" y="{base - 66}" width="40" height="66" fill="{RED}"/>'
+                     f'<text x="{cx - 32}" y="{base + 24}" text-anchor="middle" font-size="14" fill="{NAVY}">PS-CVD5</text><text x="{cx + 32}" y="{base + 24}" text-anchor="middle" font-size="14" fill="{RED}">+ AI-ECG</text>')
+        for j, line_ in enumerate(sub):
+            g.append(f'<text x="{cx}" y="{y0 + bh - 46 + j * 24}" text-anchor="middle" font-size="20" fill="#55576f">{esc(line_)}</text>')
+        if i < len(steps) - 1:
+            ax_ = x + bw + 6
+            g.append(f'<path d="M{ax_} {y0 + bh / 2} L{ax_ + gap - 14} {y0 + bh / 2}" stroke="{NAVY}" stroke-width="2.5" fill="none"/>'
+                     f'<path d="M{ax_ + gap - 18} {y0 + bh / 2 - 7} L{ax_ + gap - 10} {y0 + bh / 2} L{ax_ + gap - 18} {y0 + bh / 2 + 7}" stroke="{NAVY}" stroke-width="2.5" fill="none"/>')
+    g.append(f'<text x="{W / 2}" y="{y0 + bh + 62}" text-anchor="middle" font-size="21" fill="#55576f">107 trial × C combinations, 50 simulated replicates each · oracle = PS that includes C</text>')
+    g.append("</svg>")
+    return sec(sid, "Plasmode simulation", "<!--norelabel-->" + "".join(g) + "<!--/norelabel-->")
+
+
 def s_takehome():
+    """final touches (2026-10-15): headlines only; every number is read from the s31 summaries / panel value files."""
     sid = "s-take"
-    p5, _ = stat_v1(sid, "take-home PS-CVD5 + ECG (31)", "s31", "P5", "ECG")
-    p32, _ = stat_v1(sid, "take-home PS-CVD5 + ECG (32, with PROTECT AF)", "s32", "P5", "ECG")
-    d, _ = stat_v1(sid, "take-home PS-Demo + ECG (31)", "s31", "P1", "ECG")
-    e, _ = stat_v1(sid, "take-home ECG vs permuted (31)", "s31", "P5", "ECG", "shufECG")
-    c10, _ = stat_v1(sid, "take-home PS-CVD10 + ECG (31)", "s31", "PS10", "ECG")
-    h, _ = stat_v1(sid, "take-home hdPS + ECG (31)", "s31", "hdPS200", "ECG")
-    m, _ = stat_v1(sid, "take-home PS-Clinical + ECG (31)", "s31", "clinical_nolvef", "ECG")
-    bps = [agree_v1(sid, f"take-home P5 agreement {ts}", ts, "P5")[1] for ts in ("s31", "f37", "v2")]
-    _, bc10 = agree_v1(sid, "take-home CVD10 agreement 31", "s31", "PS10")
-    clin = "5-draw MI" if CTX["mi"] else "single imputation; MI pending"
-    RRF = pd.read_csv(S31SUM["v1"] / "random_removal_summary.csv").set_index(["set", "arm"]).loc[("S31", "ECG")]
-    claim(SN[sid], "take-home fixed cohorts (31)", f"{fx(RRF.relred54_v2)}%", S31SUM["v1"] / "random_removal_summary.csv", probe=f"→ {fx(RRF.relred54_v2)}%; random removal", ref_src=S31DOC)
-    return sec(sid, "Take-home", f"""
-<ol class="aims" style="margin-top:4px">
-  <li><b>The ECG improves held-out balance when the PS is thin</b> (demographics and a few diagnoses): PS-CVD5 + ECG {ci(p5['rr'], p5['lo'], p5['hi'])} on the 31 trials (PS-Demo + ECG {fx(d['rr'])}%; with PROTECT AF, 32 trials: {fx(p32['rr'])}%). It beats its permuted placebo ({fx(e['rr'])}%).</li>
-  <li><b>The gain is smaller with richer PS:</b> PS-CVD10 + ECG {fx(c10['rr'])}%, hdPS + ECG {fx(h['rr'])}%, PS-Clinical (no LVEF; {clin}) + ECG {ci(m['rr'], m['lo'], m['hi'])}, concentrated in observed LVEF and echo structure.</li>
-  <li><b>No trial-specific agreement with the RCTs</b> for PS-CVD5 + ECG: benchmark-permutation P ≥ {min(bps):.2f} in the 31, all 37 feasible and the 29-trial set. (CVD10 + ECG gave {pv(bc10)} on the 31: post hoc, exploratory only.)</li>
-  <li><b>Supporting:</b> the plasmode (the ECG removes part of a hidden physiological confounder's bias beyond PS-CVD5) and MIMIC-IV (similar balance gain, no agreement gain).</li>
-  <li><b>Caveats:</b> one health system; quality tiers graded post hoc with LLM-assisted raters (clinician review pending); post hoc switch of the primary to PS-CVD5; the return to version 1 cohorts was decided after the fixed-cohort results were known (fixed cohorts: {fx(RRF.relred54_v2)}%; both reported); the size rule was raised to ≥350 after the PROTECT AF near-separation was seen (32-trial results reported as a sensitivity).</li>
-</ol>""")  # deck2: the former A6 (design history) link removed
+    sl = SN[sid]
+    lad = [(lab, stat_v1(sid, f"take-home {lab} + AI-ECG (31)", "s31", rg, "ECG")[0]) for rg, lab in
+           [("P1", "PS-Demo"), ("P5", "PS-CVD5"), ("PS10", "PS-CVD10"), ("clinical_nolvef", "PS-Clinical"), ("hdPS200", "hdPS")]]
+    D9, C11 = json.load(open(F2NV)), json.load(open(A / "claude-slide11c-20261014/panelC_values.json"))
+    e_ = D9["vs_hdPS"]["Demo + CLMBR-T"]; b_ = D9["vs_hdPS"]["Demo + ECG + CLMBR-T"]
+    claim(sl, "take-home Demo + AI-EHR vs hdPS", f"{e_['rr']:.1f}", F2NV, ref=f"{e_['rr']:.1f}", ref_how="json")
+    claim(sl, "take-home Demo + AI-ECG + AI-EHR vs hdPS", f"{b_['rr']:.1f}", F2NV, ref=f"{b_['rr']:.1f}", ref_how="json")
+    ag = C11["vs"]["Demo + ECG + CLMBR-T vs PS-CVD5"]
+    a5, _ = agree_v1(sid, "take-home PS-CVD5 + AI-ECG agreement (31)", "s31", "P5")  # "0.232 → 0.198"
+    PLc = pd.read_csv(V2.PLAS / "added_value_p5.csv")
+    PLc = PLc[PLc.analysis == "null-corrected"].set_index(["conf", "contrast"])
+    plas = float(PLc.loc[("all", "ECG over P5"), "added_pct_of_ref_bias"])
+    claim(sl, "take-home plasmode AI-ECG over PS-CVD5", fx(plas), V2.PLAS / "added_value_p5.csv", ref=fx(plas), ref_how="csv")
+    ladtxt = " · ".join(f"{lab} {fx(x['rr'])}%" for lab, x in lad)
+    p2 = lambda p: f"P = {p:.3f}".replace("0.", ".") if p < 0.1 else f"P = {p:.2f}".replace("0.", ".")
+    rows = [
+        ("AI-ECG improves held-out balance when the PS is thin; the gain is smaller with richer PS",
+         f"Reduction in held-out imbalance with + AI-ECG: {ladtxt}"),
+        ("AI-EHR is as good as hdPS, and AI-ECG + AI-EHR is better",
+         f"Demographics + AI-EHR: {e_['m_a']:.3f} vs hdPS {e_['m_b']:.3f} ({p2(e_['p_m_two'])}) · demographics + AI-ECG + AI-EHR: "
+         f"{b_['rr']:.1f}% lower than hdPS ({p2(b_['p_m_two'])})"),
+        ("Trial replication: AI representations bring hazard ratios closer to the RCTs",
+         f"|Δ log HR| vs RCT: PS-CVD5 {ag['absd_b']:.3f} → demographics + AI-ECG + AI-EHR {ag['absd_a']:.3f} ({p2(ag['p_ag_two'])}) · "
+         f"PS-CVD5 + AI-ECG {a5}"),
+        ("Plasmode: AI-ECG removes part of a hidden confounder's bias",
+         f"A further {fx(plas)}% of the bias that PS-CVD5 leaves, with the confounder in no PS"),
+    ]
+    body = '<div class="thl">' + "".join(f'<div class="th1"><div class="tn">{i + 1}</div><div><div class="tt">{esc(t)}</div>'
+                                         f'<div class="ts2">{esc(sub)}</div></div></div>' for i, (t, sub) in enumerate(rows)) + "</div>"
+    return sec(sid, "Take-home", body)
 
 
 def s_decisions():
@@ -1604,6 +1670,7 @@ section.s1001 ol.pts li{font-size:25px;line-height:1.35;margin:0 0 30px}
 .fstep.hid{opacity:0;visibility:hidden;transform:translateY(14px)}
 .fstep.dim{opacity:.25}
 .aimsl p.goal{font-size:27px;margin:4px 0 22px;line-height:1.3}
+.thl{display:flex;flex-direction:column;gap:26px;margin-top:18px}.th1{display:flex;gap:22px;align-items:flex-start}.th1 .tn{flex:0 0 46px;height:46px;border-radius:50%;background:var(--navy);color:#fff;font-size:24px;font-weight:700;display:flex;align-items:center;justify-content:center}.th1 .tt{font-size:29px;font-weight:700;color:var(--navy);line-height:1.2}.th1 .ts2{font-size:19px;color:var(--muted);margin-top:6px}
 .aimfig{position:absolute;left:30px;right:30px;top:178px;transition:opacity .45s,transform .45s}
 .aimfig.hid{opacity:0;visibility:hidden;transform:translateY(14px)}
 .aims4{display:flex;flex-direction:column;gap:16px}
@@ -2216,10 +2283,9 @@ def main():
     for c in V2.CL[n0:]:  # plasmode / MIMIC claims carry V2's slide numbers 14 / 15
         assert c["slide"] in (14, 15), c
         c["slide"] = SN["s-plas"] if c["slide"] == 14 else SN["s-mimic"]
-    slides = [intro_markup(T1001, deck1001), s_aims(), s_overview(), s_pipe(), s_methods_design(), s_methods_panel(), s_results2(),
+    slides = [intro_markup(T1001, deck1001), s_aims(), s_pipe(), s_methods_design(), s_methods_panel(), s_results2(),
               s_methods_agree(), s_results3(), retitle(mimic, "s-mimic", "External replication: MIMIC-IV (PS-CVD5 analog ± ECG)"),
-              s_takehome(), s_decisions(), s_supp(), s_a2(), s_a3(), s_apanel(), s_af2d(),
-              retitle(plas, "s-plas", "Plasmode: a known truth with a hidden physiological confounder (version 1 cohorts)"),
+              s_plasmode_methods(), retitle(plas, "s-plas", "Plasmode simulation: results"), s_takehome(), s_decisions(), s_supp(), s_a2(), s_a3(), s_apanel(), s_af2d(),
               s_afw(trials_old, Q), s_afix(trials_old, EX, RR), s_af3q(), s_agq()[0]]
     h = build_template(T1001, deck1001, D)
     h = (h.replace("__TITLE__", s_title()).replace("__STATIC1__", "".join(relabel(x) for x in slides)).replace("__STATIC2__", "")
