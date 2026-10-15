@@ -197,6 +197,14 @@ def embed_arrays(model, arrays, batch=64, device="cpu"):
 
 
 # ---------------------------------------------------------------- BDC step 2: embed the cohort's baseline ECGs
+def _convert_one(path):
+    """(array, None) or (None, failure reason) for one XML file (process-pool worker)."""
+    try:
+        return preprocess(muse_to_uv(Path(path).read_bytes())), None
+    except Exception as e:  # noqa: BLE001
+        return None, (str(e) if isinstance(e, ValueError) else type(e).__name__)
+
+
 def find_ckpt(given: str) -> str:
     """The given path if it exists, else the first *.pt under /sbgenomics whose sha256 matches the slim encoder."""
     if given and Path(given).is_file():
@@ -229,15 +237,16 @@ def cmd_embed(a) -> None:
     model, cfg = load_encoder(a.ckpt, device)
     t0 = time.time()
     ok, fails, arrays = [], {}, []
-    for i, p in enumerate(C.ECG_XML_PATH):
-        try:
-            arrays.append(preprocess(muse_to_uv(Path(p).read_bytes())))
-            ok.append(i)
-        except Exception as e:  # noqa: BLE001
-            k = str(e) if isinstance(e, ValueError) else type(e).__name__
-            fails[k] = fails.get(k, 0) + 1
-        if (i + 1) % 1000 == 0:
-            BC.log(f"converted {i + 1}/{len(C)}")
+    from concurrent.futures import ProcessPoolExecutor
+    with ProcessPoolExecutor(a.workers) as ex:  # XML decode + running-median filter: CPU-bound, ~0.4 s per ECG per core
+        for i, (arr, why) in enumerate(ex.map(_convert_one, C.ECG_XML_PATH, chunksize=16)):
+            if arr is not None:
+                arrays.append(arr)
+                ok.append(i)
+            else:
+                fails[why] = fails.get(why, 0) + 1
+            if (i + 1) % 1000 == 0:
+                BC.log(f"converted {i + 1}/{len(C)} ({time.time() - t0:.0f} s)")
     t1 = time.time()
     E = embed_arrays(model, arrays, batch=a.batch, device=device)
     t2 = time.time()
@@ -310,6 +319,7 @@ def main(argv=None) -> None:
     e.add_argument("--ckpt", default="", help="slim encoder .pt (searched for under /sbgenomics if omitted)")
     e.add_argument("--cohort", default="/sbgenomics/workspace/bdc-restricted/sprint_cohort.parquet")
     e.add_argument("--batch", type=int, default=64)
+    e.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 1))
     s = sub.add_parser("slim")
     s.add_argument("src")
     s.add_argument("dst")
