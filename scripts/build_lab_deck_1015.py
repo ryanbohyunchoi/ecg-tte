@@ -168,7 +168,7 @@ AREAS = ["AF", "HF", "Diabetes", "Hypertension", "ACS / MI", "Other"]
 TIERS = ["Excellent", "Good", "Moderate", "Limited"]
 FID = {"good": 0, "moderate": 1, "poor": 2}
 # main slides (ids, in order) and appendix slides (id, label, short title, default back-target)
-MAIN = ["s-title", "s-bg", "s-prob", "s-aims", "s-pipe", "s-meth1", "s-meth2", "s-res2", "s-meth3", "s-res3", "s-mimic", "s-plasm", "s-plas",
+MAIN = ["s-title", "s-bg", "s-prob", "s-aims", "s-pipe", "s-meth1", "s-meth2", "s-res2", "s-meth3", "s-res3", "s-meth4", "s-mimic", "s-plasm", "s-plas",
         "s-take"]  # final touches 2026-10-15: open-decisions slide (s-dec) removed; deck3 (2026-10-14): new s-meth3 (aims, aim 3 + agreement methods) before Figure 3; the explorers (s-bal,
 # s-emu) leave the main sequence (supplementary figures, SUPPF); s-rob is deleted; s-agq and s-plas move to the appendix
 # supplementary figures (deck3): (id, label, title, the figure slide they open from and return to)
@@ -962,6 +962,18 @@ def s_methods_agree():
     box = """<div class="mbx"><div><span class="mk">Endpoint</span>mean |Δ log HR| between the emulated and RCT hazard ratios (lower = closer)</div>
 <div><span class="mk">Tests</span>paired by trial (exact sign-flip) · benchmark permutation (RCT results reassigned across trials)</div></div>"""
     return sec(sid, "Methods: agreement with RCTs", aims_copy(3) + box)
+
+
+def s_methods_ext():
+    """final touches (2026-10-15): the aims copy with aim 4 (external validation) highlighted, then its two endpoints: MIMIC-IV
+    (the same pipeline in another health system) and the RCT rejection-sampling benchmark (pipeline.md section 8, Figure 5)."""
+    sid = "s-meth4"
+    sl = SN[sid]
+    claim(sl, "RCT rejection sampling, share of the confounding gap closed", "as stated", PIPE,
+          probe="primary metric = share of the confounding gap closed vs the oracle", ref_src=PIPE)
+    box = """<div class="mbx"><div><span class="mk">MIMIC-IV</span>same pipeline in another health system: does the held-out balance gain and the agreement with the RCTs replicate?</div>
+<div><span class="mk">Real trials</span>SPRINT, ACCORD, WHI: bias induced in the randomized arms by a withheld measurement; endpoint = % of bias removed</div></div>"""
+    return sec(sid, "Methods: external validation", aims_copy(4) + box)
 
 
 def s_apanel():
@@ -2284,7 +2296,7 @@ def main():
         assert c["slide"] in (14, 15), c
         c["slide"] = SN["s-plas"] if c["slide"] == 14 else SN["s-mimic"]
     slides = [intro_markup(T1001, deck1001), s_aims(), s_pipe(), s_methods_design(), s_methods_panel(), s_results2(),
-              s_methods_agree(), s_results3(), retitle(mimic, "s-mimic", "External replication: MIMIC-IV (PS-CVD5 analog ± ECG)"),
+              s_methods_agree(), s_results3(), s_methods_ext(), retitle(mimic, "s-mimic", "External replication: MIMIC-IV (PS-CVD5 analog ± ECG)"),
               s_plasmode_methods(), retitle(plas, "s-plas", "Plasmode simulation: results"), s_takehome(), s_supp(), s_a2(), s_a3(), s_apanel(), s_af2d(),
               s_afw(trials_old, Q), s_afix(trials_old, EX, RR), s_af3q(), s_agq()[0]]
     h = build_template(T1001, deck1001, D)
