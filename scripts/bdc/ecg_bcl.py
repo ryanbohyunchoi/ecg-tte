@@ -197,12 +197,31 @@ def embed_arrays(model, arrays, batch=64, device="cpu"):
 
 
 # ---------------------------------------------------------------- BDC step 2: embed the cohort's baseline ECGs
+def find_ckpt(given: str) -> str:
+    """The given path if it exists, else the first *.pt under /sbgenomics whose sha256 matches the slim encoder."""
+    if given and Path(given).is_file():
+        return given
+    import hashlib
+    hits = []
+    for root in ("/sbgenomics/project-files", "/sbgenomics/workspace", str(Path.home())):
+        for p in Path(root).rglob("*.pt") if Path(root).exists() else []:
+            h = hashlib.sha256(p.read_bytes()).hexdigest()
+            if h == SLIM_SHA256:
+                return str(p)
+            hits.append(str(p))
+    raise SystemExit(f"encoder checkpoint not found (given {given!r}). *.pt files seen: {hits[:10]}. Upload "
+                     "bcl_lead_time_transformer_e30_encoder.pt to the project and add it to this Data Studio analysis "
+                     "(or drag it into /sbgenomics/workspace in JupyterLab), then pass --ckpt <path>.")
+
+
 def cmd_embed(a) -> None:
     import pandas as pd
     import torch
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     import bdc_common as BC
     S = BC.suppress
+    a.ckpt = find_ckpt(a.ckpt)
+    BC.log(f"checkpoint: {a.ckpt}")
     cohort = Path(a.cohort)
     C = pd.read_parquet(cohort) if cohort.suffix == ".parquet" else pd.read_pickle(cohort)
     C = C[C.ECG_XML_PATH.notna()].reset_index(drop=True)
@@ -288,7 +307,7 @@ def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     e = sub.add_parser("embed")
-    e.add_argument("--ckpt", required=True)
+    e.add_argument("--ckpt", default="", help="slim encoder .pt (searched for under /sbgenomics if omitted)")
     e.add_argument("--cohort", default="/sbgenomics/workspace/bdc-restricted/sprint_cohort.parquet")
     e.add_argument("--batch", type=int, default=64)
     s = sub.add_parser("slim")
