@@ -54,6 +54,8 @@ class ProbeTest(unittest.TestCase):
         D = pd.DataFrame({"MASKID": [f"S{i}" for i in range(200)], "INTENSIVE": rng.integers(0, 2, 200),
                           "EGFR": rng.normal(70, 20, 200), "SEX": rng.choice(["F", "M"], 200)})
         D.loc[:5, "EGFR"] = np.nan
+        D["NOTE"] = "common"
+        D.loc[0, "NOTE"] = "RAREDRUG"
         D.to_csv(ph / "baseline.csv", index=False)
         (ph / "baseline.sas7bdat").write_bytes(b"not really SAS")  # twin of baseline.csv: must be skipped
         (ph / "sprint_a_20230622145936p959_14.sas7bdat").write_bytes(b"x")  # cloning artifact: skipped
@@ -86,12 +88,16 @@ class ProbeTest(unittest.TestCase):
         self.assertIn("sprint_pheno/bundle.zip::outcomes.csv", T)
         self.assertFalse(any(k.endswith(".sas7bdat") for k in T))
         whi = [k for k in T if "pht000998" in k][0]
-        self.assertEqual(T[whi]["sheets"][""]["n_cols"], 4)  # comment lines skipped
+        self.assertEqual(T[whi]["sheets"][""]["n_cols"], 5)  # comment lines skipped
         cols = {c["column"]: c for c in T["sprint_pheno/baseline.csv"]["sheets"][""]["columns"]}
         self.assertTrue(cols["MASKID"]["id_like"])
         self.assertNotIn("values", cols["MASKID"])
         self.assertAlmostEqual(cols["EGFR"]["nonmissing_frac"], 0.97, places=2)
         self.assertTrue(T["sprint_pheno/data_dictionary.csv"]["documentation"])
+        # a rare category's label is never written, only the number of rare categories
+        self.assertNotIn("RAREDRUG", (out / "probe.json").read_text())
+        rc = {c["column"]: c for c in T["sprint_pheno/baseline.csv"]["sheets"][""]["columns"]}["NOTE"]
+        self.assertEqual(rc["values"], {"common": 199, "(categories with 1-10)": 1})
         self.assertTrue(any((out / "docs_extract").iterdir()))
         X = R["xml"]["SPRINT"]
         self.assertEqual(X["n_sampled"], 10)

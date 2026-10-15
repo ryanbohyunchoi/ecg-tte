@@ -230,7 +230,12 @@ def summarise_frame(D: pd.DataFrame) -> dict:
             row["id_like"] = True
         elif nu is not None and 0 < nu <= LOWCARD:
             vc = x.value_counts(dropna=True)
-            row["values"] = {str(k)[:40]: BC.suppress(v) for k, v in vc.items()}
+            # labels of categories with 1-10 participants are not written (a rare free-text value can identify);
+            # only how many such categories exist
+            row["values"] = {str(k)[:40]: int(v) for k, v in vc.items() if v > BC.MIN_COUNT}
+            rare = int(((vc >= 1) & (vc <= BC.MIN_COUNT)).sum())
+            if rare:
+                row["values"]["(categories with 1-10)"] = rare
         elif pd.api.types.is_numeric_dtype(x) and nn > 50:
             q = np.nanpercentile(pd.to_numeric(x, errors="coerce").to_numpy(dtype=float), [5, 50, 95])
             row["p5_p50_p95"] = [float(f"{v:.4g}") for v in q]
