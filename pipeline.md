@@ -140,6 +140,7 @@ Sources: `docs/v1_audit/DEFECT_IMPACT.md` §1; `docs/v1_ps10/PS10.md`; `docs/v2_
 | MIMIC-IV | PS-CVD5 analog (prior-admission diagnoses): alone, + ECG, + CLMBR-T (code-only; **history before the index admission time**, index ED stay kept; decision 2026-10-15), + ECG + CLMBR-T, + permuted ECG, + permuted CLMBR-T; utilisation items masked for the CLMBR-T arms; sensitivity: CLMBR-T input also reading the index admission's labs and orders before t0; 7 cardiovascular trials + PEPTIC negative control | exists (`docs/mimic/MIMIC_EXTERNAL_VALIDATION.md`; ECG arms first in `docs/v21/MIMIC_PAPER2.md`); LOCKED |
 | ECG alone | ECG-only PS vs PS-CVD5 / hdPS / PS-Clinical | exists (R2 X1, branch `r2`); optional supplement |
 | Domain / label / quality subsets | Descriptive | LOCKED |
+| **Figure 5: hidden-confounder benchmark in RCTs** | SPRINT on BioData Catalyst (n = 8,815 with baseline ECG XML): RCT rejection sampling makes arm depend on a withheld baseline C (eGFR, NT-proBNP, hs-TnI, BMI, UACR; Cornell voltage positive control; LDL negative control; OR 2/3/5 per SD; 300 draws); arms PS-Base, + ECG, + permuted ECG, PS-Rich(−C) ± ECG, oracle; same PS/matching/Cox as §4–5; primary metric = share of the confounding gap closed vs the oracle | LOCKED 2026-10-15 (`docs/bdc/FIG5_SPRINT_PROTOCOL.md`); runs PENDING; ACCORD/WHI later |
 
 **Why a fixed penalty:**
 - C = 1 was the original design;
@@ -152,6 +153,7 @@ Sources: `docs/v1_audit/DEFECT_IMPACT.md` §1; `docs/v1_ps10/PS10.md`; `docs/v2_
 
 | Date | Change | Reason |
 |---|---|---|
+| 2026-10-15 | Figure 5 added: SPRINT RCT rejection-sampling benchmark (BDC), protocol locked before any ECG-adjusted estimate | User decision (dbGaP goal 1); feasibility in `docs/bdc/BDC_FEASIBILITY.md` |
 | 2026-10-08 | Primary PS-Demo → PS-CVD5; CLMBR-T added | User decision; PS-CVD5 first proposed 2026-10-07 (paper2) |
 | 2026-10-08 | LVEF removed from PS-Clinical | Echo is the test domain; no PS uses echo (user decision) |
 | 2026-10-08 | Leakage-corrected masking primary | v1 audit found near-duplicate leaks (echo EF ≈ LVEF; eGFR from creatinine) |
