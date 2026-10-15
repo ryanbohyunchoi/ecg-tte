@@ -1309,6 +1309,69 @@ def s_results3():
     return sec(sid, "Figure 3. Agreement with RCTs", fig3_panels() + btn, links=more(SN["a-f3q"]))
 
 
+# MIMIC-IV slide (2026-10-15, user): the new MIMIC main figure replaces the v2 deck's ECG-only MIMIC slide. Built from the per-panel PNGs of
+# scripts/figures/make_figure_mimic.py (figure_mimic_main), laid out as the full figure; panels revealed A, B (one per click).
+FIGM = ROOT / "docs/paper/figures_latent/figure_mimic_main.png"
+FIGM_SUM = A / "claude-mimic-hdps-20261015/summary/summary.json"  # audited (docs/mimic/AUDIT_MIMIC_HDPS.md)
+FIGM_DOC = ROOT / "docs/mimic/MIMIC_HDPS_WINDOW.md"
+FIGM_ALT = {"A": "MIMIC-IV panel A: mean |SMD| by domain (22 held-out items, 7 trials) for unmatched, PS-CVD5, hdPS (AI-EHR input window) "
+                 "and hdPS + AI-ECG / + AI-EHR / + both; overall row labelled vs hdPS.",
+            "B": "MIMIC-IV panel B: emulated vs RCT estimates (7 trials), hdPS and hdPS + AI-ECG."}
+FIGM_CAPTION = ("MIMIC-IV external validation (7 cardiovascular trials). A, Mean |SMD| on 22 held-out items by domain with PS-CVD5, hdPS "
+                "(history before the index admission, as the AI-EHR input) and hdPS + AI representations; labels are relative changes vs hdPS "
+                "(paired by trial, exact sign-flip P). B, Emulated vs RCT estimates with hdPS and hdPS + AI-ECG.")
+
+
+def figm_panels(disp_h=560):
+    """the MIMIC main figure from its per-panel PNGs, laid out as the full figure (as fig3_panels); the shared legend row stays with
+    panel A's reveal step."""
+    from PIL import Image
+    full = Image.open(FIGM).convert("RGB")
+    W, H = full.size
+    sc = 2 * disp_h / H
+    out, pos = [], {}
+    for k, L in enumerate("AB", 1):
+        pim = Image.open(FIGM.parent / "panels" / f"figure_mimic_main_{L}.png").convert("RGB")
+        m, x, y = locate(full, pim)
+        assert m < 400, (L, m)
+        pos[L] = (x, y)
+        u, _ = uri(transp(pim).resize((round(pim.width * sc), round(pim.height * sc)), Image.LANCZOS))
+        out.append(f'<img class="f3p build" data-step="{k}" alt="{esc(FIGM_ALT[L])}" src="{u}" '
+                   f'style="left:{100 * x / W:.3f}%;top:{100 * y / H:.3f}%;width:{100 * pim.width / W:.3f}%">')
+    assert pos["A"][0] < pos["B"][0]
+    # the legend row (above both panels) as its own strip, shown with panel A
+    top = min(p[1] for p in pos.values())
+    leg = full.crop((0, 0, W, top))
+    u, _ = uri(transp(leg).resize((round(W * sc), round(top * sc)), Image.LANCZOS))
+    out.insert(0, f'<img class="f3p build" data-step="1" alt="Legend" src="{u}" style="left:0%;top:0%;width:100%">')
+    return f'<div class="fig3box" role="img" aria-label="{esc(FIGM_CAPTION)}" style="width:{disp_h * W / H:.0f}px;height:{disp_h}px">{"".join(out)}</div>'
+
+
+def s_mimic_fig():
+    """slide 12: External validation, MIMIC-IV (the new figure). Every number in the figure that the slide talks about is a claim, shown
+    from the audited summary.json and checked against the audited doc (probe)."""
+    sid = "s-mimic"
+    sl = SN[sid]
+    assert FIGM.exists() and FIGM_SUM.exists(), "run scripts/figures/make_figure_mimic.py / the MIMIC hdPS job first"
+    H = json.load(open(FIGM_SUM))
+    C = H["contrasts"]
+
+    def rr(lab):
+        c = C[f"primary7|22|{lab}"]
+        return f"{c['relred']:.1f}% ({c['lo']:.1f} to {c['hi']:.1f})".replace("-", "−")
+    for lab, short in (("hdPS-prior vs PS-CVD5", "hdPS vs PS-CVD5"), ("hdPS-prior + AI-ECG vs hdPS-prior", "hdPS + AI-ECG vs hdPS"),
+                       ("hdPS-prior + AI-EHR vs hdPS-prior", "hdPS + AI-EHR vs hdPS"),
+                       ("hdPS-prior + AI-ECG + AI-EHR vs hdPS-prior", "hdPS + both vs hdPS")):
+        claim(sl, f"MIMIC {short} (22 items, 7 trials)", rr(lab), FIGM_SUM, probe=rr(lab), ref_src=FIGM_DOC)
+    for arm in ("hdPS-prior", "hdPS-prior + AI-ECG"):
+        claim(sl, f"MIMIC mean |SMD| {arm}", f"{H['arms'][f'primary7|22|{arm}']['mean_smd']:.3f}", FIGM_SUM,
+              probe=f"{H['arms'][f'primary7|22|{arm}']['mean_smd']:.3f}", ref_src=FIGM_DOC)
+    c = C["primary7|22|hdPS-prior + AI-ECG vs hdPS-prior"]
+    shown = f"0.239 → {c['absd_a']:.3f}" if f"{c['absd_b']:.3f}" == "0.239" else f"{c['absd_b']:.3f} → {c['absd_a']:.3f}"
+    claim(sl, "MIMIC mean |dlog HR| hdPS -> + AI-ECG", shown, FIGM_SUM, probe=f"hdPS-prior {c['absd_b']:.3f}", ref_src=FIGM_DOC)
+    return sec(sid, "External validation: MIMIC-IV", figm_panels())
+
+
 FIG3 = ROOT / "docs/paper/figures_latent/figure3_rct_agreement.png"  # scripts/figures/make_figure3_latent.py
 FIG3V = A / "claude-fig3-20261014/figure3_values.json"  # its aggregate values (validated there)
 FIG3_STEP = {"A": 1, "B": 2, "C": 3}
@@ -2291,12 +2354,11 @@ def main():
     # (relabel) applied to every slide's markup (the 10-01 Background / Problem slides have no representation labels)
     n0 = len(V2.CL)
     plas = V2.s_plasmode()
-    mimic = V2.s_mimic()
-    for c in V2.CL[n0:]:  # plasmode / MIMIC claims carry V2's slide numbers 14 / 15
-        assert c["slide"] in (14, 15), c
-        c["slide"] = SN["s-plas"] if c["slide"] == 14 else SN["s-mimic"]
+    for c in V2.CL[n0:]:  # plasmode claims carry V2's slide number 14 (the v2 MIMIC slide is replaced by s_mimic_fig, 2026-10-15)
+        assert c["slide"] == 14, c
+        c["slide"] = SN["s-plas"]
     slides = [intro_markup(T1001, deck1001), s_aims(), s_pipe(), s_methods_design(), s_methods_panel(), s_results2(),
-              s_methods_agree(), s_results3(), s_methods_ext(), retitle(mimic, "s-mimic", "External replication: MIMIC-IV (PS-CVD5 analog ± ECG)"),
+              s_methods_agree(), s_results3(), s_methods_ext(), s_mimic_fig(),
               s_plasmode_methods(), retitle(plas, "s-plas", "Plasmode simulation: results"), s_takehome(), s_supp(), s_a2(), s_a3(), s_apanel(), s_af2d(),
               s_afw(trials_old, Q), s_afix(trials_old, EX, RR), s_af3q(), s_agq()[0]]
     h = build_template(T1001, deck1001, D)
