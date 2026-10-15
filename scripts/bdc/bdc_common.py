@@ -22,7 +22,7 @@ ROOT = HERE.parents[1]
 MIN_COUNT = 10  # counts 1..10 are suppressed
 
 # Where Seven Bridges Data Studio mounts project files (read-only) and saves outputs.
-SB_INPUT_ROOTS = ("/sbgenomics/project-files", "/sbgenomics/workspace")
+SB_INPUT_ROOTS = ("/sbgenomics/project-files",)  # the workspace holds our own code and outputs, not inputs
 SB_OUTPUT = Path("/sbgenomics/output-files")
 
 
