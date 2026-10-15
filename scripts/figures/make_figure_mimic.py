@@ -5,6 +5,8 @@
                           D per trial (change in % |SMD| < 0.1), as Figure 2
   figure_mimic_agreement  A emulated vs RCT estimate, B agreement by arm (with placebos), C PEPTIC negative control,
                           as Figure 3
+  figure_mimic_main       the two panels for the paper (user, 2026-10-15): A balance by domain, PS-CVD5 and hdPS (on the
+                          AI-EHR input window) vs hdPS + AI arms, overall row labelled vs hdPS; B emulated vs RCT, hdPS ± AI-ECG
 
 Primary MIMIC configuration: 7 cardiovascular trials, PS-CVD5 analog, all analysed patients; AI-EHR (CLMBR-T) input =
 history before the index admission time (index ED stay kept; user decision 2026-10-15). Utilisation (block D) is masked
@@ -261,10 +263,148 @@ def fig_agreement(R, S):
     F.save(fig, OUT / "figure_mimic_agreement")
 
 
+V20 = Path("/mnt/raid0/rbc58/ecg-tte/audits/claude-v20-mimic-replication/results")  # hdPS200 cells (demo + dx + 200 code flags)
+HDPS = "#3a8fb7"  # as scripts/figures/make_slide9_panelD_overall.py
+
+
+def signflip_2s(d):
+    """exact two-sided sign-flip P of mean(d) = 0 across trials."""
+    d = np.asarray(d, float)
+    k = len(d)
+    signs = np.array(np.meshgrid(*[[-1, 1]] * k)).reshape(k, -1).T
+    null = (signs * np.abs(d)).mean(1)
+    return float(np.mean(np.abs(null) >= abs(d.mean()) - 1e-12))
+
+
+def main_arms(V):
+    """trial x item |SMD| for the main figure; utilisation (block D) excluded for every arm, so all arms share the 22
+    items (D is masked whenever AI-EHR is in a contrast). hdPS from the v20 cells: same cohorts (unmatched |SMD| equal to
+    the current cells, max |diff| 0, checked here)."""
+    H = pd.concat([pd.read_csv(V20 / f"{t}_vars.csv") for t in TRIALS])
+    H = H[(H.base == "hdPS200") & (H.arm == "base") & (H["pop"] == "all") & (H.block != "D")]
+    hd = H.pivot_table(index="trial", columns="var", values="abs_smd").loc[TRIALS]
+    hu = H.pivot_table(index="trial", columns="var", values="abs_smd_unmatched").loc[TRIALS]
+    M = {a: smd(V, a, masked=True) for a in ("unmatched", "base", "ECG", "CLMBR", "ECG+CLMBR")}
+    assert float((hu[M["unmatched"].columns] - M["unmatched"]).abs().max().max()) == 0.0, "hdPS cohort differs"
+    M["hdPS"] = hd[M["base"].columns]
+    return M
+
+
+def rel(Ma, Mb, cols=None):
+    """relative change in the across-trial mean |SMD| (items observed in both), per-trial differences, two-sided P."""
+    cols = list(Ma.columns if cols is None else cols)
+    a, b = Ma[cols], Mb[cols]
+    ok = a.notna() & b.notna()
+    ma, mb = a.where(ok).mean(1), b.where(ok).mean(1)
+    return 100 * (1 - ma.mean() / mb.mean()), signflip_2s((mb - ma).to_numpy())
+
+
+HD = Path("/mnt/raid0/rbc58/ecg-tte/audits/claude-mimic-hdps-20261015")  # hdPS on the AI-EHR window (queue 2026-10-15; audit PASS)
+
+
+def fig_main(V, R, S):
+    """A: balance by domain (22 items), PS-CVD5 and hdPS (AI-EHR input window) vs hdPS + AI arms, overall row labelled
+    vs hdPS; B: emulated vs RCT estimate, hdPS vs hdPS + AI-ECG. Plotted values = HD summary.json (audited); checked
+    against the per-trial cells here."""
+    H = json.load(open(HD / "summary" / "summary.json"))
+    AR, CT = H["arms"], H["contrasts"]
+    ARM6 = [("Unmatched", "Unmatched", GREY, "x", None), ("PS-CVD5", "PS-CVD5", NAVY, "o", "white"),
+            ("hdPS-prior", "hdPS", HDPS, "^", HDPS), ("hdPS-prior + AI-ECG", "hdPS + AI-ECG", RED, "o", RED),
+            ("hdPS-prior + AI-EHR", "hdPS + AI-EHR", GREEN, "s", "white"), ("hdPS-prior + AI-ECG + AI-EHR", "hdPS + AI-ECG + AI-EHR", PURPLE, "D", PURPLE)]
+    # check the plotted overall values against the per-trial cells (22 items, items observed in each cell)
+    HV = pd.concat([pd.read_csv(HD / "results" / f"{t}_vars.csv") for t in TRIALS])
+    HV = HV[(HV["pop"] == "all") & (HV.block != "D")]
+    for key, (b, a) in {"hdPS-prior": ("hdps_prior", "base"), "hdPS-prior + AI-ECG": ("hdps_prior", "ECG"),
+                        "hdPS-prior + AI-EHR": ("hdps_prior", "CLMBR"), "hdPS-prior + AI-ECG + AI-EHR": ("hdps_prior", "ECG+CLMBR")}.items():
+        m = HV[(HV.base == b) & (HV.arm == a)].groupby("trial").abs_smd.mean().loc[TRIALS].mean()
+        check(m, AR[f"primary7|22|{key}"]["mean_smd"], f"main A {key}", 1e-9)
+    check(smd(V, "base", masked=True).mean(1).mean(), AR["primary7|22|PS-CVD5"]["mean_smd"], "main A PS-CVD5", 1e-9)
+
+    fig = plt.figure(figsize=(7.2, 3.5))
+    gs = fig.add_gridspec(1, 2, width_ratios=[1.35, 1.0], wspace=0.55)
+    hs = [Line2D([], [], ls="none", marker=mk, ms=4.4 if mk != "D" else 3.8, mew=0.9, color=col, mfc=col if fc is None else fc, label=lab)
+          for _, lab, col, mk, fc in ARM6]
+    fig.legend(handles=hs, loc="upper center", bbox_to_anchor=(0.5, 1.06), ncol=6, frameon=False, fontsize=6.2, handletextpad=0.15, columnspacing=0.9)
+
+    # A: balance by domain
+    ax = fig.add_subplot(gs[0, 0])
+    rows = [("All 22", "mean_smd"), ("Core labs, vitals (8)", "mean_smd_A"), ("Other labs (13)", "mean_smd_B"), ("Ventilation (1)", "mean_smd_C")]
+    off = np.linspace(0.27, -0.27, len(ARM6))
+    for (key, lab, col, mk, fc), dy in zip(ARM6, off):
+        for r, (_, f) in enumerate(rows):
+            val = AR[f"primary7|22|{key}"][f]
+            if mk == "x":
+                ax.scatter(val, -r + dy, marker="x", s=14, color=col, lw=0.9, zorder=3)
+            else:
+                ax.scatter(val, -r + dy, marker=mk, s=20 if mk != "D" else 15, color=col, facecolor=fc, lw=1.0, zorder=4)
+    for r in range(1, len(rows)):
+        ax.axhline(-r + 0.5, color=LGREY, lw=0.6)
+    ax.axvline(0.1, color=RED, lw=0.7, ls="--")
+    ax.set_yticks(-np.arange(len(rows)), [x[0] for x in rows], fontsize=6.8)
+    ax.get_yticklabels()[0].set_fontweight("bold")
+    ax.set_ylim(-len(rows) + 0.5, 0.5)
+
+    def fp(p):
+        return "P < .001" if p < 0.001 else f"P = {p:.3f}".replace("0.", ".", 1)
+    lab_x = 0.207
+    ax.text(lab_x, 0.45, "overall, vs hdPS", fontsize=5.6, color=GREY, ha="left", va="top")
+    c = CT["primary7|22|hdPS-prior vs PS-CVD5"]
+    lbl = {"PS-CVD5": (100 * (c["m_b"] / c["m_a"] - 1), c["p"], "higher")}
+    for key in ("hdPS-prior + AI-ECG", "hdPS-prior + AI-EHR", "hdPS-prior + AI-ECG + AI-EHR"):
+        c = CT[f"primary7|22|{key} vs hdPS-prior"]
+        lbl[key] = (abs(c["relred"]), c["p"], "lower" if c["relred"] > 0 else "higher")
+    for (key, lab, col, mk, fc), dy in zip(ARM6, off):
+        if key in lbl:
+            v, p_, w = lbl[key]
+            ax.text(lab_x, dy, f"{v:.1f}% {w} ({fp(p_)})", fontsize=5.4, color=col, va="center", ha="left")
+    ax.set_xlim(0.08, 0.29)
+    ax.set_xticks([0.1, 0.15, 0.2])
+    ax.set_xlabel("Mean |SMD| (mean across 7 trials)", fontsize=7)
+    ax.set_title("Balance by domain: PS-CVD5, hdPS and hdPS + AI representations", fontsize=7.5, loc="left", x=-0.33)
+    F.letter(ax, "A", x=-0.45)
+
+    # B: emulated vs RCT estimate, hdPS vs hdPS + AI-ECG
+    ax = fig.add_subplot(gs[0, 1])
+    HR_ = pd.concat([pd.read_csv(HD / "results" / f"{t}_arms.csv") for t in TRIALS])
+    T = HR_[(HR_.base == "hdps_prior") & (HR_["pop"] == "all")].set_index(["trial", "arm"])
+    rct = np.exp(T.xs("base", level="arm").loc[TRIALS, "rct_loghr"])
+    b, e = np.exp(T.xs("base", level="arm").loc[TRIALS, "loghr"]), np.exp(T.xs("ECG", level="arm").loc[TRIALS, "loghr"])
+    for t in TRIALS:
+        ax.plot([rct[t]] * 2, [b[t], e[t]], color=LGREY, lw=1.0, zorder=1)
+    ax.scatter(rct, b, marker="^", s=24, color=HDPS, zorder=3, label="hdPS")
+    ax.scatter(rct, e, s=20, color=RED, zorder=4, label="hdPS + AI-ECG")
+    lo, hi = float(min(rct.min(), b.min(), e.min())), float(max(rct.max(), b.max(), e.max()))
+    OFFB = dict(plato=(0.96, 1.0, "right"), aristotle=(1.04, 1.0, "left"), rocket_af=(0.96, 1.0, "right"),
+                transform_hf=(0.96, 1.0, "right"), comet=(1.04, 1.0, "left"), soap2=(1.05, 1.05, "left"), elite2=(1.05, 0.93, "left"))
+    for t in TRIALS:
+        fx, fy, ha = OFFB[t]
+        ax.text(rct[t] * fx, np.sqrt(b[t] * e[t]) * fy, NAME[t], fontsize=5.0, color=GREY, ha=ha, va="center")
+    lim = (min(0.4, lo * 0.9), max(2.2, hi * 1.1))
+    ax.plot(lim, lim, color=GREY, lw=0.9, ls="--")
+    ax.set_xscale("log"); ax.set_yscale("log")
+    tk = [0.5, 0.67, 1, 1.5, 2]
+    ax.set_xticks(tk, [f"{x:g}" for x in tk]); ax.set_yticks(tk, [f"{x:g}" for x in tk]); ax.minorticks_off()
+    ax.set_xlim(*lim); ax.set_ylim(*lim)
+    ax.set_xlabel("RCT estimate (HR; OR for SOAP II)", fontsize=7)
+    ax.set_ylabel("Emulated hazard ratio", fontsize=7)
+    c = CT["primary7|22|hdPS-prior + AI-ECG vs hdPS-prior"]
+    check(float(np.mean(np.abs(np.log(b) - np.log(rct)))), c["absd_b"], "main B |dlogHR| hdPS", 1e-9)
+    check(float(np.mean(np.abs(np.log(e) - np.log(rct)))), c["absd_a"], "main B |dlogHR| hdPS + AI-ECG", 1e-9)
+    bp = f"{c['p_bshuf']:.2f}".lstrip("0")
+    ax.text(0.04, 0.96, f"Mean |Δ log HR|: {c['absd_b']:.3f} → {c['absd_a']:.3f}\n{c['closer'].replace('/', ' of ')} trials closer"
+            f"\nbenchmark-permutation P = {bp}",
+            transform=ax.transAxes, va="top", fontsize=6.2)
+    ax.legend(loc="lower right", frameon=False, fontsize=6.0, handletextpad=0.2)
+    ax.set_title("Agreement with the RCTs", fontsize=7.5, loc="left")
+    F.letter(ax, "B", x=-0.22)
+    F.save(fig, OUT / "figure_mimic_main")
+
+
 def main():
     V, R, S = load()
     fig_balance(V, R, S)
     fig_agreement(R, S)
+    fig_main(V, R, S)
 
 
 if __name__ == "__main__":
