@@ -1,3 +1,5 @@
+> Superseded for the current design by `docs/mimic/MIMIC_EXTERNAL_VALIDATION.md` (MIMIC-IV parts).
+
 # Protocol v1.5 (2026-09-26): external first pass in MIMIC-IV and UK Biobank (exploratory)
 
 This protocol was registered before any outcome was extracted in either cohort, and is tagged

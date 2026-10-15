@@ -1,3 +1,5 @@
+> Superseded for the current design by `docs/mimic/MIMIC_EXTERNAL_VALIDATION.md` (MIMIC-IV parts).
+
 # v1.5 external first pass: MIMIC-IV and UK Biobank. Corrected after the independent audit (exploratory)
 
 - Protocol: `docs/PROTOCOL_V1_5_EXTERNAL.md` (tag `protocol-v1.5`; deviation log and audit corrections).

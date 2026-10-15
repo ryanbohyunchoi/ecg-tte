@@ -1,3 +1,5 @@
+> Superseded for the current design by `docs/mimic/MIMIC_EXTERNAL_VALIDATION.md`.
+
 # v2.0 MIMIC-IV external replication: plan (committed before any result; 2026-09-30)
 
 **Purpose.** Test in MIMIC-IV the project's headline finding: adding AI-ECG embeddings (BCL encoder, 32 PCs) to a propensity score (PS) improves balance on held-out characteristics. Secondary: agreement with RCT results.

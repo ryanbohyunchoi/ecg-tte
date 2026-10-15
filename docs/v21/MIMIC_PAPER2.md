@@ -1,3 +1,5 @@
+> Superseded for the current design by `docs/mimic/MIMIC_EXTERNAL_VALIDATION.md`.
+
 # paper2 step D: PS-CVD5 analog in the MIMIC-IV replication (2026-10-07)
 
 This implements `HANDOFF_PAPER2.md` §3.6: a supplementary analysis, ECG only, with no CLMBR-T in MIMIC.

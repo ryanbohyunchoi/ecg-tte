@@ -1,3 +1,5 @@
+> Superseded for the current design by `docs/mimic/MIMIC_EXTERNAL_VALIDATION.md`.
+
 # v2.0 MIMIC-IV external replication: held-out balance and RCT agreement (2026-09-30)
 
 **Exploratory external replication.** The plan was committed before any result (`docs/v20/MIMIC_REPLICATION_PLAN.md`, local commit 25c58b2).

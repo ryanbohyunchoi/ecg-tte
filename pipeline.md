@@ -28,7 +28,7 @@ Written **2026-10-08**. This is the single reference for the design we settled o
 | Element | Choice | Status |
 |---|---|---|
 | Source | YNHHS EHR mapped to OMOP (gold), structured echo reports, raw 12-lead ECGs, state death records; index dates 2011–2024 | LOCKED |
-| External replication | MIMIC-IV 3.1 (ECG only; no CLMBR-T, no echo) | LOCKED |
+| External replication | MIMIC-IV 3.1 (ECG and CLMBR-T; no echo) | LOCKED |
 | Clinical notes | Not used in this paper (R2 only, branch `r2`) | LOCKED |
 
 ## 2. Trials
@@ -137,7 +137,7 @@ Sources: `docs/v1_audit/DEFECT_IMPACT.md` §1; `docs/v1_ps10/PS10.md`; `docs/v2_
 | Analysis | Design | Status |
 |---|---|---|
 | Plasmode | Withheld physiological confounder (LVEF, NT-proBNP, BMI, eGFR), clinically oriented, treatment driven by the confounder; arms PS-CVD5 ± ECG (CLMBR-T arms exist but are not reported) | exists (v21, `docs/v21/PLASMODE_PAPER2.md`); **re-check on the final trial set: PENDING** |
-| MIMIC-IV | PS-CVD5 analog (prior-admission diagnoses) ± ECG ± permuted ECG; 7 cardiovascular trials + PEPTIC negative control | exists (`docs/v21/MIMIC_PAPER2.md`); LOCKED |
+| MIMIC-IV | PS-CVD5 analog (prior-admission diagnoses): alone, + ECG, + CLMBR-T (code-only; diagnoses and procedures from earlier admissions only, labs, orders and visits strictly before t0), + ECG + CLMBR-T, + permuted ECG, + permuted CLMBR-T; utilisation items masked for the CLMBR-T arms; sensitivity: CLMBR-T from history before the index admission only; 7 cardiovascular trials + PEPTIC negative control | exists (`docs/mimic/MIMIC_EXTERNAL_VALIDATION.md`; ECG arms first in `docs/v21/MIMIC_PAPER2.md`); LOCKED |
 | ECG alone | ECG-only PS vs PS-CVD5 / hdPS / PS-Clinical | exists (R2 X1, branch `r2`); optional supplement |
 | Domain / label / quality subsets | Descriptive | LOCKED |
 
@@ -169,6 +169,7 @@ Sources: `docs/v1_audit/DEFECT_IMPACT.md` §1; `docs/v1_ps10/PS10.md`; `docs/v2_
 | 2026-10-14 | Deck slide 9 panel D shows demographics + AI representations (ECG, CLMBR-T) vs conventional PS (PS-CVD5, hdPS, PS-Clinical) as a comparison; per-trial panel moved to appendix A4; deck only, paper Figure 2 unchanged; CLMBR-T still not in the take-home claims. | User decision (queue `docs/queue/slide9_panelD.md`) |
 | 2026-10-14 | Deck slide 11 panel C shows agreement (mean \|Δ log HR\|) for demographics + AI representations (ECG, CLMBR-T) vs conventional PS; the quality-tier panel moved to an appendix slide; deck only, paper Figure 3 unchanged; CLMBR-T still not in the take-home claims. | User decision (queue `docs/queue/slide11_figure3.md`) |
 | 2026-10-14 | Display labels in the deck and the paper figures: AI-ECG (BCL ECG embedding, 32 PCs) and AI-EHR (CLMBR-T, 64 PCs); analysis unchanged. | User request (queue `docs/queue/QUEUE_2026_10_14_DECK3.md`) |
+| 2026-10-14 | CLMBR-T added to the MIMIC-IV external validation (code-only; diagnoses and procedures from earlier admissions only, index-admission labs and orders only if before t0; added after the Yale results; reported as a comparison arm, as at Yale). Sensitivity added after the results were seen: input limited to history before the index admission (+ CLMBR-T 23.1% → 7.7%) | User request (queue `docs/queue/QUEUE_2026_10_14_MIMIC_CLMBR.md`); vocabulary coverage gate passed; `docs/mimic/MIMIC_EXTERNAL_VALIDATION.md` |
 
 ## 10. Open decisions (needed before the lock)
 

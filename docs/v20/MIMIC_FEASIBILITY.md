@@ -1,3 +1,5 @@
+> Superseded for the current design by `docs/mimic/MIMIC_EXTERNAL_VALIDATION.md`.
+
 # v2.0 MIMIC-IV feasibility: inventory, prior work, candidate emulations and plan (discovery only)
 
 - **Date:** 2026-09-30. Discovery and feasibility only. No PS model, balance, HR or RCT comparison was run.
