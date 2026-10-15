@@ -224,3 +224,15 @@ The public index lists superseded releases alongside the current ones; `bdc_mani
 - reading-centre ECG measures at baseline 97.7%: LVH by Cornell, Cornell product, Minnesota and Sokolow-Lyon; QRS duration; AF/flutter.
 
 **Not yet assigned:** 329 participants have a baseline reading-centre ECG but an unequal file count. A fallback rule, using the earliest file when its year precedes the next ECG, could recover some of them. This is not needed for feasibility.
+
+**2026-10-15: ECG embedding** (`scripts/bdc/ecg_bcl.py embed`, git 8fd9713; slim checkpoint sha256 verified; CPU):
+- **Embedded:** 8,815 / 8,815 baseline ECGs, 0 failures. Conversion took 4,105 s single-core (now parallel, a7fb8a7); embedding took 116 s.
+- **Not degenerate:** mean pairwise cosine 0.148; norms 16.03–16.11.
+- **5-fold linear probes:**
+  - sex AUC 0.896;
+  - age R² 0.311;
+  - **log NT-proBNP R² 0.338**;
+  - eGFR R² 0.055;
+  - **Cornell voltage (positive control) R² 0.784**;
+  - LDL (negative control) R² 0.035.
+- **Comparison with the paper:** at Yale, the median ECG R² was 0.26 for LVEF, 0.20 for NT-proBNP and 0.04 for eGFR.
