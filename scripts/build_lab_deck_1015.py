@@ -169,7 +169,7 @@ TIERS = ["Excellent", "Good", "Moderate", "Limited"]
 FID = {"good": 0, "moderate": 1, "poor": 2}
 # main slides (ids, in order) and appendix slides (id, label, short title, default back-target)
 MAIN = ["s-title", "s-bg", "s-prob", "s-aims", "s-pipe", "s-meth1", "s-meth2", "s-res2", "s-meth3", "s-res3", "s-mimic", "s-plasm", "s-plas",
-        "s-take", "s-dec"]  # deck3 (2026-10-14): new s-meth3 (aims, aim 3 + agreement methods) before Figure 3; the explorers (s-bal,
+        "s-take"]  # final touches 2026-10-15: open-decisions slide (s-dec) removed; deck3 (2026-10-14): new s-meth3 (aims, aim 3 + agreement methods) before Figure 3; the explorers (s-bal,
 # s-emu) leave the main sequence (supplementary figures, SUPPF); s-rob is deleted; s-agq and s-plas move to the appendix
 # supplementary figures (deck3): (id, label, title, the figure slide they open from and return to)
 SUPPF = [("s-bal", "S2", "Supplementary Figure 2. Covariate balance explorer", "s-res2"),
@@ -719,7 +719,7 @@ def aims_list():
         (2, ICON["bal"], "Covariate balance", "on held-out measurements"),
         (3, ICON["rct"], "Trial emulation and agreement with RCTs", f"{sum(t['s31'] for t in CTX['trials'])} benchmark RCTs"),
         (4, ICON["glob"], "External validation",
-         '<span class="chips">' + chip("EHR", "MIMIC-IV", True) + chip("EHR", "All of Us", False)
+         '<span class="chips">' + chip("EHR", "MIMIC-IV", True) + chip("Biobank", "All of Us", False)
          + chip("Trial cohorts", "SPRINT, ACCORD, WHI", False, "currently running") + "</span>"),
     ]
 
@@ -2285,7 +2285,7 @@ def main():
         c["slide"] = SN["s-plas"] if c["slide"] == 14 else SN["s-mimic"]
     slides = [intro_markup(T1001, deck1001), s_aims(), s_pipe(), s_methods_design(), s_methods_panel(), s_results2(),
               s_methods_agree(), s_results3(), retitle(mimic, "s-mimic", "External replication: MIMIC-IV (PS-CVD5 analog ± ECG)"),
-              s_plasmode_methods(), retitle(plas, "s-plas", "Plasmode simulation: results"), s_takehome(), s_decisions(), s_supp(), s_a2(), s_a3(), s_apanel(), s_af2d(),
+              s_plasmode_methods(), retitle(plas, "s-plas", "Plasmode simulation: results"), s_takehome(), s_supp(), s_a2(), s_a3(), s_apanel(), s_af2d(),
               s_afw(trials_old, Q), s_afix(trials_old, EX, RR), s_af3q(), s_agq()[0]]
     h = build_template(T1001, deck1001, D)
     h = (h.replace("__TITLE__", s_title()).replace("__STATIC1__", "".join(relabel(x) for x in slides)).replace("__STATIC2__", "")
