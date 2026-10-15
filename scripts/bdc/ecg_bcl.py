@@ -203,7 +203,7 @@ def find_ckpt(given: str) -> str:
         return given
     import hashlib
     hits = []
-    for root in ("/sbgenomics/project-files", "/sbgenomics/workspace", str(Path.home())):
+    for root in ("/sbgenomics/project-files", "/sbgenomics/projects", "/sbgenomics/workspace", str(Path.home())):
         for p in Path(root).rglob("*.pt") if Path(root).exists() else []:
             h = hashlib.sha256(p.read_bytes()).hexdigest()
             if h == SLIM_SHA256:
