@@ -11,6 +11,7 @@ from the restricted outputs under /mnt/raid0/rbc58/ecg-tte/audits/claude-mimic-c
       encode     Step 2: CLMBR-T inference (prints the mosaic-env command; needs a GPU; checks hashes vs Yale if run)
       analyze    Step 3: all arms x bases x populations; base / ECG / permECG cells == v21 exactly
       summarize  Step 3: endpoints, masks, agreement, PEPTIC, validity, Yale s31 side by side
+      meds_prior build the primary CLMBR-T input (meds_prior; skipped if built)
       prior      PRIMARY CLMBR-T input (decision 2026-10-15): history before the index admission only (own GPU run);
                  the 'summarize' outputs (index-admission pre-t0 labs and orders included) are the sensitivity
       numbers    every headline number of the doc, regenerated (OUT/summary/doc_numbers.json)
@@ -101,7 +102,7 @@ def prior():
         p.map(AN.run_trial, AN.TRIALS)
     print(AN.gate_v21())
     SM.RES, SM.SUM = OUT / "results_prior", OUT / "summary_prior"
-    SM.status = lambda s: status("sensitivity (CLMBR-T input = history before the index admission): " + s)
+    SM.status = lambda s: status("primary (CLMBR-T input = history before the index admission time): " + s)
     return SM.main() == 0
 
 
@@ -184,14 +185,22 @@ def check_doc():
     return not missing
 
 
-STEPS = dict(gate0=gate0, meds=meds, coverage=coverage, encode=encode, analyze=analyze, summarize=summarize, prior=prior,
+def meds_prior():
+    """Build the primary CLMBR-T input (OUT/meds_prior) from OUT/meds (build_meds_prior_only.py; skipped if built)."""
+    if (OUT / "meds_prior" / "summary.json").exists():
+        return True
+    import build_meds_prior_only as BP
+    return BP.main() in (None, 0)
+
+
+STEPS = dict(gate0=gate0, meds=meds, meds_prior=meds_prior, coverage=coverage, encode=encode, analyze=analyze, summarize=summarize, prior=prior,
              numbers=lambda: print(json.dumps(numbers(), indent=1, ensure_ascii=False)) or True, **{"check-doc": check_doc})
 
 
 def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else "all"
     if cmd == "all":
-        for name in ("gate0", "meds", "coverage", "encode", "analyze", "summarize", "prior", "check-doc"):
+        for name in ("gate0", "meds", "coverage", "encode", "analyze", "summarize", "meds_prior", "prior", "check-doc"):
             if name == "encode" and not (CLMBR / "full" / "manifest.json").exists():
                 print("run the GPU step first:\n" + ENCODE_CMD)
                 return 1

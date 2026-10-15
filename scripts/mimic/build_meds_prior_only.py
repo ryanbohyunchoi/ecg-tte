@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-"""Sensitivity input for CLMBR-T: history BEFORE the index admission only (events with time < index admittime).
+"""Primary CLMBR-T input since 2026-10-15 (was a sensitivity): history before the index admission time (events with
+time < index admittime). The index ED stay before admission is kept (audit: docs/mimic/AUDIT_MIMIC_PRIMARY_SWITCH.md).
 
 Derived from the primary MEDS (OUT/meds) by dropping every event of the index admission (and any outpatient event
 between its admission time and t0), for the analysed patients only. This is the MIMIC analogue of Yale's index-day
@@ -66,7 +67,7 @@ def main():
              median_in_vocab=float(R.n_in_vocab.median()))
     json.dump(s, open(DST / "summary.json", "w"), indent=1)
     print(json.dumps(s, indent=1))
-    status(f"sensitivity MEDS (history before the index admission only; analysed patients): {len(R)} subjects; in-vocab share "
+    status(f"primary MEDS (history before the index admission time; analysed patients): {len(R)} subjects; in-vocab share "
            f"{s['share_events_in_vocab']:.3f}; no prior coded history {100 * s['share_no_prior_coded_history']:.1f}%")
 
 

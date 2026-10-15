@@ -1,6 +1,6 @@
 # Results: MIMIC-IV external validation clean-up and CLMBR-T arms (queue 2026-10-14)
 
-> **Update, 2026-10-15 (the user's decision):** the primary MIMIC CLMBR-T input is now **history before the index admission only**. The numbers below that use the first-run input (+ CLMBR-T 23.1%, + both 29.0%, ECG on top 7.7%, PEPTIC 1.00) are now the sensitivity. Primary: + CLMBR-T 7.7% (3.0 to 14.0), 6/7; + ECG + CLMBR-T 18.6% (12.5 to 26.7), 7/7; ECG on top of CLMBR-T 11.9% (6.9 to 16.8), 7/7; PEPTIC + CLMBR-T 1.28 (1.14–1.43). The ECG arms are unchanged. Current numbers: `docs/mimic/MIMIC_EXTERNAL_VALIDATION.md`.
+> **Update, 2026-10-15 (the user's decision):** the primary MIMIC CLMBR-T input is now **history before the index admission only**. The numbers below that use the first-run input (+ CLMBR-T 23.1%, + both 29.0%, ECG on top 7.7%, PEPTIC 1.00) are now the sensitivity. Primary: + CLMBR-T 7.7% (3.0 to 14.0), 6/7; + ECG + CLMBR-T 18.6% (12.5 to 26.7), 7/7; ECG on top of CLMBR-T 11.9% (6.9 to 16.8), 7/7; PEPTIC + CLMBR-T 1.28 (1.14–1.43). The ECG arms are unchanged. The primary input keeps the index ED stay before admission (audit: `docs/mimic/AUDIT_MIMIC_PRIMARY_SWITCH.md`). Everything below this note describes the first run. Current numbers: `docs/mimic/MIMIC_EXTERNAL_VALIDATION.md`.
 
 Queue: `docs/queue/QUEUE_2026_10_14_MIMIC_CLMBR.md`. Consolidated doc: `docs/mimic/MIMIC_EXTERNAL_VALIDATION.md`. Verification: `docs/mimic/VERIFY_MIMIC_CLMBR.md`. Code: `scripts/mimic/` (entry point `run_mimic_external.py`). Restricted outputs: `audits/claude-mimic-clmbr-20261014/` (not committed). Aggregates only.
 
@@ -39,7 +39,8 @@ Queue: `docs/queue/QUEUE_2026_10_14_MIMIC_CLMBR.md`. Consolidated doc: `docs/mim
 8. **Verification:**
    - **Round 1: FAIL**, on three text statements only (index-admission share of labs; the range in a sensitivity sentence; "prior admissions only" in `pipeline.md`). All three are fixed. All 353 recomputed numbers matched, leakage counts were 0, hashes matched and the privacy scan was clean.
    - **Round 2: PASS with minor issues**, with no BLOCKING finding. The two wording notes are fixed. Report: `docs/mimic/VERIFY_MIMIC_CLMBR.md`.
-9. **Deck sentence (MIMIC slide; do not paste into the deck without review):** "In MIMIC-IV (7 cardiovascular trials), adding the AI-ECG to the PS-CVD5 analog improved held-out balance by 6.6% (6/7 trials), and the AI-ECG still added 7.7% (6/7) once AI-EHR (CLMBR-T) was in the model. AI-EHR alone gave 23.1%, but most of that came from in-hospital codes recorded before time zero (7.7% from prior history only), and neither representation made agreement with the RCTs trial-specific."
+9. **Deck sentence (first run; superseded, see the 2026-10-15 update at the top):** "In MIMIC-IV (7 cardiovascular trials), adding the AI-ECG to the PS-CVD5 analog improved held-out balance by 6.6% (6/7 trials), and the AI-ECG still added 7.7% (6/7) once AI-EHR (CLMBR-T) was in the model. AI-EHR alone gave 23.1%, but most of that came from in-hospital codes recorded before time zero (7.7% from prior history only), and neither representation made agreement with the RCTs trial-specific."
+   - **Revised deck sentence (primary input, 2026-10-15; review before use):** "In MIMIC-IV (7 cardiovascular trials), adding the AI-ECG to the PS-CVD5 analog improved held-out balance by 6.6% (6/7 trials). AI-EHR (CLMBR-T, history before the index admission) gave 7.7%, both together 18.6%, and the AI-ECG still added 11.9% (7/7) on top of AI-EHR. Neither made agreement with the RCTs trial-specific."
 
 ## Notes
 

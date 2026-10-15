@@ -1,3 +1,5 @@
+> **Note (2026-10-15):** this verification predates the switch of the primary CLMBR-T input to history before the index admission. The switch is audited in `docs/mimic/AUDIT_MIMIC_PRIMARY_SWITCH.md`.
+
 **Verdict (round 2): PASS with minor issues.** B1–B3 are fixed correctly. The numbers in the edited text match the restricted outputs. All 353 numbers still match. The privacy scan of every file to be committed is clean. No BLOCKING finding remains. Two minor wording points are listed in the Round 2 section.
 
 *Round-1 verdict, kept for the record:* FAIL, on three text corrections only (B1–B3). Every number, leakage count, hash and privacy check passed.
