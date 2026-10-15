@@ -1,5 +1,7 @@
 # Results: MIMIC-IV external validation clean-up and CLMBR-T arms (queue 2026-10-14)
 
+> **Update, 2026-10-15 (the user's decision):** the primary MIMIC CLMBR-T input is now **history before the index admission only**. The numbers below that use the first-run input (+ CLMBR-T 23.1%, + both 29.0%, ECG on top 7.7%, PEPTIC 1.00) are now the sensitivity. Primary: + CLMBR-T 7.7% (3.0 to 14.0), 6/7; + ECG + CLMBR-T 18.6% (12.5 to 26.7), 7/7; ECG on top of CLMBR-T 11.9% (6.9 to 16.8), 7/7; PEPTIC + CLMBR-T 1.28 (1.14–1.43). The ECG arms are unchanged. Current numbers: `docs/mimic/MIMIC_EXTERNAL_VALIDATION.md`.
+
 Queue: `docs/queue/QUEUE_2026_10_14_MIMIC_CLMBR.md`. Consolidated doc: `docs/mimic/MIMIC_EXTERNAL_VALIDATION.md`. Verification: `docs/mimic/VERIFY_MIMIC_CLMBR.md`. Code: `scripts/mimic/` (entry point `run_mimic_external.py`). Restricted outputs: `audits/claude-mimic-clmbr-20261014/` (not committed). Aggregates only.
 
 ## Summary

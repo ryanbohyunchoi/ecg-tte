@@ -11,7 +11,8 @@ from the restricted outputs under /mnt/raid0/rbc58/ecg-tte/audits/claude-mimic-c
       encode     Step 2: CLMBR-T inference (prints the mosaic-env command; needs a GPU; checks hashes vs Yale if run)
       analyze    Step 3: all arms x bases x populations; base / ECG / permECG cells == v21 exactly
       summarize  Step 3: endpoints, masks, agreement, PEPTIC, validity, Yale s31 side by side
-      prior      sensitivity: CLMBR-T from history before the index admission only (needs its own GPU run)
+      prior      PRIMARY CLMBR-T input (decision 2026-10-15): history before the index admission only (own GPU run);
+                 the 'summarize' outputs (index-admission pre-t0 labs and orders included) are the sensitivity
       numbers    every headline number of the doc, regenerated (OUT/summary/doc_numbers.json)
       check-doc  each regenerated number must appear verbatim in the doc
 """
@@ -87,7 +88,7 @@ def summarize():
 
 
 def prior():
-    """Sensitivity: CLMBR-T from history before the index admission only (build_meds_prior_only.py; GPU run into
+    """Primary CLMBR-T input since 2026-10-15 (was a sensitivity): history before the index admission only (build_meds_prior_only.py; GPU run into
     CLMBR/prior_full with the same command on --meds-root OUT/meds_prior). Same analysis and summary, own output dirs."""
     from multiprocessing import Pool
     import mimic_clmbr_analysis as AN
@@ -117,8 +118,12 @@ def _p(p):
 
 
 def numbers():
-    """The headline numbers of the doc, formatted as written there."""
-    S = json.load(open(OUT / "summary" / "summary.json"))
+    """The headline numbers of the doc, formatted as written there.
+
+    Primary (2026-10-15): CLMBR-T input = history before the index admission (OUT/summary_prior). The ECG, base and
+    permuted-ECG cells are identical in both runs. The index-admission-stream input (OUT/summary) is the sensitivity
+    (keys sens_idx_*)."""
+    S = json.load(open(OUT / "summary_prior" / "summary.json"))
     COV = json.load(open(OUT / "coverage" / "coverage.json"))
     G0 = json.load(open(OUT / "step0" / "gate.json"))
     MS_ = json.load(open(MEDS / "summary.json"))
@@ -161,12 +166,11 @@ def numbers():
         N[f"peptic_{arm}"] = f"{g['hr']:.2f} ({g['lo']:.2f}–{g['hi']:.2f})"
     for arm, g in S["agreement"]["primary7|cvd5|all"].items():
         N[f"agree_{arm}"] = f"| {g['r']:.2f} | {g['est_agree']} | {g['std_agree']} | {g['mean_abs_dloghr']:.3f} |"
-    if (OUT / "summary_prior" / "summary.json").exists():
-        P = json.load(open(OUT / "summary_prior" / "summary.json"))["contrasts"]
-        for key, lab in (("clm", "+ CLMBR-T vs PS-CVD5"), ("both", "+ ECG + CLMBR-T vs PS-CVD5"), ("both_vs_clm", "+ ECG + CLMBR-T vs + CLMBR-T")):
-            c = P[f"primary7|cvd5|all|{lab}"]
-            N[f"sens_prior_{key}"] = f"{_ci(c)}; {c['lower']}"
-        N["prior_peptic_clm"] = "{hr:.2f} ({lo:.2f}–{hi:.2f})".format(**json.load(open(OUT / "summary_prior" / "summary.json"))["peptic"]["cvd5"]["CLMBR"])
+    I = json.load(open(OUT / "summary" / "summary.json"))  # sensitivity: index-admission pre-t0 labs and orders included
+    for key, lab in (("clm", "+ CLMBR-T vs PS-CVD5"), ("both", "+ ECG + CLMBR-T vs PS-CVD5"), ("both_vs_clm", "+ ECG + CLMBR-T vs + CLMBR-T")):
+        c = I["contrasts"][f"primary7|cvd5|all|{lab}"]
+        N[f"sens_idx_{key}"] = f"{_ci(c)}; {c['lower']}"
+    N["sens_idx_peptic_clm"] = "{hr:.2f} ({lo:.2f}–{hi:.2f})".format(**I["peptic"]["cvd5"]["CLMBR"])
     return N
 
 

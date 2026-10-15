@@ -137,7 +137,7 @@ Sources: `docs/v1_audit/DEFECT_IMPACT.md` §1; `docs/v1_ps10/PS10.md`; `docs/v2_
 | Analysis | Design | Status |
 |---|---|---|
 | Plasmode | Withheld physiological confounder (LVEF, NT-proBNP, BMI, eGFR), clinically oriented, treatment driven by the confounder; arms PS-CVD5 ± ECG (CLMBR-T arms exist but are not reported) | exists (v21, `docs/v21/PLASMODE_PAPER2.md`); **re-check on the final trial set: PENDING** |
-| MIMIC-IV | PS-CVD5 analog (prior-admission diagnoses): alone, + ECG, + CLMBR-T (code-only; diagnoses and procedures from earlier admissions only, labs, orders and visits strictly before t0), + ECG + CLMBR-T, + permuted ECG, + permuted CLMBR-T; utilisation items masked for the CLMBR-T arms; sensitivity: CLMBR-T from history before the index admission only; 7 cardiovascular trials + PEPTIC negative control | exists (`docs/mimic/MIMIC_EXTERNAL_VALIDATION.md`; ECG arms first in `docs/v21/MIMIC_PAPER2.md`); LOCKED |
+| MIMIC-IV | PS-CVD5 analog (prior-admission diagnoses): alone, + ECG, + CLMBR-T (code-only; **history before the index admission only**, decision 2026-10-15), + ECG + CLMBR-T, + permuted ECG, + permuted CLMBR-T; utilisation items masked for the CLMBR-T arms; sensitivity: CLMBR-T input also reading the index admission's labs and orders before t0; 7 cardiovascular trials + PEPTIC negative control | exists (`docs/mimic/MIMIC_EXTERNAL_VALIDATION.md`; ECG arms first in `docs/v21/MIMIC_PAPER2.md`); LOCKED |
 | ECG alone | ECG-only PS vs PS-CVD5 / hdPS / PS-Clinical | exists (R2 X1, branch `r2`); optional supplement |
 | Domain / label / quality subsets | Descriptive | LOCKED |
 
@@ -170,6 +170,7 @@ Sources: `docs/v1_audit/DEFECT_IMPACT.md` §1; `docs/v1_ps10/PS10.md`; `docs/v2_
 | 2026-10-14 | Deck slide 11 panel C shows agreement (mean \|Δ log HR\|) for demographics + AI representations (ECG, CLMBR-T) vs conventional PS; the quality-tier panel moved to an appendix slide; deck only, paper Figure 3 unchanged; CLMBR-T still not in the take-home claims. | User decision (queue `docs/queue/slide11_figure3.md`) |
 | 2026-10-14 | Display labels in the deck and the paper figures: AI-ECG (BCL ECG embedding, 32 PCs) and AI-EHR (CLMBR-T, 64 PCs); analysis unchanged. | User request (queue `docs/queue/QUEUE_2026_10_14_DECK3.md`) |
 | 2026-10-14 | CLMBR-T added to the MIMIC-IV external validation (code-only; diagnoses and procedures from earlier admissions only, index-admission labs and orders only if before t0; added after the Yale results; reported as a comparison arm, as at Yale). Sensitivity added after the results were seen: input limited to history before the index admission (+ CLMBR-T 23.1% → 7.7%) | User request (queue `docs/queue/QUEUE_2026_10_14_MIMIC_CLMBR.md`); vocabulary coverage gate passed; `docs/mimic/MIMIC_EXTERNAL_VALIDATION.md` |
+| 2026-10-15 | MIMIC-IV CLMBR-T primary input changed to history before the index admission only; the first-run input (index-admission labs and orders before t0 included; + CLMBR-T 23.1%) becomes a sensitivity, because that stream overlaps in time with the held-out lab values. Decided after both results were seen; disclosed. Primary: + CLMBR-T 7.7%, + ECG + CLMBR-T 18.6%, ECG on top of CLMBR-T 11.9% (7/7); ECG arms unchanged | User decision |
 
 ## 10. Open decisions (needed before the lock)
 
