@@ -73,7 +73,8 @@ def index(root: Path) -> list:
 def read_dbgap(p: Path) -> pd.DataFrame:
     raw = gzip.decompress(p.read_bytes()) if p.name.endswith(".gz") else p.read_bytes()
     txt = "\n".join(ln for ln in raw.decode("latin-1").splitlines() if ln and not ln.startswith("#"))
-    return pd.read_csv(io.StringIO(txt), sep="\t", low_memory=False)
+    # dbGaP tables are tab-delimited without quoting (free text may contain stray quotes); IDs stay strings
+    return pd.read_csv(io.StringIO(txt), sep="\t", quoting=3, dtype=str, on_bad_lines="warn", engine="python")
 
 
 def table(files: list, token: str) -> pd.DataFrame:
@@ -101,10 +102,14 @@ def key_col(D: pd.DataFrame) -> str:
 
 
 # ---------------------------------------------------------------- build use matrix
+XW = {}  # any subject-ID value (dbGaP_Subject_ID, Individual_ID, sidno) -> primary ID used in the use matrix
+
+
 def use_matrix(files, cohort):
     visits = CHS_VISITS if cohort == "CHS" else MESA_VISITS
     classes = CHS_CLASSES if cohort == "CHS" else MESA_CLASSES
     rows, seen, flagdist, extra = [], {}, {}, {}
+    XW.clear()
     for k, toks in visits.items():
         parts = [table(files, t) for t in toks]
         parts = [p for p in parts if len(p)]
@@ -128,6 +133,10 @@ def use_matrix(files, cohort):
             U[cls] = (M == 1).any(axis=1).astype(float).where(M.notna().any(axis=1))
         if cohort == "MESA":
             U["ACEI+ARB"] = U[["ACEI", "ARB"]].max(axis=1)
+        for alt in ("Individual_ID", "sidno", "SUBJID", "dbGaP_Subject_ID"):
+            if alt in D.columns and alt != kc:
+                XW.update(dict(zip(D[alt].astype(str).str.strip(), D[kc].astype(str).str.strip())))
+        XW.update({v: v for v in U.id})
         rows.append(U)
         seen[k] = int(U.id.nunique())
         extra[k] = D  # kept for held-out lookups
@@ -174,13 +183,13 @@ def ecg_visits(files, cohort, U_ids: set):
             continue
         sub = pd.read_csv(img.parent / "subject.tsv", sep="\t", low_memory=False)
         best, n = None, 0
-        for c in sub.columns:
-            k = int(sub[c].astype(str).str.strip().isin(U_ids).sum())
+        for c in sub.columns:  # any phenotype ID column may be the Gen3 submitter_id
+            k = int(sub[c].astype(str).str.strip().isin(XW).sum())
             if k > n:
                 best, n = c, k
         if best is None:
             return None, dict(error="no subject.tsv column matches the phenotype subject IDs")
-        m = dict(zip(sub["id"], sub[best].astype(str).str.strip()))
+        m = dict(zip(sub["id"], sub[best].astype(str).str.strip().map(XW)))
         I["pid"] = I["relations.dst_id"].map(m)
         I["vlabel"] = fn.str.extract(ECG_NAME)[0].astype(float)
         V = I.dropna(subset=["pid", "vlabel"]).groupby("pid").vlabel.apply(lambda s: set(s.astype(int)))

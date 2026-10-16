@@ -25,7 +25,7 @@ class CHSCount(unittest.TestCase):
             d = root / "export_P" / "drs" / "chs"
             d.mkdir(parents=True)
             ids = [f"{1000 + i}" for i in range(40)]
-            base = dict(dbGaP_Subject_ID=ids, ACE06=0, ACED06=0, CCB06=0, AMLOD06=0, NIFSR06=0, NIFIR06=0, HCTZ06=0,
+            base = dict(dbGaP_Subject_ID=ids, Individual_ID=[f"C{i}" for i in ids], ACE06=0, ACED06=0, CCB06=0, AMLOD06=0, NIFSR06=0, NIFIR06=0, HCTZ06=0,
                         HCTZK06=0, BETA06=0, BETAD06=0, STTN06=0, ASPIRIN=0)
             V2 = pd.DataFrame(base)
             V3 = pd.DataFrame(base)
@@ -37,11 +37,13 @@ class CHSCount(unittest.TestCase):
             write_dbgap(d / "phs000287.v6.pht001450.v1.p1.c1.BASE1.HMB-IRB-MDS.txt.gz", V2.iloc[:3])  # older version: ignored
             write_dbgap(d / "phs000287.v7.pht001488.v1.p1.c1.YR3.HMB-MDS.txt.gz", V3)
             write_dbgap(d / "phs000287.v7.pht001489.v1.p1.c1.YR4.HMB-MDS.txt.gz", V4)
-            echo = pd.DataFrame(dict(dbGaP_Subject_ID=ids, NEWLVM43=[150.0] * 30 + [np.nan] * 10))
+            echo = pd.DataFrame(dict(dbGaP_Subject_ID=ids, Individual_ID=[f"C{i}" for i in ids], NEWLVM43=[150.0] * 30 + [np.nan] * 10))
             write_dbgap(d / "phs000287.v7.pht001451.v1.p1.c1.BASE2.HMB-MDS.txt.gz", echo)
             tsv = root / "export_I" / "tsv"
             tsv.mkdir(parents=True)
-            pd.DataFrame({"id": [f"s{i}" for i in range(40)], "object.submitter_id": ids}).to_csv(tsv / "subject.tsv", sep="\t", index=False)
+            # Gen3 submitter_id = Individual_ID (not the dbGaP subject ID): linked through the ID crosswalk
+            pd.DataFrame({"id": [f"s{i}" for i in range(40)], "object.submitter_id": [f"C{i}" for i in ids]}).to_csv(
+                tsv / "subject.tsv", sep="\t", index=False)
             # baseline (year 2 -> VISIT01) ECG for the first 20 participants only
             pd.DataFrame({"relations.dst_id": [f"s{i}" for i in range(20)],
                           "object.file_name": [f"CHS_ECG_VISIT01_19890101_{i:05d}.xml" for i in range(20)]}).to_csv(
