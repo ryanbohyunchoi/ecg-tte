@@ -74,6 +74,9 @@ def restricted_dir() -> Path:
     return p
 
 
+SKIP = set()  # --skip: tables not read (e.g. a project file whose lazy fetch hangs)
+
+
 def load(files):
     """Visit tables (long measurement table), static tables, the use matrix and the ECG file map."""
     CC.WANT.clear()
@@ -90,6 +93,11 @@ def load(files):
     T = {}
     for t in list(TABLE_VISIT) + STATIC + ["ICD9"]:
         t0 = time.time()
+        if t in SKIP:
+            T[t] = pd.DataFrame()
+            BC.log(f"  skipped {t} (--skip)")
+            continue
+        BC.log(f"  reading {t} ...")
         T[t] = CC.table(files, t)
         BC.log(f"  read {t}: {len(T[t])} rows ({time.time() - t0:.0f} s)")
     U, seen, _, _ = CC.use_matrix(files, "CHS")
@@ -383,7 +391,10 @@ def report(R: pd.DataFrame, info: dict, path: Path) -> None:
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--root", default=BC.SB_INPUT_ROOTS[0])
+    ap.add_argument("--skip", nargs="*", default=[], help="CHS tables to skip, e.g. CYST_C_YR5")
     a = ap.parse_args(argv)
+    SKIP.clear()
+    SKIP.update(a.skip)
     t0 = time.time()
     R, info = build(Path(a.root))
     rd = restricted_dir()
