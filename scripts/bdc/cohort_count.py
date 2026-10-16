@@ -72,6 +72,7 @@ def index(root: Path) -> list:
 
 ID_COLS = {"DBGAP_SUBJECT_ID", "INDIVIDUAL_ID", "SIDNO", "SUBJID"}
 WANT = set()  # upper-case column names the counter needs (set in main); empty = all columns
+WANT_RE = []  # extra regexes on upper-case column names (e.g. all CHS medication flags r".*06$")
 
 
 def read_dbgap(p: Path) -> pd.DataFrame:
@@ -81,7 +82,8 @@ def read_dbgap(p: Path) -> pd.DataFrame:
     raw = gzip.decompress(p.read_bytes()) if p.name.endswith(".gz") else p.read_bytes()
     lines = [ln.rstrip("\r") for ln in raw.decode("latin-1").split("\n")]
     txt = "\n".join(ln for ln in lines if ln and not ln.startswith("#"))
-    keep = (lambda c: str(c).upper() in WANT or str(c).upper() in ID_COLS) if WANT else None
+    keep = (lambda c: str(c).upper() in WANT or str(c).upper() in ID_COLS
+            or any(re.fullmatch(r, str(c).upper()) for r in WANT_RE)) if WANT else None
     return pd.read_csv(io.StringIO(txt), sep="\t", quoting=3, dtype=str, on_bad_lines="warn", usecols=keep)
 
 

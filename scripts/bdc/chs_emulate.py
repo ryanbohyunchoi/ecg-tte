@@ -2,7 +2,8 @@
 """CHS emulations (docs/bdc/CHS_PROTOCOL.md): per emulation, PS arms -> 1:1 caliper matching -> balance on the held-out
 panel and Cox HR vs the RCT benchmark, with the paper's estimator (scripts/v13_common.ps_logit / match / cox).
 
-Arms: crude, PS-Base, PS-Base + ECG, PS-Base + permuted ECG, PS-Clinical, PS-Clinical + ECG.
+Arms: crude, PS-Base, PS-Base + ECG, PS-Base + permuted ECG, PS-Clinical, PS-Clinical + ECG, PS-Codes (PS-Base + top-200
+ICD-9 hospital codes and medication flags before visit k-1, hdPS-like), PS-Codes + ECG.
 ECG = BCL 256-d -> 32 PCs within each emulation. Held-out balance: |SMD| per item over items observed in >= 11 participants
 of each matched arm; PS-Clinical masks its own inputs and any item with |rho| >= 0.80 with one of them.
 
@@ -91,7 +92,25 @@ def balance(V: np.ndarray, items: list, t: np.ndarray, idx: np.ndarray, mask: se
     return out
 
 
-def run_emulation(D: pd.DataFrame, P: np.ndarray) -> list:
+def code_matrix(D: pd.DataFrame, K: pd.DataFrame, top: int = 200, min_n: int = 20) -> pd.DataFrame:
+    """PS-Codes inputs: binary code indicators for this emulation's rows, codes present in >= min_n people, ranked by
+    |log prevalence ratio| between arms (treatment-only ranking, as in the paper's hdPS), top 200."""
+    k = K[K.row.isin(set(D.row))]
+    if not len(k):
+        return pd.DataFrame(index=D.index)
+    X = pd.crosstab(k.row, k.code).clip(upper=1).reindex(D.row).fillna(0)
+    X.index = D.index
+    X = X.loc[:, X.sum() >= min_n]
+    if not X.shape[1]:
+        return X
+    t = D.arm.to_numpy()
+    p1 = (X[t == 1].sum() + 0.5) / ((t == 1).sum() + 1)
+    p0 = (X[t == 0].sum() + 0.5) / ((t == 0).sum() + 1)
+    order = np.abs(np.log(p1 / p0)).sort_values(ascending=False).index[:top]
+    return X[order]
+
+
+def run_emulation(D: pd.DataFrame, P: np.ndarray, Xk: pd.DataFrame | None = None) -> list:
     t = D.arm.to_numpy(int)
     items = list(CH.HELD)
     V = np.column_stack([pd.to_numeric(D[c], errors="coerce").to_numpy(float) for c in items])
@@ -102,6 +121,11 @@ def run_emulation(D: pd.DataFrame, P: np.ndarray) -> list:
     mask_c = masked_items(D, clin_cols)
     arms = {"base": (Xb, set()), "base+ecg": (np.c_[Xb, P], set()), "base+perm": (np.c_[Xb, Pp], set()),
             "clinical": (Xc, mask_c), "clinical+ecg": (np.c_[Xc, P], mask_c)}
+    if Xk is not None and Xk.shape[1]:
+        Dk = pd.concat([D, Xk.add_prefix("code:")], axis=1)
+        mask_k = masked_items(Dk, list(Xk.add_prefix("code:").columns))
+        arms["codes"] = (np.c_[Xb, Xk.to_numpy(float)], mask_k)
+        arms["codes+ecg"] = (np.c_[Xb, Xk.to_numpy(float), P], mask_k)
     rows = []
     idx_all = np.arange(len(D))
     r = dict(arm="crude", n_pairs=np.nan, **balance(V, items, t, idx_all, set()))
@@ -134,6 +158,11 @@ def main(argv=None) -> None:
     E = _read(rd / "chs_ecg_bcl")
     ecols = [c for c in E.columns if c.startswith("e") and c[1:].isdigit()]
     R = R.merge(E[["id", "ECG_FILE"] + ecols], on=["id", "ECG_FILE"], how="inner")
+    try:
+        K = _read(rd / "chs_codes")
+    except SystemExit:
+        K = None
+        BC.log("no chs_codes table: PS-Codes arms skipped")
     cells = []
     for emu, D in R.groupby("EMU", sort=False):
         D = D.reset_index(drop=True)
@@ -141,9 +170,10 @@ def main(argv=None) -> None:
             cells.append(dict(EMU=emu, arm="(infeasible)", n_A=S(int((D.arm == 1).sum())), n_B=S(int((D.arm == 0).sum()))))
             continue
         P = pcs(D[ecols].to_numpy(float), N_PCS)
-        for r in run_emulation(D, P):
+        Xk = code_matrix(D, K) if K is not None and "row" in D else None
+        for r in run_emulation(D, P, Xk):
             r.update(EMU=emu, cluster=D.cluster.iloc[0], n_A=int((D.arm == 1).sum()), n_B=int((D.arm == 0).sum()),
-                     bench_hr=BENCH_HR.get(emu))
+                     bench_hr=BENCH_HR.get(emu), n_code_features=0 if Xk is None else int(Xk.shape[1]))
             cells.append(r)
         BC.log(f"{emu}: done ({time.time() - t0:.0f} s)")
     C = pd.DataFrame(cells)
@@ -164,7 +194,7 @@ def main(argv=None) -> None:
                  f"{getattr(r, 'mean_smd_lab', np.nan):.3f} | {getattr(r, 'mean_smd_vital', np.nan):.3f} | {r.pct_lt_0_1:.0%} | "
                  f"{r.events_primary} | {hr} | {r.bench_hr} |")
     L += ["", "## Relative reduction in mean held-out |SMD| with the ECG", ""]
-    for ref, arm in (("base", "base+ecg"), ("base", "base+perm"), ("clinical", "clinical+ecg")):
+    for ref, arm in (("base", "base+ecg"), ("base", "base+perm"), ("clinical", "clinical+ecg"), ("codes", "codes+ecg")):
         per = []
         for emu, g in ok.groupby("EMU", sort=False):
             g = g.set_index("arm")

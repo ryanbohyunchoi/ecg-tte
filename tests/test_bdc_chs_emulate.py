@@ -45,13 +45,21 @@ class CHSEmulate(unittest.TestCase):
         with tempfile.TemporaryDirectory() as t:
             os.environ["BDC_RESTRICTED"], os.environ["BDC_TTE_OUT"] = f"{t}/r", f"{t}/o"
             Path(f"{t}/r").mkdir()
+            D["row"] = np.arange(n)
             D.to_pickle(f"{t}/r/chs_emulations.pkl")
+            # code features: one code strongly tied to treatment, many noise codes
+            rows = [(i, "D:401") for i in range(n) if rng.random() < (0.6 if arm[i] else 0.1)]
+            rows += [(i, f"M:X{j}06") for i in range(n) for j in range(30) if rng.random() < 0.1]
+            pd.DataFrame(rows, columns=["row", "code"]).to_pickle(f"{t}/r/chs_codes.pkl")
             E.to_pickle(f"{t}/r/chs_ecg_bcl.pkl")
             CE.main(["--protocol-locked", "--run", "test"])
             C = pd.read_csv(Path(t) / "o" / "chs_emulate" / "test" / "cells.csv").set_index("arm")
             self.assertLess(C.loc["base+ecg", "mean_smd_echo"], 0.7 * C.loc["base", "mean_smd_echo"])
             self.assertGreater(C.loc["base+perm", "mean_smd_echo"], 0.8 * C.loc["base", "mean_smd_echo"])
             self.assertTrue(np.isfinite(C.loc["base+ecg", "loghr_primary"]))
+            self.assertIn("codes+ecg", C.index)
+            self.assertGreater(int(C.loc["codes", "n_code_features"]), 10)
+            self.assertLess(C.loc["codes+ecg", "mean_smd_echo"], C.loc["codes", "mean_smd_echo"])
 
 
 if __name__ == "__main__":

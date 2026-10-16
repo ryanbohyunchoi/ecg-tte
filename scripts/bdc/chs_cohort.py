@@ -60,6 +60,11 @@ EMUS = [  # name, A, B (None = sequential vs none), age range, extra exclusion, 
          primary=["MI", "STROKE", "CHF"], H=56, bench="ASPREE CVD HR 0.95 (0.83-1.08)", cluster="aspirin"),
 ]
 SECONDARY = {"death": ["DEATH"], "hf": ["CHF"], "mi": ["MI"], "stroke": ["STROKE"]}
+# medication flags never used as code features for an emulation (its exposures, and summary flags containing them)
+AHT = r"(ACE|ACED|A2A|A2AD|CCB|CCBIR|CCBSR|AMLOD|NIFSR|NIFIR|DLTSR|DLTIR|VERSR|VERIR|HCTZ|HCTZK|LOOP|KSPR|BETA|BETAD|ALPHA|DIURET|HTNMED|ANYACE|ANYBETA|ANYDIUR|VASO|ACEI|CLON|RESER)\d*06"
+EXPOSURE_FLAGS = {"E1_ccb_vs_thiazide": AHT, "E1b_dhp_vs_thiazide": AHT, "E2_acei_vs_thiazide": AHT, "E3_acei_vs_ccb": AHT,
+                  "E4_thiazide_vs_beta": AHT, "E5_statin_vs_none": r"(STTN|LIPID|FIBR|NIAC|RESIN)\d*06",
+                  "E6_aspirin_vs_none": r"(ASA|ASPIRIN|NSAID|ADPI|WARF)\d*06|ASPIRIN"}
 
 
 def restricted_dir() -> Path:
@@ -79,8 +84,10 @@ def load(files):
              "INCBYPS", "TTOBYPS", "INCCHF", "TTOCHF", "INCSTRK", "TTOSTK", "DEATH", "TTODTH", "CAUSE80", "INCAFIB",
              "TTOAFIB", "PREVALENT", "EVTYPE", "TTOEVENT", "TTOFCNDT", "TTONFCND"}
     cols |= {f.upper() for fl in CC.CHS_CLASSES.values() for f in fl}
+    cols |= {f"DCODE{i}" for i in range(1, 11)} | {f"PCODE{i}" for i in range(1, 11)} | {"ADDAYS58"}
     CC.WANT.update(cols)
-    T = {t: CC.table(files, t) for t in list(TABLE_VISIT) + STATIC}
+    CC.WANT_RE[:] = [r"[A-Z0-9]+06"]  # every medication-class flag (98 per visit table)
+    T = {t: CC.table(files, t) for t in list(TABLE_VISIT) + STATIC + ["ICD9"]}
     U, seen, _, _ = CC.use_matrix(files, "CHS")
     return T, U, seen
 
@@ -99,7 +106,7 @@ def long_measures(T) -> pd.DataFrame:
         per = pd.to_numeric(bb.get("PERSTAT", pd.Series(1, index=bb.index)), errors="coerce").fillna(1)
         entry = dict(zip(bid, np.where(per == 2, 5, 2)))
     for t, D in T.items():
-        if not len(D) or t in STATIC and t != "BASEBOTH":
+        if not len(D) or (t not in TABLE_VISIT and t != "BASEBOTH"):
             continue
         ids = key(D)
         vis = ids.map(entry).fillna(2).astype(int) if t == "BASEBOTH" else pd.Series(TABLE_VISIT[t], index=D.index)
@@ -280,7 +287,55 @@ def build(root: Path):
         N["bench"] = E["bench"]
         allrows.append(N)
     R = pd.concat(allrows, ignore_index=True) if allrows else pd.DataFrame()
-    return R, dict(seen=seen, ecg=ev_info, n_xml_local=S(len(paths)))
+    K = code_features(T, R) if len(R) else pd.DataFrame(columns=["row", "code"])
+    if len(R):
+        R["row"] = np.arange(len(R))
+        R["n_codes"] = R.row.map(K.groupby("row").size()).fillna(0).astype(int)
+        R["n_hosp_codes"] = R.row.map(K[K.code.str.match(r"^[DP]:")].groupby("row").size()).fillna(0).astype(int)
+    return R, dict(seen=seen, ecg=ev_info, n_xml_local=S(len(paths)), codes=K)
+
+
+def code_features(T, R: pd.DataFrame) -> pd.DataFrame:
+    """Long (row, code) table: ICD-9 diagnosis (3-digit, 'D:') and procedure (2-digit, 'P:') codes of hospitalisations
+    admitted before the visit k-1 study day, and medication-class flags ('M:') recorded at visit k-1 (excluding each
+    emulation's exposure drugs and summary flags that contain them)."""
+    import re as _re
+    R = R.reset_index(drop=True)
+    out = []
+    H = T.get("ICD9", pd.DataFrame())
+    if len(H):
+        hid = key(H)
+        ad = pd.to_numeric(H.get("ADDAYS58"), errors="coerce")
+        rows = []
+        for i in range(1, 11):
+            for pre, col, n in (("D", f"DCODE{i}", 3), ("P", f"PCODE{i}", 2)):
+                if col in H:
+                    c = H[col].astype(str).str.strip().str.replace(".", "", regex=False)
+                    ok = c.str.len().ge(n) & ~c.isin(["nan", "", "."])
+                    rows.append(pd.DataFrame({"id": hid[ok], "day": ad[ok], "code": pre + ":" + c[ok].str[:n]}))
+        HC = pd.concat(rows, ignore_index=True).dropna(subset=["day"]) if rows else pd.DataFrame(columns=["id", "day", "code"])
+        m = R[["id", "day_k1"]].reset_index().rename(columns={"index": "row"}).merge(HC, on="id")
+        m = m[m.day < m.day_k1]
+        out.append(m[["row", "code"]])
+    # medication flags at visit k-1
+    for t, D in T.items():
+        if t not in TABLE_VISIT or not len(D) or t == "CYST_C_YR5":
+            continue
+        v = TABLE_VISIT[t]
+        flags = [c for c in D.columns if _re.fullmatch(r"[A-Z0-9]+06", str(c).upper())]
+        if not flags:
+            continue
+        ids = key(D)
+        M = D[flags].apply(pd.to_numeric, errors="coerce").eq(1)
+        M.insert(0, "id", ids.to_numpy())
+        long = M.melt(id_vars="id", var_name="flag", value_name="on")
+        long = long[long.on]
+        rr = R[R.k1 == v][["id", "EMU"]].reset_index().rename(columns={"index": "row"})
+        mm = rr.merge(long, on="id")
+        for emu, g in mm.groupby("EMU"):
+            g = g[~g.flag.str.upper().str.fullmatch(EXPOSURE_FLAGS.get(emu, "$^"))]
+            out.append(pd.DataFrame({"row": g.row, "code": "M:" + g.flag.str.upper()}))
+    return pd.concat(out, ignore_index=True).drop_duplicates() if out else pd.DataFrame(columns=["row", "code"])
 
 
 def report(R: pd.DataFrame, info: dict, path: Path) -> None:
@@ -306,6 +361,11 @@ def report(R: pd.DataFrame, info: dict, path: Path) -> None:
                      f"{np.mean(smds):.3f} ({len(smds)} items) |")
     L += ["", "## Held-out item coverage (share non-missing, all rows)", ""]
     L += [f"- {it} ({DOMAIN(it)}): {R[it].notna().mean():.2f}" for it in HELD]
+    if "n_codes" in R:
+        L += ["", "## Code features before time zero (PS-Codes rung)", ""]
+        for e, g in R.groupby("EMU", sort=False):
+            L.append(f"- {e}: any hospital code {(g.n_hosp_codes > 0).mean():.0%}; median codes per person "
+                     f"{g.n_codes.median():.0f} (hospital {g.n_hosp_codes.median():.0f})")
     L += ["", "## PS covariate coverage / prevalence", ""]
     for c in ("AGE", "MALE", "BLACK", "HTN", "DIAB", "CAD", "AF", "HF"):
         L.append(f"- {c}: non-missing {R[c].notna().mean():.2f}, mean {pd.to_numeric(R[c], errors='coerce').mean():.3f}")
@@ -319,11 +379,14 @@ def main(argv=None) -> None:
     t0 = time.time()
     R, info = build(Path(a.root))
     rd = restricted_dir()
+    K = info.pop("codes")
     try:
         R.to_parquet(rd / "chs_emulations.parquet", index=False)
+        K.to_parquet(rd / "chs_codes.parquet", index=False)
         rf = rd / "chs_emulations.parquet"
     except Exception:  # noqa: BLE001
         R.to_pickle(rd / "chs_emulations.pkl")
+        K.to_pickle(rd / "chs_codes.pkl")
         rf = rd / "chs_emulations.pkl"
     out = BC.out_root() / "chs_cohort"
     out.mkdir(parents=True, exist_ok=True)

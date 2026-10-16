@@ -33,10 +33,19 @@
 
 **PS-Clinical (richest):** PS-Base plus SBP and DBP, BMI, smoking, creatinine, LDL, HDL, glucose and albumin (latest at or before *k*−1), with median imputation plus missingness indicators. Echo is never a PS input.
 
+**PS-Codes (hdPS-like; added 2026-10-16 before the lock, user decision):** PS-Base plus the top 200 code features.
+- **Code features:**
+  - 3-digit ICD-9 diagnosis codes and 2-digit procedure codes from CHS hospitalisations (`ICD9` table) **admitted before the visit *k*−1 study day**;
+  - the medication-class flags recorded at visit *k*−1 (98 per visit).
+- **Excluded:** each emulation's exposure drugs and the summary flags that contain them (`HTNMED06`, `ANY*`, `DIURET06`, …). For statin and aspirin, the related lipid and antithrombotic flags are excluded too.
+- **Selection:** codes present in ≥ 20 participants of the emulation, ranked by |log prevalence ratio| between arms (treatment-only ranking, as in the paper's hdPS).
+- **Coverage:** CHS has no outpatient codes, so this rung is sparser than Yale's hdPS. The report gives the share of participants with any prior hospital code.
+
 **Arms** (estimator as in `pipeline.md` §4–5: L2 logistic, C = 1; 1:1 greedy caliper 0.2 SD on the logit; Cox with pair-clustered SE):
 - crude;
 - PS-Base, PS-Base + ECG, PS-Base + permuted ECG;
-- PS-Clinical, PS-Clinical + ECG.
+- PS-Clinical, PS-Clinical + ECG;
+- PS-Codes, PS-Codes + ECG.
 
 **Held-out panel** (latest value at or before *k*−1; balance is computed only where an item is observed in both arms):
 - **Echo** (primary domain), from baseline `BASE2` (original cohort) or Year 7:

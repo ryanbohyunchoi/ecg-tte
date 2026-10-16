@@ -44,6 +44,8 @@ class CHSBuild(unittest.TestCase):
                 D[f"AGEY{k}" if k > 2 else "AGEBL_x"] = age
                 if sbp is not None:
                     D["AVESYS"] = sbp
+                D["THYR06"] = [1 if i % 5 == 0 else 0 for i in range(n)]
+                D["HTNMED06"] = 1
                 return D
             ccb, thz = list(range(0, 20)), list(range(20, 40))
             pre = "phs000287.v7.pht0014{}.v1.p1.c1.{}.HMB-MDS.txt.gz"
@@ -63,6 +65,9 @@ class CHSBuild(unittest.TestCase):
             wd(d / pre.format("64", "EVENT_SUMMARY"), es)
             ev = pd.DataFrame({"dbGaP_Subject_ID": ids[3:8] + ids[20:22], "EVTYPE": 1, "TTOEVENT": [1000] * 5 + [100, 4000]})
             wd(d / pre.format("66", "CHS_Event16"), ev)  # 5 MIs after time zero (day 365) in CCB; one before t0, one after horizon
+            icd = pd.DataFrame({"dbGaP_Subject_ID": [ids[0], ids[5], ids[5], ids[25]], "ADDAYS58": [-1, 100, 900, 10],
+                                "DCODE1": ["428.0", "250.00", "410.1", "401.9"], "PCODE1": ["36.06", "", "", "88.72"]})
+            wd(d / "phs000287.v7.pht001467.v1.p1.c1.ICD9.HMB-MDS.txt.gz", icd)
             wd(d / pre.format("65", "EVENT_TIME_TO_CENSUS"), pd.DataFrame({"dbGaP_Subject_ID": ids, "TTOFCNDT": 5000, "TTONFCND": 5000}))
             tsv = root / "export_I" / "tsv"
             tsv.mkdir(parents=True)
@@ -89,6 +94,22 @@ class CHSBuild(unittest.TestCase):
             self.assertEqual(int(E1[E1.arm == 1].E_primary.sum()), 5)   # MI at day 1000 (t0 = 365)
             self.assertEqual(int(E1[E1.arm == 0].E_primary.sum()), 0)   # one MI before t0, one beyond 60 months
             self.assertTrue((E1.HF == 0).all() and (E1.AGE == 72).all())
+            K = pd.read_parquet(Path(t) / "r" / "chs_codes.parquet") if (Path(t) / "r" / "chs_codes.parquet").exists() \
+                else pd.read_pickle(Path(t) / "r" / "chs_codes.pkl")
+            e1rows = set(E1.row)
+            K1 = K[K.row.isin(e1rows)]
+            r5 = E1[E1.id == ids[5]].row.iloc[0]
+            # id 5: day_k1 = 0 (year 2), so its admissions on days 100 and 900 are after visit k-1 -> excluded
+            self.assertFalse(K1[K1.row == r5].code.str.startswith("D:").any())
+            r25 = E1[E1.id == ids[25]].row.iloc[0]
+            self.assertFalse(K1[K1.row == r25].code.str.startswith("D:").any())  # day 10 > day_k1 0
+            self.assertFalse(K1.code.str.contains("HTNMED|CCB|HCTZ").any())        # exposure / summary flags excluded
+            self.assertTrue(K1.code.eq("M:THYR06").any())                          # other medication flags kept
+            later = R[(R.id == ids[5]) & (R.k1 == 3)]                               # sequential rows at visit 4 (k-1 = 3, day 365)
+            self.assertTrue(len(later) > 0)
+            codes5 = set(K[K.row.isin(set(later.row))].code)
+            self.assertIn("D:250", codes5)       # admission on day 100 < 365: kept (3-digit ICD-9)
+            self.assertNotIn("D:410", codes5)    # admission on day 900: after visit k-1
             rep = (Path(t) / "o" / "chs_cohort" / "report.md").read_text()
             self.assertNotIn("5003", rep)
 
