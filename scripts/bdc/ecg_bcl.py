@@ -232,7 +232,9 @@ def cmd_embed(a) -> None:
     BC.log(f"checkpoint: {a.ckpt}")
     cohort = Path(a.cohort)
     C = pd.read_parquet(cohort) if cohort.suffix == ".parquet" else pd.read_pickle(cohort)
-    C = C[C.ECG_XML_PATH.notna()].reset_index(drop=True)
+    idc = a.id_col or ("MASKID" if "MASKID" in C else "id")
+    # one embedding per ECG file (CHS: the same prior-visit ECG can serve several emulations)
+    C = C[C.ECG_XML_PATH.notna()].drop_duplicates("ECG_XML_PATH").reset_index(drop=True)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model, cfg = load_encoder(a.ckpt, device)
     t0 = time.time()
@@ -251,14 +253,15 @@ def cmd_embed(a) -> None:
     E = embed_arrays(model, arrays, batch=a.batch, device=device)
     t2 = time.time()
     emb = pd.DataFrame(E, columns=[f"e{j}" for j in range(E.shape[1])])
-    emb.insert(0, "MASKID", C.MASKID.iloc[ok].to_numpy())
+    emb.insert(0, "ECG_FILE", [Path(x).name for x in C.ECG_XML_PATH.iloc[ok]])
+    emb.insert(0, idc, C[idc].iloc[ok].to_numpy())
     rdir = cohort.parent
     try:
-        emb.to_parquet(rdir / "sprint_ecg_bcl.parquet", index=False)
-        rfile = rdir / "sprint_ecg_bcl.parquet"
+        emb.to_parquet(rdir / f"{a.name}_ecg_bcl.parquet", index=False)
+        rfile = rdir / f"{a.name}_ecg_bcl.parquet"
     except Exception:  # noqa: BLE001
-        emb.to_pickle(rdir / "sprint_ecg_bcl.pkl")
-        rfile = rdir / "sprint_ecg_bcl.pkl"
+        emb.to_pickle(rdir / f"{a.name}_ecg_bcl.pkl")
+        rfile = rdir / f"{a.name}_ecg_bcl.pkl"
     # aggregate checks: degeneracy (the mV-input bug gave pairwise cosine ~1) and a sex/age linear probe
     Z = E / np.linalg.norm(E, axis=1, keepdims=True)
     rng = np.random.default_rng(0)
@@ -272,29 +275,39 @@ def cmd_embed(a) -> None:
              norm_p5_p50_p95=[round(float(v), 2) for v in np.percentile(np.linalg.norm(E, axis=1), [5, 50, 95])])
     Cm = C.iloc[ok].reset_index(drop=True)
     R["probe"] = probe(E, Cm)
-    out = BC.out_root() / "sprint_ecg"
+    out = BC.out_root() / f"{a.name}_ecg"
     out.mkdir(parents=True, exist_ok=True)
     BC.write_json(out / "report.json", R)
-    print(f"# SPRINT ECG embedding ({R['when']}, git {R['git'][:10]})")
+    print(f"# {a.name.upper()} ECG embedding ({R['when']}, git {R['git'][:10]})")
     for k, v in R.items():
         if k not in ("when", "git"):
             print(f"- {k}: {v}")
     BC.log(f"restricted embeddings: {rfile} (stays in BDC); report: {out}/report.json")
 
 
+PROBES = [("female_auc", ["FEMALE", "!MALE"], "bin"), ("age_r2", ["AGE"], "cont"), ("egfr_r2", ["EGFR"], "cont"),
+          ("log_ntprobnp_r2", ["LOG_NTPROBNP"], "cont"), ("cornell_voltage_r2", ["ECG_CV"], "cont"),
+          ("echo_lv_mass_r2", ["echo_lv_mass"], "cont"), ("creatinine_r2", ["lab_creatinine"], "cont"),
+          ("sbp_r2", ["vital_sbp"], "cont"), ("ldl_r2", ["LDL_CALC", "lab_ldl"], "cont")]
+
+
 def probe(E, C) -> dict:
-    """5-fold linear probes on standardised embeddings: AUC for sex, R2 for age (sanity gate: sex AUC >= 0.80)."""
+    """5-fold ridge probes on standardised embeddings, for whichever target columns the cohort has (sanity gate: sex
+    AUC >= 0.80; LDL is the negative control). '!MALE' = 1 - MALE."""
     import pandas as pd
     X = (E - E.mean(0)) / (E.std(0) + 1e-8)
     folds = np.random.default_rng(1).integers(0, 5, len(X))
     res = {}
-    for name, y, kind in (("female_auc", pd.to_numeric(C.FEMALE, errors="coerce"), "bin"),
-                          ("age_r2", pd.to_numeric(C.AGE, errors="coerce"), "cont"),
-                          ("egfr_r2", pd.to_numeric(C.EGFR, errors="coerce"), "cont"),
-                          ("log_ntprobnp_r2", pd.to_numeric(C.LOG_NTPROBNP, errors="coerce"), "cont"),
-                          ("cornell_voltage_r2", pd.to_numeric(C.ECG_CV, errors="coerce"), "cont"),
-                          ("ldl_r2", pd.to_numeric(C.LDL_CALC, errors="coerce"), "cont")):
+    for name, cands, kind in PROBES:
+        col = next((c for c in cands if c.lstrip("!") in C.columns), None)
+        if col is None:
+            continue
+        y = pd.to_numeric(C[col.lstrip("!")], errors="coerce")
+        if col.startswith("!"):
+            y = 1 - y
         m = y.notna().to_numpy()
+        if m.sum() < 100:
+            continue
         yy, XX, ff = y.to_numpy()[m], X[m], folds[m]
         pred = np.zeros(len(yy))
         for k in range(5):
@@ -318,6 +331,8 @@ def main(argv=None) -> None:
     e = sub.add_parser("embed")
     e.add_argument("--ckpt", default="", help="slim encoder .pt (searched for under /sbgenomics if omitted)")
     e.add_argument("--cohort", default="/sbgenomics/workspace/bdc-restricted/sprint_cohort.parquet")
+    e.add_argument("--name", default="sprint", help="output names: <name>_ecg_bcl.parquet, report <out>/<name>_ecg/")
+    e.add_argument("--id-col", default="", help="participant ID column (default MASKID if present, else id)")
     e.add_argument("--batch", type=int, default=64)
     e.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 1))
     s = sub.add_parser("slim")
