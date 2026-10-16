@@ -87,7 +87,11 @@ def load(files):
     cols |= {f"DCODE{i}" for i in range(1, 11)} | {f"PCODE{i}" for i in range(1, 11)} | {"ADDAYS58"}
     CC.WANT.update(cols)
     CC.WANT_RE[:] = [r"[A-Z0-9]+06"]  # every medication-class flag (98 per visit table)
-    T = {t: CC.table(files, t) for t in list(TABLE_VISIT) + STATIC + ["ICD9"]}
+    T = {}
+    for t in list(TABLE_VISIT) + STATIC + ["ICD9"]:
+        t0 = time.time()
+        T[t] = CC.table(files, t)
+        BC.log(f"  read {t}: {len(T[t])} rows ({time.time() - t0:.0f} s)")
     U, seen, _, _ = CC.use_matrix(files, "CHS")
     return T, U, seen
 
@@ -134,25 +138,23 @@ def long_measures(T) -> pd.DataFrame:
 
 
 def exact(L: pd.DataFrame, R: pd.DataFrame, item: str, at: str) -> pd.Series:
-    """Value of item at exactly visit R[at] (NaN if not recorded at that visit)."""
-    x = L[L.item == item].set_index(["id", "visit"]).value
-    return pd.Series([x.get((i, int(v)), np.nan) for i, v in zip(R.id, R[at])], index=R.index)
+    """Value of item at exactly visit R[at] (NaN if not recorded at that visit). Vectorised join."""
+    x = L[L.item == item][["id", "visit", "value"]].drop_duplicates(["id", "visit"])
+    q = pd.DataFrame({"id": R.id.to_numpy(), "visit": R[at].astype(int).to_numpy(), "_r": np.arange(len(R))})
+    m = q.merge(x, on=["id", "visit"], how="left").sort_values("_r")
+    return pd.Series(m.value.to_numpy(), index=R.index)
 
 
 def latest_before(L: pd.DataFrame, R: pd.DataFrame, item: str, upto: str = "k1") -> pd.Series:
-    """Latest value of item at a visit <= R[upto] per row of R (columns id, k1)."""
-    x = L[L.item == item][["id", "visit", "value"]].sort_values("visit")
-    out = np.full(len(R), np.nan)
+    """Latest value of item at a visit <= R[upto] per row of R (columns id, k1). Vectorised as-of join."""
+    x = L[L.item == item][["id", "visit", "value"]].dropna().sort_values("visit")
     if not len(x):
-        return pd.Series(out, index=R.index)
-    g = {i: (d.visit.to_numpy(), d.value.to_numpy()) for i, d in x.groupby("id")}
-    for j, (i, v) in enumerate(zip(R.id.to_numpy(), R[upto].to_numpy())):
-        if i in g:
-            vs, vals = g[i]
-            p = np.searchsorted(vs, v, side="right") - 1
-            if p >= 0:
-                out[j] = vals[p]
-    return pd.Series(out, index=R.index)
+        return pd.Series(np.nan, index=R.index)
+    q = pd.DataFrame({"id": R.id.to_numpy(), "visit": R[upto].astype(int).to_numpy(), "_r": np.arange(len(R))})
+    q = q.sort_values("visit")
+    x = x.astype({"visit": int})
+    m = pd.merge_asof(q, x, on="visit", by="id", direction="backward").sort_values("_r")
+    return pd.Series(m.value.to_numpy(), index=R.index)
 
 
 def sequential(U: pd.DataFrame, a: str) -> pd.DataFrame:
@@ -171,8 +173,11 @@ def sequential(U: pd.DataFrame, a: str) -> pd.DataFrame:
 
 
 def build(root: Path):
+    BC.log("indexing project files ...")
     files = CC.index(root)
+    BC.log(f"{len(files)} files; reading CHS tables ...")
     T, U, seen = load(files)
+    BC.log("tables read; building measurements ...")
     L, entry = long_measures(T)
     ev_files, ev_info = CC.ecg_visits(files, "CHS", set(U.id))
     paths = {p.name: str(p) for p in files if p.name.upper().startswith("CHS_ECG") and p.name.lower().endswith(".xml")}
@@ -213,7 +218,9 @@ def build(root: Path):
     st = st.drop_duplicates("id").set_index("id")
 
     allrows = []
+    t_start = time.time()
     for E in EMUS:
+        BC.log(f"{E['name']}: building ({time.time() - t_start:.0f} s)")
         N = CC.new_users(U, E["A"], E["B"]) if E["B"] else sequential(U, E["A"])
         if not len(N):
             continue
@@ -287,6 +294,7 @@ def build(root: Path):
         N["bench"] = E["bench"]
         allrows.append(N)
     R = pd.concat(allrows, ignore_index=True) if allrows else pd.DataFrame()
+    BC.log(f"code features for {len(R)} rows ...")
     K = code_features(T, R) if len(R) else pd.DataFrame(columns=["row", "code"])
     if len(R):
         R["row"] = np.arange(len(R))
