@@ -28,6 +28,7 @@ class CHSCount(unittest.TestCase):
             base = dict(dbGaP_Subject_ID=ids, Individual_ID=[f"C{i}" for i in ids], ACE06=0, ACED06=0, CCB06=0, AMLOD06=0, NIFSR06=0, NIFIR06=0, HCTZ06=0,
                         HCTZK06=0, BETA06=0, BETAD06=0, STTN06=0, ASPIRIN=0)
             V2 = pd.DataFrame(base)
+            V2["COMMENT"] = ['bad \x85 text "x' if i % 7 == 0 else "ok" for i in range(40)]
             V3 = pd.DataFrame(base)
             V3.loc[0:14, "ACE06"] = 1       # 15 ACEi starters at year 3
             V3.loc[15:26, "CCB06"] = 1      # 12 CCB starters

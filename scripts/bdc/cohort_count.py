@@ -70,11 +70,19 @@ def index(root: Path) -> list:
     return out
 
 
+ID_COLS = {"DBGAP_SUBJECT_ID", "INDIVIDUAL_ID", "SIDNO", "SUBJID"}
+WANT = set()  # upper-case column names the counter needs (set in main); empty = all columns
+
+
 def read_dbgap(p: Path) -> pd.DataFrame:
+    """dbGaP phenotype table: '#' header lines, then tab-delimited rows, one per line. Split on '\n' only: str.splitlines
+    would also break on bytes such as 0x85 or 0x1c inside latin-1 free text (BDC 2026-10-16: a table exploded to 219k
+    rows). No quoting; IDs stay strings; only the needed columns are kept."""
     raw = gzip.decompress(p.read_bytes()) if p.name.endswith(".gz") else p.read_bytes()
-    txt = "\n".join(ln for ln in raw.decode("latin-1").splitlines() if ln and not ln.startswith("#"))
-    # dbGaP tables are tab-delimited without quoting (free text may contain stray quotes); IDs stay strings
-    return pd.read_csv(io.StringIO(txt), sep="\t", quoting=3, dtype=str, on_bad_lines="warn", engine="python")
+    lines = [ln.rstrip("\r") for ln in raw.decode("latin-1").split("\n")]
+    txt = "\n".join(ln for ln in lines if ln and not ln.startswith("#"))
+    keep = (lambda c: str(c).upper() in WANT or str(c).upper() in ID_COLS) if WANT else None
+    return pd.read_csv(io.StringIO(txt), sep="\t", quoting=3, dtype=str, on_bad_lines="warn", usecols=keep)
 
 
 def table(files: list, token: str) -> pd.DataFrame:
@@ -228,6 +236,11 @@ def main(argv=None) -> None:
     ap.add_argument("--root", default=BC.SB_INPUT_ROOTS[0])
     a = ap.parse_args(argv)
     t0 = time.time()
+    classes = CHS_CLASSES if a.cohort == "CHS" else MESA_CLASSES
+    visits = CHS_VISITS if a.cohort == "CHS" else MESA_VISITS
+    WANT.clear()
+    WANT.update(f.format(k=k).upper() for fl in classes.values() for f in fl for k in visits)
+    WANT.update({"NEWLVM43", "MMLVMS43", "OLVEDM1", "STDYTIME", "PERSTAT"})
     files = index(Path(a.root))
     U, seen, flagdist, extra = use_matrix(files, a.cohort)
     if a.cohort == "CHS":
