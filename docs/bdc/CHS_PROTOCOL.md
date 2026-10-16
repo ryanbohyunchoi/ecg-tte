@@ -73,17 +73,21 @@
 
 ## Emulations
 
-The benchmark values must be verified against the trial papers before the lock (they are currently from the literature summary).
+Benchmarks were verified against the PubMed abstracts on 2026-10-16:
+- ALLHAT (JAMA 2002, PMID 12479763): amlodipine and lisinopril vs chlorthalidone, plus the secondary HF and stroke results.
+- PROSPER (Lancet 2002, PMID 12457784).
+- ASPREE (NEJM 2018, PMID 30221597).
+- STOP-2 (Lancet 1999, PMID 10577635): the abstract reports only conventional vs newer drugs pooled (CV mortality RR 0.99, 0.84–1.16). The ACE inhibitor vs CCB head-to-head figures are in the paper body and are **not yet verified**. Emulation 3 is therefore excluded from RCT-agreement metrics until they are checked; its balance results are unaffected.
 
 | # | New users: A vs B | Eligibility (at *k*−1) | Primary outcome | Horizon | RCT benchmark (verify) |
 |---|---|---|---|---|---|
-| 1 | CCB vs thiazide | No prevalent HF (ALLHAT excluded symptomatic HF) | MI or fatal CHD | 60 mo | ALLHAT amlodipine vs chlorthalidone: RR 0.98 (0.90–1.07); HF RR 1.38 (secondary) |
+| 1 | CCB vs thiazide | No prevalent HF (ALLHAT excluded symptomatic HF) | MI or fatal CHD | 60 mo | ALLHAT amlodipine vs chlorthalidone: RR 0.98 (0.90–1.07) ✓; HF 1.38 (1.25–1.52) ✓ |
 | 1b | Dihydropyridine CCB (`AMLOD06`, `NIF*06`) vs thiazide | as 1 | as 1 | 60 mo | as 1 (sensitivity) |
-| 2 | ACE inhibitor vs thiazide | as 1 | as 1 | 60 mo | ALLHAT lisinopril vs chlorthalidone: RR 0.99 (0.91–1.08); HF 1.19, stroke 1.15 |
-| 3 | ACE inhibitor vs CCB | Age 70–84 | Cardiovascular death | 60 mo | STOP-2 ACEi vs CCB: CV mortality about 1.0 (secondary: MI 0.77, HF 0.78) |
+| 2 | ACE inhibitor vs thiazide | as 1 | as 1 | 60 mo | ALLHAT lisinopril vs chlorthalidone: RR 0.99 (0.91–1.08) ✓; HF 1.19 (1.07–1.31) ✓; stroke 1.15 (1.02–1.30) ✓ |
+| 3 | ACE inhibitor vs CCB | Age 70–84 | Cardiovascular death | 60 mo | STOP-2 ACEi vs CCB: head-to-head not in the abstract, to verify (pooled newer vs conventional: CV mortality 0.99 (0.84–1.16) ✓) |
 | 4 | Thiazide vs beta-blocker | Age 65–74 | Stroke, MI or fatal CHD | 70 mo | MRC older adults: no head-to-head HR; balance only |
-| 5 | Statin vs none (one sequential trial per visit) | Age 70–82; no prior statin | MI, stroke or fatal CHD | 39 mo | PROSPER: HR 0.85 (0.74–0.97) |
-| 6 | Aspirin vs none (one sequential trial per visit) | Age ≥ 70; no prior MI, stroke, HF or AF | MI, stroke or HF | 56 mo | ASPREE CVD: HR 0.95 (0.83–1.08) |
+| 5 | Statin vs none (one sequential trial per visit) | Age 70–82; no prior statin | MI, stroke or fatal CHD | 39 mo | PROSPER: HR 0.85 (0.74–0.97) ✓ |
+| 6 | Aspirin vs none (one sequential trial per visit) | Age ≥ 70; no prior MI, stroke, HF or AF | MI, stroke or HF | 56 mo | ASPREE CVD: HR 0.95 (0.83–1.08) ✓; major haemorrhage 1.38 (1.18–1.62) ✓ |
 
 - **Secondary outcomes for every emulation:** each component, all-cause death, and HF.
 - **Sequential trials (5 and 6):** at each visit *k*, initiators at *k* are compared with eligible non-users at *k*. Visit is included in the PS, and pairs are formed within the pooled set. A person may be a comparator at one visit and an initiator later; the SE is clustered on pairs, as in the paper.
