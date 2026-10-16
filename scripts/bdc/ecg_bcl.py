@@ -238,20 +238,30 @@ def cmd_embed(a) -> None:
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model, cfg = load_encoder(a.ckpt, device)
     t0 = time.time()
-    ok, fails, arrays = [], {}, []
+    ok, fails, parts = [], {}, []
     from concurrent.futures import ProcessPoolExecutor
+    t_emb = 0.0
+    paths = C.ECG_XML_PATH.tolist()
+    # convert + embed in blocks so memory stays flat (2026-10-16: holding all converted arrays ran out of memory)
     with ProcessPoolExecutor(a.workers) as ex:  # XML decode + running-median filter: CPU-bound, ~0.4 s per ECG per core
-        for i, (arr, why) in enumerate(ex.map(_convert_one, C.ECG_XML_PATH, chunksize=16)):
-            if arr is not None:
-                arrays.append(arr)
-                ok.append(i)
-            else:
-                fails[why] = fails.get(why, 0) + 1
-            if (i + 1) % 1000 == 0:
-                BC.log(f"converted {i + 1}/{len(C)} ({time.time() - t0:.0f} s)")
-    t1 = time.time()
-    E = embed_arrays(model, arrays, batch=a.batch, device=device)
+        for start in range(0, len(paths), a.block):
+            block = paths[start:start + a.block]
+            arrays = []
+            for j, (arr, why) in enumerate(ex.map(_convert_one, block, chunksize=4)):
+                if arr is not None:
+                    arrays.append(arr)
+                    ok.append(start + j)
+                else:
+                    fails[why] = fails.get(why, 0) + 1
+            te = time.time()
+            if arrays:
+                parts.append(embed_arrays(model, arrays, batch=a.batch, device=device))
+            t_emb += time.time() - te
+            del arrays
+            BC.log(f"converted + embedded {min(start + a.block, len(paths))}/{len(paths)} ({time.time() - t0:.0f} s)")
+    E = np.concatenate(parts) if parts else np.zeros((0, 256), np.float32)
     t2 = time.time()
+    t1 = t2 - t_emb
     emb = pd.DataFrame(E, columns=[f"e{j}" for j in range(E.shape[1])])
     emb.insert(0, "ECG_FILE", [Path(x).name for x in C.ECG_XML_PATH.iloc[ok]])
     emb.insert(0, idc, C[idc].iloc[ok].to_numpy())
@@ -334,7 +344,8 @@ def main(argv=None) -> None:
     e.add_argument("--name", default="sprint", help="output names: <name>_ecg_bcl.parquet, report <out>/<name>_ecg/")
     e.add_argument("--id-col", default="", help="participant ID column (default MASKID if present, else id)")
     e.add_argument("--batch", type=int, default=64)
-    e.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 1))
+    e.add_argument("--workers", type=int, default=max(1, min(6, (os.cpu_count() or 2) - 1)))
+    e.add_argument("--block", type=int, default=512, help="ECGs converted and embedded per block (memory bound)")
     s = sub.add_parser("slim")
     s.add_argument("src")
     s.add_argument("dst")
