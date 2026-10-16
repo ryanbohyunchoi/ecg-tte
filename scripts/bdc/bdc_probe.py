@@ -111,6 +111,9 @@ def env(roots) -> dict:
 
 
 # ---------------------------------------------------------------- files
+INCLUDE = None  # compiled --include regex (matched against the full path); None = everything
+
+
 def walk(roots):
     for r in roots:
         r = Path(r)
@@ -119,6 +122,8 @@ def walk(roots):
         for dirpath, _dirs, files in os.walk(r, followlinks=True):
             for f in files:
                 p = Path(dirpath) / f
+                if INCLUDE is not None and not INCLUDE.search(str(p)):
+                    continue
                 try:
                     size = p.stat().st_size
                 except OSError:
@@ -532,12 +537,16 @@ def main(argv=None) -> None:
     ap.add_argument("--xml-sample", type=int, default=30)
     ap.add_argument("--seed", type=int, default=20261014)
     ap.add_argument("--max-table-mb", type=int, default=4000)
+    ap.add_argument("--include", default=None, help="only files whose path matches this regex, e.g. 'phs000287|CHS'")
+    ap.add_argument("--out-name", default="probe", help="output folder under <out>/ (default probe)")
     a = ap.parse_args(argv)
+    global INCLUDE
+    INCLUDE = re.compile(a.include, re.I) if a.include else None
     only = [s.strip() for s in a.only.split(",") if s.strip()]
     bad = [s for s in only if s not in SECTIONS]
     if bad:
         sys.exit(f"unknown sections {bad}; choose from {SECTIONS}")
-    out = BC.out_root() / "probe"
+    out = BC.out_root() / a.out_name
     out.mkdir(parents=True, exist_ok=True)
     R = dict(when=time.strftime("%Y-%m-%d %H:%M %Z"), args=vars(a), errors={})
     for s in only:
