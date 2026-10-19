@@ -21,70 +21,76 @@ FLAGS = ["ACE06", "ACED06", "CCB06", "AMLOD06", "NIFSR06", "NIFIR06", "HCTZ06", 
          "ASPIRIN"]
 
 
+def write_synthetic(t):
+    """Synthetic CHS dbGaP tables + Gen3 export under <t>/pf; returns (root, ids). Shared with test_bdc_chs_clmbr."""
+    root = Path(t) / "pf"
+    d = root / "export_P" / "drs"
+    d.mkdir(parents=True)
+    n = 60
+    ids = [str(5000 + i) for i in range(n)]
+    ind = [f"C{i}" for i in ids]
+
+    def visit(k, day, age, ccb=None, thz=None, sbp=None):
+        D = pd.DataFrame({"dbGaP_Subject_ID": ids, "Individual_ID": ind})
+        for f in FLAGS:
+            D[f] = 0
+        if ccb is not None:
+            D.loc[ccb, "CCB06"] = 1
+        if thz is not None:
+            D.loc[thz, "HCTZ06"] = 1
+        if day is not None:
+            D["STDYTIME"] = day
+        D[f"AGEY{k}" if k > 2 else "AGEBL_x"] = age
+        if sbp is not None:
+            D["AVESYS"] = sbp
+        D["THYR06"] = [1 if i % 5 == 0 else 0 for i in range(n)]
+        D["HTNMED06"] = 1
+        return D
+    ccb, thz = list(range(0, 20)), list(range(20, 40))
+    pre = "phs000287.v7.pht0014{}.v1.p1.c1.{}.HMB-MDS.txt.gz"
+    wd(d / pre.format("50", "BASE1"), visit(2, None, 72))
+    wd(d / pre.format("51", "BASE2"), pd.DataFrame({"dbGaP_Subject_ID": ids, "NEWLVM43": 150.0, "LVEF43": 1}))
+    wd(d / pre.format("52", "BASEBOTH"), pd.DataFrame({"dbGaP_Subject_ID": ids, "Individual_ID": ind, "PERSTAT": 1,
+                                                        "AGEBL": 72, "GEND01": [i % 2 for i in range(n)], "RACE01": 1,
+                                                        "BPHI": 1, "DIABADA": 1, "SMOKE": 0, "CRE44": 1.0}))
+    V3 = visit(3, 365, 73, ccb, thz, sbp=None)
+    # id 45 has no medication record at year 3 (missed visit) and starts a CCB at year 4: never a new user
+    V3.loc[45, [f for f in FLAGS]] = np.nan
+    wd(d / pre.format("88", "YR3"), V3)
+    # visit-4 SBP (after time zero for year-3 starters) must NOT be used as their held-out value
+    V4 = visit(4, 730, 74, ccb, thz, sbp=999.0)
+    V4.loc[45, "CCB06"] = 1
+    wd(d / pre.format("89", "YR4"), V4)
+    es = pd.DataFrame({"dbGaP_Subject_ID": ids, "MIBLMOD": 0, "ANBLMOD": 0, "CHBLMOD": 0, "STBLMOD": 0, "INCMI": 0,
+                       "TTOMI": 9999, "INCANG": 0, "TTOANG": 9999, "INCANGIO": 0, "TTOANGI": 9999, "INCBYPS": 0,
+                       "TTOBYPS": 9999, "INCCHF": 0, "TTOCHF": 9999, "INCSTRK": 0, "TTOSTK": 9999, "DEATH": 0,
+                       "TTODTH": 9999, "CAUSE80": 0})
+    es.loc[0:2, "CHBLMOD"] = 1  # prevalent HF -> excluded from E1
+    es.loc[30, ["INCCHF", "TTOCHF"]] = [1, 200]  # HF between visit k-1 (day 0) and time zero (day 365) -> excluded
+    wd(d / pre.format("64", "EVENT_SUMMARY"), es)
+    ev = pd.DataFrame({"dbGaP_Subject_ID": ids[3:8] + ids[20:22], "EVTYPE": 1, "TTOEVENT": [1000] * 5 + [100, 4000]})
+    wd(d / pre.format("66", "CHS_Event16"), ev)  # 5 MIs after time zero (day 365) in CCB; one before t0, one after horizon
+    icd = pd.DataFrame({"dbGaP_Subject_ID": [ids[0], ids[5], ids[5], ids[25]], "ADDAYS58": [-1, 100, 900, 10],
+                        "DCODE1": ["428.0", "250.00", "410.1", "401.9"], "PCODE1": ["36.06", "", "", "88.72"]})
+    wd(d / "phs000287.v7.pht001467.v1.p1.c1.ICD9.HMB-MDS.txt.gz", icd)
+    wd(d / pre.format("65", "EVENT_TIME_TO_CENSUS"), pd.DataFrame({"dbGaP_Subject_ID": ids, "TTOFCNDT": 5000, "TTONFCND": 5000}))
+    tsv = root / "export_I" / "tsv"
+    tsv.mkdir(parents=True)
+    pd.DataFrame({"id": [f"s{i}" for i in range(n)], "object.participant_id": ind}).to_csv(tsv / "subject.tsv", sep="\t", index=False)
+    files = [f"CHS_ECG_VISIT01_19890101_{i:05d}.xml" for i in range(n)] + [f"CHS_ECG_VISIT02_19900101_{i + 100:05d}.xml" for i in range(n)]
+    pd.DataFrame({"relations.dst_id": [f"s{i}" for i in range(n)] * 2, "object.file_name": files}).to_csv(
+        tsv / "imaging_file.tsv", sep="\t", index=False)
+    xd = root / "export_I" / "drs" / "data"
+    xd.mkdir(parents=True)
+    for f in files:
+        (xd / f).write_text("<RestingECG/>")
+    return root, ids
+
+
 class CHSBuild(unittest.TestCase):
     def test_build(self):
         with tempfile.TemporaryDirectory() as t:
-            root = Path(t) / "pf"
-            d = root / "export_P" / "drs"
-            d.mkdir(parents=True)
-            n = 60
-            ids = [str(5000 + i) for i in range(n)]
-            ind = [f"C{i}" for i in ids]
-
-            def visit(k, day, age, ccb=None, thz=None, sbp=None):
-                D = pd.DataFrame({"dbGaP_Subject_ID": ids, "Individual_ID": ind})
-                for f in FLAGS:
-                    D[f] = 0
-                if ccb is not None:
-                    D.loc[ccb, "CCB06"] = 1
-                if thz is not None:
-                    D.loc[thz, "HCTZ06"] = 1
-                if day is not None:
-                    D["STDYTIME"] = day
-                D[f"AGEY{k}" if k > 2 else "AGEBL_x"] = age
-                if sbp is not None:
-                    D["AVESYS"] = sbp
-                D["THYR06"] = [1 if i % 5 == 0 else 0 for i in range(n)]
-                D["HTNMED06"] = 1
-                return D
-            ccb, thz = list(range(0, 20)), list(range(20, 40))
-            pre = "phs000287.v7.pht0014{}.v1.p1.c1.{}.HMB-MDS.txt.gz"
-            wd(d / pre.format("50", "BASE1"), visit(2, None, 72))
-            wd(d / pre.format("51", "BASE2"), pd.DataFrame({"dbGaP_Subject_ID": ids, "NEWLVM43": 150.0, "LVEF43": 1}))
-            wd(d / pre.format("52", "BASEBOTH"), pd.DataFrame({"dbGaP_Subject_ID": ids, "Individual_ID": ind, "PERSTAT": 1,
-                                                                "AGEBL": 72, "GEND01": [i % 2 for i in range(n)], "RACE01": 1,
-                                                                "BPHI": 1, "DIABADA": 1, "SMOKE": 0, "CRE44": 1.0}))
-            V3 = visit(3, 365, 73, ccb, thz, sbp=None)
-            # id 45 has no medication record at year 3 (missed visit) and starts a CCB at year 4: never a new user
-            V3.loc[45, [f for f in FLAGS]] = np.nan
-            wd(d / pre.format("88", "YR3"), V3)
-            # visit-4 SBP (after time zero for year-3 starters) must NOT be used as their held-out value
-            V4 = visit(4, 730, 74, ccb, thz, sbp=999.0)
-            V4.loc[45, "CCB06"] = 1
-            wd(d / pre.format("89", "YR4"), V4)
-            es = pd.DataFrame({"dbGaP_Subject_ID": ids, "MIBLMOD": 0, "ANBLMOD": 0, "CHBLMOD": 0, "STBLMOD": 0, "INCMI": 0,
-                               "TTOMI": 9999, "INCANG": 0, "TTOANG": 9999, "INCANGIO": 0, "TTOANGI": 9999, "INCBYPS": 0,
-                               "TTOBYPS": 9999, "INCCHF": 0, "TTOCHF": 9999, "INCSTRK": 0, "TTOSTK": 9999, "DEATH": 0,
-                               "TTODTH": 9999, "CAUSE80": 0})
-            es.loc[0:2, "CHBLMOD"] = 1  # prevalent HF -> excluded from E1
-            es.loc[30, ["INCCHF", "TTOCHF"]] = [1, 200]  # HF between visit k-1 (day 0) and time zero (day 365) -> excluded
-            wd(d / pre.format("64", "EVENT_SUMMARY"), es)
-            ev = pd.DataFrame({"dbGaP_Subject_ID": ids[3:8] + ids[20:22], "EVTYPE": 1, "TTOEVENT": [1000] * 5 + [100, 4000]})
-            wd(d / pre.format("66", "CHS_Event16"), ev)  # 5 MIs after time zero (day 365) in CCB; one before t0, one after horizon
-            icd = pd.DataFrame({"dbGaP_Subject_ID": [ids[0], ids[5], ids[5], ids[25]], "ADDAYS58": [-1, 100, 900, 10],
-                                "DCODE1": ["428.0", "250.00", "410.1", "401.9"], "PCODE1": ["36.06", "", "", "88.72"]})
-            wd(d / "phs000287.v7.pht001467.v1.p1.c1.ICD9.HMB-MDS.txt.gz", icd)
-            wd(d / pre.format("65", "EVENT_TIME_TO_CENSUS"), pd.DataFrame({"dbGaP_Subject_ID": ids, "TTOFCNDT": 5000, "TTONFCND": 5000}))
-            tsv = root / "export_I" / "tsv"
-            tsv.mkdir(parents=True)
-            pd.DataFrame({"id": [f"s{i}" for i in range(n)], "object.participant_id": ind}).to_csv(tsv / "subject.tsv", sep="\t", index=False)
-            files = [f"CHS_ECG_VISIT01_19890101_{i:05d}.xml" for i in range(n)] + [f"CHS_ECG_VISIT02_19900101_{i + 100:05d}.xml" for i in range(n)]
-            pd.DataFrame({"relations.dst_id": [f"s{i}" for i in range(n)] * 2, "object.file_name": files}).to_csv(
-                tsv / "imaging_file.tsv", sep="\t", index=False)
-            xd = root / "export_I" / "drs" / "data"
-            xd.mkdir(parents=True)
-            for f in files:
-                (xd / f).write_text("<RestingECG/>")
+            root, ids = write_synthetic(t)
             os.environ["BDC_TTE_OUT"], os.environ["BDC_RESTRICTED"] = f"{t}/o", f"{t}/r"
             CH.main(["--root", str(root)])
             R = pd.read_parquet(Path(t) / "r" / "chs_emulations.parquet") if (Path(t) / "r" / "chs_emulations.parquet").exists() \

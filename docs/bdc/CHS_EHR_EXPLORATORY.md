@@ -18,19 +18,29 @@ Does an AI-EHR representation, built from the same coded information the PS-Code
 - **Difference from PS-Codes:** PS-Codes picks the 200 codes that best separate the arms (a treatment-aware ranking). The backbone instead compresses every code without looking at treatment, as a pretrained EHR model would.
 - **Output (restricted, stays on BDC):** `chs_ehr_backbone` (row, b0..b63). The aggregate summary is `chs_backbone/report.json` (vocabulary, explained variance, share of rows with any code).
 
-### B. CLMBR-T transfer (planned)
+### B. CLMBR-T transfer (`scripts/bdc/chs_clmbr.py`, map from `scripts/bdc/chs_clmbr_map.py`)
 
-- **Approach:** a MEDS pseudo-timeline per person, with events on or before the visit *k*−1 day. The pretrained CLMBR-T (code-only, as at Yale and in MIMIC-IV) is run on it.
-- **Mapping and timeline:**
-  - ICD-9-CM → SNOMED through OMOP "Maps to": 964 of 1,037 three-digit categories reach the vocabulary.
-  - ICD-9 procedures are used as they are.
-  - Admissions become `Visit/IP` and annual clinic visits become `Visit/OP`.
-  - Medication classes map to a representative RxNorm ingredient (crude).
-  - Lab LOINC presence is coded; history conditions become SNOMED codes at entry.
-- **Blocked on three things:**
-  - access to the gated model weights;
-  - a GPU instance on BDC;
-  - uploading the mapping file to BDC (it is SNOMED-derived, so it is not committed to the public repository).
+- **Model:** pretrained CLMBR-T base (`StanfordShahLab/clmbr-t-base`, Yale revision 5504b35), frozen, code-only, femr 0.2.3 / meds 0.1.3, as at Yale and in MIMIC-IV.
+  - It is downloaded on BDC with the user's own Hugging Face access (gated, EHRSHOT licence).
+  - The files are checked against the SHA-256 of the Yale copy.
+  - The representation is the latest token before the cutoff (768-d), reduced to 64 PCs within each emulation.
+- **Pseudo-timeline per emulation × person** (events on or before the visit *k*−1 study day):
+  - **Birth:** `MEDS_BIRTH` at entry − (`AGEBL` + 0.5) years. Entry is set to 1989-06-15 for the original cohort and 1992-12-15 for the new cohort, because CHS has study days only. There is no sex or race token, as at Yale.
+  - **Entry history:** prior MI, angina, HF, stroke, hypertension, diabetes and AF, one SNOMED code each.
+  - **Adjudicated incident events** (MI, angina, angioplasty, bypass, HF, stroke, AF) at their study day.
+  - **Each annual clinic visit:** `Visit/OP`, plus the medication-class flags at that visit. Each flag becomes one representative RxNorm clinical drug: the in-vocabulary oral product with the highest CLMBR-T pretraining frequency (crude, since CHS records classes, not drugs).
+    - 85 of 99 flags get a token. Summary and non-drug fields get none: any CCB, any diuretic, counts, interviewer ID, days taken.
+    - Mibefradil and probucol are not in the vocabulary.
+  - **Each hospital admission:** `Visit/IP`, ICD-9-CM → SNOMED through OMOP "Maps to" (falling back to the 3-digit category), and ICD9Proc codes that are in the vocabulary.
+- **Not written:**
+  - lab and vital codes (protocol measurements on everyone; their values are held out);
+  - each emulation's exposure drugs (as for PS-Codes).
+- **Difference from PS-Codes:** admissions on the *k*−1 day itself are included here, while PS-Codes uses admissions strictly before that day.
+- **Encoding:** one forward pass per subject. Because the model is causal, the representation at the last token before each row's cutoff equals encoding that row's truncated timeline.
+  - Checked on a sample (`--verify`): max |diff| 3×10⁻⁶ on synthetic data.
+  - Subjects longer than 4,096 tokens are encoded per row.
+- **Runtime:** CPU only. A pure-PyTorch stand-in for the two xformers parts femr uses (`scripts/bdc/xformers_shim`) gives masks identical to real xformers. Embeddings match real xformers in `tests/test_bdc_chs_clmbr.py`.
+- **Code map:** `chs_clmbr_map.json` is SNOMED-derived. It is generated locally and uploaded to BDC by the user, never committed.
 
 ## Arms (added to `chs_emulate.py` with `--ehr backbone|clmbr`)
 
@@ -55,6 +65,17 @@ python scripts/bdc/chs_backbone.py
 python scripts/bdc/chs_emulate.py --protocol-locked --run ehr_backbone --ehr backbone
 ```
 
+CLMBR-T (after uploading `chs_clmbr_map.json` to `/sbgenomics/workspace/`):
+
+```bash
+python scripts/bdc/chs_clmbr.py timeline --map /sbgenomics/workspace/chs_clmbr_map.json
+bash scripts/bdc/setup_clmbr_env.sh /sbgenomics/workspace/clmbr-env
+env -u PYTHONPATH /sbgenomics/workspace/clmbr-env/bin/hf auth login   # or huggingface-cli login; the token stays on BDC
+env -u PYTHONPATH /sbgenomics/workspace/clmbr-env/bin/python scripts/bdc/chs_clmbr.py download --model-root /sbgenomics/workspace/clmbr-t-base
+env -u PYTHONPATH /sbgenomics/workspace/clmbr-env/bin/python scripts/bdc/chs_clmbr.py encode --model-root /sbgenomics/workspace/clmbr-t-base
+python scripts/bdc/chs_emulate.py --protocol-locked --run ehr_clmbr --ehr clmbr
+```
+
 The output goes to `chs_emulate/ehr_backbone/` (aggregates only). The `main_v2` run is not overwritten.
 
 ## Caveats
@@ -62,3 +83,4 @@ The output goes to `chs_emulate/ehr_backbone/` (aggregates only). The `main_v2` 
 - **Post hoc:** this was added after the locked results were seen. It is descriptive and directional only.
 - **Sparse input:** CHS has hospital codes but no outpatient codes. Many person-time rows have only medication flags, so the representation is much sparser than at Yale.
 - **Not a pretrained model:** the crude backbone is fitted in-sample on CHS. It is a stand-in for an AI-EHR representation built from the same information, not a foundation model.
+- **Out of distribution for CLMBR-T:** the timelines are short, coarse (annual visits, class-level drugs, pseudo-dates) and unlike Stanford EHR data. A weak CLMBR-T result here says more about the input than the model.
