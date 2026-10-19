@@ -73,9 +73,9 @@ Inferring causal effects from the data already generated in routine care therefo
 
 This gap is particularly consequential in cardiovascular medicine. Many determinants of both treatment choice and prognosis are physiological: ventricular function, chamber size, atrial substrate, congestion and conduction. These are the characteristics most likely to confound comparisons and least likely to be captured in structured data. The 12-lead electrocardiogram (ECG) offers a potential solution. It is inexpensive and acquired routinely across the health system.^9^ Artificial intelligence applied to the ECG (AI-ECG) detects left ventricular dysfunction, structural heart disease and other latent phenotypes.^9–12^ Foundation-model embeddings compress this information into general-purpose representations of cardiac physiology.^13^ Because the ECG records current cardiac physiology and is available for most patients, AI-ECG representations may capture confounding that structured data miss and partly compensate for physiological measurements that are missing from routine-care data.
 
-The structured data themselves pose a second challenge. Conventional PS covariates, from a short list of diagnoses to the hundreds of code features selected by high-dimensional PS algorithms,^16^ must be specified, coded and validated for each study, and coding practices differ across health systems. Foundation models of the EHR offer an alternative. Models such as CLMBR-T are pretrained on sequences of diagnosis, medication, procedure, measurement and visit codes from millions of patients, and summarize each patient's coded history, including the order of events, in a general-purpose representation (AI-EHR) that requires no study-specific feature engineering.^22,23^ The two representations differ in what they can see. The ECG records current cardiac physiology that is rarely coded, whereas the EHR representation reflects which conditions were diagnosed and which tests and treatments were ordered, but not their measured values. Whether either representation improves confounding control beyond investigator-chosen covariates, and whether together they could replace them, is not known.
+The structured data themselves pose a second challenge. Conventional PS covariates, from a short list of diagnoses to the hundreds of code features selected by high-dimensional PS algorithms,^16^ must be specified, coded and validated for each study, and coding practices differ across health systems. Foundation models of the EHR offer an alternative. These models are pretrained on sequences of diagnosis, medication, procedure, measurement and visit codes from millions of patients, and summarize each patient's coded history, including the order of events, in a general-purpose representation (AI-EHR) that requires no study-specific feature engineering.^22,23^ The two representations differ in what they can see. The ECG records current cardiac physiology that is rarely coded, whereas the EHR representation reflects which conditions were diagnosed and which tests and treatments were ordered, but not their measured values. Whether either representation, alone or together, improves confounding control beyond investigator-chosen covariates is not known.
 
-Here, we designed LATENT-RCT [USER: expansion of the acronym], in which we evaluated whether AI-ECG and AI-EHR representations improve confounding control in 31 emulations of cardiovascular RCTs in a large health system, with external validation in a second health system and in an epidemiological cohort study. We assessed (i) balance on held-out clinical, laboratory and echocardiographic characteristics when each representation was added to conventional PS specifications, (ii) whether a PS of demographics and the two representations could replace investigator-chosen covariates, (iii) agreement with RCT results, and (iv) bias removal in simulations with a known treatment effect.
+Here, we designed LATENT-RCT [USER: expansion of the acronym], in which we evaluated whether AI-ECG and AI-EHR representations improve confounding control in 31 emulations of cardiovascular RCTs in a large health system, with external validation in a second health system and in an epidemiological cohort study. We assessed (i) balance on held-out clinical, laboratory and echocardiographic characteristics when each representation was added to conventional PS specifications, (ii) whether a PS of demographics and the two representations improved balance compared with PS built from investigator-chosen covariates, (iii) agreement with RCT results, and (iv) bias removal in simulations with a known treatment effect.
 
 ## Methods
 
@@ -328,13 +328,11 @@ This grouping, and a blinded physiologic label (eMethods [CHECK]), were used des
 
 Adding either representation to PS-CVD5 improved balance on the 54 held-out characteristics, and adding both improved it most (Figure 2A–B). The mean |SMD| decreased from 0.129:
 
-
 | Added to PS-CVD5 | Mean |SMD| | Relative reduction (95% CI) | Trials improved | q      |
 | ---------------- | ---------- | --------------------------- | --------------- | ------ |
 | AI-EHR           | 0.112      | 12.9% (7.6%–18.3%)          | 23 of 31        | < .001 |
 | AI-ECG           | 0.117      | 8.7% (4.2%–13.5%)           | 20 of 31        | .004   |
 | Both             | 0.110      | 14.6% (7.7%–21.1%)          | 23 of 31        | .002   |
-
 
 - **Proportion balanced:** the share of characteristics with |SMD| < 0.1 increased from 53.9% to 59.4%, 57.3% and 60.9%, respectively.
 - **Robustness:** each gain held when trials sharing a comparator were clustered (P ≤ .004).
@@ -440,7 +438,6 @@ It was weaker with the gradient-boosted PS (9.0%) and not significant with IPTW 
 
 The representations moved estimates closer to RCT results on average, but not toward each trial's own result (Figure 3).
 
-
 | PS                             | Mean |Δ log HR| | Trials closer than PS-CVD5 | P                | Benchmark-permutation P |
 | ------------------------------ | --------------- | -------------------------- | ---------------- | ----------------------- |
 | PS-CVD5                        | 0.232           |                            |                  |                         |
@@ -448,7 +445,6 @@ The representations moved estimates closer to RCT results on average, but not to
 | PS-CVD5 + AI-EHR               | 0.169           | 18 of 31                   | .025             | .93                     |
 | PS-CVD5 + both                 | 0.161           | 18 of 31                   | .018             | .97                     |
 | Demographics + AI-ECG + AI-EHR | 0.164           |                            | .037 (two-sided) | .26 (two-sided)         |
-
 
 - **Comparison with PS-Clinical:** demographics + AI-ECG + AI-EHR came about as close as PS-Clinical (0.171).
 - **Placebos:** the permuted placebos did not change agreement (0.230 and 0.226).
@@ -620,6 +616,8 @@ The permuted AI-ECG closed 2.4%, 4.6% and 0.8%.
 | Other        | PROVE IT-TIMI 22  | ACS within 30 d                                             | atorvastatin              | pravastatin                   | death, MI, UA rehospitalisation, revascularisation >= 30 d or stroke | 24        | 0.84 (0.74–0.95)                                      | Moderate (3)               | Yes                                               | No                          |
 
 
+
+
 *Abbreviations:*
 
 - ACEi, angiotensin-converting enzyme inhibitor; ARB, angiotensin receptor blocker;
@@ -635,8 +633,6 @@ The permuted AI-ECG closed 2.4%, 4.6% and 0.8%.
 - **PROTECT AF** met the original feasibility rule (≥300) but not the revised rule (≥350); it is in the 32-trial sensitivity set.
 - **Cardiac-physiology decision** is the descriptive grouping used in Figure 2D (rhythm control; heart-failure and renin–angiotensin drug choice). The blinded physiologic labels are in eTable [CHECK].
 - The emulated outcome omitted components that could not be ascertained from EHR data in LODESTAR and PROVE IT-TIMI 22 (coronary revascularization), AMPLIFY (VTE-related death), FRAIL-AF (clinically relevant non-major bleeding) and CABANA (disabling stroke) (eTable 1).
-
-
 
 [CHECK: Table 1 is copied from paper2.md, which follows the committed `docs/paper/table1_picot.md`. The user has uncommitted edits to `table1_picot.md`; merge them before submission.]
 
@@ -792,10 +788,9 @@ The representations were complementary, and they were most useful together and w
 - **Cohorts:** YNHHS (development), MIMIC-IV (AI-EHR added; hdPS on the AI-EHR window), CHS (locked protocol; AI-EHR PENDING) and SPRINT (Figure 5, PRELIMINARY). All of Us and UK Biobank are not in this paper.
 - **Figure 2D:** cardiac-physiology grouping (descriptive). The blinded labels move to the supplement.
 - **Label analyses:** the tested label analyses of paper2 (label-permutation P values) are not carried over. They were on 32 trials and did not survive FDR control.
-
-
-
 - **Order of the representations (user decision, 2026-10-19):** the ECG comes first and the EHR second, in the title and in every section. Apply this when each section is revised (the Abstract, Methods, Results, Figures and Discussion still list AI-EHR first in places).
+
+
 
 ### Still to do before the paper is complete
 
