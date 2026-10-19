@@ -49,19 +49,19 @@ class CHSAudit(unittest.TestCase):
             Path(f"{t}/r").mkdir()
             D.to_pickle(f"{t}/r/chs_emulations.pkl")
             E.to_pickle(f"{t}/r/chs_ecg_bcl.pkl")
-            CE.main(["--protocol-locked"])        # the locked run
-            CA.main([])
-            I = pd.read_csv(Path(t) / "o" / "chs_audit" / "integrity.csv")
+            CE.main(["--protocol-locked", "--run", "main_v2"])        # the locked run
+            CA.main(["--run", "main_v2"])
+            I = pd.read_csv(Path(t) / "o" / "chs_audit" / "main_v2" / "integrity.csv")
             self.assertTrue(bool(I.reproduces_locked_base.iloc[0]) and bool(I["reproduces_locked_base+ecg"].iloc[0]))
             self.assertEqual(float(I.t0_after_k1_day.iloc[0]), 1.0)
             self.assertEqual(float(I.ecg_from_visit_k1.iloc[0]), 1.0)
-            Q = pd.read_csv(Path(t) / "o" / "chs_audit" / "echo.csv")
+            Q = pd.read_csv(Path(t) / "o" / "chs_audit" / "main_v2" / "echo.csv")
             lv = Q[(Q.item == "echo_lv_mass")].set_index("arm")
             self.assertGreater(lv.loc["base", "smd"], lv.loc["base", "chance_p95"])   # real imbalance above chance
             self.assertLess(lv.loc["base+ecg", "smd"], lv.loc["base", "smd"])
             noise = Q[Q.item == "echo_lv_function"].set_index("arm")
             self.assertLess(noise.loc["base", "smd"], noise.loc["base", "chance_p95"] + 1e-9 + 0.2)
-            rep = (Path(t) / "o" / "chs_audit" / "report.md").read_text()
+            rep = (Path(t) / "o" / "chs_audit" / "main_v2" / "report.md").read_text()
             self.assertIn("Directional consistency", rep)
 
 

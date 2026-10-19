@@ -91,6 +91,10 @@ def sign_p(k, n):
 
 
 def main(argv=None) -> None:
+    import argparse
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--run", default="main_v2", help="chs_emulate run whose cells.csv the re-run must reproduce")
+    a = ap.parse_args(argv)
     t0 = time.time()
     rd = Path(os.environ.get("BDC_RESTRICTED", "/sbgenomics/workspace/bdc-restricted"))
     R = CE._read(rd / "chs_emulations")
@@ -102,7 +106,7 @@ def main(argv=None) -> None:
         K = CE._read(rd / "chs_codes")
     except SystemExit:
         K = None
-    locked = BC.out_root() / "chs_emulate" / "main" / "cells.csv"
+    locked = BC.out_root() / "chs_emulate" / a.run / "cells.csv"
     L0 = pd.read_csv(locked) if locked.exists() else None
     integ, echo_rows = [], []
     rng = np.random.default_rng(20261019)
@@ -164,7 +168,7 @@ def main(argv=None) -> None:
         BC.log(f"{emu}: audited ({time.time() - t0:.0f} s)")
     I = pd.DataFrame(integ)
     Q = pd.DataFrame(echo_rows)
-    out = BC.out_root() / "chs_audit"
+    out = BC.out_root() / "chs_audit" / a.run
     out.mkdir(parents=True, exist_ok=True)
     I.to_csv(out / "integrity.csv", index=False)
     Q.to_csv(out / "echo.csv", index=False)
