@@ -87,6 +87,7 @@ def load(files):
     cols |= {"MIBLMOD", "ANBLMOD", "CHBLMOD", "STBLMOD", "INCMI", "TTOMI", "INCANG", "TTOANG", "INCANGIO", "TTOANGI",
              "INCBYPS", "TTOBYPS", "INCCHF", "TTOCHF", "INCSTRK", "TTOSTK", "DEATH", "TTODTH", "CAUSE80", "INCAFIB",
              "TTOAFIB", "PREVALENT", "EVTYPE", "TTOEVENT", "TTOFCNDT", "TTONFCND"}
+    cols |= {"TIBLMOD", "INCTIA", "TTOTIA", "INCCLD", "TTOCLD", "ROSEIC", "COPDBL", "ASTHCUR", "EMPHYSEM", "RHEUM"}  # CVD10
     cols |= {f.upper() for fl in CC.CHS_CLASSES.values() for f in fl}
     cols |= {f"DCODE{i}" for i in range(1, 11)} | {f"PCODE{i}" for i in range(1, 11)} | {"ADDAYS58"}
     CC.WANT.update(cols)
@@ -207,7 +208,8 @@ def build(root: Path):
     ES = T["EVENT_SUMMARY"]
     es = pd.DataFrame({"id": key(ES)}) if len(ES) else pd.DataFrame(columns=["id"])
     for c in ("MIBLMOD", "ANBLMOD", "CHBLMOD", "STBLMOD", "INCMI", "TTOMI", "INCANG", "TTOANG", "INCANGIO", "TTOANGI",
-              "INCBYPS", "TTOBYPS", "INCCHF", "TTOCHF", "INCSTRK", "TTOSTK", "DEATH", "TTODTH", "CAUSE80"):
+              "INCBYPS", "TTOBYPS", "INCCHF", "TTOCHF", "INCSTRK", "TTOSTK", "DEATH", "TTODTH", "CAUSE80",
+              "TIBLMOD", "INCTIA", "TTOTIA", "INCCLD", "TTOCLD"):
         es[c] = pd.to_numeric(ES[c], errors="coerce") if c in ES else np.nan
     es = es.drop_duplicates("id").set_index("id")
     AF = T["CARE_AFIB"]
@@ -222,9 +224,10 @@ def build(root: Path):
                         "CN": pd.to_numeric(CEN.get("TTONFCND"), errors="coerce")}).drop_duplicates("id").set_index("id") if len(CEN) else None
     BB = T["BASEBOTH"]
     st = pd.DataFrame({"id": key(BB)})
-    for c in ("GEND01", "RACE01", "BPHI", "DIABADA", "SMOKE", "AGEBL"):
+    for c in ("GEND01", "RACE01", "BPHI", "DIABADA", "SMOKE", "AGEBL", "ROSEIC", "COPDBL", "ASTHCUR", "EMPHYSEM", "RHEUM"):
         st[c] = pd.to_numeric(BB[c], errors="coerce") if c in BB else np.nan
     st = st.drop_duplicates("id").set_index("id")
+    HX = icd_long(T)
 
     allrows = []
     t_start = time.time()
@@ -261,6 +264,23 @@ def build(root: Path):
             N["AF"] = ((a_.PREV.to_numpy() == 1) | ((a_.INCAFIB.to_numpy() == 1) & (a_.TTOAFIB.to_numpy() <= N.day_k1.to_numpy()))).astype(float)
         else:
             N["AF"] = np.nan
+        # CVD10 extra conditions (EXPLORATORY ladder rung, docs/bdc/CHS_EHR_EXPLORATORY.md §C): known by visit k-1;
+        # hospital codes from admissions before the k-1 day; CKD from codes only (never creatinine, a held-out item)
+        p_ = es.reindex(N.id)
+        s_ = st.reindex(N.id)
+        dk1 = N.day_k1.to_numpy()
+
+        def inc(flag, tto):
+            return ((p_[flag].to_numpy() == 1) & (p_[tto].to_numpy() <= dk1)).astype(float)
+
+        def bl(c):
+            return (s_[c].to_numpy() == 1).astype(float)
+        N["STROKE_TIA"] = np.maximum.reduce([N.STROKE_HX.to_numpy(), (p_.TIBLMOD.to_numpy() == 1).astype(float),
+                                             inc("INCTIA", "TTOTIA"), icd_prior(HX, N, r"43[0-8]")])
+        N["PAD"] = np.maximum.reduce([bl("ROSEIC"), inc("INCCLD", "TTOCLD"), icd_prior(HX, N, r"(4402|4438|4439)")])
+        N["COPD"] = np.maximum.reduce([bl("COPDBL"), bl("ASTHCUR"), bl("EMPHYSEM"), icd_prior(HX, N, r"49[0-6]")])
+        N["CKD"] = icd_prior(HX, N, r"(585|586|403|404)")
+        N["VALVE"] = np.maximum(bl("RHEUM"), icd_prior(HX, N, r"(39[4-7]|424)"))
         # eligibility uses everything known at time zero (audit 2026-10-19; logged deviation): history up to visit k.
         # PS covariates above stay at visit k-1.
         N["MI_T0"] = prior("MIBLMOD", "INCMI", "TTOMI", "day0")
@@ -333,6 +353,34 @@ def build(root: Path):
     dd = es.TTODTH[es.DEATH == 1]
     ends["death_days_p50_p99"] = [float(v) for v in np.nanpercentile(dd, [50, 99])] if len(dd) else None
     return R, dict(seen=seen, ecg=ev_info, n_xml_local=S(len(paths)), codes=K, follow_up=ends, id_warnings=list(CC.XW_WARN))
+
+
+def icd_long(T) -> pd.DataFrame:
+    """(id, day, code) for every hospital diagnosis code (dotless, upper case) with its admission study day."""
+    H = T.get("ICD9", pd.DataFrame())
+    if not len(H):
+        return pd.DataFrame(columns=["id", "day", "code"])
+    hid = key(H)
+    ad = pd.to_numeric(H.get("ADDAYS58"), errors="coerce")
+    parts = []
+    for i in range(1, 11):
+        c = f"DCODE{i}"
+        if c in H:
+            v = H[c].astype(str).str.strip().str.upper().str.replace(".", "", regex=False)
+            ok = ad.notna() & v.str.len().ge(3) & ~v.isin(["NAN", "NONE"])
+            parts.append(pd.DataFrame({"id": hid[ok].to_numpy(), "day": ad[ok].to_numpy(), "code": v[ok].to_numpy()}))
+    return pd.concat(parts, ignore_index=True) if parts else pd.DataFrame(columns=["id", "day", "code"])
+
+
+def icd_prior(HX: pd.DataFrame, N: pd.DataFrame, pattern: str) -> np.ndarray:
+    """1 if the person has a hospital diagnosis matching ^pattern admitted before their visit k-1 study day."""
+    if not len(HX):
+        return np.zeros(len(N))
+    h = HX[HX.code.str.match(pattern)]
+    q = pd.DataFrame({"id": N.id.to_numpy(), "dk1": N.day_k1.to_numpy(), "_r": np.arange(len(N))})
+    m = q.merge(h, on="id")
+    hit = set(m[m.day < m.dk1]._r)
+    return np.array([1.0 if r in hit else 0.0 for r in range(len(N))])
 
 
 def code_features(T, R: pd.DataFrame) -> pd.DataFrame:

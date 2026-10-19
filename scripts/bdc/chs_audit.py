@@ -94,6 +94,7 @@ def main(argv=None) -> None:
     import argparse
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--run", default="main_v2", help="chs_emulate run whose cells.csv the re-run must reproduce")
+    ap.add_argument("--ladder", action="store_true", help="EXPLORATORY: add the PS-Demo and CVD10 rungs")
     ap.add_argument("--ehr", choices=["", "backbone", "clmbr", "clmbr_rich"], default="",
                     help="EXPLORATORY: add the AI-EHR arms (docs/bdc/CHS_EHR_EXPLORATORY.md)")
     a = ap.parse_args(argv)
@@ -137,6 +138,10 @@ def main(argv=None) -> None:
             Q = pcs(D[qcols].to_numpy(float), min(64, len(qcols)))
             Qp = Q[np.random.default_rng(CE.SEED_PERM + 1).permutation(len(Q))]
             arms.update({"base+ehr": np.c_[Xb, Q], "base+ecg+ehr": np.c_[Xb, P, Q], "base+permehr": np.c_[Xb, Qp]})
+            if Xk is not None and Xk.shape[1]:
+                arms.update({"codes+ehr": np.c_[Xb, Xk.to_numpy(float), Q], "codes+permehr": np.c_[Xb, Xk.to_numpy(float), Qp]})
+        if a.ladder:
+            arms.update({k: v[0] for k, v in CE.ladder_arms(D, P, Pp).items()})
         V = np.column_stack([pd.to_numeric(D[c], errors="coerce").to_numpy(float) for c in ECHO])
         Vall = np.column_stack([pd.to_numeric(D[c], errors="coerce").to_numpy(float) for c in CH.HELD])
         # ---- integrity
@@ -191,13 +196,16 @@ def main(argv=None) -> None:
     W = Q.pivot_table(index=["EMU", "item"], columns="arm", values="smd")
     F = Q.pivot_table(index=["EMU", "item"], columns="arm", values="chance_mean")
     cols = [c for c in ["base", "base+ecg", "base+perm", "clinical", "clinical+ecg", "codes", "codes+ecg", "base+ehr",
-                        "base+ecg+ehr", "base+permehr"] if c in W.columns]
+                        "base+ecg+ehr", "base+permehr", "codes+ehr", "codes+permehr", "demo", "demo+ecg", "cvd10",
+                        "cvd10+ecg"] if c in W.columns]
     T2 = W[cols].round(3)
     T2["chance(base)"] = F["base"].round(3)
     L += [md(T2), ""]
     L += ["## 3. Directional consistency (cells = emulation x echo item)", ""]
     extra = [("base", "base+ehr"), ("base+permehr", "base+ehr"), ("base+ecg", "base+ecg+ehr"), ("base+ehr", "base+ecg+ehr"),
-             ("codes", "base+ehr")] if qcols else []
+             ("codes", "base+ehr"), ("codes", "codes+ehr"), ("codes+permehr", "codes+ehr")] if qcols else []
+    if a.ladder:
+        extra += [("demo", "demo+ecg"), ("demo+perm", "demo+ecg"), ("cvd10", "cvd10+ecg"), ("cvd10+perm", "cvd10+ecg")]
     for ref, arm in PAIRS + [("base+perm", "base+ecg")] + extra:
         if ref not in W or arm not in W:
             continue

@@ -52,7 +52,8 @@ def write_synthetic(t):
     wd(d / pre.format("51", "BASE2"), pd.DataFrame({"dbGaP_Subject_ID": ids, "NEWLVM43": 150.0, "LVEF43": 1}))
     wd(d / pre.format("52", "BASEBOTH"), pd.DataFrame({"dbGaP_Subject_ID": ids, "Individual_ID": ind, "PERSTAT": 1,
                                                         "AGEBL": 72, "GEND01": [i % 2 for i in range(n)], "RACE01": 1,
-                                                        "BPHI": 1, "DIABADA": 1, "SMOKE": 0, "CRE44": 1.0}))
+                                                        "BPHI": 1, "DIABADA": 1, "SMOKE": 0, "CRE44": 1.0,
+                                                        "ROSEIC": [1 if i == 22 else 0 for i in range(n)]}))
     V3 = visit(3, 365, 73, ccb, thz, sbp=None)
     # id 45 has no medication record at year 3 (missed visit) and starts a CCB at year 4: never a new user
     V3.loc[45, [f for f in FLAGS]] = np.nan
@@ -70,8 +71,10 @@ def write_synthetic(t):
     wd(d / pre.format("64", "EVENT_SUMMARY"), es)
     ev = pd.DataFrame({"dbGaP_Subject_ID": ids[3:8] + ids[20:22], "EVTYPE": 1, "TTOEVENT": [1000] * 5 + [100, 4000]})
     wd(d / pre.format("66", "CHS_Event16"), ev)  # 5 MIs after time zero (day 365) in CCB; one before t0, one after horizon
-    icd = pd.DataFrame({"dbGaP_Subject_ID": [ids[0], ids[5], ids[5], ids[25]], "ADDAYS58": [-1, 100, 900, 10],
-                        "DCODE1": ["428.0", "250.00", "410.1", "401.9"], "PCODE1": ["36.06", "", "", "88.72"]})
+    icd = pd.DataFrame({"dbGaP_Subject_ID": [ids[0], ids[5], ids[5], ids[25], ids[21], ids[23]],
+                        "ADDAYS58": [-1, 100, 900, 10, -5, 50],
+                        "DCODE1": ["428.0", "250.00", "410.1", "401.9", "496", "585.3"],
+                        "PCODE1": ["36.06", "", "", "88.72", "", ""]})
     wd(d / "phs000287.v7.pht001467.v1.p1.c1.ICD9.HMB-MDS.txt.gz", icd)
     wd(d / pre.format("65", "EVENT_TIME_TO_CENSUS"), pd.DataFrame({"dbGaP_Subject_ID": ids, "TTOFCNDT": 5000, "TTONFCND": 5000}))
     tsv = root / "export_I" / "tsv"
@@ -123,6 +126,16 @@ class CHSBuild(unittest.TestCase):
             codes5 = set(K[K.row.isin(set(later.row))].code)
             self.assertIn("D:250", codes5)       # admission on day 100 < 365: kept (3-digit ICD-9)
             self.assertNotIn("D:410", codes5)    # admission on day 900: after visit k-1
+            # CVD10 conditions at visit k-1: COPD from a code admitted before (day -5), CKD code admitted after the
+            # k-1 day (day 50 > 0) is not counted, PAD from baseline Rose claudication
+            cv = E1.set_index("id")
+            self.assertEqual(cv.loc[ids[21], "COPD"], 1.0)
+            self.assertEqual(cv.loc[ids[23], "CKD"], 0.0)
+            self.assertEqual(cv.loc[ids[22], "PAD"], 1.0)
+            self.assertEqual(float(E1.drop(index=E1.index[E1.id.isin([ids[21], ids[22]])])[["COPD", "PAD"]].values.sum()), 0.0)
+            later23 = R[(R.id == ids[23]) & (R.k1 == 3)]
+            if len(later23):
+                self.assertTrue((later23.CKD == 1).all())                     # day 50 < 365: known by visit k-1 = 3
             rep = (Path(t) / "o" / "chs_cohort" / "report.md").read_text()
             self.assertNotIn("5003", rep)
 

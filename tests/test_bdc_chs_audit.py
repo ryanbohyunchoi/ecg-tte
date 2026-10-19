@@ -74,6 +74,9 @@ class CHSAudit(unittest.TestCase):
             rep2 = (Path(t) / "o" / "chs_audit" / "ehr_backbone" / "report.md").read_text()
             self.assertIn("base+ecg+ehr lower than base+ehr", rep2)
             self.assertTrue((Path(t) / "o" / "chs_audit" / "main_v2" / "report.md").read_text() == rep)  # not overwritten
+            CA.main(["--run", "ladder", "--ladder", "--ehr", "backbone"])
+            Q3 = pd.read_csv(Path(t) / "o" / "chs_audit" / "ladder" / "echo.csv")
+            self.assertTrue({"demo", "demo+ecg", "base+ehr"} <= set(Q3.arm))   # no code table here: no PS-Codes arms
 
 
 if __name__ == "__main__":

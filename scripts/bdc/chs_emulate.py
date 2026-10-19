@@ -40,6 +40,8 @@ S = BC.suppress
 N_PCS = 32
 SEED_PERM = 424242
 BASE = ["AGE", "MALE", "BLACK", "HTN", "DIAB", "CAD", "AF", "HF"]
+DEMO = ["AGE", "MALE", "BLACK"]  # EXPLORATORY ladder rungs (--ladder; docs/bdc/CHS_EHR_EXPLORATORY.md §C test 4)
+CVD10 = BASE + ["CKD", "COPD", "PAD", "STROKE_TIA", "VALVE"]
 CLIN_EXTRA = CH.CLINICAL_PS + ["SMOKE"]
 BENCH_HR = {"E1_ccb_vs_thiazide": 0.98, "E1b_dhp_vs_thiazide": 0.98, "E2_acei_vs_thiazide": 0.99, "E3_acei_vs_ccb": None,
             "E4_thiazide_vs_beta": None, "E5_statin_vs_none": 0.85, "E6_aspirin_vs_none": 0.95}
@@ -110,7 +112,19 @@ def code_matrix(D: pd.DataFrame, K: pd.DataFrame, top: int = 200, min_n: int = 2
     return X[order]
 
 
-def run_emulation(D: pd.DataFrame, P: np.ndarray, Xk: pd.DataFrame | None = None, Q: np.ndarray | None = None) -> list:
+def ladder_arms(D: pd.DataFrame, P: np.ndarray, Pp: np.ndarray) -> dict:
+    """EXPLORATORY PS-Demo and CVD10 rungs, each alone, + ECG and + permuted ECG (no masking, as at YNHH)."""
+    arms = {}
+    for name, cols in (("demo", DEMO), ("cvd10", CVD10)):
+        if not all(c in D for c in cols):
+            continue
+        X = design_matrix(D, cols)
+        arms.update({name: (X, set()), f"{name}+ecg": (np.c_[X, P], set()), f"{name}+perm": (np.c_[X, Pp], set())})
+    return arms
+
+
+def run_emulation(D: pd.DataFrame, P: np.ndarray, Xk: pd.DataFrame | None = None, Q: np.ndarray | None = None,
+                  ladder: bool = False) -> list:
     t = D.arm.to_numpy(int)
     items = list(CH.HELD)
     V = np.column_stack([pd.to_numeric(D[c], errors="coerce").to_numpy(float) for c in items])
@@ -131,6 +145,11 @@ def run_emulation(D: pd.DataFrame, P: np.ndarray, Xk: pd.DataFrame | None = None
         mask_k = masked_items(Dk, list(Xk.add_prefix("code:").columns))
         arms["codes"] = (np.c_[Xb, Xk.to_numpy(float)], mask_k)
         arms["codes+ecg"] = (np.c_[Xb, Xk.to_numpy(float), P], mask_k)
+        if Q is not None:  # EXPLORATORY test 1: representation on top of PS-Codes, and its permuted placebo
+            arms["codes+ehr"] = (np.c_[Xb, Xk.to_numpy(float), Q], mask_k)
+            arms["codes+permehr"] = (np.c_[Xb, Xk.to_numpy(float), Qp], mask_k)
+    if ladder:
+        arms.update(ladder_arms(D, P, Pp))
     rows = []
     idx_all = np.arange(len(D))
     r = dict(arm="crude", n_pairs=np.nan, **balance(V, items, t, idx_all, set()))
@@ -156,6 +175,7 @@ def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--protocol-locked", action="store_true", help="required: confirms docs/bdc/CHS_PROTOCOL.md is LOCKED")
     ap.add_argument("--run", default="main")
+    ap.add_argument("--ladder", action="store_true", help="EXPLORATORY: add PS-Demo and CVD10 rungs (+ ECG, + permuted)")
     ap.add_argument("--ehr", choices=["", "backbone", "clmbr", "clmbr_rich"], default="",
                     help="EXPLORATORY: add AI-EHR arms from chs_ehr_backbone (crude backbone) or chs_clmbr (CLMBR-T)")
     a = ap.parse_args(argv)
@@ -189,7 +209,7 @@ def main(argv=None) -> None:
         P = pcs(D[ecols].to_numpy(float), N_PCS)
         Xk = code_matrix(D, K) if K is not None and "row" in D else None
         Q = pcs(D[qcols].to_numpy(float), min(64, len(qcols))) if qcols else None
-        for r in run_emulation(D, P, Xk, Q):
+        for r in run_emulation(D, P, Xk, Q, ladder=a.ladder):
             r.update(EMU=emu, cluster=D.cluster.iloc[0], n_A=int((D.arm == 1).sum()), n_B=int((D.arm == 0).sum()),
                      bench_hr=BENCH_HR.get(emu), n_code_features=0 if Xk is None else int(Xk.shape[1]))
             cells.append(r)
@@ -216,7 +236,10 @@ def main(argv=None) -> None:
     pairs = [("base", "base+ecg"), ("base", "base+perm"), ("clinical", "clinical+ecg"), ("codes", "codes+ecg")]
     if a.ehr:
         pairs += [("base", "base+ehr"), ("base", "base+permehr"), ("base+ecg", "base+ecg+ehr"), ("base+ehr", "base+ecg+ehr"),
-                  ("codes", "base+ehr")]
+                  ("codes", "base+ehr"), ("codes", "codes+ehr"), ("codes", "codes+permehr")]
+    if a.ladder:
+        pairs += [("demo", "demo+ecg"), ("demo", "demo+perm"), ("cvd10", "cvd10+ecg"), ("cvd10", "cvd10+perm"),
+                  ("base", "cvd10")]
     for ref, arm in pairs:
         per, means = [], []
         for emu, g in ok.groupby("EMU", sort=False):
