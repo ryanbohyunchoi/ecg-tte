@@ -110,7 +110,7 @@ def code_matrix(D: pd.DataFrame, K: pd.DataFrame, top: int = 200, min_n: int = 2
     return X[order]
 
 
-def run_emulation(D: pd.DataFrame, P: np.ndarray, Xk: pd.DataFrame | None = None) -> list:
+def run_emulation(D: pd.DataFrame, P: np.ndarray, Xk: pd.DataFrame | None = None, Q: np.ndarray | None = None) -> list:
     t = D.arm.to_numpy(int)
     items = list(CH.HELD)
     V = np.column_stack([pd.to_numeric(D[c], errors="coerce").to_numpy(float) for c in items])
@@ -121,6 +121,11 @@ def run_emulation(D: pd.DataFrame, P: np.ndarray, Xk: pd.DataFrame | None = None
     mask_c = masked_items(D, clin_cols)
     arms = {"base": (Xb, set()), "base+ecg": (np.c_[Xb, P], set()), "base+perm": (np.c_[Xb, Pp], set()),
             "clinical": (Xc, mask_c), "clinical+ecg": (np.c_[Xc, P], mask_c)}
+    if Q is not None:  # EXPLORATORY AI-EHR arms (--ehr): representation PCs, alone with base, with base + ECG, permuted
+        Qp = Q[np.random.default_rng(SEED_PERM + 1).permutation(len(Q))]
+        arms["base+ehr"] = (np.c_[Xb, Q], set())
+        arms["base+ecg+ehr"] = (np.c_[Xb, P, Q], set())
+        arms["base+permehr"] = (np.c_[Xb, Qp], set())
     if Xk is not None and Xk.shape[1]:
         Dk = pd.concat([D, Xk.add_prefix("code:")], axis=1)
         mask_k = masked_items(Dk, list(Xk.add_prefix("code:").columns))
@@ -151,6 +156,8 @@ def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--protocol-locked", action="store_true", help="required: confirms docs/bdc/CHS_PROTOCOL.md is LOCKED")
     ap.add_argument("--run", default="main")
+    ap.add_argument("--ehr", choices=["", "backbone", "clmbr"], default="",
+                    help="EXPLORATORY: add AI-EHR arms from chs_ehr_backbone (crude backbone) or chs_clmbr (CLMBR-T)")
     a = ap.parse_args(argv)
     if not a.protocol_locked:
         raise SystemExit("refusing to compute ECG-adjusted estimates: lock docs/bdc/CHS_PROTOCOL.md first, then pass "
@@ -166,6 +173,13 @@ def main(argv=None) -> None:
     except SystemExit:
         K = None
         BC.log("no chs_codes table: PS-Codes arms skipped")
+    qcols = []
+    if a.ehr:
+        Qd = _read(rd / ("chs_ehr_backbone" if a.ehr == "backbone" else "chs_clmbr"))
+        qcols = [c for c in Qd.columns if c != "row"]
+        R = R.merge(Qd.rename(columns={c: f"q:{c}" for c in qcols}), on="row", how="inner")
+        qcols = [f"q:{c}" for c in qcols]
+        BC.log(f"EXPLORATORY --ehr {a.ehr}: {len(qcols)} dims merged")
     cells = []
     for emu, D in R.groupby("EMU", sort=False):
         D = D.reset_index(drop=True)
@@ -174,7 +188,8 @@ def main(argv=None) -> None:
             continue
         P = pcs(D[ecols].to_numpy(float), N_PCS)
         Xk = code_matrix(D, K) if K is not None and "row" in D else None
-        for r in run_emulation(D, P, Xk):
+        Q = pcs(D[qcols].to_numpy(float), min(64, len(qcols))) if qcols else None
+        for r in run_emulation(D, P, Xk, Q):
             r.update(EMU=emu, cluster=D.cluster.iloc[0], n_A=int((D.arm == 1).sum()), n_B=int((D.arm == 0).sum()),
                      bench_hr=BENCH_HR.get(emu), n_code_features=0 if Xk is None else int(Xk.shape[1]))
             cells.append(r)
@@ -198,7 +213,11 @@ def main(argv=None) -> None:
                  f"{r.events_primary} | {hr} | {r.bench_hr} |")
     L += ["", "## Relative reduction in mean held-out |SMD| with the ECG (items observed in both arms)", ""]
     smdcols = [c for c in C.columns if c.startswith("smd:")]
-    for ref, arm in (("base", "base+ecg"), ("base", "base+perm"), ("clinical", "clinical+ecg"), ("codes", "codes+ecg")):
+    pairs = [("base", "base+ecg"), ("base", "base+perm"), ("clinical", "clinical+ecg"), ("codes", "codes+ecg")]
+    if a.ehr:
+        pairs += [("base", "base+ehr"), ("base", "base+permehr"), ("base+ecg", "base+ecg+ehr"), ("base+ehr", "base+ecg+ehr"),
+                  ("codes", "base+ehr")]
+    for ref, arm in pairs:
         per, means = [], []
         for emu, g in ok.groupby("EMU", sort=False):
             g = g.set_index("arm")

@@ -46,6 +46,7 @@ class CHSEmulate(unittest.TestCase):
             os.environ["BDC_RESTRICTED"], os.environ["BDC_TTE_OUT"] = f"{t}/r", f"{t}/o"
             Path(f"{t}/r").mkdir()
             D["row"] = np.arange(n)
+            D["k1"] = D.k - 1
             D.to_pickle(f"{t}/r/chs_emulations.pkl")
             # code features: one code strongly tied to treatment, many noise codes
             rows = [(i, "D:401") for i in range(n) if rng.random() < (0.6 if arm[i] else 0.1)]
@@ -60,6 +61,14 @@ class CHSEmulate(unittest.TestCase):
             self.assertIn("codes+ecg", C.index)
             self.assertGreater(int(C.loc["codes", "n_code_features"]), 10)
             self.assertLess(C.loc["codes+ecg", "mean_smd_echo"], C.loc["codes", "mean_smd_echo"])
+            # EXPLORATORY crude backbone from the same codes: runs and adds the AI-EHR arms
+            import chs_backbone as CB
+            CB.main(["--dim", "8", "--min-df", "5"])
+            CE.main(["--protocol-locked", "--run", "ehr", "--ehr", "backbone"])
+            C2 = pd.read_csv(Path(t) / "o" / "chs_emulate" / "ehr" / "cells.csv").set_index("arm")
+            for arm in ("base+ehr", "base+ecg+ehr", "base+permehr"):
+                self.assertIn(arm, C2.index)
+            self.assertLess(C2.loc["base+ecg+ehr", "mean_smd_echo"], C2.loc["base", "mean_smd_echo"])
 
 
 if __name__ == "__main__":
