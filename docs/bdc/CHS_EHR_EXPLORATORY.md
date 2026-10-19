@@ -60,6 +60,63 @@ The first timeline had a median of 17 events per row. Two changes add no new kin
 
 The output is a separate set (`--tag rich` → `chs_clmbr_rich*`, `--ehr clmbr_rich`), so the first CLMBR-T run is kept for comparison. The timeline report lists the most frequent categories that still do not map (counts ≥ 11).
 
+## C. Pre-specified tests of added information (written 2026-10-19, before any of them was run)
+
+**Context.** These tests were written after the first two CLMBR-T runs, in which CLMBR-T matched PS-Codes but did not exceed its single-draw permuted placebo. They are fixed here before any of them runs, and each is run once. All are exploratory and descriptive. The locked CHS endpoints are unchanged.
+
+**Representations tested.** ECG (32 PCs), crude backbone, CLMBR-T, and CLMBR-T on the richer timeline (64 PCs each, within each emulation).
+
+**Emulations.** The five analysed ones: E1, E2, E3, E5, E6.
+
+### Test 1. Balance on top of PS-Codes
+
+- **Arms:** `codes+ehr` (PS-Codes + representation) and `codes+permehr` (permuted placebo), added under `--ehr`.
+- **Contrast:** relative reduction in mean held-out |SMD| versus PS-Codes alone.
+
+### Test 2. Information without matching (`chs_ehr_tests.py info`)
+
+- **Targets:** the 23 held-out items. Within each emulation, each item is predicted by ridge regression with 5-fold cross-validation grouped by person.
+  - E5 and E6 are capped at 6,000 rows, a fixed random sample of people (seed 20261019), for run time.
+- **Inputs, cumulative:**
+  1. PS-Base;
+  2. + the PS-Codes features;
+  3. + one representation, or + ECG.
+- **Quantity:** ΔR² = R²(PS-Codes + X) − R²(PS-Codes), per emulation × item cell.
+- **Placebo:** the same with X permuted across rows, 10 draws.
+- **Criterion (per representation):** "adds information beyond PS-Codes" if both hold:
+  - (a) the mean ΔR² over all cells exceeds the 95th percentile of the placebo mean ΔR²;
+  - (b) ΔR² exceeds that cell's placebo maximum in at least half of the cells.
+- **Also reported:** the same increments on top of PS-Base only, for context.
+
+### Test 3. Multi-draw placebo for balance (`chs_ehr_tests.py noise`)
+
+- **Draws:** 50 permutations for each permuted arm:
+  - ECG on PS-Base;
+  - each EHR representation on PS-Base;
+  - each EHR representation on PS-Codes.
+- **Reported:**
+  - the real pooled relative reduction;
+  - the placebo median and its 2.5–97.5 percentile range;
+  - the one-sided empirical P = (1 + #{placebo ≥ real}) / (N + 1);
+  - per-emulation versions of the same.
+- **Criterion:** a representation "improves balance beyond chance" if the real pooled reduction exceeds the placebo 95th percentile.
+
+### Test 4. Extra rungs to match the YNHH ladder (`--ladder`)
+
+- **PS-Demo:** age, sex, Black race, visit.
+- **CVD10:** PS-Base plus five conditions, all known by visit *k*−1. Hospital codes are admissions before the *k*−1 day.
+
+| Condition | Sources |
+|---|---|
+| CKD | hospital ICD-9 585, 586, 403, 404; codes only, never creatinine |
+| COPD/asthma | baseline COPD, current asthma or emphysema diagnosed by a doctor; ICD-9 490–496 |
+| PAD | Rose claudication at baseline; adjudicated incident claudication; ICD-9 440.2, 443.8, 443.9 |
+| Stroke/TIA | prior stroke (as in PS-Base eligibility); prevalent or adjudicated TIA; ICD-9 430–438 |
+| Valve disease | rheumatic or valve problems diagnosed by a doctor at baseline; ICD-9 394–397, 424 |
+
+- **Arms:** each rung alone, + ECG and + permuted ECG.
+- **Masking:** none, as for YNHH PS-Demo and CVD10.
+
 ## Arms (added to `chs_emulate.py` with `--ehr backbone|clmbr`)
 
 These are the locked arms plus:
