@@ -230,6 +230,8 @@ def cmd_embed(a) -> None:
     S = BC.suppress
     a.ckpt = find_ckpt(a.ckpt)
     BC.log(f"checkpoint: {a.ckpt}")
+    if BC.sha256(Path(a.ckpt)) != SLIM_SHA256 and not a.allow_other_ckpt:
+        raise SystemExit("checkpoint sha256 does not match the exported BCL encoder; pass --allow-other-ckpt to override")
     cohort = Path(a.cohort)
     C = pd.read_parquet(cohort) if cohort.suffix == ".parquet" else pd.read_pickle(cohort)
     idc = a.id_col or ("MASKID" if "MASKID" in C else "id")
@@ -346,6 +348,7 @@ def main(argv=None) -> None:
     e.add_argument("--batch", type=int, default=64)
     e.add_argument("--workers", type=int, default=max(1, min(6, (os.cpu_count() or 2) - 1)))
     e.add_argument("--block", type=int, default=512, help="ECGs converted and embedded per block (memory bound)")
+    e.add_argument("--allow-other-ckpt", action="store_true", help="run with a checkpoint whose sha256 differs")
     s = sub.add_parser("slim")
     s.add_argument("src")
     s.add_argument("dst")

@@ -152,23 +152,30 @@ def one_draw(job):
     designs = {"base": X["base"], "base+ecg": np.c_[X["base"], X["ecg"]], "base+perm": np.c_[X["base"], X["perm"]],
                "rich": X["rich"], "rich+ecg": np.c_[X["rich"], X["ecg"]], "oracle": np.c_[X["base"], X["c"]]}
     out = []
+    # v13_common.match anchors on the smaller arm; with SPRINT near 50:50 that flips between draws, and a control-anchored
+    # match targets the (1 - P*)-weighted population (audit 2026-10-19). Record it to pick the matching truth.
+    anchor = 1 if (t == 1).sum() <= (t == 0).sum() else 0
     b, se = cox(yt, ye, t)
-    out.append(dict(c=c, OR=OR, draw=d, arm="crude", n=len(rows), n_pairs=np.nan, events=int(ye.sum()), loghr=b, se=se,
+    out.append(dict(c=c, OR=OR, draw=d, arm="crude", anchor=anchor, n=len(rows), n_pairs=np.nan, events=int(ye.sum()), loghr=b, se=se,
                     **{f"smd_{k}": v for k, v in zip(G["vnames"], smd_abs(V, t, np.arange(len(rows))))}))
     for arm, Xa in designs.items():
         lg = ps_logit(Xa, t)
         idx, cl, _w = match(lg, t, cal=0.2, ratio=1)
         b, se = cox(yt[idx], ye[idx], t[idx], cluster=cl)
-        out.append(dict(c=c, OR=OR, draw=d, arm=arm, n=len(rows), n_pairs=int(len(np.unique(cl))),
+        out.append(dict(c=c, OR=OR, draw=d, arm=arm, anchor=anchor, n=len(rows), n_pairs=int(len(np.unique(cl))),
                         events=int(ye[idx].sum()), loghr=b, se=se,
                         **{f"smd_{k}": v for k, v in zip(G["vnames"], smd_abs(V, t, idx))}))
     return out
 
 
-def truth(z, t, yt, ye, ps) -> float:
-    """Randomized HR in the population matching targets: full-trial Cox weighted by P*(T=1|C)."""
-    b, _ = cox(yt, ye, t, w=ps)
-    return b
+def truth(z, t, yt, ye, ps) -> dict:
+    """Randomized log HRs in the populations the estimators target, from the full (complete-case) trial:
+    t1 = weighted by P*(T=1|C) (treated-anchored matching), t0 = weighted by 1 - P* (control-anchored matching),
+    ate = unweighted (crude, unmatched)."""
+    b1, _ = cox(yt, ye, t, w=ps)
+    b0, _ = cox(yt, ye, t, w=1 - ps)
+    ba, _ = cox(yt, ye, t)
+    return dict(t1=b1, t0=b0, ate=ba)
 
 
 def gap(df: pd.DataFrame, arm: str, ref: str, B: int = 2000):
@@ -191,21 +198,33 @@ def summarize(draws: pd.DataFrame, truths: dict) -> pd.DataFrame:
     rows = []
     for (c, OR), g in draws.groupby(["c", "OR"]):
         tr = truths[(c, OR)]
+        g = g.copy()
+        g["ref"] = np.where(g.arm == "crude", tr["ate"], np.where(g.anchor == 1, tr["t1"], tr["t0"]))
         w = g.pivot_table(index="draw", columns="arm", values="loghr")
         induced = (w["base"] - w["oracle"]).dropna()
         mcse = induced.std(ddof=1) / np.sqrt(len(induced)) if len(induced) > 1 else np.nan
+        # gate on the size of the induced bias (two-sided; the protocol's 'mean > 2 MCSE' read as |mean|, logged)
         gate = bool(induced.mean() != 0 and abs(induced.mean()) > 2 * mcse)
+        ind_r = (w["rich"] - w["oracle"]).dropna() if "rich" in w else pd.Series(dtype=float)
+        gate_r = bool(len(ind_r) > 1 and abs(ind_r.mean()) > 2 * ind_r.std(ddof=1) / np.sqrt(len(ind_r)))
+        orc = w["oracle"] if "oracle" in w else None
         for arm, a in g.groupby("arm"):
-            cov = ((a.loghr - 1.96 * a.se <= tr) & (tr <= a.loghr + 1.96 * a.se)).mean()
+            cov = ((a.loghr - 1.96 * a.se <= a.ref) & (a.ref <= a.loghr + 1.96 * a.se)).mean()
+            ob = (a.set_index("draw").loghr - orc).mean() if orc is not None else np.nan
             r = dict(c=c, role=ROLE.get(c, "physiology"), OR=OR, arm=arm, draws=int(a.loghr.notna().sum()),
+                     share_treated_anchor=float(a.anchor.mean()),
                      mean_n=round(a.n.mean()), mean_pairs=round(a.n_pairs.mean()) if a.n_pairs.notna().any() else np.nan,
-                     mean_events=round(a.events.mean()), mean_loghr=a.loghr.mean(), truth_loghr=tr,
-                     bias=a.loghr.mean() - tr, emp_sd=a.loghr.std(ddof=1), rmse=np.sqrt(((a.loghr - tr) ** 2).mean()),
+                     mean_events=round(a.events.mean()), mean_loghr=a.loghr.mean(), truth_loghr=float(a.ref.mean()),
+                     bias=float((a.loghr - a.ref).mean()), oracle_ref_bias=float(ob),
+                     emp_sd=a.loghr.std(ddof=1), rmse=float(np.sqrt(((a.loghr - a.ref) ** 2).mean())),
                      coverage=cov, mean_smd_c=a[f"smd_{c}"].mean(), induced_bias_base_minus_oracle=induced.mean(),
-                     induced_mcse=mcse, gate_material_bias=gate)
+                     induced_mcse=mcse, gate_material_bias=gate, gate_rich=gate_r,
+                     truth_t1=tr["t1"], truth_t0=tr["t0"], truth_ate=tr["ate"])
             rows.append(r)
-        for arm, ref in (("base+ecg", "base"), ("base+perm", "base"), ("rich+ecg", "rich")):
+        for arm, ref, ok in (("base+ecg", "base", gate), ("base+perm", "base", gate), ("rich+ecg", "rich", gate_r)):
             gg, lo, hi, n = gap(g, arm, ref)
+            if not ok:  # protocol: cells without material induced bias are not used for G
+                gg = lo = hi = np.nan
             for r in rows:
                 if r["c"] == c and r["OR"] == OR and r["arm"] == arm:
                     r.update(gap_closed=gg, gap_lo=lo, gap_hi=hi, gap_draws=n)
@@ -239,7 +258,8 @@ def r2_probe(D, P, Xbase, cols) -> dict:
 
 def write_md(S: pd.DataFrame, R: dict, path: Path) -> None:
     L = [f"# Figure 5 (SPRINT) run `{R['run']}` ({R['when']}, git {R['git'][:10]})", "",
-         f"- population with baseline ECG embedding: {R['n']}; outcome: {R['outcome']}; draws per cell: {R['draws']}",
+         f"- population with baseline ECG embedding: {R['n']}; analysis n per confounder (complete case): {R['n_by_confounder']}; "
+         f"outcome: {R['outcome']}; draws per cell: {R['draws']}",
          f"- confounders: {R['confounders']}; OR per SD: {R['ors']}", ""]
     L += ["## Share of the confounding gap closed (ratio of means over draws; 95% bootstrap CI)", "",
           "| C | role | OR | gate | base+ECG | base+permuted | rich(−C)+ECG |", "|---|---|---|---|---|---|---|"]
@@ -249,11 +269,11 @@ def write_md(S: pd.DataFrame, R: dict, path: Path) -> None:
         L.append(f"| {c} | {g.role.iloc[0]} | {OR:g} | {'yes' if g.gate_material_bias.iloc[0] else 'NO'} | "
                  f"{f('base+ecg')} | {f('base+perm')} | {f('rich+ecg')} |")
     L += ["", "## Per arm (mean over draws)", "",
-          "| C | OR | arm | pairs | events | mean log HR | truth | bias | RMSE | coverage | post-match SMD(C) | SMD(C) vs base |",
-          "|---|---|---|---|---|---|---|---|---|---|---|---|"]
+          "| C | OR | arm | pairs | events | mean log HR | truth (anchor-matched) | bias | bias vs oracle | RMSE | coverage | post-match SMD(C) | SMD(C) vs base |",
+          "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for r in S.itertuples():
         L.append(f"| {r.c} | {r.OR:g} | {r.arm} | {r.mean_pairs} | {r.mean_events} | {r.mean_loghr:.3f} | {r.truth_loghr:.3f} | "
-                 f"{r.bias:+.3f} | {r.rmse:.3f} | {r.coverage:.2f} | {r.mean_smd_c:.3f} | {r.smd_c_relred_vs_base:+.1%} |")
+                 f"{r.bias:+.3f} | {r.oracle_ref_bias:+.3f} | {r.rmse:.3f} | {r.coverage:.2f} | {r.mean_smd_c:.3f} | {r.smd_c_relred_vs_base:+.1%} |")
     L += ["", "## How well the ECG predicts each C (5-fold ridge R²)", ""]
     L += [f"- {k}: {v}" for k, v in R["r2"].items()]
     path.write_text("\n".join(L) + "\n")
@@ -306,7 +326,8 @@ def main(argv=None) -> None:
     out.mkdir(parents=True, exist_ok=True)
     draws.to_csv(out / "draws.csv", index=False)
     S.to_csv(out / "summary.csv", index=False)
-    R = dict(run=a.run, when=time.strftime("%Y-%m-%d %H:%M"), git=BC.git_sha(), n=BC.suppress(len(D)), outcome=a.outcome,
+    R = dict(run=a.run, when=time.strftime("%Y-%m-%d %H:%M"), git=BC.git_sha(), n=BC.suppress(len(D)),
+             n_by_confounder={c: BC.suppress(int(state["ok"][c].sum())) for c in a.confounders}, outcome=a.outcome,
              draws=a.draws, confounders=a.confounders, ors=a.ors, rich_inputs=rich_used,
              r2=r2_probe(D, P, Xbase, a.confounders), seconds=round(time.time() - t0))
     BC.write_json(out / "run.json", R)

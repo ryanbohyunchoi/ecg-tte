@@ -248,10 +248,17 @@ def report(C: pd.DataFrame, R: dict) -> dict:
         x = pd.to_numeric(C[c], errors="coerce")
         if x.notna().sum() == 0:
             continue
-        cov[c] = dict(nonmissing=round(float(x.notna().mean()), 3), mean=float(f"{x.mean():.4g}"),
-                      sd=float(f"{x.std():.4g}"), smd_arm=round(smd(x, t), 3))
+        r = dict(nonmissing=round(float(x.notna().mean()), 3), mean=float(f"{x.mean():.4g}"),
+                 sd=float(f"{x.std():.4g}"), smd_arm=round(smd(x, t), 3))
+        vals = set(x.dropna().unique())
+        if vals <= {0, 1}:  # binary: mean x n recovers a count -> suppress when either count is 1-10 (overall or by arm)
+            cnts = [int((x == 1).sum()), int((x == 0).sum())] + [int(((x == v) & (t == a)).sum()) for v in (0, 1) for a in (0, 1)]
+            if any(1 <= k <= BC.MIN_COUNT for k in cnts):
+                r = dict(nonmissing=r["nonmissing"], mean="suppressed (count 1-10)", sd="", smd_arm="")
+        cov[c] = r
     R["covariates"] = cov
-    R["max_abs_smd_between_randomized_arms"] = round(float(np.nanmax([abs(v["smd_arm"]) for v in cov.values()])), 3)
+    R["max_abs_smd_between_randomized_arms"] = round(float(np.nanmax([abs(v["smd_arm"]) for v in cov.values()
+                                                                       if isinstance(v["smd_arm"], float)])), 3)
     hr = {}
     for ev, tt, lab in [("EVENT_PRIMARY", "T_PRIMARY", "primary (SPRINT-POP; published 0.75, 0.64-0.89)"),
                         ("EVENT_DEATH", "T_DEATH", "death (SPRINT-POP; published 0.73, 0.60-0.90)"),
