@@ -94,6 +94,8 @@ def main(argv=None) -> None:
     import argparse
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--run", default="main_v2", help="chs_emulate run whose cells.csv the re-run must reproduce")
+    ap.add_argument("--ehr", choices=["", "backbone", "clmbr"], default="",
+                    help="EXPLORATORY: add the AI-EHR arms (docs/bdc/CHS_EHR_EXPLORATORY.md)")
     a = ap.parse_args(argv)
     t0 = time.time()
     rd = Path(os.environ.get("BDC_RESTRICTED", "/sbgenomics/workspace/bdc-restricted"))
@@ -106,6 +108,11 @@ def main(argv=None) -> None:
         K = CE._read(rd / "chs_codes")
     except SystemExit:
         K = None
+    qcols = []
+    if a.ehr:
+        Qd = CE._read(rd / ("chs_ehr_backbone" if a.ehr == "backbone" else "chs_clmbr"))
+        qcols = [f"q:{c}" for c in Qd.columns if c != "row"]
+        R = R.merge(Qd.rename(columns={c: f"q:{c}" for c in Qd.columns if c != "row"}), on="row", how="inner")
     locked = BC.out_root() / "chs_emulate" / a.run / "cells.csv"
     L0 = pd.read_csv(locked) if locked.exists() else None
     integ, echo_rows = [], []
@@ -126,6 +133,10 @@ def main(argv=None) -> None:
         if Xk is not None and Xk.shape[1]:
             arms["codes"] = np.c_[Xb, Xk.to_numpy(float)]
             arms["codes+ecg"] = np.c_[Xb, Xk.to_numpy(float), P]
+        if qcols:  # same construction as chs_emulate.run_emulation
+            Q = pcs(D[qcols].to_numpy(float), min(64, len(qcols)))
+            Qp = Q[np.random.default_rng(CE.SEED_PERM + 1).permutation(len(Q))]
+            arms.update({"base+ehr": np.c_[Xb, Q], "base+ecg+ehr": np.c_[Xb, P, Q], "base+permehr": np.c_[Xb, Qp]})
         V = np.column_stack([pd.to_numeric(D[c], errors="coerce").to_numpy(float) for c in ECHO])
         Vall = np.column_stack([pd.to_numeric(D[c], errors="coerce").to_numpy(float) for c in CH.HELD])
         # ---- integrity
@@ -179,12 +190,15 @@ def main(argv=None) -> None:
     L += ["## 2. Echo balance per item (|SMD| after matching; chance = mean |SMD| under random labels in the same matched sample)", ""]
     W = Q.pivot_table(index=["EMU", "item"], columns="arm", values="smd")
     F = Q.pivot_table(index=["EMU", "item"], columns="arm", values="chance_mean")
-    cols = [c for c in ["base", "base+ecg", "base+perm", "clinical", "clinical+ecg", "codes", "codes+ecg"] if c in W.columns]
+    cols = [c for c in ["base", "base+ecg", "base+perm", "clinical", "clinical+ecg", "codes", "codes+ecg", "base+ehr",
+                        "base+ecg+ehr", "base+permehr"] if c in W.columns]
     T2 = W[cols].round(3)
     T2["chance(base)"] = F["base"].round(3)
     L += [md(T2), ""]
     L += ["## 3. Directional consistency (cells = emulation x echo item)", ""]
-    for ref, arm in PAIRS + [("base+perm", "base+ecg")]:
+    extra = [("base", "base+ehr"), ("base+permehr", "base+ehr"), ("base+ecg", "base+ecg+ehr"), ("base+ehr", "base+ecg+ehr"),
+             ("codes", "base+ehr")] if qcols else []
+    for ref, arm in PAIRS + [("base+perm", "base+ecg")] + extra:
         if ref not in W or arm not in W:
             continue
         for grp, items in (("all echo", ECHO), ("structure", STRUCT), ("function", FUNC)):

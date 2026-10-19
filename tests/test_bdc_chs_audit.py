@@ -63,6 +63,17 @@ class CHSAudit(unittest.TestCase):
             self.assertLess(noise.loc["base", "smd"], noise.loc["base", "chance_p95"] + 1e-9 + 0.2)
             rep = (Path(t) / "o" / "chs_audit" / "main_v2" / "report.md").read_text()
             self.assertIn("Directional consistency", rep)
+            # EXPLORATORY AI-EHR arms: audit reproduces the --ehr run and reports the EHR contrasts
+            B = pd.DataFrame(rng.normal(0, 1, (n, 16)), columns=[f"b{j}" for j in range(16)])
+            B.insert(0, "row", D.row)
+            B.to_pickle(f"{t}/r/chs_ehr_backbone.pkl")
+            CE.main(["--protocol-locked", "--run", "ehr_backbone", "--ehr", "backbone"])
+            CA.main(["--run", "ehr_backbone", "--ehr", "backbone"])
+            Q2 = pd.read_csv(Path(t) / "o" / "chs_audit" / "ehr_backbone" / "echo.csv")
+            self.assertTrue({"base+ehr", "base+ecg+ehr", "base+permehr"} <= set(Q2.arm))
+            rep2 = (Path(t) / "o" / "chs_audit" / "ehr_backbone" / "report.md").read_text()
+            self.assertIn("base+ecg+ehr lower than base+ehr", rep2)
+            self.assertTrue((Path(t) / "o" / "chs_audit" / "main_v2" / "report.md").read_text() == rep)  # not overwritten
 
 
 if __name__ == "__main__":
