@@ -42,6 +42,24 @@ Does an AI-EHR representation, built from the same coded information the PS-Code
 - **Runtime:** CPU only. A pure-PyTorch stand-in for the two xformers parts femr uses (`scripts/bdc/xformers_shim`) gives masks identical to real xformers. Embeddings match real xformers in `tests/test_bdc_chs_clmbr.py`.
 - **Code map:** `chs_clmbr_map.json` is SNOMED-derived. It is generated locally and uploaded to BDC by the user, never committed.
 
+### B2. Richer CLMBR-T timeline (`--rich`, map v2; added 2026-10-19 after the first CLMBR-T result)
+
+The first timeline had a median of 17 events per row. Two changes add no new kind of information; they only render the same routine-care history more like the EHR data CLMBR-T was trained on:
+
+1. **Ongoing conditions repeated at every later clinic visit, as an EHR problem list is re-coded at each encounter.** These are the entry history, the adjudicated events, and hospital diagnoses in chronic ICD-9 categories (`chs_clmbr.CHRONIC`):
+   - cardiometabolic, valve and cardiomyopathy, cerebrovascular and peripheral vascular;
+   - COPD and asthma, chronic kidney disease;
+   - dementia, Parkinson's disease, depression;
+   - cancer and status V-codes (`V10`, `V45`, `V58`, …).
+2. **Curated procedure map (map v2, `chs_clmbr_map.PROC`).** CLMBR-T knows only 196 ICD-9 procedure codes, and ICD-9 procedures have no OMOP "Maps to" into SNOMED. So 133 category rules send common inpatient procedures to the nearest in-vocabulary concept, for example:
+   - PTCA and stents, cardiac catheterisation, coronary angiography, echocardiography;
+   - pacemakers, dialysis, transfusion, ventilation, endoscopy;
+   - imaging, joint replacement, cataract surgery, TURP.
+
+   CABG has no procedure concept in the vocabulary and maps to "history of CABG". Codes already in the vocabulary are used as they are.
+
+The output is a separate set (`--tag rich` → `chs_clmbr_rich*`, `--ehr clmbr_rich`), so the first CLMBR-T run is kept for comparison. The timeline report lists the most frequent categories that still do not map (counts ≥ 11).
+
 ## Arms (added to `chs_emulate.py` with `--ehr backbone|clmbr`)
 
 These are the locked arms plus:
@@ -74,6 +92,15 @@ env -u PYTHONPATH /sbgenomics/workspace/clmbr-env/bin/hf auth login   # or huggi
 env -u PYTHONPATH /sbgenomics/workspace/clmbr-env/bin/python scripts/bdc/chs_clmbr.py download --model-root /sbgenomics/workspace/clmbr-t-base
 env -u PYTHONPATH /sbgenomics/workspace/clmbr-env/bin/python scripts/bdc/chs_clmbr.py encode --model-root /sbgenomics/workspace/clmbr-t-base
 python scripts/bdc/chs_emulate.py --protocol-locked --run ehr_clmbr --ehr clmbr
+```
+
+Richer timeline (map v2 uploaded as `/sbgenomics/workspace/chs_clmbr_map_v2.json`):
+
+```bash
+python scripts/bdc/chs_clmbr.py timeline --map /sbgenomics/workspace/chs_clmbr_map_v2.json --rich --tag rich
+env -u PYTHONPATH /sbgenomics/workspace/clmbr-env/bin/python scripts/bdc/chs_clmbr.py encode --tag rich --model-root /sbgenomics/workspace/clmbr-t-base
+python scripts/bdc/chs_emulate.py --protocol-locked --run ehr_clmbr_rich --ehr clmbr_rich
+python scripts/bdc/chs_audit.py --run ehr_clmbr_rich --ehr clmbr_rich
 ```
 
 The output goes to `chs_emulate/ehr_backbone/` (aggregates only). The `main_v2` run is not overwritten.

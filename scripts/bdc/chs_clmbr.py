@@ -53,7 +53,10 @@ REVISION = "5504b35aabd41a9615efed4231356a918114ae6a"  # the Yale copy (/mnt/rai
 MODEL_SHA256 = {"config.json": "9c8b9835ed5628a9b6d9498577a93ac4d9e6e269beecfbd69ca3b5dcab915e2a",
                 "dictionary.msgpack": "481ddac70a37e79bbfadde1411ad674544a161e3c1948149989cd159a34203ee",
                 "model.safetensors": "f56e2ece082b9daf87767c7de93419db1b6c0eaf21311e06c8f329b7ab4b81a2"}
-MAP_VERSION = "chs_clmbr_map_v1"
+MAP_VERSIONS = ("chs_clmbr_map_v1", "chs_clmbr_map_v2")
+# chronic ICD-9-CM categories re-emitted at every later clinic visit with --rich (problem-list style, as an EHR re-codes
+# ongoing conditions at each encounter): cardiometabolic, renal, lung, neuro, cancer history, and status V-codes
+CHRONIC = re.compile(r"^(250|27[0-2]|274|278|244|24[0-6]|40[1-5]|41[0-4]|42[4-8]|39[3-8]|43[3-8]|44[0-3]|49[0-6]|58[5-6]|71[4-6]|73[3]|33[1-2]|29[0-4]|296|311|30[3-5]|34[05]|365|366|57[1-2]|600|1[4-9]\d|20[0-8]|V10|V12|V15|V42|V43|V45|V58)")
 ENTRY = {2: dt.datetime(1989, 6, 15), 5: dt.datetime(1992, 12, 15)}
 SEED = 20260923
 DIM = 768
@@ -102,25 +105,40 @@ def map_dx(c: str, M: dict) -> list:
     return []
 
 
-def map_px(c: str, P: set) -> list:
+def map_px(c: str, P: set, rules: dict | None = None) -> list:
+    """Exact in-vocabulary ICD9Proc code, else the longest curated category rule (map v2), else a truncated
+    in-vocabulary ICD9Proc code."""
     c = c.strip().replace(".", "")
     if len(c) < 2:
         return []
-    for k in (len(c), 3, 2):
+    full = c[:2] + ("." + c[2:] if len(c) > 2 else "")
+    if full in P:
+        return ["ICD9Proc/" + full]
+    for k in range(len(c), 1, -1):
+        if rules and c[:k] in rules:
+            return list(rules[c[:k]])
+    for k in (3, 2):
         d = c[:2] + ("." + c[2:k] if k > 2 else "")
         if d in P:
             return ["ICD9Proc/" + d]
     return []
 
 
-def person_events(T, CH, CC, Mp: dict, L: pd.DataFrame, entry: dict) -> tuple:
+def is_chronic(c: str) -> bool:
+    return bool(CHRONIC.match(c.strip().upper().replace(".", "")))
+
+
+def person_events(T, CH, CC, Mp: dict, L: pd.DataFrame, entry: dict, rich: bool = False) -> tuple:
     """Long (id, day, order, code, flag) events for every person (before emulation-specific exclusions) and per-person
-    calendar anchors. order: 0 history, 1 clinic visit, 2 medication, 3 admission, 4 admission codes."""
+    calendar anchors. order: 0 history, 1 clinic visit, 2 medication, 3 admission, 4 admission codes.
+    rich: ongoing conditions (entry history, adjudicated events, chronic hospital diagnoses) are repeated at every later
+    clinic visit (no new information; a denser, EHR-like rendering of the same history)."""
     key = CH.key
     ev = []
     # clinic visits and medication flags
     day = L[L.item == "day"][["id", "visit", "value"]].rename(columns={"value": "day"})
-    ev.append(pd.DataFrame({"id": day.id, "day": day.day, "order": 1, "code": Mp["visit"].get("clinic"), "flag": ""}))
+    ev.append(pd.DataFrame({"id": day.id, "day": day.day, "order": 1, "code": Mp["visit"].get("clinic"), "flag": "",
+                            "chronic": False}))
     med = {f.upper(): c for f, c in Mp["med"].items()}
     for t, D in T.items():
         if t not in CH.TABLE_VISIT or not len(D) or t == "CYST_C_YR5":
@@ -135,19 +153,22 @@ def person_events(T, CH, CC, Mp: dict, L: pd.DataFrame, entry: dict) -> tuple:
         lg["flag"] = lg.flag.str.upper()
         for f, g in lg.groupby("flag"):
             for c in med[f]:
-                ev.append(pd.DataFrame({"id": g.id, "day": g.day, "order": 2, "code": c, "flag": f}))
+                ev.append(pd.DataFrame({"id": g.id, "day": g.day, "order": 2, "code": c, "flag": f, "chronic": False}))
     # hospital admissions
     H = T.get("ICD9", pd.DataFrame())
     stats = dict(dx_codes=0, dx_mapped=0, px_codes=0, px_mapped=0, admissions=0)
+    unmapped = {"dx": pd.Series(dtype=int), "px": pd.Series(dtype=int)}
     if len(H):
         hid = key(H)
         ad = pd.to_numeric(H.get("ADDAYS58"), errors="coerce")
-        P = set(Mp["icd9proc"])
+        P, rules = set(Mp["icd9proc"]), Mp.get("icd9proc_rules", {})
         ok = ad.notna()
         stats["admissions"] = int(ok.sum())
-        ev.append(pd.DataFrame({"id": hid[ok], "day": ad[ok], "order": 3, "code": Mp["visit"].get("admission"), "flag": ""}))
+        ev.append(pd.DataFrame({"id": hid[ok], "day": ad[ok], "order": 3, "code": Mp["visit"].get("admission"), "flag": "",
+                                "chronic": False}))
         for i in range(1, 11):
-            for col, fn, kind in ((f"DCODE{i}", lambda c: map_dx(c, Mp["icd9cm"]), "dx"), (f"PCODE{i}", lambda c: map_px(c, P), "px")):
+            for col, fn, kind in ((f"DCODE{i}", lambda c: map_dx(c, Mp["icd9cm"]), "dx"),
+                                  (f"PCODE{i}", lambda c: map_px(c, P, rules), "px")):
                 if col not in H:
                     continue
                 v = H[col].astype(str).str.strip()
@@ -155,8 +176,12 @@ def person_events(T, CH, CC, Mp: dict, L: pd.DataFrame, entry: dict) -> tuple:
                 codes = v[use].map(fn)
                 stats[f"{kind}_codes"] += int(use.sum())
                 stats[f"{kind}_mapped"] += int(codes.map(bool).sum())
-                x = pd.DataFrame({"id": hid[use], "day": ad[use], "codes": codes}).explode("codes").dropna(subset=["codes"])
-                ev.append(pd.DataFrame({"id": x.id, "day": x.day, "order": 4, "code": x.codes, "flag": ""}))
+                cat = v[use][~codes.map(bool)].str.replace(".", "", regex=False).str[:3]
+                unmapped[kind] = unmapped[kind].add(cat.value_counts(), fill_value=0)
+                chron = v[use].map(is_chronic) if kind == "dx" else pd.Series(False, index=v[use].index)
+                x = pd.DataFrame({"id": hid[use], "day": ad[use], "codes": codes, "chronic": chron}).explode("codes").dropna(subset=["codes"])
+                ev.append(pd.DataFrame({"id": x.id, "day": x.day, "order": 4, "code": x.codes, "flag": "",
+                                        "chronic": x.chronic.astype(bool)}))
     # entry history and adjudicated incident events
     hx = Mp["history"]
     ES, BB, AF = T.get("EVENT_SUMMARY", pd.DataFrame()), T.get("BASEBOTH", pd.DataFrame()), T.get("CARE_AFIB", pd.DataFrame())
@@ -164,7 +189,8 @@ def person_events(T, CH, CC, Mp: dict, L: pd.DataFrame, entry: dict) -> tuple:
     def add(D, cond, when, name):
         if name in hx and len(D):
             for c in hx[name]:
-                ev.append(pd.DataFrame({"id": key(D)[cond], "day": when[cond], "order": 0, "code": c, "flag": ""}))
+                ev.append(pd.DataFrame({"id": key(D)[cond], "day": when[cond], "order": 0, "code": c, "flag": "",
+                                        "chronic": True}))
 
     num = lambda D, c: pd.to_numeric(D[c], errors="coerce") if c in D else pd.Series(np.nan, index=D.index)  # noqa: E731
     if len(ES):
@@ -185,6 +211,17 @@ def person_events(T, CH, CC, Mp: dict, L: pd.DataFrame, entry: dict) -> tuple:
     E = pd.concat(ev, ignore_index=True).dropna(subset=["code", "day"])
     E["id"] = E.id.astype(str)
     E = E.drop_duplicates(["id", "day", "code"])
+    if rich:  # repeat ongoing conditions at every later clinic visit
+        pr = E[E.chronic][["id", "day", "code"]].drop_duplicates(["id", "code"], keep="first")
+        vi = E[(E.order == 1)][["id", "day"]].rename(columns={"day": "vday"}).drop_duplicates()
+        cf = pr.merge(vi, on="id")
+        cf = cf[cf.day < cf.vday]
+        stats["carried_forward_events"] = int(len(cf))
+        E = pd.concat([E, pd.DataFrame({"id": cf.id, "day": cf.vday, "order": 1, "code": cf.code, "flag": "",
+                                        "chronic": False})], ignore_index=True).drop_duplicates(["id", "day", "code"])
+    for kind in ("dx", "px"):  # aggregate: most frequent unmapped categories (counts >= 11 only)
+        u = unmapped[kind].sort_values(ascending=False)
+        stats[f"top_unmapped_{kind}"] = {k: int(n) for k, n in u[u >= 11].head(30).items()}
     # calendar anchors
     age = pd.Series(dtype=float)
     if len(BB):
@@ -200,8 +237,10 @@ def cmd_timeline(a) -> None:
     import cohort_count as CC
     import chs_cohort as CH
     Mp = json.loads(Path(a.map).read_text())
-    if Mp.get("version") != MAP_VERSION:
-        raise SystemExit(f"code map version {Mp.get('version')} != {MAP_VERSION}")
+    if Mp.get("version") not in MAP_VERSIONS:
+        raise SystemExit(f"code map version {Mp.get('version')} not in {MAP_VERSIONS}")
+    if a.rich and Mp["version"] == "chs_clmbr_map_v1":
+        BC.log("note: --rich with map v1 (no curated procedure rules)")
     t0 = time.time()
     rd = rdir()
     R = None
@@ -219,7 +258,7 @@ def cmd_timeline(a) -> None:
     T, _U, _seen = CH.load(files)
     L, entry = CH.long_measures(T)
     BC.log("tables read; building timelines ...")
-    E, anchors, stats = person_events(T, CH, CC, Mp, L, entry)
+    E, anchors, stats = person_events(T, CH, CC, Mp, L, entry, rich=a.rich)
     anchors = anchors.dropna(subset=["AGEBL"])
     anc = anchors.set_index("id")
     R = R.copy()
@@ -248,11 +287,13 @@ def cmd_timeline(a) -> None:
     X["time"] = X.time.dt.floor("s")
     Q = pd.DataFrame({"row": R.row.to_numpy(), "subject_id": R.subject_id.to_numpy(),
                       "cutoff": (R.id.map(ent) + pd.to_timedelta(R.day_k1 + 1, unit="D")).to_numpy()})
-    X.to_parquet(rd / "chs_clmbr_events.parquet", index=False)
-    Q.to_parquet(rd / "chs_clmbr_queries.parquet", index=False)
+    tag = f"_{a.tag}" if a.tag else ""
+    X.to_parquet(rd / f"chs_clmbr{tag}_events.parquet", index=False)
+    Q.to_parquet(rd / f"chs_clmbr{tag}_queries.parquet", index=False)
     n_ev = X[X.code != "MEDS_BIRTH"].merge(Q, on="subject_id")
     n_ev = n_ev[n_ev.time < n_ev.cutoff].groupby("row").size().reindex(Q.row, fill_value=0)
     info = dict(when=time.strftime("%Y-%m-%d %H:%M"), git=BC.git_sha(), map_sha256=sha(Path(a.map)),
+                map_version=Mp["version"], tag=a.tag, rich=a.rich,
                 subjects=sup(len(subjects)), rows=sup(len(Q)), rows_dropped_no_age_or_day=sup(n_rows_in - len(Q)),
                 persons_without_AGEBL=sup(len(entry) - len(anchors)),
                 events_per_row_p5_p50_p95=[float(x) for x in np.percentile(n_ev, [5, 50, 95])], coverage=stats,
@@ -260,9 +301,9 @@ def cmd_timeline(a) -> None:
                 px_mapped_share=round(stats["px_mapped"] / max(stats["px_codes"], 1), 3),
                 seconds=round(time.time() - t0))
     o = out_dir()
-    (o / "timeline.json").write_text(json.dumps(info, indent=1))
+    (o / f"timeline{tag}.json").write_text(json.dumps(info, indent=1))
     print(json.dumps(info, indent=1))
-    BC.log(f"restricted: {rd}/chs_clmbr_events.parquet, chs_clmbr_queries.parquet (stay in BDC)")
+    BC.log(f"restricted: {rd}/chs_clmbr{tag}_events.parquet, chs_clmbr{tag}_queries.parquet (stay in BDC)")
 
 
 # ---------------------------------------------------------------- model download
@@ -327,8 +368,9 @@ def cmd_encode(a) -> None:
     if hashes != MODEL_SHA256 and not a.allow_other:
         raise SystemExit("model files differ from the Yale copy (run download, or --allow-other and record it)")
     rd = rdir()
-    X = pd.read_parquet(a.events or rd / "chs_clmbr_events.parquet")
-    Q = pd.read_parquet(a.queries or rd / "chs_clmbr_queries.parquet")
+    tag = f"_{a.tag}" if a.tag else ""
+    X = pd.read_parquet(a.events or rd / f"chs_clmbr{tag}_events.parquet")
+    Q = pd.read_parquet(a.queries or rd / f"chs_clmbr{tag}_queries.parquet")
     if a.limit:
         keep = np.sort(Q.subject_id.unique())[: a.limit]
         Q, X = Q[Q.subject_id.isin(keep)], X[X.subject_id.isin(keep)]
@@ -407,7 +449,7 @@ def cmd_encode(a) -> None:
         raise SystemExit(f"unexpected representation size {V.shape[1]}")
     out = pd.DataFrame(V, columns=[f"c{j}" for j in range(DIM)])
     out.insert(0, "row", rows)
-    name = "chs_clmbr" if not a.limit else "chs_clmbr_smoke"
+    name = f"chs_clmbr{tag}" if not a.limit else f"chs_clmbr{tag}_smoke"
     out.to_parquet(rd / f"{name}.parquet", index=False)
     info = dict(when=time.strftime("%Y-%m-%d %H:%M"), device=dev, xformers_shim=shim, runtime=versions,
                 model_sha256_ok=hashes == MODEL_SHA256, max_tokens=a.max_tokens, limit=a.limit,
@@ -418,7 +460,7 @@ def cmd_encode(a) -> None:
                 mean_norm=round(float(np.linalg.norm(V, axis=1).mean()), 3) if len(V) else None,
                 seconds=round(time.time() - t0))
     o = out_dir()
-    (o / ("encode.json" if not a.limit else "encode_smoke.json")).write_text(json.dumps(info, indent=1))
+    (o / (f"encode{tag}.json" if not a.limit else f"encode{tag}_smoke.json")).write_text(json.dumps(info, indent=1))
     print(json.dumps(info, indent=1))
     if diffs and max(diffs) > a.tol:
         raise SystemExit(f"causal-prefix check failed: max |diff| {max(diffs):.2e} > {a.tol}")
@@ -431,6 +473,8 @@ def main(argv=None) -> None:
     t.add_argument("--map", required=True, help="chs_clmbr_map.json (uploaded by the user)")
     t.add_argument("--root", default="/sbgenomics/project-files")
     t.add_argument("--skip", nargs="*", default=["CYST_C_YR5"])
+    t.add_argument("--rich", action="store_true", help="repeat ongoing conditions at every later clinic visit")
+    t.add_argument("--tag", default="", help="output name suffix, e.g. rich -> chs_clmbr_rich_*")
     d = sp.add_parser("download")
     d.add_argument("--model-root", required=True)
     d.add_argument("--revision", default=REVISION)
@@ -439,6 +483,7 @@ def main(argv=None) -> None:
     e.add_argument("--model-root", required=True)
     e.add_argument("--events", default=None)
     e.add_argument("--queries", default=None)
+    e.add_argument("--tag", default="", help="timeline/embedding name suffix (as timeline --tag)")
     e.add_argument("--max-tokens", type=int, default=4096)
     e.add_argument("--limit", type=int, default=0, help="first N subjects only (smoke test; output chs_clmbr_smoke)")
     e.add_argument("--verify", type=int, default=50, help="subjects re-encoded for the causal-prefix check")

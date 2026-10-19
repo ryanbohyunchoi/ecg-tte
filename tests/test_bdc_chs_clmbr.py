@@ -32,6 +32,12 @@ class Codes(unittest.TestCase):
         self.assertEqual(CL.map_px("3606", {"36.06"}), ["ICD9Proc/36.06"])
         self.assertEqual(CL.map_px("88.72", {"88.7"}), ["ICD9Proc/88.7"])
         self.assertEqual(CL.map_px("1", {"1"}), [])
+        R = {"361": ["SNOMED/399261000"], "3722": ["SNOMED/67629009"]}
+        self.assertEqual(CL.map_px("36.12", {"36.06"}, R), ["SNOMED/399261000"])   # curated category rule
+        self.assertEqual(CL.map_px("37.22", set(), R), ["SNOMED/67629009"])
+        self.assertEqual(CL.map_px("36.06", {"36.06"}, R), ["ICD9Proc/36.06"])     # exact in-vocabulary code first
+        self.assertTrue(CL.is_chronic("428.0") and CL.is_chronic("2500") and CL.is_chronic("V45.81"))
+        self.assertFalse(CL.is_chronic("486") or CL.is_chronic("820.0"))
 
 
 class Shim(unittest.TestCase):
@@ -58,7 +64,7 @@ class Timeline(unittest.TestCase):
             root, ids = write_synthetic(t)
             os.environ["BDC_TTE_OUT"], os.environ["BDC_RESTRICTED"] = f"{t}/o", f"{t}/r"
             CH.main(["--root", str(root)])
-            mp = dict(version=CL.MAP_VERSION, icd9cm={"428.0": ["SNOMED/42343007"], "250": ["SNOMED/44054006"],
+            mp = dict(version=CL.MAP_VERSIONS[-1], icd9cm={"428.0": ["SNOMED/42343007"], "250": ["SNOMED/44054006"],
                                                      "410": ["SNOMED/22298006"]},
                       icd9proc=["36.06"], med={"THYR06": ["RxNorm/T"], "CCB06": [], "HCTZ06": ["RxNorm/H"],
                                                "ASPIRIN": ["RxNorm/A"]},
@@ -85,6 +91,18 @@ class Timeline(unittest.TestCase):
             rep = json.loads((Path(t) / "o" / "chs_clmbr" / "timeline.json").read_text())
             self.assertGreater(rep["dx_mapped_share"], 0)
             self.assertNotIn("5003", json.dumps(rep))
+            # --rich: ongoing conditions repeated at later clinic visits; separate output names
+            CL.main(["timeline", "--map", f"{t}/map.json", "--root", str(root), "--rich", "--tag", "rich"])
+            Xr = pd.read_parquet(Path(t) / "r" / "chs_clmbr_rich_events.parquet")
+            self.assertTrue((Path(t) / "r" / "chs_clmbr_events.parquet").exists())
+            self.assertGreater(len(Xr), len(X))
+            htn = X[X.code == "SNOMED/38341003"].groupby("subject_id").size()
+            htn_r = Xr[Xr.code == "SNOMED/38341003"].groupby("subject_id").size()
+            self.assertTrue((htn_r.reindex(htn.index) >= htn).all() and (htn_r > 1).any())
+            self.assertTrue((Xr.groupby("subject_id").head(1).code == "MEDS_BIRTH").all())
+            self.assertFalse(Xr[Xr.subject_id.isin(set(subj))].code.isin(["RxNorm/H"]).any())
+            rr = json.loads((Path(t) / "o" / "chs_clmbr" / "timeline_rich.json").read_text())
+            self.assertGreater(rr["coverage"]["carried_forward_events"], 0)
 
     @unittest.skipUnless(MODEL.exists() and (MOS / "bin" / "python").exists(), "local CLMBR-T copy / femr env missing")
     def test_encode_local(self):
@@ -97,7 +115,7 @@ class Timeline(unittest.TestCase):
             env = dict(os.environ, BDC_TTE_OUT=f"{t}/o", BDC_RESTRICTED=f"{t}/r")
             os.environ.update(BDC_TTE_OUT=f"{t}/o", BDC_RESTRICTED=f"{t}/r")
             CH.main(["--root", str(root)])
-            mp = dict(version=CL.MAP_VERSION, icd9cm={"428.0": ["SNOMED/42343007"], "250": ["SNOMED/44054006"]},
+            mp = dict(version=CL.MAP_VERSIONS[-1], icd9cm={"428.0": ["SNOMED/42343007"], "250": ["SNOMED/44054006"]},
                       icd9proc=[], med={"THYR06": ["RxNorm/10582"]}, history={"HTN": ["SNOMED/38341003"]},
                       visit={"clinic": "Visit/OP", "admission": "Visit/IP"})
             (Path(t) / "map.json").write_text(json.dumps(mp))

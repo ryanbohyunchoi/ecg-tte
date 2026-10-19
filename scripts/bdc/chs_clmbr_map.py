@@ -6,7 +6,8 @@ BDC by the user (and read there by chs_clmbr.py timeline --map).
 Maps:
   icd9cm    dotted ICD-9-CM code (full codes and 3-digit categories) -> standard concepts via OMOP 'Maps to', kept
             where the target code is in the CLMBR-T vocabulary (as scripts/mimic/build_mimic_meds.py)
-  icd9proc  the ICD9Proc codes in the CLMBR-T vocabulary (used directly, dotted, as at Yale)
+  icd9proc  the ICD9Proc codes in the CLMBR-T vocabulary (used directly, dotted, as at Yale); other common procedures
+            through curated category rules (PROC, v2) to the nearest in-vocabulary procedure concept
   med       CHS medication-class flag (`*06`) -> one representative in-vocabulary RxNorm clinical drug per class (crude:
             CHS records classes, not drugs; see MED). Summary flags (any diuretic, any CCB,
             any hypertension medication, counts, interviewer IDs, days taken) map to nothing.
@@ -27,7 +28,7 @@ from pathlib import Path
 
 import pandas as pd
 
-VERSION = "chs_clmbr_map_v1"
+VERSION = "chs_clmbr_map_v2"
 # flag -> drug components; each component = ingredient-name alternatives ("a|b", tried in order) or a CVX code.
 # CLMBR-T's RxNorm codes are clinical drugs (e.g. 'lisinopril 10 MG Oral Tablet'), so each component resolves to the
 # in-vocabulary single-ingredient product with the highest pretraining frequency (dictionary weight); a combination flag
@@ -73,6 +74,77 @@ MED = {
 HISTORY = {"MI": ["SNOMED/22298006"], "ANGINA": ["SNOMED/194828000"], "HF": ["SNOMED/42343007"],
            "STROKE": ["SNOMED/230690007"], "HTN": ["SNOMED/38341003"], "DIABETES": ["SNOMED/44054006"],
            "AF": ["SNOMED/49436004"], "ANGIOPLASTY": ["SNOMED/11101003"], "BYPASS": ["SNOMED/399261000"]}
+
+
+# ICD-9 procedure (dotless prefix, longest match wins) -> in-vocabulary procedure codes ("ICD9Proc/.." or an exact SNOMED
+# procedure name). Curated (v2, 2026-10-19): CLMBR-T knows only 196 ICD9Proc codes, and ICD9Proc is itself a standard OMOP
+# vocabulary (no 'Maps to' SNOMED), so common inpatient procedures of older adults map to the nearest in-vocabulary
+# procedure concept. Codes already in the vocabulary are used as they are (chs_clmbr.map_px).
+PROC = {
+    # coronary / cardiac
+    "0066": ["Percutaneous transluminal coronary angioplasty"], "3601": ["Percutaneous transluminal coronary angioplasty"],
+    "3602": ["Percutaneous transluminal coronary angioplasty"], "3605": ["Percutaneous transluminal coronary angioplasty"],
+    "3606": ["Placement of stent in coronary artery"], "3607": ["Insertion of drug-eluting coronary artery stent"],
+    "361": ["SNOMED/399261000"],  # CABG: no procedure concept in the vocabulary -> history of CABG
+    "372": ["Cardiac catheterization"], "3721": ["Catheterization of right heart"],
+    "3722": ["Catheterization of left heart"], "3723": ["Catheterization of both left and right heart"],
+    "3726": ["ICD9Proc/37.26"], "3734": ["Catheter ablation of tissue of heart"],
+    "378": ["Insertion of pacemaker pulse generator"], "3794": ["ICD9Proc/37.94"], "3795": ["ICD9Proc/37.94"],
+    "3796": ["ICD9Proc/37.94"], "3797": ["ICD9Proc/37.94"], "3798": ["ICD9Proc/37.94"],
+    "8852": ["Angiocardiography of left heart"], "8853": ["Angiocardiography of left heart"],
+    "8854": ["Angiocardiography of left heart"], "8855": ["Angiography of coronary artery"],
+    "8856": ["Angiography of coronary artery"], "8857": ["Angiography of coronary artery"],
+    "884": ["Angiography"], "8841": ["Angiography of cerebral arteries"], "8842": ["Angiography of aorta"],
+    "8845": ["Angiography of renal artery"], "8843": ["Angiography of pulmonary arteries"],
+    "8872": ["Echocardiography"], "8873": ["ICD9Proc/88.73"], "8876": ["ICD9Proc/88.76"],
+    "8877": ["Doppler ultrasonography of artery"], "8871": ["Ultrasonography of carotid artery"],
+    "8952": ["Electrocardiographic procedure"], "8950": ["48 hour ambulatory electrocardiographic monitoring"],
+    "8941": ["Cardiovascular stress testing"], "8943": ["Cardiovascular stress testing"],
+    "8944": ["Cardiovascular stress testing"], "8964": ["Introduction of catheter into pulmonary artery"],
+    "9962": ["ICD9Proc/99.62"], "9960": ["ICD9Proc/99.60"], "9910": ["ICD9Proc/99.10"],
+    # vascular access, dialysis, lines
+    "3995": ["Hemodialysis"], "5498": ["Dialysis procedure"], "3927": ["Insertion of graft for vascular access"],
+    "3891": ["Insertion of catheter into artery"], "3893": ["ICD9Proc/38.93"], "3897": ["ICD9Proc/38.97"],
+    "3899": ["ICD9Proc/38.99"],
+    # blood, airway, ventilation, nutrition
+    "990": ["Transfusion"], "9904": ["Transfusion of packed red blood cells"], "9905": ["Platelet transfusion"],
+    "9907": ["ICD9Proc/99.07"], "9604": ["Insertion of endotracheal tube"], "9605": ["Intubation"],
+    "9607": ["Insertion of nasogastric tube"], "9670": ["Artificial ventilation"], "9671": ["ICD9Proc/96.71"],
+    "9672": ["ICD9Proc/96.72"], "9390": ["Continuous positive airway pressure ventilation treatment"],
+    "9396": ["Oxygen therapy"], "9394": ["Nebulizer therapy"], "9915": ["Administration of nutritional supplement"],
+    "4311": ["Percutaneous endoscopic gastrostomy"], "4319": ["Percutaneous endoscopic gastrostomy"],
+    # gastrointestinal
+    "4513": ["ICD9Proc/45.13"], "4516": ["Endoscopy and biopsy of upper gastrointestinal tract"],
+    "4514": ["Endoscopy and biopsy of upper gastrointestinal tract"], "4523": ["Colonoscopy"],
+    "4524": ["Diagnostic endoscopic examination on colon"], "4525": ["Endoscopic biopsy of large intestine"],
+    "4542": ["Endoscopic polypectomy of large intestine"], "4543": ["ICD9Proc/45.43"],
+    "4573": ["ICD9Proc/45.43"], "457": ["ICD9Proc/45.43"],
+    "5110": ["Endoscopic retrograde cholangiopancreatography"], "5122": ["Laparoscopic cholecystectomy"],
+    "5123": ["Laparoscopic cholecystectomy"], "4701": ["Laparoscopic appendectomy"], "4709": ["Laparoscopic appendectomy"],
+    "5491": ["Abdominal paracentesis"], "5411": ["ICD9Proc/54.4"], "5459": ["ICD9Proc/54.59"],
+    # respiratory
+    "3322": ["Fiberoptic bronchoscopy"], "3323": ["Bronchoscopy"], "3324": ["Bronchoscopy and biopsy of bronchus"],
+    "3327": ["Bronchoscopy with transbronchial lung biopsy"], "3404": ["Insertion of pleural tube drain"],
+    "3491": ["Insertion of pleural tube drain"],
+    # imaging
+    "8703": ["CT of head"], "8741": ["CT of chest"], "8801": ["CT of abdomen"], "8838": ["Computed tomography"],
+    "8891": ["MRI of brain and brain stem"], "8744": ["Radiographic procedure of chest"],
+    "8749": ["Radiographic procedure of chest"], "8719": ["Plain X-ray of abdomen"], "8826": ["ICD9Proc/88.26"],
+    "8827": ["ICD9Proc/88.27"], "8874": ["ICD9Proc/88.76"], "8875": ["Ultrasonography of kidney and bladder"],
+    "8879": ["ICD9Proc/88.79"],
+    # orthopaedic, eye, urology, other surgery
+    "8151": ["Total replacement of hip"], "8152": ["Total replacement of hip"], "8153": ["Total replacement of hip"],
+    "8154": ["Total knee replacement"], "8155": ["Total knee replacement"], "7915": ["ICD9Proc/79.36"],
+    "7935": ["ICD9Proc/79.36"], "7936": ["ICD9Proc/79.36"], "1341": ["Aspiration of cataract by phacoemulsification"],
+    "1359": ["One stage extracapsular extraction of lens and insertion of prosthetic intraocular lens"],
+    "1371": ["One stage extracapsular extraction of lens and insertion of prosthetic intraocular lens"],
+    "6029": ["ICD9Proc/60.29"], "602": ["ICD9Proc/60.29"], "5794": ["Intermittent urethral catheterization"],
+    "5732": ["ICD9Proc/57.32"], "0331": ["Lumbar puncture"], "8622": ["ICD9Proc/86.28"], "8628": ["ICD9Proc/86.28"],
+    "0624": ["Total thyroidectomy"], "8521": ["Partial mastectomy"], "8522": ["Partial mastectomy"],
+    "8523": ["Partial mastectomy"], "9339": ["ICD9Proc/93.39"], "9383": ["Rehabilitation therapy"],
+    "9921": ["ICD9Proc/99.21"], "9925": ["Infusion chemotherapy for malignant neoplasm"], "9229": ["ICD9Proc/92.29"],
+    "9228": ["ICD9Proc/92.28"], "9227": ["Radiation therapy procedure or service"],
+}
 
 
 def weights(path: Path) -> dict:
@@ -159,14 +231,24 @@ def build(vocab_dir: Path, dict_path: Path) -> dict:
         c = next((x for x in alts if x in vocab), None)
         (hist.__setitem__(k, [c]) if c else hmiss.append(k))
     icd9proc = sorted(c.split("/", 1)[1] for c in vocab if c.startswith("ICD9Proc/"))
+    snp = C[(C.vocabulary_id == "SNOMED") & C.code.isin(vocab)]
+    by_snomed = dict(zip(snp.concept_name, snp.code))
+    proc_rules, proc_missing = {}, []
+    for pre, targets in PROC.items():
+        if not targets or not pre.isdigit():
+            continue
+        codes = [t if "/" in t and t in vocab else by_snomed.get(t) for t in targets]
+        (proc_missing.append(pre) if not all(codes) else proc_rules.__setitem__(pre, codes))
     visit = {k: v for k, v in {"clinic": "Visit/OP", "admission": "Visit/IP"}.items() if v in vocab}
     return dict(version=VERSION, created=time.strftime("%Y-%m-%d %H:%M"), icd9cm=icd9cm, icd9proc=icd9proc, med=med,
+                icd9proc_rules=proc_rules,
                 history=hist, visit=visit, drug_names=drug_names,
                 coverage=dict(icd9cm_source_codes=int(len(src)), icd9cm_mapped_in_vocab=len(icd9cm),
                               icd9cm_categories=int(len(cats)), icd9cm_categories_mapped=int(cats.isin(icd9cm).sum()),
                               icd9proc_in_vocab=len(icd9proc), med_flags=len(MED),
                               med_flags_with_token=sum(bool(v) for v in med.values()), med_missing=missing,
-                              history_missing=hmiss, clmbr_vocabulary=len(vocab)),
+                              history_missing=hmiss, icd9proc_rules=len(proc_rules), icd9proc_rules_missing=proc_missing,
+                              clmbr_vocabulary=len(vocab)),
                 sources=dict({p: sha(vocab_dir / p) for p in ("concept.parquet", "maps_to.parquet", "clmbr_code_strings.json")},
                              dictionary_msgpack=sha(dict_path)))
 

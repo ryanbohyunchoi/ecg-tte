@@ -156,7 +156,7 @@ def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--protocol-locked", action="store_true", help="required: confirms docs/bdc/CHS_PROTOCOL.md is LOCKED")
     ap.add_argument("--run", default="main")
-    ap.add_argument("--ehr", choices=["", "backbone", "clmbr"], default="",
+    ap.add_argument("--ehr", choices=["", "backbone", "clmbr", "clmbr_rich"], default="",
                     help="EXPLORATORY: add AI-EHR arms from chs_ehr_backbone (crude backbone) or chs_clmbr (CLMBR-T)")
     a = ap.parse_args(argv)
     if not a.protocol_locked:
@@ -175,7 +175,7 @@ def main(argv=None) -> None:
         BC.log("no chs_codes table: PS-Codes arms skipped")
     qcols = []
     if a.ehr:
-        Qd = _read(rd / ("chs_ehr_backbone" if a.ehr == "backbone" else "chs_clmbr"))
+        Qd = _read(rd / ("chs_ehr_backbone" if a.ehr == "backbone" else f"chs_{a.ehr}"))
         qcols = [c for c in Qd.columns if c != "row"]
         R = R.merge(Qd.rename(columns={c: f"q:{c}" for c in qcols}), on="row", how="inner")
         qcols = [f"q:{c}" for c in qcols]

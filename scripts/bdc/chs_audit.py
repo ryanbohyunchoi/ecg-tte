@@ -94,7 +94,7 @@ def main(argv=None) -> None:
     import argparse
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--run", default="main_v2", help="chs_emulate run whose cells.csv the re-run must reproduce")
-    ap.add_argument("--ehr", choices=["", "backbone", "clmbr"], default="",
+    ap.add_argument("--ehr", choices=["", "backbone", "clmbr", "clmbr_rich"], default="",
                     help="EXPLORATORY: add the AI-EHR arms (docs/bdc/CHS_EHR_EXPLORATORY.md)")
     a = ap.parse_args(argv)
     t0 = time.time()
@@ -110,7 +110,7 @@ def main(argv=None) -> None:
         K = None
     qcols = []
     if a.ehr:
-        Qd = CE._read(rd / ("chs_ehr_backbone" if a.ehr == "backbone" else "chs_clmbr"))
+        Qd = CE._read(rd / ("chs_ehr_backbone" if a.ehr == "backbone" else f"chs_{a.ehr}"))
         qcols = [f"q:{c}" for c in Qd.columns if c != "row"]
         R = R.merge(Qd.rename(columns={c: f"q:{c}" for c in Qd.columns if c != "row"}), on="row", how="inner")
     locked = BC.out_root() / "chs_emulate" / a.run / "cells.csv"
