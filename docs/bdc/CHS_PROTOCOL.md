@@ -1,8 +1,10 @@
 # CHS target-trial emulations (LATENT-RCT pipeline in the Cardiovascular Health Study)
 
-**Status: DRAFT 2026-10-16.** The CHS feasibility counts are known; no ECG-adjusted estimate exists yet.
-- The draft becomes LOCKED on user approval, before `chs_emulate.py` is run on real data.
-- Changes after the lock are deviations, logged in `pipeline.md` §9.
+**Status: LOCKED, recorded 2026-10-19.** The locked text is the version at commit d08a736 (2026-10-16; the PS-Codes rung was added that day, before any result).
+- **Disclosure:** the first `chs_emulate.py --protocol-locked` run (2026-10-19 14:13, BDC; repo at f6259a2, with the same protocol text) happened **before** this lock was written into the file.
+- Nothing in the design was changed after that run.
+- Feasibility under the ≥ 350 rule (smaller arm with an ECG, 2026-10-19): E1b (336) and E4 (170) are below 350 and are reported as infeasible, not analysed. This applies the protocol's own rule; it is not a deviation.
+- Further changes are deviations, logged in `pipeline.md` §9.
 - Sources: `docs/bdc/COHORT_FEASIBILITY_CHS_MESA.md` (variables) and `scripts/bdc/cohort_count.py` (counts).
 
 ## Common design (all emulations)
