@@ -237,6 +237,19 @@ def cmd_embed(a) -> None:
     idc = a.id_col or ("MASKID" if "MASKID" in C else "id")
     # one embedding per ECG file (CHS: the same prior-visit ECG can serve several emulations)
     C = C[C.ECG_XML_PATH.notna()].drop_duplicates("ECG_XML_PATH").reset_index(drop=True)
+    prev = None
+    if a.reuse:  # embed only ECG files not already in <name>_ecg_bcl, then append (same checkpoint enforced below)
+        for q in (cohort.parent / f"{a.name}_ecg_bcl.parquet", cohort.parent / f"{a.name}_ecg_bcl.pkl"):
+            if q.exists():
+                prev = pd.read_parquet(q) if q.suffix == ".parquet" else pd.read_pickle(q)
+                break
+        if prev is not None:
+            done = set(prev.ECG_FILE)
+            C = C[~C.ECG_XML_PATH.map(lambda x: Path(x).name).isin(done)].reset_index(drop=True)
+            BC.log(f"--reuse: {len(done)} files already embedded; {len(C)} new files to embed")
+            if not len(C):
+                BC.log("nothing new to embed; existing embeddings kept unchanged")
+                return
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model, cfg = load_encoder(a.ckpt, device)
     t0 = time.time()
@@ -267,6 +280,8 @@ def cmd_embed(a) -> None:
     emb = pd.DataFrame(E, columns=[f"e{j}" for j in range(E.shape[1])])
     emb.insert(0, "ECG_FILE", [Path(x).name for x in C.ECG_XML_PATH.iloc[ok]])
     emb.insert(0, idc, C[idc].iloc[ok].to_numpy())
+    if prev is not None:
+        emb = pd.concat([prev, emb], ignore_index=True).drop_duplicates(["ECG_FILE"], keep="first")
     rdir = cohort.parent
     try:
         emb.to_parquet(rdir / f"{a.name}_ecg_bcl.parquet", index=False)
@@ -349,6 +364,7 @@ def main(argv=None) -> None:
     e.add_argument("--workers", type=int, default=max(1, min(6, (os.cpu_count() or 2) - 1)))
     e.add_argument("--block", type=int, default=512, help="ECGs converted and embedded per block (memory bound)")
     e.add_argument("--allow-other-ckpt", action="store_true", help="run with a checkpoint whose sha256 differs")
+    e.add_argument("--reuse", action="store_true", help="keep the existing <name>_ecg_bcl embeddings; embed only new files")
     s = sub.add_parser("slim")
     s.add_argument("src")
     s.add_argument("dst")

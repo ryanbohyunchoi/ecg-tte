@@ -37,6 +37,7 @@ HELD = {
     "lab_glucose": ["GLUADJ", "GLU44"], "lab_insulin": ["INS44"], "lab_albumin": ["ALBADJ", "ALB44"], "lab_fibrinogen": ["FIB44"],
     "lab_crp": ["CRPBLADJ"], "lab_cystatin_c": ["CYSTATC"],
     "vital_sbp": ["AVZMSYS", "AVESYS"], "vital_dbp": ["AVZMDIA", "AVEDIA"], "vital_bmi": ["BMI"],
+    "vital_weight": ["WEIGHT13", "WEIGHT33"],
     "func_gait_time": ["TIME27"], "func_fev1": ["FEV118"], "vasc_aai": ["AAI"],
 }
 DOMAIN = lambda item: item.split("_")[0]  # noqa: E731
@@ -44,11 +45,11 @@ CLINICAL_PS = ["vital_sbp", "vital_dbp", "vital_bmi", "lab_creatinine", "lab_ldl
 # event types in CHS_Event16
 EV = {"MI": 1, "STROKE": 3, "CHF": 4}
 EMUS = [  # name, A, B (None = sequential vs none), age range, extra exclusion, primary outcome components, horizon (mo)
-    dict(name="E1_ccb_vs_thiazide", A="CCB", B="THIAZIDE", age=(0, 200), excl=["HF"], primary=["MI", "CHD_DEATH"], H=60,
+    dict(name="E1_ccb_vs_thiazide", A="CCB", B="THIAZIDE", age=(0, 200), excl=["HF_T0"], primary=["MI", "CHD_DEATH"], H=60,
          bench="ALLHAT amlodipine vs chlorthalidone RR 0.98 (0.90-1.07)", cluster="thiazide"),
-    dict(name="E1b_dhp_vs_thiazide", A="DHP_CCB", B="THIAZIDE", age=(0, 200), excl=["HF"], primary=["MI", "CHD_DEATH"], H=60,
+    dict(name="E1b_dhp_vs_thiazide", A="DHP_CCB", B="THIAZIDE", age=(0, 200), excl=["HF_T0"], primary=["MI", "CHD_DEATH"], H=60,
          bench="ALLHAT (dihydropyridine only) RR 0.98", cluster="thiazide"),
-    dict(name="E2_acei_vs_thiazide", A="ACEI", B="THIAZIDE", age=(0, 200), excl=["HF"], primary=["MI", "CHD_DEATH"], H=60,
+    dict(name="E2_acei_vs_thiazide", A="ACEI", B="THIAZIDE", age=(0, 200), excl=["HF_T0"], primary=["MI", "CHD_DEATH"], H=60,
          bench="ALLHAT lisinopril vs chlorthalidone RR 0.99 (0.91-1.08)", cluster="thiazide"),
     dict(name="E3_acei_vs_ccb", A="ACEI", B="CCB", age=(70, 84), excl=[], primary=["CV_DEATH"], H=60,
          bench="STOP-2 ACEi vs CCB CV death ~1.0", cluster="acei_ccb"),
@@ -56,7 +57,7 @@ EMUS = [  # name, A, B (None = sequential vs none), age range, extra exclusion, 
          H=70, bench="MRC older adults (no head-to-head HR)", cluster="thiazide"),
     dict(name="E5_statin_vs_none", A="STATIN", B=None, age=(70, 82), excl=[], primary=["MI", "STROKE", "CHD_DEATH"], H=39,
          bench="PROSPER HR 0.85 (0.74-0.97)", cluster="statin"),
-    dict(name="E6_aspirin_vs_none", A="ASPIRIN", B=None, age=(70, 200), excl=["CAD", "STROKE_HX", "HF", "AF"],
+    dict(name="E6_aspirin_vs_none", A="ASPIRIN", B=None, age=(70, 200), excl=["MI_T0", "STROKE_T0", "HF_T0", "AF_T0"],
          primary=["MI", "STROKE", "CHF"], H=56, bench="ASPREE CVD HR 0.95 (0.83-1.08)", cluster="aspirin"),
 ]
 SECONDARY = {"death": ["DEATH"], "hf": ["CHF"], "mi": ["MI"], "stroke": ["STROKE"]}
@@ -191,7 +192,7 @@ def build(root: Path):
     paths = {p.name: str(p) for p in files if p.name.upper().startswith("CHS_ECG") and p.name.lower().endswith(".xml")}
     # file name per (id, VISIT label) from the PFB table
     ecg_name = {}
-    for img in [p for p in files if p.name == "imaging_file.tsv"]:
+    for img in sorted([p for p in files if p.name == "imaging_file.tsv"], key=str, reverse=True):
         I = pd.read_csv(img, sep="\t", low_memory=False, dtype=str)
         if not I["object.file_name"].str.upper().str.startswith("CHS_ECG").any():
             continue
@@ -221,7 +222,7 @@ def build(root: Path):
                         "CN": pd.to_numeric(CEN.get("TTONFCND"), errors="coerce")}).drop_duplicates("id").set_index("id") if len(CEN) else None
     BB = T["BASEBOTH"]
     st = pd.DataFrame({"id": key(BB)})
-    for c in ("GEND01", "RACE01", "BPHI", "DIABADA", "SMOKE"):
+    for c in ("GEND01", "RACE01", "BPHI", "DIABADA", "SMOKE", "AGEBL"):
         st[c] = pd.to_numeric(BB[c], errors="coerce") if c in BB else np.nan
     st = st.drop_duplicates("id").set_index("id")
 
@@ -237,7 +238,9 @@ def build(root: Path):
         N["EMU"] = E["name"]
         N["day0"] = exact(L, N, "day", "k")       # study day of visit k (time zero); must be recorded at k
         N["day_k1"] = exact(L, N, "day", "k1")
-        N["AGE"] = latest_before(L, N, "age")
+        age_k1 = exact(L, N, "age", "k1")
+        age_bl = N.id.map(st["AGEBL"]) if "AGEBL" in st else np.nan
+        N["AGE"] = age_k1.fillna(age_bl + N.day_k1 / 365.25)
         for c in ("GEND01", "RACE01", "BPHI", "DIABADA", "SMOKE"):
             N[c] = N.id.map(st[c]) if c in st else np.nan
         N["MALE"] = (N.GEND01 == 1).astype(float)
@@ -245,9 +248,9 @@ def build(root: Path):
         N["HTN"] = ((N.BPHI == 1) | (latest_before(L, N, "htn_med") == 1)).astype(float)
         N["DIAB"] = (N.DIABADA.isin([3, 4]) | (latest_before(L, N, "diab_med") == 1)).astype(float)
 
-        def prior(flag_prev, inc, tto):
+        def prior(flag_prev, inc, tto, upto="day_k1"):
             p = es.reindex(N.id)
-            return ((p[flag_prev].to_numpy() == 1) | ((p[inc].to_numpy() == 1) & (p[tto].to_numpy() <= N.day_k1.to_numpy()))).astype(float)
+            return ((p[flag_prev].to_numpy() == 1) | ((p[inc].to_numpy() == 1) & (p[tto].to_numpy() <= N[upto].to_numpy()))).astype(float)
         N["CAD"] = np.maximum.reduce([prior("MIBLMOD", "INCMI", "TTOMI"), prior("ANBLMOD", "INCANG", "TTOANG"),
                                       ((es.reindex(N.id).INCANGIO.to_numpy() == 1) & (es.reindex(N.id).TTOANGI.to_numpy() <= N.day_k1.to_numpy())).astype(float),
                                       ((es.reindex(N.id).INCBYPS.to_numpy() == 1) & (es.reindex(N.id).TTOBYPS.to_numpy() <= N.day_k1.to_numpy())).astype(float)])
@@ -258,10 +261,20 @@ def build(root: Path):
             N["AF"] = ((a_.PREV.to_numpy() == 1) | ((a_.INCAFIB.to_numpy() == 1) & (a_.TTOAFIB.to_numpy() <= N.day_k1.to_numpy()))).astype(float)
         else:
             N["AF"] = np.nan
+        # eligibility uses everything known at time zero (audit 2026-10-19; logged deviation): history up to visit k.
+        # PS covariates above stay at visit k-1.
+        N["MI_T0"] = prior("MIBLMOD", "INCMI", "TTOMI", "day0")
+        N["HF_T0"] = prior("CHBLMOD", "INCCHF", "TTOCHF", "day0")
+        N["STROKE_T0"] = prior("STBLMOD", "INCSTRK", "TTOSTK", "day0")
+        if af is not None:
+            N["AF_T0"] = ((a_.PREV.to_numpy() == 1) | ((a_.INCAFIB.to_numpy() == 1) & (a_.TTOAFIB.to_numpy() <= N.day0.to_numpy()))).astype(float)
+        else:
+            N["AF_T0"] = np.nan
         for it in HELD:
             N[it] = latest_before(L, N, it)
         # eligibility
-        ok = N.AGE.between(*E["age"]) & N.day0.notna()
+        # visit k-1 must be recorded (audit: a missing k-1 visit silently emptied the history)
+        ok = N.AGE.between(*E["age"]) & N.day0.notna() & N.day_k1.notna() & (N.day0 > N.day_k1)
         for x in E["excl"]:
             ok &= N[x] != 1
         N = N[ok].copy()
@@ -274,8 +287,9 @@ def build(root: Path):
         death_t = np.where(e_.DEATH.to_numpy() == 1, e_.TTODTH.to_numpy(), np.inf)
         cause = e_.CAUSE80.to_numpy()
         c_ = cen.reindex(ids) if cen is not None else None
-        cens = np.nanmin(np.c_[c_.CF.to_numpy(), c_.CN.to_numpy()], axis=1) if c_ is not None else np.full(len(N), np.inf)
-        cens = np.where(np.isnan(cens), np.inf, cens)
+        inf = np.full(len(N), np.inf)
+        cf = np.where(np.isnan(c_.CF.to_numpy()), np.inf, c_.CF.to_numpy()) if c_ is not None else inf
+        cn = np.where(np.isnan(c_.CN.to_numpy()), np.inf, c_.CN.to_numpy()) if c_ is not None else inf
         d0 = N.day0.to_numpy()
         firsts = {}
         for nm, code in EV.items():
@@ -293,11 +307,15 @@ def build(root: Path):
         H = E["H"] * MO
         for oname, comps in [("primary", E["primary"])] + list(SECONDARY.items()):
             ev_t = np.min(np.c_[tuple(firsts[c] for c in comps)], axis=1)
-            # stop at censoring, horizon or death (a fatal component event at the death date still counts: ev_t == stop)
+            # stop at censoring, horizon or death (a fatal component event at the death date still counts: ev_t == stop).
+            # Fatal-only outcomes use the fatal censor date; any non-fatal component also needs the non-fatal one (audit).
+            fatal_only = all(c in ("DEATH", "CHD_DEATH", "CV_DEATH") for c in comps)
+            cens = cf if fatal_only else np.minimum(cf, cn)
             stop = np.minimum.reduce([cens, d0 + H, death_t])
             ev = (ev_t <= stop) & (ev_t > d0)
             N[f"T_{oname}"] = (np.where(ev, ev_t, stop) - d0)
             N[f"E_{oname}"] = ev.astype(int)
+        N = N[N.T_primary > 0].copy()  # no follow-up after time zero (e.g. censored before it)
         N["cluster"] = E["cluster"]
         N["bench"] = E["bench"]
         allrows.append(N)
@@ -308,7 +326,13 @@ def build(root: Path):
         R["row"] = np.arange(len(R))
         R["n_codes"] = R.row.map(K.groupby("row").size()).fillna(0).astype(int)
         R["n_hosp_codes"] = R.row.map(K[K.code.str.match(r"^[DP]:")].groupby("row").size()).fillna(0).astype(int)
-    return R, dict(seen=seen, ecg=ev_info, n_xml_local=S(len(paths)), codes=K)
+    ends = {}
+    if cen is not None:
+        ends = dict(fatal_censor_days_p5_p50_p95=[float(v) for v in np.nanpercentile(cen.CF, [5, 50, 95])],
+                    nonfatal_censor_days_p5_p50_p95=[float(v) for v in np.nanpercentile(cen.CN, [5, 50, 95])])
+    dd = es.TTODTH[es.DEATH == 1]
+    ends["death_days_p50_p99"] = [float(v) for v in np.nanpercentile(dd, [50, 99])] if len(dd) else None
+    return R, dict(seen=seen, ecg=ev_info, n_xml_local=S(len(paths)), codes=K, follow_up=ends, id_warnings=list(CC.XW_WARN))
 
 
 def code_features(T, R: pd.DataFrame) -> pd.DataFrame:
@@ -356,7 +380,8 @@ def code_features(T, R: pd.DataFrame) -> pd.DataFrame:
 
 def report(R: pd.DataFrame, info: dict, path: Path) -> None:
     L = [f"# CHS emulation cohorts ({time.strftime('%Y-%m-%d %H:%M')}, git {BC.git_sha()[:10]})", "",
-         f"- ECG linkage: {info['ecg']}; local XML files: {info['n_xml_local']}", "",
+         f"- ECG linkage: {info['ecg']}; local XML files: {info['n_xml_local']}",
+         f"- follow-up ascertainment (days from entry): {info.get('follow_up')}; ID warnings: {info.get('id_warnings')}", "",
          "| emulation | arm | n | with ECG file | follow-up >0 | primary events | mean held-out coverage | pre-match mean \\|SMD\\| (held-out) |",
          "|---|---|---|---|---|---|---|---|"]
     for e, g in R.groupby("EMU", sort=False):
@@ -380,7 +405,9 @@ def report(R: pd.DataFrame, info: dict, path: Path) -> None:
     if "n_codes" in R:
         L += ["", "## Code features before time zero (PS-Codes rung)", ""]
         for e, g in R.groupby("EMU", sort=False):
-            L.append(f"- {e}: any hospital code {(g.n_hosp_codes > 0).mean():.0%}; median codes per person "
+            k_any = int((g.n_hosp_codes > 0).sum())
+            pct = f"{k_any / len(g):.0%}" if (k_any == 0 or k_any > BC.MIN_COUNT) and len(g) - k_any not in range(1, 11) else "suppressed"
+            L.append(f"- {e}: any hospital code {pct}; median codes per person "
                      f"{g.n_codes.median():.0f} (hospital {g.n_hosp_codes.median():.0f})")
     L += ["", "## PS covariate coverage / prevalence", ""]
     for c in ("AGE", "MALE", "BLACK", "HTN", "DIAB", "CAD", "AF", "HF"):

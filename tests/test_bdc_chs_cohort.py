@@ -54,14 +54,20 @@ class CHSBuild(unittest.TestCase):
             wd(d / pre.format("52", "BASEBOTH"), pd.DataFrame({"dbGaP_Subject_ID": ids, "Individual_ID": ind, "PERSTAT": 1,
                                                                 "AGEBL": 72, "GEND01": [i % 2 for i in range(n)], "RACE01": 1,
                                                                 "BPHI": 1, "DIABADA": 1, "SMOKE": 0, "CRE44": 1.0}))
-            wd(d / pre.format("88", "YR3"), visit(3, 365, 73, ccb, thz, sbp=None))
+            V3 = visit(3, 365, 73, ccb, thz, sbp=None)
+            # id 45 has no medication record at year 3 (missed visit) and starts a CCB at year 4: never a new user
+            V3.loc[45, [f for f in FLAGS]] = np.nan
+            wd(d / pre.format("88", "YR3"), V3)
             # visit-4 SBP (after time zero for year-3 starters) must NOT be used as their held-out value
-            wd(d / pre.format("89", "YR4"), visit(4, 730, 74, ccb, thz, sbp=999.0))
+            V4 = visit(4, 730, 74, ccb, thz, sbp=999.0)
+            V4.loc[45, "CCB06"] = 1
+            wd(d / pre.format("89", "YR4"), V4)
             es = pd.DataFrame({"dbGaP_Subject_ID": ids, "MIBLMOD": 0, "ANBLMOD": 0, "CHBLMOD": 0, "STBLMOD": 0, "INCMI": 0,
                                "TTOMI": 9999, "INCANG": 0, "TTOANG": 9999, "INCANGIO": 0, "TTOANGI": 9999, "INCBYPS": 0,
                                "TTOBYPS": 9999, "INCCHF": 0, "TTOCHF": 9999, "INCSTRK": 0, "TTOSTK": 9999, "DEATH": 0,
                                "TTODTH": 9999, "CAUSE80": 0})
             es.loc[0:2, "CHBLMOD"] = 1  # prevalent HF -> excluded from E1
+            es.loc[30, ["INCCHF", "TTOCHF"]] = [1, 200]  # HF between visit k-1 (day 0) and time zero (day 365) -> excluded
             wd(d / pre.format("64", "EVENT_SUMMARY"), es)
             ev = pd.DataFrame({"dbGaP_Subject_ID": ids[3:8] + ids[20:22], "EVTYPE": 1, "TTOEVENT": [1000] * 5 + [100, 4000]})
             wd(d / pre.format("66", "CHS_Event16"), ev)  # 5 MIs after time zero (day 365) in CCB; one before t0, one after horizon
@@ -84,7 +90,8 @@ class CHSBuild(unittest.TestCase):
             R = pd.read_parquet(Path(t) / "r" / "chs_emulations.parquet") if (Path(t) / "r" / "chs_emulations.parquet").exists() \
                 else pd.read_pickle(Path(t) / "r" / "chs_emulations.pkl")
             E1 = R[R.EMU == "E1_ccb_vs_thiazide"]
-            self.assertEqual(len(E1), 37)                        # 40 new users minus 3 with prevalent HF
+            self.assertEqual(len(E1), 36)                        # 40 new users - 3 prevalent HF - 1 HF before t0
+            self.assertNotIn(ids[45], set(E1.id))                # missed visit k-1 -> not a new user
             self.assertEqual(int((E1.arm == 1).sum()), 17)
             self.assertTrue((E1.k == 3).all())
             self.assertTrue(E1.ECG_FILE.str.contains("VISIT01").all())  # ECG from year 2 (k-1), not year 3

@@ -101,3 +101,19 @@ class MESACount(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class XWGuard(unittest.TestCase):
+    def test_colliding_alternative_ids_are_not_used(self):
+        with tempfile.TemporaryDirectory() as t:
+            d = Path(t) / "pf"
+            d.mkdir()
+            ids = [str(100 + i) for i in range(30)]
+            # Individual_ID of person i equals the dbGaP ID of person i+1 -> must not be used as a join key
+            alt = [str(101 + i) for i in range(30)]
+            D = pd.DataFrame({"dbGaP_Subject_ID": ids, "Individual_ID": alt, "ACE06": 0, "CCB06": 0})
+            write_dbgap(d / "phs000287.v7.pht001450.v1.p1.c1.BASE1.HMB-MDS.txt.gz", D)
+            write_dbgap(d / "phs000287.v7.pht001488.v1.p1.c1.YR3.HMB-MDS.txt.gz", D)
+            CC.use_matrix(CC.index(d), "CHS")
+            self.assertTrue(CC.XW_WARN)
+            self.assertEqual(CC.XW.get("101"), "101")  # identity, not person 0

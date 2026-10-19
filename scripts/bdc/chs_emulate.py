@@ -140,6 +140,9 @@ def run_emulation(D: pd.DataFrame, P: np.ndarray, Xk: pd.DataFrame | None = None
         for o in OUTS:
             b, se = cox(D[f"T_{o}"].to_numpy(float)[idx], D[f"E_{o}"].to_numpy(int)[idx], t[idx], cluster=cl)
             r.update({f"loghr_{o}": b, f"se_{o}": se, f"events_{o}": int(D[f"E_{o}"].to_numpy(int)[idx].sum())})
+        # sensitivity: SE clustered on person (sequential trials reuse people across visits and arms)
+        pid = pd.factorize(D.id.to_numpy()[idx])[0]
+        _, r["se_primary_person"] = cox(D.T_primary.to_numpy(float)[idx], D.E_primary.to_numpy(int)[idx], t[idx], cluster=pid)
         rows.append(r)
     return rows
 
@@ -193,17 +196,25 @@ def main(argv=None) -> None:
         L.append(f"| {r.EMU} | {r.arm} | {r.n_pairs} | {r.mean_smd:.3f} | {getattr(r, 'mean_smd_echo', np.nan):.3f} | "
                  f"{getattr(r, 'mean_smd_lab', np.nan):.3f} | {getattr(r, 'mean_smd_vital', np.nan):.3f} | {r.pct_lt_0_1:.0%} | "
                  f"{r.events_primary} | {hr} | {r.bench_hr} |")
-    L += ["", "## Relative reduction in mean held-out |SMD| with the ECG", ""]
+    L += ["", "## Relative reduction in mean held-out |SMD| with the ECG (items observed in both arms)", ""]
+    smdcols = [c for c in C.columns if c.startswith("smd:")]
     for ref, arm in (("base", "base+ecg"), ("base", "base+perm"), ("clinical", "clinical+ecg"), ("codes", "codes+ecg")):
-        per = []
+        per, means = [], []
         for emu, g in ok.groupby("EMU", sort=False):
             g = g.set_index("arm")
             if ref in g.index and arm in g.index:
-                per.append((emu, 1 - g.loc[arm, "mean_smd"] / g.loc[ref, "mean_smd"]))
+                common = [c for c in smdcols if np.isfinite(g.loc[ref, c]) and np.isfinite(g.loc[arm, c])]
+                mr, ma = float(np.mean(g.loc[ref, common])), float(np.mean(g.loc[arm, common]))
+                per.append((emu, g.loc[ref, "cluster"], 1 - ma / mr))
+                means.append((mr, ma))
         if per:
-            pooled = 1 - np.mean([ok[(ok.EMU == e) & (ok.arm == arm)].mean_smd.iloc[0] for e, _ in per]) / \
-                np.mean([ok[(ok.EMU == e) & (ok.arm == ref)].mean_smd.iloc[0] for e, _ in per])
-            L.append(f"- {arm} vs {ref}: pooled {pooled:.1%}; " + "; ".join(f"{e} {v:.1%}" for e, v in per))
+            pooled = 1 - np.mean([m[1] for m in means]) / np.mean([m[0] for m in means])
+            # exact one-sided sign-flip over comparator clusters (cluster mean of per-emulation reductions)
+            cl = pd.DataFrame(per, columns=["EMU", "cluster", "rr"]).groupby("cluster").rr.mean().to_numpy()
+            flips = np.array(np.meshgrid(*[[1, -1]] * len(cl))).reshape(len(cl), -1).T
+            p1 = float(np.mean((flips * cl).mean(1) >= cl.mean() - 1e-12))
+            L.append(f"- {arm} vs {ref}: pooled {pooled:.1%}; clusters {len(cl)}, sign-flip one-sided P = {p1:.3f} "
+                     f"(minimum possible {1 / 2 ** len(cl):.3f}); " + "; ".join(f"{e} {v:.1%}" for e, _, v in per))
     (out / "report.md").write_text("\n".join(L) + "\n")
     print("\n".join(L))
     BC.log(f"done in {time.time() - t0:.0f} s; outputs (aggregate) {out}")

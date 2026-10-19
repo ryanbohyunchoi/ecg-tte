@@ -4,6 +4,9 @@
 - **Disclosure:** the first `chs_emulate.py --protocol-locked` run (2026-10-19 14:13, BDC; repo at f6259a2, with the same protocol text) happened **before** this lock was written into the file.
 - Nothing in the design was changed after that run.
 - Feasibility under the ≥ 350 rule (smaller arm with an ECG, 2026-10-19): E1b (336) and E4 (170) are below 350 and are reported as infeasible, not analysed. This applies the protocol's own rule; it is not a deviation.
+- **Deviation 2026-10-19 (code audit; `pipeline.md` §9):** eligibility exclusions are evaluated with history up to time zero (visit *k*), not visit *k*−1. PS covariates, held-out items and the ECG stay at *k*−1.
+  - The other audit fixes correct the code to this text: visit *k*−1 required, censoring, age, ID guard, held-out weight, the aspirin exclusion = prior MI, and the sign-flip test.
+  - The analysis is re-run as `main_v2`. The first run is kept and reported as superseded.
 - Further changes are deviations, logged in `pipeline.md` §9.
 - Sources: `docs/bdc/COHORT_FEASIBILITY_CHS_MESA.md` (variables) and `scripts/bdc/cohort_count.py` (counts).
 

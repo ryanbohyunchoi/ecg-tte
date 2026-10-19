@@ -44,7 +44,7 @@ MESA_VISITS = {1: ["MESA_Exam1Main"], 2: ["MESA_Exam2Main"], 3: ["MESA_Exam3Main
                5: ["MESA_Exam5Main"]}
 # class -> flag variables ({k} = MESA exam number); combination products listed under every class they contain
 CHS_CLASSES = {"ACEI": ["ACE06", "ACED06"], "CCB": ["CCB06"], "DHP_CCB": ["AMLOD06", "NIFSR06", "NIFIR06"],
-               "THIAZIDE": ["HCTZ06", "HCTZK06", "ACED06", "BETAD06"], "BETA": ["BETA06", "BETAD06"],
+               "THIAZIDE": ["HCTZ06", "HCTZK06", "ACED06", "BETAD06", "A2AD06"], "BETA": ["BETA06", "BETAD06"],
                "STATIN": ["STTN06"], "ASPIRIN": ["ASPIRIN"]}
 MESA_CLASSES = {"ACEI": ["ace{k}c", "aced{k}c"], "ARB": ["a2a{k}c", "a2ad{k}c"], "CCB": ["ccb{k}c"],
                 "THIAZIDE": ["hctz{k}c", "aced{k}c", "a2ad{k}c", "betad{k}c"], "BETA": ["beta{k}c", "betad{k}c"],
@@ -113,6 +113,8 @@ def key_col(D: pd.DataFrame) -> str:
 
 # ---------------------------------------------------------------- build use matrix
 XW = {}  # any subject-ID value (dbGaP_Subject_ID, Individual_ID, sidno) -> primary ID used in the use matrix
+XW_ALT = {}  # alternative ID column -> {value: primary ID}
+XW_WARN = []
 
 
 def use_matrix(files, cohort):
@@ -120,6 +122,8 @@ def use_matrix(files, cohort):
     classes = CHS_CLASSES if cohort == "CHS" else MESA_CLASSES
     rows, seen, flagdist, extra = [], {}, {}, {}
     XW.clear()
+    XW_ALT.clear()
+    XW_WARN.clear()
     for k, toks in visits.items():
         parts = [table(files, t) for t in toks]
         parts = [p for p in parts if len(p)]
@@ -145,12 +149,19 @@ def use_matrix(files, cohort):
             U["ACEI+ARB"] = U[["ACEI", "ARB"]].max(axis=1)
         for alt in ("Individual_ID", "sidno", "SUBJID", "dbGaP_Subject_ID"):
             if alt in D.columns and alt != kc:
-                XW.update(dict(zip(D[alt].astype(str).str.strip(), D[kc].astype(str).str.strip())))
-        XW.update({v: v for v in U.id})
+                XW_ALT.setdefault(alt, {}).update(dict(zip(D[alt].astype(str).str.strip(), D[kc].astype(str).str.strip())))
         rows.append(U)
         seen[k] = int(U.id.nunique())
         extra[k] = D  # kept for held-out lookups
     U = pd.concat(rows, ignore_index=True).drop_duplicates(["id", "visit"])
+    primary = set(U.id)
+    XW.update({v: v for v in primary})
+    for alt, m in XW_ALT.items():  # alternative ID columns join only if their values cannot collide with primary IDs
+        clash = (set(m) & primary) - {k for k, v in m.items() if k == v}
+        if clash:
+            XW_WARN.append(f"{alt}: {len(clash)} values equal another person's primary ID; not used for linkage")
+            continue
+        XW.update(m)
     return U, seen, flagdist, extra
 
 
@@ -169,6 +180,8 @@ def new_users(U: pd.DataFrame, a: str, b: str | None) -> pd.DataFrame:
         for i in range(1, len(g)):
             if A[:i].any() or B[:i].any():
                 break
+            if vis[i] - vis[i - 1] != 1:  # visit k-1 must be on record (audit 2026-10-19): no new-user start after a gap
+                continue
             if A[i] and not B[i]:
                 out.append((pid, vis[i], 1))
                 break
